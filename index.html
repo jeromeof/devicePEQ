@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device PEQ Plugin Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+    }
+
+    .peq-container {
+      border: 1px solid #ccc;
+      padding: 15px;
+      max-width: 500px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+
+    .peq-container h3 {
+      margin-top: 0;
+    }
+
+    .filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .peq-controls {
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>CrinGraph 'Plugin' devicePEQ Test Page</h2>
+
+<div class="peq-container">
+  <h3>Filters</h3>
+  <div id="filter-list" class="filter-list">
+    <div class="filter-item">
+      <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="0">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+    </div>
+  </div>
+  <div class="peq-controls">
+    <button onclick="addFilter()">Add Filter</button>
+    <button onclick="clearFilters()">Clear Filters</button>
+  </div>
+</div>
+
+<div class="extra-eq">
+</div>
+
+<script>
+  // Mock function to populate PEQ fields from device settings
+  function filtersToElem(filters) {
+    console.log("Applying filters from device:", filters);
+    const filterList = document.getElementById("filter-list");
+    filterList.innerHTML = ""; // Clear existing filters
+    filters.forEach(filter => {
+      const filterItem = document.createElement("div");
+      filterItem.className = "filter-item";
+      filterItem.innerHTML = `
+                    <label>Freq:</label> <input type="number" class="filter-freq" value="${filter.freq}">
+                    <label>Gain:</label> <input type="number" class="filter-gain" value="${filter.gain}">
+                    <label>Q:</label> <input type="number" class="filter-q" value="${filter.q}">
+                `;
+      filterList.appendChild(filterItem);
+    });
+  }
+
+  // Mock function to extract filters from UI for pushing to the device
+  function elemToFilters(includeDisabled) {
+    const filterElems = document.querySelectorAll(".filter-item");
+    const filters = Array.from(filterElems).map(elem => ({
+      freq: parseFloat(elem.querySelector(".filter-freq").value),
+      gain: parseFloat(elem.querySelector(".filter-gain").value),
+      q: parseFloat(elem.querySelector(".filter-q").value),
+      disabled: false, // Can be extended to support enabling/disabling
+    }));
+    console.log("Extracted filters:", filters);
+    return filters;
+  }
+
+  // Mock function to calculate the preamp gain from the filters
+  function calcEqDevPreamp(filters) {
+    if (filters.length === 0) return 0;
+    const maxGain = Math.max(...filters.map(f => f.gain));
+    console.log("Calculated Preamp Gain:", -maxGain);
+    return -maxGain; // Simple logic to avoid clipping
+  }
+
+  // Utility function to add a new filter entry
+  function addFilter() {
+    const filterList = document.getElementById("filter-list");
+    const filterItem = document.createElement("div");
+    filterItem.className = "filter-item";
+    filterItem.innerHTML = `
+                <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
+                <label>Gain:</label> <input type="number" class="filter-gain" value="0">
+                <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+            `;
+    filterList.appendChild(filterItem);
+  }
+
+  // Utility function to clear all filters
+  function clearFilters() {
+    document.getElementById("filter-list").innerHTML = "";
+  }
+
+  // Typically this should be put into the config.js in a Cringraph
+  let extraEQplugins = [
+    './devicePEQ/plugin.js' // Path to one or more "extraEQ" plugins
+  ];
+
+  /**
+   * Dynamically load a plugin from a sub-folder passing it the useful context
+   * @param pluginsToLoad
+   * @param context
+   * @returns {Promise<void>}
+   */
+  async function loadPlugins(pluginsToLoad, context) {
+    for (const pluginPath of pluginsToLoad) {
+      try {
+        let initializePlugin;
+
+        if (typeof module !== 'undefined' && module.exports) {
+          // CommonJS environment (e.g., Node.js)
+          initializePlugin = require(pluginPath);
+        } else {
+          // ES Module environment (e.g., modern browsers)
+          const module = await import(pluginPath);
+          initializePlugin = module.default;
+        }
+
+        // Call the plugin function with the provided context
+        await initializePlugin(context);
+        console.log(`Successfully loaded plugin: ${pluginPath}`);
+      } catch (error) {
+        console.error(`Error loading plugin ${pluginPath}:`, error.message);
+      }
+    }
+  }
+
+  // Load the plugin with the provided functions
+  if (typeof extraEQplugins !== "undefined") {
+    loadPlugins(extraEQplugins, {
+      filtersToElem,
+      elemToFilters,
+      calcEqDevPreamp
+    });
+  }
+</script>
+
+</body>
+</html>
