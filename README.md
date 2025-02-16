@@ -4,24 +4,21 @@
 DeviceEQ is a **JavaScript-based plugin** designed to interface with **audio devices** that support **Parametric EQ (PEQ) adjustments**. It allows users to **connect to, configure, and manage PEQ settings** on their **USB or network-based audio devices**.
 
 ### **Key Features**
-- 🎛 **Supports USB and Network Devices**
-- 🔗 **Dynamic PEQ Slot Selection & Configuration**
+- 🎛 **Supports USB and Network PEQ Devices**
 - 📡 **Connect via WebHID (USB) or HTTP API (Network)**
 - 🎚 **Real-Time PEQ Adjustments & Preamp Gain Calculations**
-- 💾 **Persistent Storage of Network Device Info using Cookies**
+- 🔗 **Dynamic PEQ Slot Selection & Configuration**
 
 ---
 
 ## **📂 Project Structure**
-DeviceEQ/
-│── plugin.js                  # Core plugin that integrates PEQ functionality
-│── usbHidConnector.js         # USB connection manager for HID-based devices
-│── networkDeviceConnector.js  # Network-based device connection manager
-│── fiioUsbHidHandler.js       # PEQ handler for FiiO USB-based devices
-│── wiimNetworkHandler.js      # PEQ handler for WiiM network-based devices
-│── index.html                 # Simple UI for testing and demo purposes
-│── README.md                  # Project documentation
-
+DeviceEQ
+* plugin.js                  # Core plugin that integrates PEQ functionality
+* usbHidConnector.js         # USB connection manager for HID-based devices
+* networkDeviceConnector.js  # Network-based device connection manager
+* fiioUsbHidHandler.js       # PEQ handler for FiiO USB-based devices
+* wiimNetworkHandler.js      # PEQ handler for WiiM network-based devices
+* index.html                 # Simple UI for testing and demo purposes
 ---
 
 ## **🛠 Plugin: `plugin.js`**

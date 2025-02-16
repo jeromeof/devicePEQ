@@ -100,14 +100,20 @@
   }
 
   // Mock function to calculate the preamp gain from the filters
-  function calcEqDevPreamp(filters) {
-    if (filters.length === 0) return 0;
+  function calcEqDevPreamp() {
+    var filters = Array.from(document.querySelectorAll(".filter-item"));
     const maxGain = Math.max(...filters.map(f => f.gain));
     console.log("Calculated Preamp Gain:", -maxGain);
     return -maxGain; // Simple logic to avoid clipping
   }
 
-  // Utility function to add a new filter entry
+  // Mock function to apply the EQ
+  function applyEQ() {
+
+  }
+
+
+    // Utility function to add a new filter entry
   function addFilter() {
     const filterList = document.getElementById("filter-list");
     const filterItem = document.createElement("div");
@@ -162,9 +168,10 @@
   // Load the plugin with the provided functions
   if (typeof extraEQplugins !== "undefined") {
     loadPlugins(extraEQplugins, {
-      filtersToElem,
-      elemToFilters,
-      calcEqDevPreamp
+      filtersToElem,  // Put Filters back to Html Elements
+      elemToFilters,  // Get Filters from Html Elements
+      calcEqDevPreamp,// Reuse existing gain calculations
+      applyEQ         // Apply EQ
     });
   }
 </script>

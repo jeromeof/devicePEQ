@@ -34,10 +34,12 @@ async function initializeDeviceEqPlugin(context) {
       this.peqSlotArea.hidden = true;
     }
 
-    showConnectedState(deviceName, availableSlots, currentSlot) {
+    showConnectedState(device, useNetwork, availableSlots, currentSlot) {
       this.connectButton.hidden = true;
+      this.currentDevice = device;
+      this.useNetwork = useNetwork;
       this.disconnectButton.hidden = false;
-      this.deviceNameElem.textContent = deviceName;
+      this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
       this.pullButton.hidden = false;
       this.pushButton.hidden = false;
@@ -167,7 +169,8 @@ async function initializeDeviceEqPlugin(context) {
               const device = await NetworkDeviceConnector.getDeviceConnected(selection.ipAddress, selection.deviceType);
               if (device) {
                 deviceEqUI.showConnectedState(
-                  device.model,
+                  device,
+                  selection.useNetwork,
                   await NetworkDeviceConnector.getAvailableSlots(device),
                   await NetworkDeviceConnector.getCurrentSlot(device)
                 );
@@ -177,7 +180,8 @@ async function initializeDeviceEqPlugin(context) {
               const device = await UsbHIDConnector.getDeviceConnected();
               if (device) {
                 deviceEqUI.showConnectedState(
-                  device.model,
+                  device,
+                  selection.useNetwork,
                   await UsbHIDConnector.getAvailableSlots(device),
                   await UsbHIDConnector.getCurrentSlot(device)
                 );
@@ -342,17 +346,23 @@ async function initializeDeviceEqPlugin(context) {
               alert("No device connected or PEQ slot selected.");
               return;
             }
-
-            const result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
+            var result = null;
+            if (deviceEqUI.useNetwork) {
+              result = await NetworkDeviceConnector.pullFromDevice(device, selectedSlot);
+            } else {
+              result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
+            }
             if (result.filters.length > 0) {
               context.filtersToElem(result.filters);
-              applyEQ();
+              context.applyEQ();
             } else {
               alert("No PEQ filters found on the device.");
             }
           } catch (error) {
             console.error("Error pulling PEQ filters:", error);
-            if (!deviceEqUI.useNetwork) {
+            if (deviceEqUI.useNetwork) {
+              await NetworkDeviceConnector.disconnectDevice();
+            } else {
               await UsbHIDConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
@@ -376,23 +386,31 @@ async function initializeDeviceEqPlugin(context) {
               return;
             }
 
-            const preamp_gain = context.calcEqDevPreamp();
-            const disconnect = await device.pushToDevice(
-              device,
-              selectedSlot,
-              preamp_gain,
-              filters
-            );
+            const preamp_gain = context.calcEqDevPreamp(filters);
+            let disconnect = false;
+            if (deviceEqUI.useNetwork) {
+              disconnect = await NetworkDeviceConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+            } else {
+              disconnect = await UsbHIDConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+            }
 
             if (disconnect) {
-              await UsbHIDConnector.disconnectDevice();
+              if (deviceEqUI.useNetwork) {
+                await NetworkDeviceConnector.disconnectDevice();
+              } else {
+                await UsbHIDConnector.disconnectDevice();
+              }
               deviceEqUI.showDisconnectedState();
               alert("PEQ Saved - Restarting");
             }
           } catch (error) {
 
             console.error("Error pushing PEQ filters:", error);
-            await UsbHIDConnector.disconnectDevice();
+            if (deviceEqUI.useNetwork) {
+              await NetworkDeviceConnector.disconnectDevice();
+            } else {
+              await UsbHIDConnector.disconnectDevice();
+            }
             deviceEqUI.showDisconnectedState();
           }
         });
@@ -402,35 +420,21 @@ async function initializeDeviceEqPlugin(context) {
           const selectedValue = event.target.value;
           console.log(`PEQ Slot selected: ${selectedValue}`);
 
-          let device;
-
-          if (useNetwork) {
-            device = NetworkDeviceConnector.getCurrentDevice(); // Get the connected network device
-          } else {
-            device = UsbHIDConnector.getCurrentDevice(); // Get the connected USB HID device
-          }
-
-          if (!device) {
-            console.error("No device connected.");
-            alert("No device connected.");
-            return;
-          }
-
           try {
             if (selectedValue === "-1") {
               if (useNetwork) {
-                await NetworkDeviceConnector.enablePEQ(device, false, -1);
+                await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
               } else {
-                await UsbHIDConnector.enablePEQ(device, false, -1);
+                await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
               }
               console.log("PEQ Disabled.");
             } else {
               const slotId = parseInt(selectedValue, 10);
 
               if (useNetwork) {
-                await NetworkDeviceConnector.enablePEQ(device, true, slotId);
+                await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
               } else {
-                await UsbHIDConnector.enablePEQ(device, true, slotId);
+                await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
               }
 
               console.log(`PEQ Enabled for slot ID: ${slotId}`);

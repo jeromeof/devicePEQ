@@ -45,7 +45,7 @@ export const NetworkDeviceConnector = (function () {
         }
     }
 
-    async function pushToDevice(slot, preamp, filters) {
+    async function pushToDevice(device, slot, preamp, filters) {
         if (!currentDevice) {
             console.warn("No network device connected.");
             return;
@@ -53,7 +53,7 @@ export const NetworkDeviceConnector = (function () {
         return await currentDevice.handler.pushToDevice(currentDevice.ip, slot, preamp, filters);
     }
 
-    async function pullFromDevice(slot) {
+    async function pullFromDevice(device, slot) {
         if (!currentDevice) {
             console.warn("No network device connected.");
             return;
@@ -61,7 +61,7 @@ export const NetworkDeviceConnector = (function () {
         return await currentDevice.handler.pullFromDevice(currentDevice.ip, slot);
     }
 
-    async function enablePEQ(enabled, slotId) {
+    async function enablePEQ(device, enabled, slotId) {
         if (!currentDevice) {
             console.warn("No network device connected.");
             return;
