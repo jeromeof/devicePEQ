@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Testing Page</title>
+</head>
+<body>
+<script>
+  async function getVersionFromWalkplay() {
+    sendReportToHIDDevice(0x4B, new Uint8Array([0x80, 0x0C, 0x00]));
+  }
+  async function getVersionFromFiiO() {
+    sendReportToHIDDevice(0, new Uint8Array([0xBB, 0x0B, 0x00, 0x00, 0x0B, 0x00, 0x00,0xEE]));
+  }
+  async function getVersionFromMoondrop() {
+    // From dump
+//    const hexString = "01:00:0d:00:03:01:00:23:2d:b3:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00";
+//    const byteArray = new Uint8Array(hexString.split(":").map(byte => parseInt(byte, 16)));
+    const byteArray = new Uint8Array([0x1, 0x0, 0xd, 0x0, 0x3, 0x1, 0x0, 0x23, 0x2d, 0xb3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
+    // Convert to Uint8Array
+
+    sendReportToHIDDevice(1, new Uint8Array(byteArray));
+  }
+
+  async function requestDevices() {
+    try {
+      // Ask the user to select a HID device
+      const hidDevices = await navigator.hid.requestDevice({ filters: [] });
+
+      // Ask the user to select a USB device
+      const usbDevices = await navigator.usb.requestDevice({ filters: [] }).catch(() => null);
+
+      // Ask the user to select a Serial device
+      const serialPorts = await navigator.serial.requestPort().catch(() => null);
+
+      console.log("🖥️ Selected HID Device:", hidDevices);
+      console.log("🔌 Selected USB Device:", usbDevices);
+      console.log("🛠️ Selected Serial Device:", serialPorts);
+
+      return { hidDevices, usbDevices, serialPorts };
+    } catch (error) {
+      console.error("Error requesting devices:", error);
+    }
+  }
+
+  async function sendReportToHIDDevice(reportId, data) {
+    try {
+      // Request a USB device
+      const devices = await navigator.hid.requestDevice({ filters: [] });
+      console.log("HID Devices:", devices);
+      const device = devices[0];
+      if (device) {
+        await device.open(); // Open the HID device
+        if (reportId === 0) {  // get reportId from device
+          reportId = device.collections[0].outputReports[0].reportId;
+        }
+        await device.sendReport(reportId, data);
+        console.log("Report sent to device.");
+        const response = await waitForHidResponse( device )
+        console.log("Final Response from :", response);
+        // Convert and display as hex array
+        const hexArray = toHexArray(response);
+        document.getElementById("responseData").textContent = `Hex Response: ${hexArray}`;
+
+      } else {
+        console.log("No USB devices found.");
+        document.getElementById("responseData").textContent = "";
+        return null;
+      }
+    } catch (error) {
+      console.error("Error getting USB device info:", error);
+      document.getElementById("responseData").textContent = "Error: " + error;
+    }
+  }
+  function waitForHidResponse(device, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        device.oninputreport = null; // Remove listener
+        reject(new Error("Timeout waiting for HID response"));
+      }, timeout);
+
+      device.oninputreport = (event) => {
+        clearTimeout(timer);
+        const receivedData = new Uint8Array(event.data.buffer);
+        console.log("Received HID data:", receivedData);
+        resolve(receivedData);
+      };
+    });
+  }
+  function toHexArray(buffer) {
+    return Array.from(new Uint8Array(buffer))
+      .map(byte => byte.toString(16).padStart(2, '0')) // Convert each byte to hex
+      .join(' '); // Separate hex values with spaces
+  }
+  async function getUSBDeviceInfo() {
+    try {
+      // Request a USB device
+      const device = await navigator.usb.requestDevice({ filters: [] });
+
+      if (device) {
+        await device.open(); // Open the USB device
+
+        console.log(`Vendor ID: ${device.vendorId}`);
+        console.log(`Product ID: ${device.productId}`);
+
+        // Select the first configuration (most devices only have one)
+        if (device.configuration === null) {
+          await device.selectConfiguration(1);
+        }
+
+        // Iterate over interfaces to check for HID class (0x03)
+        let hasHIDInterface = false;
+        for (const interface of device.configuration.interfaces) {
+          for (const alternate of interface.alternates) {
+            if (alternate.interfaceClass === 0x03) {
+              console.log("HID interface found!");
+              console.log(`Interface Number: ${interface.interfaceNumber}`);
+              console.log(`Subclass Code: ${alternate.interfaceSubclass}`);
+              console.log(`Protocol Code: ${alternate.interfaceProtocol}`);
+              hasHIDInterface = true;
+            }
+          }
+        }
+
+        return {
+          vendorId: device.vendorId,
+          productId: device.productId,
+        };
+      } else {
+        console.log("No USB devices found.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error getting USB device info:", error);
+    }
+  }
+</script>
+<h1>Testing functions </h1>
+<button onclick="requestDevices()">Request all devices into console</button>
+<button onclick="getUSBDeviceInfo()">Dump USB Details into console</button>
+<button onclick="getVersionFromWalkplay()">Get Version from Walkplay Devices</button>
+<button onclick="getVersionFromFiiO()">Get Version from FiiO Devices</button>
+<button onclick="getVersionFromMoondrop()">Get Version from Moondrop Devices</button>
+<pre id="responseData">Hex Responses will appear here...</pre>
+</body>
+</html>

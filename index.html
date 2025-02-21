@@ -164,6 +164,8 @@
       }
     }
   }
+  // Might come from the config.js
+  let config = {showNetwork:false}; // Hide the extra selection of network based devices for now
 
   // Load the plugin with the provided functions
   if (typeof extraEQplugins !== "undefined") {
@@ -171,7 +173,8 @@
       filtersToElem,  // Put Filters back to Html Elements
       elemToFilters,  // Get Filters from Html Elements
       calcEqDevPreamp,// Reuse existing gain calculations
-      applyEQ         // Apply EQ
+      applyEQ,         // Apply EQ
+      config
     });
   }
 </script>

@@ -2,6 +2,52 @@
 // Copyright 2024 : Pragmatic Audio
 //
 // Define the shared logic for Walkplay devices
+//
+// Many thanks to ma0shu for providing a dump
+
+const REPORT_ID = 0x4B;  // Report ID
+const READ_VALUE = 0x80;  // From capture provided
+const WRITE_VALUE = 0x01; //
+const END_HEADER = 0x00;
+const PEQ_VALUES = 0x09;  // Read or write PEQ - read is current slot / write contains
+const RESET_DEVICE = 0x23;
+const RESET_EQ_DEFAULT = 0x05;
+const FIRMWARE_VERSION = 0x0C;
+const TEMP_WRITE = 0x0A;
+const FLASH_EQ = 0x01;
+
+// These are probably not suitable for this plugin - but here because ma0shu provided the capture
+const ADC_OFFSET = 0x02;
+const DAC_OFFSET = 0x03;
+const DAC_WORKING_MODE = 0x1D; // 0 ->  "Class-H"  1 ->  "Class-AB"
+const ENC_STATUS = 0x1B;  // environment noise cancellation ??  Microphone ??
+const FILTER_MODE = 0x11;   // FAST-LL etc
+const HIGH_LOW_GAIN = 0x19; // 0 = LOW 1 = HIGH
+
+// Different WalkPlay devices with PEQ and their configurations
+const modelConfiguration = {
+  "default": {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 10,
+    firstWritableEQSlot: -1,
+    maxWritableEQSlots: 0,
+    disconnectOnSave: true,
+    disabledPresetId: -1,
+    availableSlots: []
+  },
+  "Hi-MAX": {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 10,
+    firstWritableEQSlot: -1,
+    maxWritableEQSlots: 0,
+    disconnectOnSave: true,
+    disabledPresetId: -1,
+    availableSlots: []
+  }
+};
+
 
 export const walkplayUsbHID = (function() {
   let config = {}; // Configuration storage
@@ -38,7 +84,7 @@ export const walkplayUsbHID = (function() {
         }
       };
 
-      await sendCommand(device, [0x4B, 0x80, 0x09, 0x00]); // Read EQ slot command
+      await sendCommand(device, [READ_VALUE, PEQ_VALUES, END_HEADER]); // Read EQ slot command
 
       // Wait at most 10 seconds for data
       return await waitForResponse(() => currentSlot > -99, device, 10000, () => currentSlot);
@@ -59,7 +105,7 @@ export const walkplayUsbHID = (function() {
         const bArr = computeIIRFilter(i, filter.freq, filter.gain, filter.q);
 
         const packet = [
-          0x4B, 0x01, 0x09, 0x18, i, 0x00, 0x00,
+          REPORT_ID, WRITE_VALUE, PEQ_VALUES, 0x18, i, 0x00, 0x00,
           ...bArr,
           ...convertToByteArray(filter.freq, 2),
           ...convertToByteArray(Math.round(filter.q * 256), 2),
@@ -72,7 +118,9 @@ export const walkplayUsbHID = (function() {
       }
 
       // Apply EQ settings (temporary until saved)
-      await sendCommand(device, [0x4B, 0x01, 0x0A, 0x04, 0x00, 0x00, 0xFF, 0xFF]);
+      await sendCommand(device, [WRITE_VALUE, TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF]);
+
+      // Next we would need to save the values
 
       console.log("PEQ filters pushed successfully.");
     } catch (error) {
@@ -92,7 +140,7 @@ export const walkplayUsbHID = (function() {
         }
       };
 
-      await sendCommand(device, [0x4B, 0x80, 0x09, 0x00]); // Read EQ slot
+      await sendCommand(device, [READ_VALUE, PEQ_VALUES, END_HEADER]); // Read EQ slot
 
       const result = await waitForResponse(() => currentSlot > -1, device, 10000, () => ({
         currentSlot
@@ -109,11 +157,12 @@ export const walkplayUsbHID = (function() {
   // Enable or disable PEQ by selecting a slot
   const enablePEQ = async (device, enable, slotId) => {
     if (enable) {
-      await sendCommand(device, [0x4B, 0x01, 0x01, 0x00, slotId]); // Save EQ to Flash
+      await sendCommand(device, [WRITE_VALUE, FLASH_EQ, 0x00, slotId]); // Save EQ to Flash
     } else {
-      await sendCommand(device, [0x4B, 0x01, 0x05, 0x01, 0x04]); // Reset EQ to Default
+      await sendCommand(device, [WRITE_VALUE, RESET_EQ_DEFAULT, 0x01, 0x04]); // Reset EQ to Default
     }
   };
+
 
   return {
     setConfig,  // Allow top-level configuration injection
@@ -121,17 +170,22 @@ export const walkplayUsbHID = (function() {
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,
+    getModelConfig,
     enablePEQ,
   };
 })();
 
+function getModelConfig(device) {
+  const configuration = modelConfiguration[device.productName];
+  return configuration || modelConfiguration["default"];
+}
 // **Helper Functions**
 
 // Send command to device
 async function sendCommand(device, packet) {
   const data = new Uint8Array(packet);
   console.log("Sending command:", data);
-  const reportId = getFirstValidReportId(device);
+  const reportId = REPORT_ID;
   await device.sendReport(reportId, data);
 }
 

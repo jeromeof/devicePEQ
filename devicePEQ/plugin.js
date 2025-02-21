@@ -154,8 +154,11 @@ async function initializeDeviceEqPlugin(context) {
         // Connect Button Event Listener
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
-            // Show a custom dialog to select Network or USB
-            const selection = await showDeviceSelectionDialog();
+            let selection =  {useNetwork: false}; // Assume usb only by default
+            if (context.config.showNetwork) {
+              // Show a custom dialog to select Network or USB
+              selection = await showDeviceSelectionDialog();
+            }
 
             if (selection.useNetwork) {
               if (!selection.ipAddress) {

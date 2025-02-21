@@ -2,6 +2,7 @@
 // Copyright 2024 : Pragmatic Audio
 //
 // Declare UsbHIDConnector and attach it to the global window object
+
 export const UsbHIDConnector = ( async function () {
     let config = {};
     let devices = [];
@@ -9,6 +10,8 @@ export const UsbHIDConnector = ( async function () {
 
     // Dynamically import manufacturer specific handlers for their unique devices
     const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
+    const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
+    const {moondropUsbHID} = await import('./moondropHidHandler.js');
 
     // Map a usb devicename to a specific manufacturer handler
     const deviceHandlers = {
@@ -19,7 +22,13 @@ export const UsbHIDConnector = ( async function () {
             "FIIO BTR13": fiioUsbHID,
             "FIIO KA15": fiioUsbHID,
             "RETRO NANO": fiioUsbHID
-        }
+        },
+        "WalkPlay" : {
+          "Hi-MAX": walkplayUsbHID,
+        },
+        "Moondrop" : {
+          "ECHO-B": moondropUsbHID,
+        },
         // Add more manufacturers and models as needed
     };
 
@@ -27,7 +36,10 @@ export const UsbHIDConnector = ( async function () {
         try {
             const vendorToManufacturer = [
                 { vendorId: 10610, manufacturer: "FiiO" },
-                { vendorId: 2578, manufacturer: "FiiO" }    // Snowsky
+                { vendorId: 2578, manufacturer: "FiiO" },    // Snowsky
+                { vendorId: 13058, manufacturer: "WalkPlay" },
+                {vendorId: 13784, manufacturer: "Moondrop" },
+
             ];
 
             // Request devices matching the filters
@@ -35,7 +47,7 @@ export const UsbHIDConnector = ( async function () {
 
             if (selectedDevices.length > 0) {
                 const rawDevice = selectedDevices[0];
-                const manufacturer = vendorToManufacturer[0].manufacturer;
+                const manufacturer = vendorToManufacturer.find(entry => entry.vendorId === rawDevice.vendorId).manufacturer;
                 const model = rawDevice.productName;
 
                 // Check if already connected

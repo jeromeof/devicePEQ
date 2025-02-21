@@ -1,9 +1,41 @@
-const moondropUsbHID = (function() {
-  const SET_REPORT = 0x09;
-  const GET_REPORT = 0x01;
-  const REPORT_ID = 1;
-  const EQ_SLOT_READ = 0x03;
-  const EQ_SLOT_WRITE = 0x04;
+const SET_REPORT = 0x09;
+const GET_REPORT = 0x01;
+const REPORT_ID = 1;
+const EQ_SLOT_READ = 0x03;
+const EQ_SLOT_WRITE = 0x04;
+
+
+const modelConfiguration = {
+  "default": {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 10,
+    firstWritableEQSlot: -1,
+    maxWritableEQSlots: 0,
+    disconnectOnSave: true,
+    disabledPresetId: -1,
+    availableSlots: []
+  },
+  "ECHO-B": {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 10,
+    firstWritableEQSlot: -1,
+    maxWritableEQSlots: 0,
+    disconnectOnSave: true,
+    disabledPresetId: -1,
+    availableSlots: []
+  }
+};
+
+export const moondropUsbHID = (function() {
+  let config = {}; // Configuration storage
+
+  // Set configuration dynamically
+  const setConfig = (newConfig) => {
+    config = newConfig;
+    console.log("New configuration applied to walkplayUsbHID:", config);
+  };
 
   async function connect(device) {
     try {
@@ -116,10 +148,27 @@ const moondropUsbHID = (function() {
     });
   }
 
+  // Enable or disable PEQ by selecting a slot
+  const enablePEQ = async (device, enable, slotId) => {
+    if (enable) {
+      await sendCommand(device, [WRITE_VALUE, FLASH_EQ, 0x00, slotId]); // Save EQ to Flash
+    } else {
+      await sendCommand(device, [WRITE_VALUE, RESET_EQ_DEFAULT, 0x01, 0x04]); // Reset EQ to Default
+    }
+  };
+
   return {
+    setConfig,  // Allow top-level configuration injection
     connect,
-    getCurrentSlot,
+    pushToDevice,
     pullFromDevice,
-    pushToDevice
+    getCurrentSlot,
+    getModelConfig,
+    enablePEQ,
   };
 })();
+
+function getModelConfig(device) {
+  const configuration = modelConfiguration[device.productName];
+  return configuration || modelConfiguration["default"];
+}
