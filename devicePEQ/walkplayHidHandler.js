@@ -105,7 +105,7 @@ export const walkplayUsbHID = (function() {
         const bArr = computeIIRFilter(i, filter.freq, filter.gain, filter.q);
 
         const packet = [
-          REPORT_ID, WRITE_VALUE, PEQ_VALUES, 0x18, i, 0x00, 0x00,
+          WRITE_VALUE, PEQ_VALUES, 0x18, i, 0x00, 0x00,
           ...bArr,
           ...convertToByteArray(filter.freq, 2),
           ...convertToByteArray(Math.round(filter.q * 256), 2),
@@ -137,6 +137,7 @@ export const walkplayUsbHID = (function() {
         const data = new Uint8Array(event.data.buffer);
         if (data.length >= 37) {
           currentSlot = data[36]; // Extract current slot
+          console.log("Current EQ Slot:", currentSlot);
         }
       };
 
@@ -229,22 +230,6 @@ function quantizer(dArr, dArr2) {
   let iArr = dArr.map(d => Math.round(d * 1073741824));
   let iArr2 = dArr2.map(d => Math.round(d * 1073741824));
   return [iArr2[0], iArr2[1], iArr2[2], -iArr[1], -iArr[2]];
-}
-
-// Get valid report ID for device
-function getFirstValidReportId(device) {
-  if (device.collections && device.collections.length > 0) {
-    for (const collection of device.collections) {
-      if (collection.outputReports && collection.outputReports.length > 0) {
-        for (const report of collection.outputReports) {
-          if (report.reportId) {
-            return report.reportId;
-          }
-        }
-      }
-    }
-  }
-  return null;
 }
 
 // Wait for a response based on a condition

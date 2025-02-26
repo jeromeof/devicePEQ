@@ -2,12 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Testing Page</title>
+  <title>PEQ USB HID Playground</title>
 </head>
 <body>
 <script>
   async function getVersionFromWalkplay() {
     sendReportToHIDDevice(0x4B, new Uint8Array([0x80, 0x0C, 0x00]));
+  }
+
+  async function sendCommandToHID() {
+    const hexString = document.getElementById("hexInput").value.trim();
+    const packetCount = parseInt(document.getElementById("packetCount").value, 10);
+    if (!hexString) {
+      alert("Please enter HEX values.");
+      return;
+    }
+    const byteArray = new Uint8Array(hexString.split(/\s+/).map(byte => parseInt(byte, 16)));
+    sendReportToHIDDevice(0x4B, byteArray, packetCount);
+  }
+
+  async function decodeValues() {
+    const hexString = document.getElementById("responseData").value.trim();
+    if (!hexString) {
+      alert("No response data to decode.");
+      return;
+    }
+    const byteArray = new Uint8Array(hexString.split(/\s+/).map(byte => parseInt(byte, 16)));
+
+    function parseWalkplayPEQResponse(byteArray) {
+      if (byteArray.length < 27) {
+        throw new Error("Invalid byte array length");
+      }
+
+      let filterData = {};
+      let freqValues = [];
+      let qValues = [];
+      let gainValues = [];
+
+      // STEP 1: Extract Frequencies (2-byte values)
+      for (let i = 7; i < 23; i += 2) {
+        let freq = convertFromByteArray(byteArray.slice(i, i + 2));
+        if (freq > 0) freqValues.push(freq);
+      }
+
+      // STEP 2: Extract Q Factors (2-byte values)
+      let qStartIndex = 23;
+      for (let i = qStartIndex; i < qStartIndex + freqValues.length * 2; i += 2) {
+        let q = convertFromByteArray(byteArray.slice(i, i + 2)) / 256;
+        qValues.push(q);
+      }
+
+      // STEP 3: Extract Gain Values (2-byte values)
+      let gainStartIndex = qStartIndex + freqValues.length * 2;
+      for (let i = gainStartIndex; i < gainStartIndex + freqValues.length * 2; i += 2) {
+        let gain = convertFromByteArray(byteArray.slice(i, i + 2)) / 256;
+        gainValues.push(gain);
+      }
+
+      // STEP 4: Construct Filter Data
+      for (let i = 0; i < freqValues.length; i++) {
+        filterData.push({
+          filter: i + 1,
+          frequency: freqValues[i],
+          qFactor: qValues[i],
+          gain: gainValues[i]
+        });
+      }
+
+      console.log(filterData);
+      return filterData;
+    }
+
+    function convertFromByteArray(byteArray) {
+      return byteArray[0] | (byteArray[1] << 8);
+    }
+
+    return parseWalkplayPEQResponse(byteArray);
   }
   async function getVersionFromFiiO() {
     sendReportToHIDDevice(0, new Uint8Array([0xBB, 0x0B, 0x00, 0x00, 0x0B, 0x00, 0x00,0xEE]));
@@ -43,104 +113,101 @@
     }
   }
 
-  async function sendReportToHIDDevice(reportId, data) {
+  var device = null;
+  async function sendReportToHIDDevice(reportId, data, numberPackets = 1) {
     try {
       // Request a USB device
-      const devices = await navigator.hid.requestDevice({ filters: [] });
-      console.log("HID Devices:", devices);
-      const device = devices[0];
+      if (device === null) {
+        const devices = await navigator.hid.requestDevice({filters: []});
+        console.log("HID Devices:", devices);
+        device = devices[0];
+      }
       if (device) {
-        await device.open(); // Open the HID device
-        if (reportId === 0) {  // get reportId from device
-          reportId = device.collections[0].outputReports[0].reportId;
-        }
+        if (!device.opened) await device.open();
+        if (reportId === 0) reportId = device.collections[0].outputReports[0].reportId;
         await device.sendReport(reportId, data);
         console.log("Report sent to device.");
-        const response = await waitForHidResponse( device )
-        console.log("Final Response from :", response);
-        // Convert and display as hex array
-        const hexArray = toHexArray(response);
-        document.getElementById("responseData").textContent = `Hex Response: ${hexArray}`;
+        const response = await waitForHidResponse(device, numberPackets);
+        console.log("Final Response:", response);
 
-      } else {
-        console.log("No USB devices found.");
-        document.getElementById("responseData").textContent = "";
-        return null;
+        // Convert each response to hex format
+        const hexArrays = response.map(toHexArray);
+        document.getElementById("responseData").value = hexArrays.join("\n");
       }
     } catch (error) {
-      console.error("Error getting USB device info:", error);
-      document.getElementById("responseData").textContent = "Error: " + error;
+      console.error("Error:", error);
+      document.getElementById("responseData").value = "Error: " + error;
     }
   }
-  function waitForHidResponse(device, timeout = 5000) {
+
+  function waitForHidResponse(device, numberPackets = 1, timeout = 5000) {
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        device.oninputreport = null; // Remove listener
-        reject(new Error("Timeout waiting for HID response"));
+      let receivedPackets = [];
+      let timer = setTimeout(() => {
+        device.oninputreport = null;
+        reject(new Error(`Timeout: Only received ${receivedPackets.length}/${numberPackets} packets.`));
       }, timeout);
 
       device.oninputreport = (event) => {
-        clearTimeout(timer);
         const receivedData = new Uint8Array(event.data.buffer);
-        console.log("Received HID data:", receivedData);
-        resolve(receivedData);
+        console.log(`Received HID Packet ${receivedPackets.length + 1}:`, receivedData);
+        receivedPackets.push(receivedData);
+        if (receivedPackets.length >= numberPackets) {
+          clearTimeout(timer);
+          device.oninputreport = null;
+          resolve(receivedPackets);
+        }
       };
     });
   }
+
   function toHexArray(buffer) {
     return Array.from(new Uint8Array(buffer))
-      .map(byte => byte.toString(16).padStart(2, '0')) // Convert each byte to hex
-      .join(' '); // Separate hex values with spaces
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join(' ');
   }
-  async function getUSBDeviceInfo() {
-    try {
-      // Request a USB device
-      const device = await navigator.usb.requestDevice({ filters: [] });
 
-      if (device) {
-        await device.open(); // Open the USB device
-
-        console.log(`Vendor ID: ${device.vendorId}`);
-        console.log(`Product ID: ${device.productId}`);
-
-        // Select the first configuration (most devices only have one)
-        if (device.configuration === null) {
-          await device.selectConfiguration(1);
-        }
-
-        // Iterate over interfaces to check for HID class (0x03)
-        let hasHIDInterface = false;
-        for (const interface of device.configuration.interfaces) {
-          for (const alternate of interface.alternates) {
-            if (alternate.interfaceClass === 0x03) {
-              console.log("HID interface found!");
-              console.log(`Interface Number: ${interface.interfaceNumber}`);
-              console.log(`Subclass Code: ${alternate.interfaceSubclass}`);
-              console.log(`Protocol Code: ${alternate.interfaceProtocol}`);
-              hasHIDInterface = true;
-            }
-          }
-        }
-
-        return {
-          vendorId: device.vendorId,
-          productId: device.productId,
-        };
-      } else {
-        console.log("No USB devices found.");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error getting USB device info:", error);
+  async function sendEditedResponse() {
+    const hexString = document.getElementById("responseData").value.trim();
+    if (!hexString) {
+      alert("No data to send.");
+      return;
     }
+    const byteArray = new Uint8Array(hexString.split(/\s+/).map(byte => parseInt(byte, 16)));
+    sendReportToHIDDevice(0x4B, byteArray);
   }
 </script>
-<h1>Testing functions </h1>
-<button onclick="requestDevices()">Request all devices into console</button>
+
+<h1>PEQ USB HID Playground</h1>
+
+<button onclick="requestDevices()">Request HID Devices</button>
 <button onclick="getUSBDeviceInfo()">Dump USB Details into console</button>
-<button onclick="getVersionFromWalkplay()">Get Version from Walkplay Devices</button>
+<br/>
+<button onclick="getVersionFromWalkplay()">Get Version from Walkplay</button>
 <button onclick="getVersionFromFiiO()">Get Version from FiiO Devices</button>
 <button onclick="getVersionFromMoondrop()">Get Version from Moondrop Devices</button>
-<pre id="responseData">Hex Responses will appear here...</pre>
+<br/><br/>
+
+<label for="hexInput">Enter HEX values (space-separated):</label>
+<input type="text" id="hexInput" placeholder="e.g., 80 09 00">
+<label for="packetCount">Expect:</label>
+<select id="packetCount">
+  <option value="1">1 Packet</option>
+  <option value="2">2 Packets</option>
+  <option value="3">3 Packets</option>
+  <option value="4">4 Packets</option>
+  <option value="5">5 Packets</option>
+</select>
+
+<button onclick="sendCommandToHID()">Send to Device</button>
+<button onclick="decodeValues()">Decode Values</button>
+
+<br/><br/>
+
+<label for="responseData">Edit and Send Response:</label>
+<textarea id="responseData" rows="10" cols="60" placeholder="Responses will appear here..."></textarea>
+<br/>
+<button onclick="sendEditedResponse()">Send Edited Data</button>
+
 </body>
 </html>
