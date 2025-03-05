@@ -425,7 +425,7 @@ async function initializeDeviceEqPlugin(context) {
 
           try {
             if (selectedValue === "-1") {
-              if (useNetwork) {
+              if (deviceEqUI.useNetwork) {
                 await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
               } else {
                 await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
@@ -434,7 +434,7 @@ async function initializeDeviceEqPlugin(context) {
             } else {
               const slotId = parseInt(selectedValue, 10);
 
-              if (useNetwork) {
+              if (deviceEqUI.useNetwork) {
                 await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
               } else {
                 await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
