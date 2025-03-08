@@ -132,7 +132,7 @@ async function initializeDeviceEqPlugin(context) {
     const NetworkDeviceConnector = await NetworkDeviceConnectorAsync;
     console.log('NetworkDeviceConnector loaded');
 
-    if ('hid' in navigator || 'fetch' in window) {
+    if ('hid' in navigator) { // Only support browsers with HID support for now
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => initializeDeviceEQ());
       } else {
