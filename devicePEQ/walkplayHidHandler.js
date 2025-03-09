@@ -40,10 +40,20 @@ const modelConfiguration = {
   "Hi-MAX": {
     minGain: -12,
     maxGain: 12,
-    maxFilters: 10,
+    maxFilters: 8,
     firstWritableEQSlot: -1,
     maxWritableEQSlots: 0,
-    disconnectOnSave: true,
+    disconnectOnSave: false,
+    disabledPresetId: -1,
+    availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
+  },
+  "Quark2": {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 8,
+    firstWritableEQSlot: -1,
+    maxWritableEQSlots: 0,
+    disconnectOnSave: false,
     disabledPresetId: -1,
     availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
   }

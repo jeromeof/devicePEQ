@@ -21,10 +21,12 @@ export const UsbHIDConnector = ( async function () {
             "FIIO Q7": fiioUsbHID,
             "FIIO BTR13": fiioUsbHID,
             "FIIO KA15": fiioUsbHID,
-            "RETRO NANO": fiioUsbHID
+            "RETRO NANO": fiioUsbHID,
+            "K17": fiioUsbHID
         },
         "WalkPlay" : {
           "Hi-MAX": walkplayUsbHID,
+          "Quark2": walkplayUsbHID,
         },
         "Moondrop" : {
           "ECHO-B": moondropUsbHID,
