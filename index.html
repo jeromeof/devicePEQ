@@ -100,8 +100,7 @@
   }
 
   // Mock function to calculate the preamp gain from the filters
-  function calcEqDevPreamp() {
-    var filters = Array.from(document.querySelectorAll(".filter-item"));
+  function calcEqDevPreamp(filters) {
     const maxGain = Math.max(...filters.map(f => f.gain));
     console.log("Calculated Preamp Gain:", -maxGain);
     return -maxGain; // Simple logic to avoid clipping
