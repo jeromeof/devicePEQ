@@ -22,139 +22,10 @@ const GET_HEADER1 = 0xBB;
 const GET_HEADER2 = 0x0B;
 const END_HEADERS = 0xEE;
 
-// Different FiiO devices with PEQ and their configurations
-const modelConfiguration = {
-  "default": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 5,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: true,
-    disabledPresetId: -1,
-    availableSlots: []
-  },
-  "FIIO KA17": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: 7,
-    maxWritableEQSlots: 3,
-    disconnectOnSave: false,
-    disabledPresetId: 11,
-    availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {id: 3, name: "Dance"}, {
-      id: 5,
-      name: "R&B"
-    }, {id: 6, name: "Classic"}, {id: 7, name: "Hip-hop"}, {id: 4, name: "USER1"}, {id: 8, name: "USER2"}, {
-      id: 9,
-      name: "USER3"
-    }]
-  },
-  "JadeAudio JA11": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 5,
-    firstWritableEQSlot: 3,
-    maxWritableEQSlots: 1,
-    disconnectOnSave: true,
-    disabledPresetId: 4,
-    availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {id: 3, name: "USER1"}]
-  },
-  "FIIO LS-TC2": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 5,
-    firstWritableEQSlot: 3,
-    maxWritableEQSlots: 1,
-    disconnectOnSave: true,
-    disabledPresetId: 11,
-    availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
-      id: 3,
-      name: "Dance"
-    }, {id: 4, name: "R&B"}, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 160, name: "USER1"}]
-  },
-  "RETRO NANO": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: 7,
-    maxWritableEQSlots: 3,
-    disconnectOnSave: true,
-    disabledPresetId: 11,
-    availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
-      id: 3,
-      name: "Dance"
-    }, {id: 4, name: "R&B"}, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 8, name: "Retro"}, {
-      id: 11,
-      name: "Close"
-    }, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {id: 162, name: "USER3"}]
-  },
-  "FIIO BTR13": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: 7,
-    maxWritableEQSlots: 3,
-    disconnectOnSave: false,
-    disabledPresetId: 12,
-    availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {id: 3, name: "Dance"}, {
-      id: 4,
-      name: "R&B"
-    }, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 7, name: "USER1"}, {id: 8, name: "USER2"}, {
-      id: 9,
-      name: "USER3"
-    }]
-  },
-  "FIIO BTR17": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: 7,
-    maxWritableEQSlots: 3,
-    disconnectOnSave: false,
-    disabledPresetId: 11,
-    availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {id: 3, name: "Dance"}, {
-      id: 4,
-      name: "R&B"
-    }, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {
-      id: 162,
-      name: "USER3"
-    }, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {id: 162, name: "USER3"}, {id: 163, name: "USER4"}, {
-      id: 164,
-      name: "USER5"
-    }, {id: 165, name: "USER6"}, {id: 166, name: "USER7"}, {id: 167, name: "USER8"}, {id: 168, name: "USER9"}, {
-      id: 169,
-      name: "USER10"
-    }]
-  },
-  "FIIO KA15": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: 7,
-    maxWritableEQSlots: 3,
-    disconnectOnSave: false,
-    disabledPresetId: 11,
-    availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {id: 3, name: "Dance"}, {
-      id: 4,
-      name: "R&B"
-    }, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 7, name: "USER1"}, {id: 8, name: "USER2"}, {
-      id: 9,
-      name: "USER3"
-    }]
-  }
-};
-
 export const fiioUsbHID = (function () {
-  let config = {}; // A place to store the injected config
 
-  // A public method to set or update config
-  const setConfig = (newConfig) => {
-    config = newConfig;
-    console.log("New configuration applied to fiioUsbHID:", config);
-  };
-
-  const connect = async (device) => {
+  const connect = async (deviceDetails) => {
+    var device = deviceDetails.rawDevice;
     try {
       if (!device.opened) {
         await device.open();
@@ -165,7 +36,8 @@ export const fiioUsbHID = (function () {
       throw error;
     }
   };
-  const getCurrentSlot = async (device) => {
+  const getCurrentSlot = async (deviceDetails) => {
+    var device = deviceDetails.rawDevice;
     try {
       let currentSlot = -99;
 
@@ -174,7 +46,7 @@ export const fiioUsbHID = (function () {
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
             case PEQ_PRESET_SWITCH:
-              currentSlot = handleEqPreset(data, device);
+              currentSlot = handleEqPreset(data, deviceDetails);
               break;
             default:
               console.log("Unhandled data type:", data[4]);
@@ -198,13 +70,15 @@ export const fiioUsbHID = (function () {
     }
   };
 
-  const pushToDevice = async (device, slot, preamp_gain, filters) => {
+  const pushToDevice = async (deviceDetails, slot, preamp_gain, filters) => {
     try {
+      var device = deviceDetails.rawDevice;
+
       // FiiO devices will automatically cut the max SPL by the maxGain (typically -12)
       // So, we can safely apply a +12 gain - the larged preamp_gain needed
       // .e.g. if we need to +5dB for a filter then we can still make the globalGain 7dB
-      await setGlobalGain(device, getModelConfig(device).maxGain + preamp_gain);
-      const maxFilters = getModelConfig(device).maxFilters;
+      await setGlobalGain(device, deviceDetails.modelConfig.maxGain + preamp_gain);
+      const maxFilters = deviceDetails.modelConfig.maxFilters;
       const maxFiltersToUse = Math.min(filters.length, maxFilters);
       await setPeqCounter(device, maxFiltersToUse);
 
@@ -228,7 +102,7 @@ export const fiioUsbHID = (function () {
 
       console.log("PEQ filters pushed successfully.");
 
-      if (getModelConfig(device).disconnectOnSave) {
+      if (deviceDetails.modelConfig.disconnectOnSave) {
         return true;    // Disconnect
       }
       return false;
@@ -239,12 +113,13 @@ export const fiioUsbHID = (function () {
     }
   };
 
-  const pullFromDevice = async (device, slot) => {
+  const pullFromDevice = async (deviceDetails, slot) => {
     try {
       const filters = [];
       let peqCount = 0;
       let globalGain = 0;
       let currentSlot = 0;
+      var device = deviceDetails.rawDevice;
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
@@ -260,7 +135,7 @@ export const fiioUsbHID = (function () {
               globalGain = handleGain(data[6], data[7]);
               break;
             case PEQ_PRESET_SWITCH:
-              currentSlot = handleEqPreset(data, device);
+              currentSlot = handleEqPreset(data, deviceDetails);
               break;
             case PEQ_SAVE_TO_DEVICE:
               savedEQ(data, device);
@@ -282,7 +157,7 @@ export const fiioUsbHID = (function () {
         filters: filters,
         globalGain: globalGain,
         currentSlot: currentSlot,
-        deviceDetails: getModelConfig(device)
+        deviceDetails: deviceDetails.modelConfig
       }));
 
       return result;
@@ -292,30 +167,24 @@ export const fiioUsbHID = (function () {
     }
   }
 
-  const enablePEQ = async (device, enable, slotId) => {
-    var deviceModel = getModelConfig(device);
+  const enablePEQ = async (deviceDetails, enable, slotId) => {
+
+    var device = deviceDetails.rawDevice;
 
     if (enable) {   // take the slotId we are given and switch to it
       await setPresetPeq(device, slotId);
     } else {
-      await setPresetPeq(device, deviceModel.maxFilters);
+      await setPresetPeq(device, deviceDetails.modelConfig.maxFilters);
     }
   }
   return {
-    setConfig,  // Allow the top level configuration object to be passed down here
     connect,
     pushToDevice,
-    getModelConfig,
     pullFromDevice,
     getCurrentSlot,
-    enablePEQ,
+    enablePEQ
   };
 })();
-
-function getModelConfig(device) {
-  const configuration = modelConfiguration[device.productName];
-  return configuration || modelConfiguration["default"];
-}
 
 
 // Private Helper Functions
@@ -530,11 +399,11 @@ function fiioGainBytesFromValue(e) {
   return [r, n]
 }
 
-function handleEqPreset(data, device) {
+function handleEqPreset(data, deviceDetails) {
   const presetId = data[6];
   console.log("EQ Preset ID:", presetId);
 
-  if (presetId == getModelConfig(device).disabledPresetId) {
+  if (presetId == deviceDetails.modelConfig.disabledPresetId) {
     return -1;      // with JA11 slot 4 == Off
   }
   // Handle preset switch if necessary

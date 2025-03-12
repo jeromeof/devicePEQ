@@ -4,53 +4,42 @@
 // Declare UsbHIDConnector and attach it to the global window object
 
 export const UsbHIDConnector = ( async function () {
-    let config = {};
     let devices = [];
     let currentDevice = null;
 
-    // Dynamically import manufacturer specific handlers for their unique devices
-    const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
-    const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
-    const {moondropUsbHID} = await import('./moondropHidHandler.js');
-
-    // Map a usb devicename to a specific manufacturer handler
-    const deviceHandlers = {
-        "FiiO": {
-            "JadeAudio JA11": fiioUsbHID,
-            "FIIO KA17": fiioUsbHID,
-            "FIIO Q7": fiioUsbHID,
-            "FIIO BTR13": fiioUsbHID,
-            "FIIO KA15": fiioUsbHID,
-            "RETRO NANO": fiioUsbHID,
-            "K17": fiioUsbHID
-        },
-        "WalkPlay" : {
-          "Hi-MAX": walkplayUsbHID,
-          "Quark2": walkplayUsbHID,
-        },
-        "Moondrop" : {
-          "ECHO-B": moondropUsbHID,
-        },
-        // Add more manufacturers and models as needed
-    };
+    const {usbHidDeviceHandlerConfig} = await import('./usbDeviceConfig.js');
 
     const getDeviceConnected = async () => {
         try {
-            const vendorToManufacturer = [
-                { vendorId: 10610, manufacturer: "FiiO" },
-                { vendorId: 2578, manufacturer: "FiiO" },    // Snowsky
-                { vendorId: 13058, manufacturer: "WalkPlay" },
-                {vendorId: 13784, manufacturer: "Moondrop" },
-
-            ];
+            // Build filters from your configuration
+            // (Assuming each configuration has a unique vendorId)
+            const vendorToManufacturer = usbHidDeviceHandlerConfig.map(entry => ({
+              vendorId: entry.vendorId,
+              // You could also include productId if needed
+            }));
 
             // Request devices matching the filters
             const selectedDevices = await navigator.hid.requestDevice({ filters: vendorToManufacturer });
 
             if (selectedDevices.length > 0) {
                 const rawDevice = selectedDevices[0];
-                const manufacturer = vendorToManufacturer.find(entry => entry.vendorId === rawDevice.vendorId).manufacturer;
+                // Find the vendor configuration matching the selected device
+                const vendorConfig = usbHidDeviceHandlerConfig.find(entry => entry.vendorId === rawDevice.vendorId);
+
+                if (!vendorConfig) {
+                  console.error("No configuration found for vendor:", rawDevice.vendorId);
+                  return;
+                }
+
                 const model = rawDevice.productName;
+
+                // Look up the model-specific configuration from the vendor config.
+                // If no specific model configuration exists, fall back to a default if provided.
+                let deviceDetails = vendorConfig.devices[model] || {};
+                let modelConfig = deviceDetails.modelConfig || vendorConfig.defaultModelConfig || {};
+
+                const manufacturer = deviceDetails.manufacturer | vendorConfig.manufacturer;
+                let handler = deviceDetails.handler ||  vendorConfig.handler;
 
                 // Check if already connected
                 const existingDevice = devices.find(d => d.rawDevice === rawDevice);
@@ -64,18 +53,16 @@ export const UsbHIDConnector = ( async function () {
                 if (!rawDevice.opened) {
                     await rawDevice.open();
                 }
-                let handler = getDeviceHandler(manufacturer, model);
-                let deviceDetails = handler.getModelConfig(rawDevice);
                 currentDevice = {
                     rawDevice: rawDevice,
                     manufacturer: manufacturer,
                     model: model,
                     handler: handler,
-                    deviceDetails: deviceDetails
+                    modelConfig: modelConfig
                 };
 
                 if (currentDevice.handler) {
-                    await currentDevice.handler.connect(rawDevice);
+                    await currentDevice.handler.connect(currentDevice);
                 } else {
                     console.error(`No handler found for ${manufacturer} ${model}`);
                     return null;
@@ -105,9 +92,9 @@ export const UsbHIDConnector = ( async function () {
             }
         }
     };
-    const checkDeviceConnected = async (device) => {
+    const checkDeviceConnected = async (rawDevice) => {
         const devices = await navigator.hid.getDevices();
-        var connected =  devices.some(d => d === device);
+        var connected =  devices.some(d => d === rawDevice);
         if (!connected) {
             console.error("Device disconnected?");
             alert('Device disconnected?');
@@ -121,7 +108,7 @@ export const UsbHIDConnector = ( async function () {
             throw Error("Device Disconnected");
         }
         if (device && device.handler) {
-            return await device.handler.pushToDevice(device.rawDevice, slot, preamp, filters);
+            return await device.handler.pushToDevice(device, slot, preamp, filters);
         } else {
             console.error("No device handler available for pushing.");
         }
@@ -130,12 +117,12 @@ export const UsbHIDConnector = ( async function () {
 
     // Helper Function to Get Available 'Custom' Slots Based on the Device that we can write too
     const  getAvailableSlots = async (device) => {
-        return device.deviceDetails.availableSlots;
+        return device.modelConfig.availableSlots;
     };
 
     const getCurrentSlot = async (device) => {
         if (device && device.handler) {
-            return await device.handler.getCurrentSlot(device.rawDevice)
+            return await device.handler.getCurrentSlot(device)
         }{
             console.error("No device handler available for querying");
             return -2;
@@ -147,30 +134,24 @@ export const UsbHIDConnector = ( async function () {
             throw Error("Device Disconnected");
         }
         if (device && device.handler) {
-            return await device.handler.pullFromDevice(device.rawDevice, slot);
+            return await device.handler.pullFromDevice(device, slot);
         } else {
             console.error("No device handler available for pulling.");
-            return { filters: [], deviceDetails: {} };
+            return { filters: [] }; // Empty filters
         }
     };
 
     const enablePEQ = async (device, enabled, slotId) => {
         if (device && device.handler) {
-            return await device.handler.enablePEQ(device.rawDevice, enabled, slotId);
+            return await device.handler.enablePEQ(device, enabled, slotId);
         } else {
             console.error("No device handler available for enabling.");
         }
     };
 
-
-    const getDeviceHandler = (manufacturer, model) => {
-        return deviceHandlers[manufacturer]?.[model] || null;
-    };
-
     const getCurrentDevice = () => currentDevice;
 
     return {
-        config,
         getDeviceConnected,
         getAvailableSlots,
         disconnectDevice,

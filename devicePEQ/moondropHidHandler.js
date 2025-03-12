@@ -5,39 +5,9 @@ const EQ_SLOT_READ = 0x03;
 const EQ_SLOT_WRITE = 0x04;
 
 
-const modelConfiguration = {
-  "default": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: true,
-    disabledPresetId: -1,
-    availableSlots: []
-  },
-  "ECHO-B": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: true,
-    disabledPresetId: -1,
-    availableSlots: []
-  }
-};
-
 export const moondropUsbHID = (function() {
-  let config = {}; // Configuration storage
-
-  // Set configuration dynamically
-  const setConfig = (newConfig) => {
-    config = newConfig;
-    console.log("New configuration applied to walkplayUsbHID:", config);
-  };
-
-  async function connect(device) {
+  async function connect(deviceDetails) {
+    var device = deviceDetails.rawDevice;
     try {
       if (!device.opened) {
         await device.open();
@@ -49,7 +19,8 @@ export const moondropUsbHID = (function() {
     }
   }
 
-  async function getCurrentSlot(device) {
+  async function getCurrentSlot(deviceDetails) {
+    var device = deviceDetails.rawDevice;
     try {
       let currentSlot = -99;
       const requestData = new Uint8Array([REPORT_ID, GET_REPORT, EQ_SLOT_READ]);
@@ -71,8 +42,9 @@ export const moondropUsbHID = (function() {
     }
   }
 
-  async function pullFromDevice(device, slot) {
+  async function pullFromDevice(deviceDetails, slot) {
     try {
+      var device = deviceDetails.rawDevice;
       const filters = [];
       let globalGain = 0;
       let peqCount = 0;
@@ -99,8 +71,9 @@ export const moondropUsbHID = (function() {
     }
   }
 
-  async function pushToDevice(device, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
     try {
+      var device = deviceDetails.rawDevice;
       const reportId = device.collections[0].outputReports[0].reportId;
       const requestData = new Uint8Array([REPORT_ID, SET_REPORT, EQ_SLOT_WRITE, slot, globalGain, filters.length, ...encodeFilters(filters)]);
       await device.sendReport(reportId, requestData);
@@ -149,26 +122,22 @@ export const moondropUsbHID = (function() {
   }
 
   // Enable or disable PEQ by selecting a slot
-  const enablePEQ = async (device, enable, slotId) => {
+  const enablePEQ = async (deviceDetails, enable, slotId) => {
+    var device = deviceDetails.rawDevice;
+    const reportId = device.collections[0].outputReports[0].reportId;
     if (enable) {
-      await sendCommand(device, [WRITE_VALUE, FLASH_EQ, 0x00, slotId]); // Save EQ to Flash
+      await device.sendReport(reportId, [WRITE_VALUE, FLASH_EQ, 0x00, slotId]); // Save EQ to Flash
     } else {
-      await sendCommand(device, [WRITE_VALUE, RESET_EQ_DEFAULT, 0x01, 0x04]); // Reset EQ to Default
+      await device.sendReport(reportId, [WRITE_VALUE, RESET_EQ_DEFAULT, 0x01, 0x04]); // Reset EQ to Default
     }
   };
 
   return {
-    setConfig,  // Allow top-level configuration injection
     connect,
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,
-    getModelConfig,
     enablePEQ,
   };
 })();
 
-function getModelConfig(device) {
-  const configuration = modelConfiguration[device.productName];
-  return configuration || modelConfiguration["default"];
-}

@@ -25,53 +25,12 @@ const ENC_STATUS = 0x1B;  // environment noise cancellation ??  Microphone ??
 const FILTER_MODE = 0x11;   // FAST-LL etc
 const HIGH_LOW_GAIN = 0x19; // 0 = LOW 1 = HIGH
 
-// Different WalkPlay devices with PEQ and their configurations
-const modelConfiguration = {
-  "default": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: true,
-    disabledPresetId: -1,
-    availableSlots: [{id: -99, name: "Default"}]
-  },
-  "Hi-MAX": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 8,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: false,
-    disabledPresetId: -1,
-    availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
-  },
-  "Quark2": {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 8,
-    firstWritableEQSlot: -1,
-    maxWritableEQSlots: 0,
-    disconnectOnSave: false,
-    disabledPresetId: -1,
-    availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
-  }
-};
-
-
 export const walkplayUsbHID = (function() {
   let device = null;
-  let config = {}; // Configuration storage
-
-  // Set configuration dynamically
-  const setConfig = (newConfig) => {
-    config = newConfig;
-    console.log("New configuration applied:", config);
-  };
 
   // Connect to Walkplay USB-HID device
-  const connect = async (hidDevice) => {
+  const connect = async (deviceDetails) => {
+    var hidDevice = deviceDetails.rawDevice;
     try {
       device = hidDevice || (await navigator.hid.requestDevice({ filters: [] }))[0];
       if (!device) throw new Error("No HID device selected.");
@@ -84,12 +43,13 @@ export const walkplayUsbHID = (function() {
   };
 
   // Get the currently selected EQ slot
-  const getCurrentSlot = async () => {
+  const getCurrentSlot = async (deviceDetails) => {
+    var device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
     console.log("Fetching current EQ slot...");
 
-    await sendReport(REPORT_ID,[READ_VALUE, PEQ_VALUES, END_HEADER]);
-    const response = await waitForResponse();
+    await sendReport(device, REPORT_ID,[READ_VALUE, PEQ_VALUES, END_HEADER]);
+    const response = await waitForResponse(device);
     const slot = response ? response[35] : -1;
 
     console.log("Current EQ Slot:", slot);
@@ -97,7 +57,8 @@ export const walkplayUsbHID = (function() {
   };
 
   // Push PEQ settings to Walkplay device
-  const pushToDevice = async (device, slot, preampGain, filters) => {
+  const pushToDevice = async (deviceDetails, slot, preampGain, filters) => {
+    var device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
     console.log("Pushing PEQ settings...");
     if (typeof slot === "string" )  // Convert from string
@@ -122,21 +83,22 @@ export const walkplayUsbHID = (function() {
       ];
       console.log("Write HID data:", packet);
 
-      await sendReport(useAltReport ? ALT_REPORT_ID : REPORT_ID ,packet);
+      await sendReport(device,useAltReport ? ALT_REPORT_ID : REPORT_ID ,packet);
     }
 
     // Apply EQ settings temporarily
-    await sendReport(REPORT_ID,[WRITE_VALUE, TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF,END_HEADER]);
+    await sendReport(device,REPORT_ID,[WRITE_VALUE, TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF,END_HEADER]);
 
     // Apply EQ settings temporarily
-    await sendReport(REPORT_ID,[WRITE_VALUE, FLASH_EQ, 0x01, END_HEADER]);
+    await sendReport(device,REPORT_ID,[WRITE_VALUE, FLASH_EQ, 0x01, END_HEADER]);
 
     console.log("PEQ filters pushed successfully.");
   };
 
   // Pull PEQ settings from Walkplay device
-  const pullFromDevice = async (device, slot = DEFAULT_EQ_SLOT) => {
+  const pullFromDevice = async (deviceDetails, slot = DEFAULT_EQ_SLOT) => {
     try {
+      var device = deviceDetails.rawDevice;
       if (!device) throw new Error("Device not connected.");
       console.log("Pulling PEQ settings...");
 
@@ -169,7 +131,7 @@ export const walkplayUsbHID = (function() {
 
       // Request each filter (0-7) individually
       for (let i = 0; i < expectedFilters; i++) {
-        await sendReport(REPORT_ID,[READ_VALUE, PEQ_VALUES, 0x00, 0x00, i, END_HEADER]);  // Read filter `i`
+        await sendReport(device, REPORT_ID,[READ_VALUE, PEQ_VALUES, 0x00, 0x00, i, END_HEADER]);  // Read filter `i`
         await delay(50);  // Give time for each request to be processed
       }
 
@@ -180,7 +142,7 @@ export const walkplayUsbHID = (function() {
         filters: filters,
         globalGain: globalGain,
         currentSlot: currentSlot,
-        deviceDetails: getModelConfig(device)
+        deviceDetails: deviceDetails.modelConfig,
       }));
 
       console.log("PEQ Data Pulled:", result);
@@ -192,17 +154,17 @@ export const walkplayUsbHID = (function() {
   };
 
   // Enable or disable PEQ
-  const enablePEQ = async (enable, slotId) => {
-    if (!device) throw new Error("Device not connected.");
+  const enablePEQ = async (deviceDetails, enable, slotId) => {
+    var device = deviceDetails.rawDevice;
     if (!enable) slotId = 0x00; // ?? Determine the not enabled
     const packet = [WRITE_VALUE, FLASH_EQ, 0x00, slotId, END_HEADER]
-    await sendReport(REPORT_ID, packet);
+    await sendReport(device, REPORT_ID, packet);
     console.log(`PEQ ${enable ? "enabled" : "disabled"}.`);
   };
 
 
-// Send command to HID device
-  async function sendReport(reportId, packet) {
+// Internal functions
+  async function sendReport(device, reportId, packet) {
     if (!device) throw new Error("Device not connected.");
     const data = new Uint8Array(packet);
     console.log("Sending:", data);
@@ -210,7 +172,7 @@ export const walkplayUsbHID = (function() {
   }
 
 // Wait for response
-  async function waitForResponse(timeout = 5000) {
+  async function waitForResponse(device, timeout = 5000) {
     return new Promise((resolve, reject) => {
       let response = null;
       const timer = setTimeout(() => reject("Timeout waiting for HID response"), timeout);
@@ -225,20 +187,13 @@ export const walkplayUsbHID = (function() {
   }
 
   return {
-    setConfig,
     connect,
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,
-    getModelConfig,
     enablePEQ,
   };
 })();
-
-function getModelConfig(device) {
-  const configuration = modelConfiguration[device.productName];
-  return configuration || modelConfiguration["default"];
-}
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
