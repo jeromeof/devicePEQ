@@ -15,6 +15,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List repository contents
+        run: ls -la
+
+      - name: List devicePEQ directory contents
+        run: ls -la devicePEQ
+
       - name: Archive just the plugin Folder
         run: |
           zip -r devicePEQ.zip devicePEQ
