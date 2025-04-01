@@ -34,10 +34,10 @@ async function initializeDeviceEqPlugin(context) {
       this.peqSlotArea.hidden = true;
     }
 
-    showConnectedState(device, useNetwork, availableSlots, currentSlot) {
+    showConnectedState(device, connectionType, availableSlots, currentSlot) {
       this.connectButton.hidden = true;
       this.currentDevice = device;
-      this.useNetwork = useNetwork;
+      this.connectionType = connectionType;
       this.disconnectButton.hidden = false;
       this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
@@ -48,7 +48,7 @@ async function initializeDeviceEqPlugin(context) {
     }
 
     showDisconnectedState() {
-      this.useNetwork = false;
+      this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
       this.connectButton.hidden = false;
       this.disconnectButton.hidden = true;
@@ -356,6 +356,10 @@ async function initializeDeviceEqPlugin(context) {
     const UsbHIDConnector = await UsbHIDConnectorAsync;
     console.log('UsbHIDConnector loaded');
 
+    const UsbSerialConnectorAsync = await import('./usbSerialConnector.js').then((module) => module.UsbSerialConnector);
+    const UsbSerialConnector = await UsbSerialConnectorAsync;
+    console.log('UsbSerialConnector loaded');
+
     const NetworkDeviceConnectorAsync = await import('./networkDeviceConnector.js').then((module) => module.NetworkDeviceConnector);
     const NetworkDeviceConnector = await NetworkDeviceConnectorAsync;
     console.log('NetworkDeviceConnector loaded');
@@ -382,13 +386,13 @@ async function initializeDeviceEqPlugin(context) {
         // Connect Button Event Listener
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
-            let selection =  {useNetwork: false}; // Assume usb only by default
+            let selection =  {connectionType: "usb"}; // Assume usb only by default
             if (context.config.advanced) {
               // Show a custom dialog to select Network or USB
               selection = await showDeviceSelectionDialog();
             }
 
-            if (selection.useNetwork) {
+            if (selection.connectionType == "network") {
               if (!selection.ipAddress) {
                 alert("Please enter a valid IP address.");
                 return;
@@ -401,20 +405,36 @@ async function initializeDeviceEqPlugin(context) {
               if (device) {
                 deviceEqUI.showConnectedState(
                   device,
-                  selection.useNetwork,
+                  selection.connectionType,
                   await NetworkDeviceConnector.getAvailableSlots(device),
                   await NetworkDeviceConnector.getCurrentSlot(device)
                 );
               }
-            } else {
+            } else if (selection.connectionType == "usb") {
               // Connect via USB and show the HID device picker
               const device = await UsbHIDConnector.getDeviceConnected();
               if (device) {
                 deviceEqUI.showConnectedState(
                   device,
-                  selection.useNetwork,
+                  selection.connectionType,
                   await UsbHIDConnector.getAvailableSlots(device),
                   await UsbHIDConnector.getCurrentSlot(device)
+                );
+
+                device.rawDevice.addEventListener('disconnect', () => {
+                  console.log(`Device ${device.rawDevice.productName} disconnected.`);
+                  deviceEqUI.showDisconnectedState();
+                });
+              }
+            } else if (selection.connectionType == "serial") {
+              // Connect via USB and show the Serial device picker
+              const device = await UsbSerialConnector.getDeviceConnected();
+              if (device) {
+                deviceEqUI.showConnectedState(
+                  device,
+                  selection.connectionType,
+                  await UsbSerialConnector.getAvailableSlots(device),
+                  await UsbSerialConnector.getCurrentSlot(device)
                 );
 
                 device.rawDevice.addEventListener('disconnect', () => {
@@ -458,96 +478,127 @@ async function initializeDeviceEqPlugin(context) {
 
         function showDeviceSelectionDialog() {
           return new Promise((resolve) => {
-            const storedIP = getCookie("networkDeviceIP") || ""; // Retrieve stored IP
-            const storedDeviceType = getCookie("networkDeviceType") || "WiiM"; // Default to WiiM
-            // Define the HTML structure for the dialog
+            const storedIP = getCookie("networkDeviceIP") || "";
+            const storedDeviceType = getCookie("networkDeviceType") || "WiiM";
+
             const dialogHTML = `
-            <div id="device-selection-dialog" style="
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #fff;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-                text-align: center;
-                z-index: 10000;
-                min-width: 320px;
-                font-family: Arial, sans-serif;
-            ">
-                <h3 style="margin-bottom: 10px; color: black;">Select Connection Type</h3>
-                <p style="color: black;">Choose whether to connect via USB or Network.</p>
+      <div id="device-selection-dialog" style="
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+          text-align: center;
+          z-index: 10000;
+          min-width: 340px;
+          font-family: Arial, sans-serif;
+      ">
+        <h3 style="margin-bottom: 10px; color: black;">Select Connection Type</h3>
+        <p style="color: black;">Choose how you want to connect to your device.</p>
 
-                <!-- USB and Network Selection Buttons -->
-                <button id="network-button" style="margin: 10px; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Network</button>
-                <button id="usb-button" style="margin: 10px; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer;">USB</button>
+        <!-- Selection Buttons -->
+        <button id="usb-hid-button" style="margin: 10px; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer;">USB Device</button>
+        <button id="usb-serial-button" style="margin: 10px; padding: 10px 15px; font-size: 14px; background: #6f42c1; color: #fff; border: none; border-radius: 4px; cursor: pointer;">USB Serial Device</button>
+        <button id="network-button" style="margin: 10px; padding: 10px 15px; font-size: 14px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Network</button>
 
-                <br>
+        <!-- IP Address Input -->
+        <input type="text" id="ip-input" placeholder="Enter IP Address" value="${storedIP}" style="display: none; margin-top: 10px; width: 80%;">
+        <!-- Test IP Button (Initially Hidden) -->
+        <button id="test-ip-button" style="display: none; margin-top: 10px; padding: 8px 12px; font-size: 13px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;">
+          Test IP Address (Open in Browser Tab)
+        </button>
+        <!-- Network Options -->
+        <div id="network-options" style="display: none; margin-top: 15px; text-align: left; background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 14px; color: #222;">
+          <p style="margin-bottom: 10px;"><strong>⚠️ Advanced Network Configuration</strong></p>
+          <p>This section requires some basic understanding of networking. Please continue only if you are familiar with concepts like IP addresses and self-signed certificates.</p>
 
-                <!-- IP Address Field (Initially Hidden) -->
-                <input type="text" id="ip-input" placeholder="Enter IP Address" value="${storedIP}" style="display: none; margin-top: 10px; width: 80%;">
+          <p><strong>Why the warning?</strong></p>
+          <p>Devices like the <strong>WiiM</strong> expose a local web server for configuration (similar to how home routers work). These devices often use a <em>self-signed certificate</em> to enable HTTPS, which is secure but not trusted by your browser by default.</p>
 
-                <!-- Network Device Selection (Initially Hidden) -->
-                <div id="network-options" style="display: none; margin-top: 15px; text-align: center;">
-                <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
-                    <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px;"> WiiM
-                </label>
-                <label style="display: inline-flex; align-items: center; gap: 5px; font-weight: bold; color: gray;">
-                    <input type="radio" name="network-device" value="coming-soon" disabled ${storedDeviceType === "coming-soon" ? "checked" : ""} style="width: 18px; height: 18px;"> Other Devices Coming Soon
-                </label>
-            </div>
+          <p>As a result, when trying to connect via a web browser, you may see a <strong>security warning</strong> (e.g., "Your connection is not private"). This is normal and expected. If you choose to trust the device and accept the warning, this tool will attempt to access its PEQ API.</p>
 
-                <br>
-                <button id="submit-button" style="display: none; margin-top: 10px; padding: 10px 15px; font-size: 14px; background: #28A745; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Connect</button>
-                <button id="cancel-button" style="margin-top: 10px; padding: 10px 15px; font-size: 14px; background: gray; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-            </div>
-        `;
+          <p>If you're okay proceeding:</p>
+          <div style="margin-top: 10px; text-align: center;">
+            <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
+              <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px;"> WiiM
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 5px; font-weight: bold; color: gray;">
+              <input type="radio" name="network-device" value="coming-soon" disabled ${storedDeviceType === "coming-soon" ? "checked" : ""} style="width: 18px; height: 18px;"> Other Devices Coming Soon
+            </label>
+          </div>
+        </div>
+        <!-- Action Buttons -->
+        <br>
+        <button id="submit-button" style="display: none; margin-top: 10px; padding: 10px 15px; font-size: 14px; background: #28A745; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Connect</button>
+        <button id="cancel-button" style="margin-top: 10px; padding: 10px 15px; font-size: 14px; background: gray; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+      </div>
+    `;
 
-            // Create a container div for the dialog
             const dialogContainer = document.createElement("div");
             dialogContainer.innerHTML = dialogHTML;
             document.body.appendChild(dialogContainer);
 
-            // Get references to elements inside the dialog
-            const dialog = document.getElementById("device-selection-dialog");
-            const networkButton = document.getElementById("network-button");
-            const usbButton = document.getElementById("usb-button");
             const ipInput = document.getElementById("ip-input");
             const networkOptions = document.getElementById("network-options");
             const submitButton = document.getElementById("submit-button");
-            const cancelButton = document.getElementById("cancel-button");
-
-            // Handle Network Selection
-            networkButton.addEventListener("click", () => {
-              ipInput.style.display = "block";  // Show IP input field
-              networkOptions.style.display = "block";  // Show radio buttons
-              submitButton.style.display = "inline-block"; // Show submit button
-            });
-
-            // Handle USB Selection - Immediately resolve and remove the dialog
-            usbButton.addEventListener("click", async () => {
+            const testIpButton = document.getElementById("test-ip-button");
+            // Event: USB HID
+            document.getElementById("usb-hid-button").addEventListener("click", () => {
               document.body.removeChild(dialogContainer);
-              resolve({useNetwork: false}); // Proceed with USB connection
+              resolve({ connectionType: "usb" });
             });
 
-            // Handle Network Connection Submission
+            // Event: USB Serial
+            document.getElementById("usb-serial-button").addEventListener("click", () => {
+              document.body.removeChild(dialogContainer);
+              resolve({ connectionType: "serial" });
+            });
+
+            // Event: Network
+            document.getElementById("network-button").addEventListener("click", () => {
+              ipInput.style.display = "block";
+              networkOptions.style.display = "block";
+              submitButton.style.display = "inline-block";
+            });
+
+            // Watch for IP input to show the Test IP button
+            ipInput.addEventListener("input", () => {
+              const ip = ipInput.value.trim();
+              const isValid = /^(\d{1,3}\.){3}\d{1,3}$/.test(ip); // basic IPv4 validation
+              testIpButton.style.display = isValid ? "inline-block" : "none";
+              submitButton.style.display = isValid ? "inline-block" : "none";
+            });
+
+            // Handle Test IP Button Click
+            testIpButton.addEventListener("click", () => {
+              const ip = ipInput.value.trim();
+              if (!ip) return;
+              const confirmProceed = confirm(`This will open a new tab to https://${ip}.\nIf your browser shows a page with some information you have already accepted the certificate, if is shows a security warning, typically "ERR_CERT_AUTHORITY_INVALID" then you will need to accept this cerificate to continue. \n\n You should examine this certificate, check that it is issued by LinkpLay and then used the "Advanced" button to accept this self-signed certificate to proceed with secure access. If this is successful you should see a page with technical information`);
+              if (confirmProceed) {
+                window.open(`https://${ip}/httpapi.asp?command=getStatusEx`, "_blank", "noopener,noreferrer");
+              }
+            });
+
+            // Submit Network
             submitButton.addEventListener("click", () => {
-              const ipAddress = ipInput.value.trim();
-              if (!ipAddress) {
+              const ip = ipInput.value.trim();
+              if (!ip) {
                 alert("Please enter a valid IP address.");
                 return;
               }
 
-              const selectedDevice = document.querySelector('input[name="network-device"]:checked').value;
+              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
               document.body.removeChild(dialogContainer);
-              resolve({useNetwork: true, ipAddress: ipAddress, deviceType: selectedDevice});
+              resolve({ connectionType: "network", ipAddress: ip, deviceType: selectedDevice });
             });
 
-            // Handle Cancel Button Click
-            cancelButton.addEventListener("click", () => {
+            // Cancel
+            document.getElementById("cancel-button").addEventListener("click", () => {
               document.body.removeChild(dialogContainer);
-              resolve(null); // User canceled
+              resolve({connectionType: "none"});
             });
           });
         }
@@ -556,10 +607,12 @@ async function initializeDeviceEqPlugin(context) {
         // Disconnect Button Event Listener
         deviceEqUI.disconnectButton.addEventListener('click', async () => {
           try {
-            if (deviceEqUI.useNetwork) {
+            if (deviceEqUI.connectionType == "network") {
               await NetworkDeviceConnector.disconnectDevice();
-            } else {
+            } else if (deviceEqUI.connectionType == "usb")  {
               await UsbHIDConnector.disconnectDevice();
+            } else if (deviceEqUI.connectionType == "serial")  {
+              // serial support here
             }
             deviceEqUI.showDisconnectedState();
           } catch (error) {
@@ -578,10 +631,12 @@ async function initializeDeviceEqPlugin(context) {
               return;
             }
             var result = null;
-            if (deviceEqUI.useNetwork) {
+            if (deviceEqUI.connectionType == "network") {
               result = await NetworkDeviceConnector.pullFromDevice(device, selectedSlot);
-            } else {
+            } else if (deviceEqUI.connectionType == "usb") {
               result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
+            } else if (deviceEqUI.connectionType == "serial") {
+              result = await UsbSerialConnector.pullFromDevice(device, selectedSlot);
             }
             if (result.filters.length > 0) {
               context.filtersToElem(result.filters);
@@ -591,10 +646,12 @@ async function initializeDeviceEqPlugin(context) {
             }
           } catch (error) {
             console.error("Error pulling PEQ filters:", error);
-            if (deviceEqUI.useNetwork) {
+            if (deviceEqUI.connectionType == "network") {
               await NetworkDeviceConnector.disconnectDevice();
-            } else {
+            } else if (deviceEqUI.connectionType == "usb") {
               await UsbHIDConnector.disconnectDevice();
+            } else if (deviceEqUI.connectionType == "serial") {
+              await UsbSerialConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
           }
@@ -619,17 +676,21 @@ async function initializeDeviceEqPlugin(context) {
 
             const preamp_gain = context.calcEqDevPreamp(filters);
             let disconnect = false;
-            if (deviceEqUI.useNetwork) {
+            if (deviceEqUI.connectionType == "network") {
               disconnect = await NetworkDeviceConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
-            } else {
+            } else if (deviceEqUI.connectionType == "usb") {
               disconnect = await UsbHIDConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+            } else if (deviceEqUI.connectionType == "serial") {
+              disconnect = await UsbSerialConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
             }
 
             if (disconnect) {
-              if (deviceEqUI.useNetwork) {
+              if (deviceEqUI.connectionType == "network") {
                 await NetworkDeviceConnector.disconnectDevice();
-              } else {
+              } else if (deviceEqUI.connectionType == "usb") {
                 await UsbHIDConnector.disconnectDevice();
+              } else if (deviceEqUI.connectionType == "serial") {
+                await UsbSerialConnector.disconnectDevice();
               }
               deviceEqUI.showDisconnectedState();
               alert("PEQ Saved - Restarting");
@@ -637,10 +698,12 @@ async function initializeDeviceEqPlugin(context) {
           } catch (error) {
 
             console.error("Error pushing PEQ filters:", error);
-            if (deviceEqUI.useNetwork) {
+            if (deviceEqUI.connectionType == "network") {
               await NetworkDeviceConnector.disconnectDevice();
-            } else {
+            } else if (deviceEqUI.connectionType == "usb") {
               await UsbHIDConnector.disconnectDevice();
+            } else if (deviceEqUI.connectionType == "serial") {
+              await UsbSerialConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
           }
@@ -653,19 +716,23 @@ async function initializeDeviceEqPlugin(context) {
 
           try {
             if (selectedValue === "-1") {
-              if (deviceEqUI.useNetwork) {
+              if (deviceEqUI.connectionType == "network") {
                 await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
-              } else {
+              } else if (deviceEqUI.connectionType == "usb") {
                 await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
+              } else if (deviceEqUI.connectionType == "serial") {
+                await UsbSerialConnector.enablePEQ(deviceEqUI.currentDevice, false, -1);
               }
               console.log("PEQ Disabled.");
             } else {
               const slotId = parseInt(selectedValue, 10);
 
-              if (deviceEqUI.useNetwork) {
+              if (deviceEqUI.connectionType == "network") {
                 await NetworkDeviceConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
-              } else {
+              } else if (deviceEqUI.connectionType == "usb") {
                 await UsbHIDConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
+              } else if (deviceEqUI.connectionType == "serial") {
+                await UsbSerialConnector.enablePEQ(deviceEqUI.currentDevice, true, slotId);
               }
 
               console.log(`PEQ Enabled for slot ID: ${slotId}`);
