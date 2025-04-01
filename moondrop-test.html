@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device PEQ Plugin Test (WebHID)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+    }
+    .peq-container {
+      border: 1px solid #ccc;
+      padding: 15px;
+      max-width: 600px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    .filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .filter-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .peq-controls {
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .log {
+      font-size: 0.9em;
+      color: #333;
+      background: #eee;
+      padding: 10px;
+      max-width: 600px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<h2>CrinGraph 'Plugin' Device PEQ WebHID Test Page</h2>
+
+<div class="peq-container">
+  <h3>Filters</h3>
+  <div id="filter-list" class="filter-list"></div>
+  <div class="peq-controls">
+    <button onclick="addFilter()">Add Filter</button>
+    <button onclick="clearFilters()">Clear Filters</button>
+    <button onclick="connectHIDDevice()">Connect HID Device</button>
+    <button onclick="readFilters()">Read Filters</button>
+  </div>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+  let device;
+
+  function log(msg) {
+    document.getElementById("log").textContent += msg + "\n";
+  }
+
+  async function connectHIDDevice() {
+    try {
+      const filters = [
+
+      ];
+      const devices = await navigator.hid.requestDevice({ filters });
+      device = devices[0];
+      await device.open();
+      log("HID Device opened.");
+
+      device.oninputreport = event => {
+        const data = new Uint8Array(event.data.buffer);
+        log(`Received input report: ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+      };
+    } catch (error) {
+      log("Connection error: " + error);
+    }
+  }
+
+  async function readFilters() {
+    if (!device || !device.opened) {
+      log("Device not connected.");
+      return;
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const reportId = 3; // Typical for Moondrop/Conexant HID devices
+      const readCmd = new Uint8Array([
+        0x26 + i * 2, 0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x00, 0x00
+      ]);
+      log(`Sending read command for filter ${i + 1}: ${Array.from(readCmd).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+      await device.sendReport(reportId, readCmd);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between commands
+    }
+  }
+
+  function addFilter() {
+    const filterList = document.getElementById("filter-list");
+    const filterItem = document.createElement("div");
+    filterItem.className = "filter-item";
+    filterItem.innerHTML = `
+      <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="0">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+    `;
+    filterList.appendChild(filterItem);
+  }
+
+  function clearFilters() {
+    document.getElementById("filter-list").innerHTML = "";
+  }
+</script>
+
+</body>
+</html>

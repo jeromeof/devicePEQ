@@ -1,114 +1,106 @@
 const SET_REPORT = 0x09;
 const GET_REPORT = 0x01;
 const REPORT_ID = 1;
-const EQ_SLOT_READ = 0x03;
-const EQ_SLOT_WRITE = 0x04;
 
+const CMD_READ_EQ_SLOT = 0x1DD; // corresponds to 477 in decimal
+const CMD_WRITE_EQ_SLOT = 0x0DC; // corresponds to 220
+const CTRL_CAF_ID = 0x54524C43; // hex for 'CTRL'
 
-export const moondropUsbHID = (function() {
+// Slot range: 0–8 for Freeman3
+const BAND_COUNT = 9;
+
+export const moondropUsbHID = (function () {
   async function connect(deviceDetails) {
     var device = deviceDetails.rawDevice;
-    try {
-      if (!device.opened) {
-        await device.open();
-      }
-      console.log("Moondrop Device connected");
-    } catch (error) {
-      console.error("Failed to connect to Moondrop Device:", error);
-      throw error;
+    if (!device.opened) {
+      await device.open();
     }
+    console.log("Moondrop Device connected");
   }
 
   async function getCurrentSlot(deviceDetails) {
-    var device = deviceDetails.rawDevice;
-    try {
-      let currentSlot = -99;
-      const requestData = new Uint8Array([REPORT_ID, GET_REPORT, EQ_SLOT_READ]);
-      const reportId = device.collections[0].outputReports[0].reportId;
-
-      device.oninputreport = async (event) => {
-        const data = new Uint8Array(event.data.buffer);
-        if (data[0] === REPORT_ID && data[1] === GET_REPORT) {
-          currentSlot = data[3];
-        }
-      };
-
-      await device.sendReport(reportId, requestData);
-
-      return await waitForResponse(() => currentSlot > -99, device, 5000, () => currentSlot);
-    } catch (error) {
-      console.error("Failed to retrieve current EQ slot:", error);
-      throw error;
-    }
+    // For now: return hardcoded slot or extend later with dedicated command
+    return 0;
   }
 
-  async function pullFromDevice(deviceDetails, slot) {
-    try {
-      var device = deviceDetails.rawDevice;
-      const filters = [];
-      let globalGain = 0;
-      let peqCount = 0;
+  async function pullFromDevice(deviceDetails, slot = 0) {
+    const device = deviceDetails.rawDevice;
+    const reportId = device.collections[0].outputReports[0].reportId;
 
-      const requestData = new Uint8Array([REPORT_ID, GET_REPORT, EQ_SLOT_READ, slot]);
-      const reportId = device.collections[0].outputReports[0].reportId;
+    const filters = [];
+    let completedCount = 0;
 
-      device.oninputreport = async (event) => {
-        const data = new Uint8Array(event.data.buffer);
-        if (data[0] === REPORT_ID && data[1] === GET_REPORT) {
-          peqCount = data[3];
-          globalGain = data[4];
-          for (let i = 0; i < peqCount; i++) {
-            filters.push(parseFilterData(data.slice(5 + i * 6, 11 + i * 6)));
-          }
-        }
-      };
+    device.oninputreport = (event) => {
+      const data = new Uint8Array(event.data.buffer);
+      if (data.length >= 34 && data[0] === REPORT_ID) {
+        const band = data[14];
+        const freq = (data[18] << 8) | data[19];
+        const gain = ((data[30] << 24) | (data[31] << 16)) >> 16; // sign-extended
+        const qRaw = (data[22] << 8) | data[23];
+        const qFactor = qRaw / 256;
 
-      await device.sendReport(reportId, requestData);
-      return await waitForResponse(() => filters.length === peqCount, device, 5000, () => ({ filters, globalGain }));
-    } catch (error) {
-      console.error("Failed to retrieve filters from Moondrop Device:", error);
-      throw error;
+        filters[band] = { freq, gain, q: qFactor };
+        completedCount++;
+      }
+    };
+
+    for (let band = 1; band <= BAND_COUNT; band++) {
+      const cmd = buildCafCmd(CMD_READ_EQ_SLOT, CTRL_CAF_ID, [band]);
+      await device.sendReport(reportId, cmd);
     }
+
+    return await waitForResponse(() => completedCount >= BAND_COUNT, device, 2000, () => filters);
   }
 
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
-    try {
-      var device = deviceDetails.rawDevice;
-      const reportId = device.collections[0].outputReports[0].reportId;
-      const requestData = new Uint8Array([REPORT_ID, SET_REPORT, EQ_SLOT_WRITE, slot, globalGain, filters.length, ...encodeFilters(filters)]);
-      await device.sendReport(reportId, requestData);
-      console.log("Filters pushed successfully");
-    } catch (error) {
-      console.error("Failed to push filters to Moondrop Device:", error);
-      throw error;
+    const device = deviceDetails.rawDevice;
+    const reportId = device.collections[0].outputReports[0].reportId;
+
+    for (let band = 0; band < filters.length; band++) {
+      const f = filters[band];
+      const data = [
+        0, // index 0: reserved or flag
+        band + 1,
+        f.freq,
+        Math.round(f.q * 256),
+        0, 0, 0, // unused?
+        Math.round(f.gain * 256)
+      ];
+      const cmd = buildCafCmd(CMD_WRITE_EQ_SLOT, CTRL_CAF_ID, data);
+      await device.sendReport(reportId, cmd);
     }
+
+    const saveCmd = buildCafCmd(CMD_WRITE_EQ_SLOT, CTRL_CAF_ID, [0xFF]); // trigger save
+    await device.sendReport(reportId, saveCmd);
+
+    console.log("PEQ filters pushed successfully.");
   }
 
-  function parseFilterData(data) {
-    return {
-      freq: (data[0] << 8) | data[1],
-      gain: (data[2] << 8) | data[3],
-      q: (data[4] << 8) | data[5]
-    };
-  }
-
-  function encodeFilters(filters) {
-    let encoded = [];
-    for (const filter of filters) {
-      encoded.push(filter.freq >> 8, filter.freq & 0xFF, filter.gain >> 8, filter.gain & 0xFF, filter.q >> 8, filter.q & 0xFF);
+  function buildCafCmd(cmdId, cafId, data = []) {
+    const buf = new Uint8Array(64);
+    buf[0] = REPORT_ID;
+    buf[1] = 0x04; // likely SET_REPORT
+    buf[2] = 0x01; // slot or mode?
+    buf[3] = cmdId & 0xFF;
+    buf[4] = (cmdId >> 8) & 0xFF;
+    buf[5] = 0x00;
+    buf[6] = cafId & 0xFF;
+    buf[7] = (cafId >> 8) & 0xFF;
+    buf[8] = (cafId >> 16) & 0xFF;
+    buf[9] = (cafId >> 24) & 0xFF;
+    for (let i = 0; i < data.length; i++) {
+      buf[10 + i * 4] = data[i] & 0xFF;
+      buf[11 + i * 4] = (data[i] >> 8) & 0xFF;
+      buf[12 + i * 4] = (data[i] >> 16) & 0xFF;
+      buf[13 + i * 4] = (data[i] >> 24) & 0xFF;
     }
-    return encoded;
+    return buf;
   }
 
   function waitForResponse(condition, device, timeout, callback) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        if (!condition()) {
-          console.warn("Timeout waiting for response");
-          reject(callback());
-        } else {
-          resolve(callback());
-        }
+        reject(new Error("Timeout waiting for device response"));
       }, timeout);
 
       const interval = setInterval(() => {
@@ -121,23 +113,10 @@ export const moondropUsbHID = (function() {
     });
   }
 
-  // Enable or disable PEQ by selecting a slot
-  const enablePEQ = async (deviceDetails, enable, slotId) => {
-    var device = deviceDetails.rawDevice;
-    const reportId = device.collections[0].outputReports[0].reportId;
-    if (enable) {
-      await device.sendReport(reportId, [WRITE_VALUE, FLASH_EQ, 0x00, slotId]); // Save EQ to Flash
-    } else {
-      await device.sendReport(reportId, [WRITE_VALUE, RESET_EQ_DEFAULT, 0x01, 0x04]); // Reset EQ to Default
-    }
-  };
-
   return {
     connect,
-    pushToDevice,
-    pullFromDevice,
     getCurrentSlot,
-    enablePEQ,
+    pullFromDevice,
+    pushToDevice,
   };
 })();
-

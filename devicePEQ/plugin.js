@@ -93,10 +93,118 @@ async function initializeDeviceEqPlugin(context) {
     // Define the HTML to insert
     const deviceEqHTML = `
         <div class="device-eq disabled" id="deviceEqArea">
+        <style>
+            .info-button {
+      background: none;
+      border: none;
+      font-size: 1.2em;
+      cursor: pointer;
+      vertical-align: middle;
+      margin-left: 6px;
+      color: #555;
+    }
+
+    .info-button:hover {
+      color: #000;
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .modal {
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      padding: 20px 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .modal-content .close {
+      position: absolute;
+      right: 16px;
+      top: 12px;
+      font-size: 1.4em;
+      cursor: pointer;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tab-button {
+      padding: 6px 12px;
+      border: none;
+      background-color: #eee;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .tab-button.active {
+      background-color: #ccc;
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .sub-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .sub-tab-button {
+      padding: 4px 10px;
+      border: none;
+      background: #eee;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      font-size: 14px;
+    }
+
+    .sub-tab-button.active {
+      background: #ccc;
+      font-weight: bold;
+    }
+
+    .sub-tab-content {
+      display: none;
+    }
+
+    .sub-tab-content.active {
+      display: block;
+    }
+        </style>
             <h5>Device PEQ</h5>
             <div class="settings-row">
                 <button class="connect-device">Connect to Device</button>
                 <button class="disconnect-device">Disconnect From <span id="deviceName">None</span></button>
+                <!-- Info Button -->
+                <button id="deviceInfoBtn" aria-label="Device Help" title="Device Help">ℹ️</button>
             </div>
             <div class="peq-slot-area">
                 <select name="device-peq-slot" id="device-peq-slot-dropdown">
@@ -108,8 +216,85 @@ async function initializeDeviceEqPlugin(context) {
                 <button class="push-filters-todevice">Push To Device</button>
             </div>
         </div>
-    `;
+        <!-- Modal -->
+        <div id="deviceInfoModal" class="modal hidden">
+          <div class="modal-content">
+            <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
+            <h3>About Device PEQ</h3>
 
+            <div class="tabs">
+              <button class="tab-button active" data-tab="tab-overview">Overview</button>
+              <button class="tab-button" data-tab="tab-supported">Supported Devices</button>
+              <button class="tab-button" data-tab="tab-howto">How to Use</button>
+            </div>
+
+            <div id="tab-overview" class="tab-content active">
+              <p>This section lets you connect to a compatible USB audio device (such as Moondrop, Tanchjim, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
+
+              <h4>Supported Brands & Tools</h4>
+              <ul>
+                <li><strong>FiiO:</strong> supporting many of their dongle include JA11, KA15 and KA17 and many others </li>
+                <li><strong>Walkplay:</strong> OEM their technology to many companies including Moondrop, JCally and EPZ</li>
+                <li><strong>Tanchjim:</strong> Most existing Tanchjim DSP devices supported by their official Android App should work</li>
+              </ul>
+            </div>
+
+            <div id="tab-supported" class="tab-content">
+              <div class="sub-tabs">
+                <button class="sub-tab-button active" data-subtab="sub-fiio">FiiO</button>
+                <button class="sub-tab-button" data-subtab="sub-walkplay">Walkplay</button>
+                <button class="sub-tab-button" data-subtab="sub-tanchjim">Tanchjim</button>
+              </div>
+
+              <div id="sub-fiio" class="sub-tab-content active">
+                <h5>FiiO / Jade Audio</h5>
+                <p>FiiO also provide an excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a></p>
+                <ul>
+                  <li>JA11</li>
+                  <li>KA17</li>
+                  <li>KA15</li>
+                  <li><em>Note:</em> Retro Nano has limited compatibility</li>
+                </ul>
+              </div>
+
+              <div id="sub-walkplay" class="sub-tab-content">
+                <h5>Walkplay-Based Devices</h5>
+                <p>Walkplay also provide an excellent editor at <a href="https://peq.szwalkplay.com" target="_blank">peq.szwalkplay.com</a></p>
+                <p>Since Walkplay licenses their DSP technology to multiple brands, the following devices are known to work:</p>
+                <ul>
+                  <li>Moondrop Quark2 DSP (IEM)</li>
+                  <li>Moondrop Echo A (Dongle)</li>
+                  <li>JCally JM20-Pro (Dongle)</li>
+                  <li>Walkplay "Hi-Max" (Dongle)</li>
+                  <li>EPZ G20 (IEM)</li>
+                  <li>EPZ TP13 (Dongle)</li>
+                </ul>
+              </div>
+
+              <div id="sub-tanchjim" class="sub-tab-content">
+                <h5>Tanchjim Devices</h5>
+                <p>Use the official Tanchjim Android App for EQ and device configuration.</p>
+                <ul>
+                  <li>Tanchjim One DSP (IEM)</li>
+                  <li>Tanchjim Bunny DSP (IEM)</li>
+                  <li>Other models supported by their app may also be compatible</li>
+                </ul>
+              </div>
+            </div>
+
+            <div id="tab-howto" class="tab-content">
+              <ul>
+                <li><strong>Connect to Device:</strong> Open USB prompt and choose your device.</li>
+                <li><strong>Select PEQ Slot:</strong> If supported, choose which EQ slot to view or modify.</li>
+                <li><strong>Pull From Device:</strong> Read and load PEQ filter data into the interface.</li>
+                <li><strong>Push To Device:</strong> Apply your PEQ filter settings back to the device.</li>
+                <li><strong>Disconnect:</strong> Cleanly close the USB connection.</li>
+              </ul>
+              <p>⚠️ Please ensure your device is compatible and unlocked. Some may require the official app to enable USB EQ editing.</p>
+            </div>
+          </div>
+        </div>
+    `;
     // Find the <div class="extra-eq"> element
     const extraEqElement = document.querySelector('.extra-eq');
 
@@ -120,6 +305,49 @@ async function initializeDeviceEqPlugin(context) {
     } else {
       console.error('Element <div class="extra-eq"> not found in the DOM.');
     }
+// Open modal
+    document.getElementById('deviceInfoBtn').addEventListener('click', () => {
+      document.getElementById('deviceInfoModal').classList.remove('hidden');
+    });
+
+// Close modal via close button
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      document.getElementById('deviceInfoModal').classList.add('hidden');
+    });
+
+// Optional: close modal when clicking outside content
+    document.getElementById('deviceInfoModal').addEventListener('click', (e) => {
+      if (e.target.id === 'deviceInfoModal') {
+        document.getElementById('deviceInfoModal').classList.add('hidden');
+      }
+    });
+
+    document.querySelectorAll(".tab-button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        // Toggle active tab button
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        // Show correct tab content
+        const tabId = btn.getAttribute("data-tab");
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".sub-tab-button").forEach(button => {
+      button.addEventListener("click", () => {
+        // Update button state
+        document.querySelectorAll(".sub-tab-button").forEach(b => b.classList.remove("active"));
+        button.classList.add("active");
+
+        // Show corresponding sub-tab
+        const tabId = button.getAttribute("data-subtab");
+        document.querySelectorAll(".sub-tab-content").forEach(c => c.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+      });
+    });
+
   }
 
   try {
@@ -155,7 +383,7 @@ async function initializeDeviceEqPlugin(context) {
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
             let selection =  {useNetwork: false}; // Assume usb only by default
-            if (context.config.showNetwork) {
+            if (context.config.advanced) {
               // Show a custom dialog to select Network or USB
               selection = await showDeviceSelectionDialog();
             }
@@ -451,7 +679,7 @@ async function initializeDeviceEqPlugin(context) {
       }
     }
   } catch (error) {
-    console.error("Error initializing Device EQ Plugin:", error.message);
+    console.  error("Error initializing Device EQ Plugin:", error.message);
   }
 }
 

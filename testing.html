@@ -104,15 +104,83 @@
       // Ask the user to select a Serial device
       const serialPorts = await navigator.serial.requestPort().catch(() => null);
 
+      const bluetoothDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['00001812-0000-1000-8000-00805f9b34fb'] // HID Service UUID
+      }).catch(() => null);
+
       console.log("🖥️ Selected HID Device:", hidDevices);
       console.log("🔌 Selected USB Device:", usbDevices);
       console.log("🛠️ Selected Serial Device:", serialPorts);
+      console.log("🛠️ Selected bluetooth Device:", bluetoothDevice);
+      if (bluetoothDevice !== null && bluetoothDevice.gatt !== undefined) {
+        console.log("Connecting to GATT Server...");
+        const server = await bluetoothDevice.gatt.connect();
 
-      return { hidDevices, usbDevices, serialPorts };
+        console.log("Connected to:", server.device.name);
+
+        const service = await getHIDService(server);
+        const characteristic = await getHIDCharacteristic(service);
+
+        const keyPressA = [0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+        await sendHIDCommand(characteristic, keyPressA);
+
+        await subscribeToHIDInput(service);
+
+      }
+
+      return { hidDevices, usbDevices, serialPorts, bluetoothDevice };
     } catch (error) {
       console.error("Error requesting devices:", error);
     }
   }
+
+  async function getHIDService(server) {
+    console.log("Getting HID Service...");
+    return await server.getPrimaryService('00001812-0000-1000-8000-00805f9b34fb');
+  }
+
+  async function getHIDCharacteristic(service) {
+    console.log("Getting HID Output Report Characteristic...");
+    return await service.getCharacteristic('00002A4D-0000-1000-8000-00805f9b34fb'); // HID Output Report Characteristic
+  }
+
+  async function subscribeToHIDInput(service) {
+    const characteristic = await service.getCharacteristic('00002A4D-0000-1000-8000-00805f9b34fb'); // HID Report Characteristic
+
+    await characteristic.startNotifications();
+    characteristic.addEventListener("characteristicvaluechanged", (event) => {
+      const value = new Uint8Array(event.target.value.buffer);
+      console.log("Received HID Report:", value);
+    });
+
+    console.log("Subscribed to HID Input Reports");
+  }
+
+  async function testSerialConfigurations(port) {
+
+    const baudRates = [9600, 19200, 38400, 57600, 115200];
+    const dataBitsOptions = [7, 8];
+    const parityOptions = ["none", "even", "odd"];
+
+    for (const baud of baudRates) {
+      for (const dataBits of dataBitsOptions) {
+        for (const parity of parityOptions) {
+          try {
+            console.log(`Testing baud: ${baud}, dataBits: ${dataBits}, parity: ${parity}`);
+            await port.open({ baudRate: baud, dataBits, parity });
+            console.log("✔ Port opened successfully!");
+            await port.close();
+          } catch (err) {
+            console.warn(`⚠ Could not open with baud: ${baud}, dataBits: ${dataBits}, parity: ${parity}`);
+          }
+        }
+      }
+    }
+  }
+
+
 
   var device = null;
   async function sendReportToHIDDevice(reportId, data, numberPackets = 1) {

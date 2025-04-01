@@ -2,7 +2,7 @@
 const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
 const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
 const {moondropUsbHID} = await import('./moondropHidHandler.js');
-
+const {tanchjimUsbHidHandler}  = await import('./tanchjimUsbHidHandler.js');
 // Main list of HID devices - each vendor has one or more vendorId, and a list of devices associated,
 // each device has a model of how the slots are configured and a handler to handle reading / writing
 // the raw USBHID reports to the device
@@ -200,38 +200,18 @@ export const usbHidDeviceHandlerConfig = ( [
       defaultModelConfig:   {
           minGain: -12,
           maxGain: 12,
-          maxFilters: 10,
+          maxFilters: 8,
           firstWritableEQSlot: -1,
           maxWritableEQSlots: 0,
-          disconnectOnSave: true,
+          disconnectOnSave: false,
           disabledPresetId: -1,
-          availableSlots: [{id: -99, name: "Default"}]
+          availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
       },
       devices: {
-        "Hi-MAX": {
-          modelConfig:  {
-            minGain: -12,
-            maxGain: 12,
-            maxFilters: 8,
-            firstWritableEQSlot: -1,
-            maxWritableEQSlots: 0,
-            disconnectOnSave: false,
-            disabledPresetId: -1,
-            availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
-          }
-        },
+        "Hi-MAX": {},
+        "CS43131 HiFi Audio DSP": {},
         "Quark2": {
-          manufacturer: "Moondrop",
-          modelConfig: {
-            minGain: -12,
-            maxGain: 12,
-            maxFilters: 8,
-            firstWritableEQSlot: -1,
-            maxWritableEQSlots: 0,
-            disconnectOnSave: false,
-            disabledPresetId: -1,
-            availableSlots: [{id: 101, name: "Custom"},{id: 102, name: "Custom 2"},{id: 103, name: "Custom 3"},{id: 104, name: "Custom 4"},{id: 1, name: "Pure"},{id: 2, name: "Pop"},{id: 3, name: "Rock"},{id: 4, name: "Vocal"},{id: 5, name: "Bass"},{id: 6, name: "Flat"},{id: 7, name: "Cinema"},{id: 8, name: "Game"},{id: -99, name: "Default"}]
-          }
+          manufacturer: "Moondrop"
         },
       }
     },
@@ -244,5 +224,24 @@ export const usbHidDeviceHandlerConfig = ( [
           modelConfig: {}
         },
       }
+    },
+  {
+    vendorId: 12722,
+    manufacturer: "Tanchjim",
+    handler: tanchjimUsbHidHandler,
+    defaultModelConfig:   {
+      minGain: -12,
+      maxGain: 12,
+      maxFilters: 5,
+      firstWritableEQSlot: -1,
+      maxWritableEQSlots: 0,
+      disconnectOnSave: false,
+      disabledPresetId: -1,
+      availableSlots: [{id: 101, name: "Custom"}]
+    },
+    devices: {
+      "TANCHJIM BUNNY DSP": {},
+      "TANCHJIM ONE DSP": {},
     }
+  }
 ])

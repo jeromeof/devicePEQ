@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tanchjim PEQ Reader</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+      background: #f4f4f4;
+    }
+    h2 {
+      color: #444;
+    }
+    #filters {
+      margin-top: 1em;
+    }
+    .filter {
+      background: white;
+      padding: 10px;
+      margin-bottom: 5px;
+      border-left: 4px solid #008080;
+    }
+    button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      cursor: pointer;
+      background: #008080;
+      color: white;
+      border: none;
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+<h2>Tanchjim PEQ Filter Reader</h2>
+<button id="readBtn">Connect & Read Filters</button>
+<div id="filters"></div>
+
+<script>
+  const FILTER_COUNT = 8;
+
+  async function getDevice() {
+    const devices = await navigator.hid.requestDevice({ filters: [] });
+    if (devices.length === 0) throw new Error("No device selected");
+    const device = devices[0];
+    if (!device.opened) await device.open();
+    return device;
+  }
+
+  function buildRequestPacket(filterFieldToRequest, op) {
+    return new Uint8Array([filterFieldToRequest, 0x00, 0x00, 0x00, op, 0x00, 0x00, 0x00, 0x00]);
+  }
+
+  function decodeGainFreqResponse(data) {
+    const gainRaw = data[6] | (data[7] << 8);
+    const gain = gainRaw > 0x7FFF ? gainRaw - 0x10000 : gainRaw; // signed 16-bit
+    const freq = (data[8] + (data[9] << 8)) * 2;
+    return { gain: gain / 10.0, freq };
+  }
+
+  function decodeQResponse(data) {
+    const q = (data[6] + (data[7] << 8)) / 1000.0;
+    return { q };
+  }
+
+  async function readFullFilter(device, filterIndex) {
+    const reportId = 0x4b;
+    const gainFreqId = 0x26 + filterIndex * 2;
+    const qId = gainFreqId + 1;
+
+    const requestGainFreq = buildRequestPacket(gainFreqId, 0x52);
+    const requestQ = buildRequestPacket(qId, 0x52); // Write is 0x57
+
+    return new Promise(async (resolve, reject) => {
+      const result = {};
+      const timeout = setTimeout(() => {
+        device.removeEventListener('inputreport', onReport);
+        reject("Timeout");
+      }, 100000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`Received reportId: 0x${reportId.toString(16)}`);
+        console.log(`Raw bytes: ${[...data].map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+
+        if (data[4] !== 0x52) return;
+
+        if (data[0] === gainFreqId) {
+          Object.assign(result, decodeGainFreqResponse(data));
+        } else if (data[0] === qId) {
+          Object.assign(result, decodeQResponse(data));
+        }
+
+        if ('gain' in result && 'freq' in result && 'q' in result) {
+          clearTimeout(timeout);
+          device.removeEventListener('inputreport', onReport);
+          resolve(result);
+        }
+      };
+
+      device.addEventListener('inputreport', onReport);
+      await device.sendReport(reportId, requestGainFreq);
+      await device.sendReport(reportId, requestQ);
+    });
+  }
+
+  document.getElementById('readBtn').addEventListener('click', async () => {
+    const container = document.getElementById("filters");
+    container.innerHTML = "Connecting...";
+    try {
+      const device = await getDevice();
+      container.innerHTML = "<strong>Connected. Reading filters...</strong>";
+      const filters = [];
+
+      for (let i = 0; i < FILTER_COUNT; i++) {
+        const filter = await readFullFilter(device, i);
+        filters.push(filter);
+      }
+
+      container.innerHTML = filters.map((f, i) => `
+          <div class="filter">
+            <strong>Filter ${i + 1}</strong><br>
+            Freq: ${f.freq} Hz<br>
+            Gain: ${f.gain.toFixed(1)} dB<br>
+            Q: ${f.q.toFixed(3)}
+          </div>
+        `).join("");
+
+      console.log("All filters:", filters);
+    } catch (err) {
+      container.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+      console.error(err);
+    }
+  });
+</script>
+</body>
+</html>
