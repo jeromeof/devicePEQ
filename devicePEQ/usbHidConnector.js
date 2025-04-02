@@ -4,7 +4,6 @@
 // Declare UsbHIDConnector and attach it to the global window object
 
 export const UsbHIDConnector = ( async function () {
-    let devices = [];
     let currentDevice = null;
 
     const {usbHidDeviceHandlerConfig} = await import('./usbDeviceConfig.js');
@@ -42,11 +41,8 @@ export const UsbHIDConnector = ( async function () {
                 let handler = deviceDetails.handler ||  vendorConfig.handler;
 
                 // Check if already connected
-                const existingDevice = devices.find(d => d.rawDevice === rawDevice);
-                if (existingDevice) {
-                    console.log("Device already connected:", existingDevice.model);
-                    currentDevice = existingDevice;
-                    return currentDevice;
+                if (currentDevice != null) {
+                  return currentDevice;
                 }
 
                 // Open the device if not already open
@@ -61,14 +57,6 @@ export const UsbHIDConnector = ( async function () {
                     modelConfig: modelConfig
                 };
 
-                if (currentDevice.handler) {
-                    await currentDevice.handler.connect(currentDevice);
-                } else {
-                    console.error(`No handler found for ${manufacturer} ${model}`);
-                    return null;
-                }
-
-                devices.push(currentDevice);
                 return currentDevice;
             } else {
                 console.log("No device found.");
@@ -85,26 +73,31 @@ export const UsbHIDConnector = ( async function () {
             try {
                 await currentDevice.rawDevice.close();
                 console.log("Device disconnected:", currentDevice.model);
-                devices = devices.filter(d => d !== currentDevice);
                 currentDevice = null;
             } catch (error) {
                 console.error("Failed to disconnect device:", error);
             }
         }
     };
-    const checkDeviceConnected = async (rawDevice) => {
-        const devices = await navigator.hid.getDevices();
-        var connected =  devices.some(d => d === rawDevice);
-        if (!connected) {
+    const checkDeviceConnected = async (device) => {
+        var rawDevice = device.rawDevice;
+        const rawDevices = await navigator.hid.getDevices();
+        var matchingRawDevice =  rawDevices.find(d => d.vendorId === rawDevice.vendorId && d.productId == rawDevice.productId);
+        if (typeof matchingRawDevice == 'undefined' || matchingRawDevice == null ) {
             console.error("Device disconnected?");
             alert('Device disconnected?');
             return false;
+        }
+        // But lets check if we are still open otherwise we need to open the device again
+        if (!matchingRawDevice.opened) {
+          await matchingRawDevice.open();
+          device.rawDevice = matchingRawDevice; // Swap the device over
         }
         return true;
     };
 
     const pushToDevice = async (device, slot, preamp, filters) => {
-        if (!await checkDeviceConnected(device.rawDevice)) {
+        if (!await checkDeviceConnected(device)) {
             throw Error("Device Disconnected");
         }
         if (device && device.handler) {
@@ -130,7 +123,7 @@ export const UsbHIDConnector = ( async function () {
     };
 
     const pullFromDevice = async (device, slot) => {
-        if (!await checkDeviceConnected(device.rawDevice)) {
+        if (!await checkDeviceConnected(device)) {
             throw Error("Device Disconnected");
         }
         if (device && device.handler) {

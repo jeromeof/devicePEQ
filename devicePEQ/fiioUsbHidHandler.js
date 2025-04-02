@@ -24,18 +24,6 @@ const END_HEADERS = 0xEE;
 
 export const fiioUsbHID = (function () {
 
-  const connect = async (deviceDetails) => {
-    var device = deviceDetails.rawDevice;
-    try {
-      if (!device.opened) {
-        await device.open();
-      }
-      console.log("FiiO Device connected");
-    } catch (error) {
-      console.error("Failed to connect to FiiO Device:", error);
-      throw error;
-    }
-  };
   const getCurrentSlot = async (deviceDetails) => {
     var device = deviceDetails.rawDevice;
     try {
@@ -178,7 +166,6 @@ export const fiioUsbHID = (function () {
     }
   }
   return {
-    connect,
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,

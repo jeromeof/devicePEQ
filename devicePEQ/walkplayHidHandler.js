@@ -26,21 +26,6 @@ const FILTER_MODE = 0x11;   // FAST-LL etc
 const HIGH_LOW_GAIN = 0x19; // 0 = LOW 1 = HIGH
 
 export const walkplayUsbHID = (function() {
-  let device = null;
-
-  // Connect to Walkplay USB-HID device
-  const connect = async (deviceDetails) => {
-    var hidDevice = deviceDetails.rawDevice;
-    try {
-      device = hidDevice || (await navigator.hid.requestDevice({ filters: [] }))[0];
-      if (!device) throw new Error("No HID device selected.");
-      if (!device.opened) await device.open();
-      console.log("Walkplay Device connected.");
-    } catch (error) {
-      console.error("Failed to connect:", error);
-      throw error;
-    }
-  };
 
   // Get the currently selected EQ slot
   const getCurrentSlot = async (deviceDetails) => {
@@ -187,7 +172,6 @@ export const walkplayUsbHID = (function() {
   }
 
   return {
-    connect,
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,

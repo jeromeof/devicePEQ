@@ -114,9 +114,9 @@ export const moondropUsbHID = (function () {
   }
 
   return {
-    connect,
     getCurrentSlot,
     pullFromDevice,
     pushToDevice,
+    enablePEQ: async () => {}, // Not applicable for Moondrop
   };
 })();

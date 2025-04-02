@@ -1,9 +1,12 @@
 export const tanchjimUsbHidHandler = (function () {
   const FILTER_COUNT = 10;
   const REPORT_ID = 0x4b;
+  const COMMAND_READ = 0x52;
+  const COMMAND_WRITE = 0x57;
+  const COMMAND_COMMIT = 0x53;
 
-  function buildRequestPacket(filterFieldToRequest, op) {
-    return new Uint8Array([filterFieldToRequest, 0x00, 0x00, 0x00, op, 0x00, 0x00, 0x00, 0x00]);
+  function buildReadPacket(filterFieldToRequest) {
+    return new Uint8Array([filterFieldToRequest, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x00, 0x00, 0x00]);
   }
 
   function decodeGainFreqResponse(data) {
@@ -18,14 +21,6 @@ export const tanchjimUsbHidHandler = (function () {
     return { q };
   }
 
-  async function connect(deviceDetails) {
-    const device = deviceDetails.rawDevice;
-    if (!device.opened) {
-      await device.open();
-    }
-    console.log("Tanchjim device connected.");
-  }
-
   async function getCurrentSlot() {
     return 101; // Tanchjim has only 1 slot - lets make up a value
   }
@@ -34,8 +29,8 @@ export const tanchjimUsbHidHandler = (function () {
     const gainFreqId = 0x26 + filterIndex * 2;
     const qId = gainFreqId + 1;
 
-    const requestGainFreq = buildRequestPacket(gainFreqId, 0x52);
-    const requestQ = buildRequestPacket(qId, 0x52);
+    const requestGainFreq = buildReadPacket(gainFreqId);
+    const requestQ = buildReadPacket(qId);
 
     return new Promise(async (resolve, reject) => {
       const result = {};
@@ -46,7 +41,7 @@ export const tanchjimUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
-        if (data[4] !== 0x52) return;
+        if (data[4] !== COMMAND_READ) return;
 
         if (data[0] === gainFreqId) {
           Object.assign(result, decodeGainFreqResponse(data));
@@ -92,14 +87,19 @@ export const tanchjimUsbHidHandler = (function () {
     const freqBytes = toLittleEndianBytes(freq / 2);
     const gainBytes = toSignedLittleEndianBytes(gain, 10);
     return new Uint8Array([
-      filterId, 0x00, 0x00, 0x00, 0x57, 0x00, gainBytes[0], gainBytes[1], freqBytes[0], freqBytes[1]
+      filterId, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, gainBytes[0], gainBytes[1], freqBytes[0], freqBytes[1]
     ]);
   }
 
   function buildQPacket(filterId, q) {
     const qBytes = toLittleEndianBytes(q, 1000);
     return new Uint8Array([
-      filterId, 0x00, 0x00, 0x00, 0x57, 0x00, qBytes[0], qBytes[1], 0x00, 0x00
+      filterId, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, qBytes[0], qBytes[1], 0x00, 0x00
+    ]);
+  }
+  function buildCommit() {
+    return new Uint8Array([
+      0x00, 0x00, 0x00, 0x00, COMMAND_COMMIT, 0x00, 0x00, 0x00, 0x00, 0x00
     ]);
   }
 
@@ -109,14 +109,20 @@ export const tanchjimUsbHidHandler = (function () {
       const filterId = 0x26 + i * 2;
       const writeGainFreq = buildWritePacket(filterId, filters[i].freq, filters[i].gain);
       const writeQ = buildQPacket(filterId + 1, filters[i].q);
+
+      // We should verify it is saved correctly but for now lets assume once command is accepted it has worked
       await device.sendReport(REPORT_ID, writeGainFreq);
       await device.sendReport(REPORT_ID, writeQ);
     }
-    console.log("Filters pushed to Tanchjim device.");
+    const commit = buildCommit();
+    await device.sendReport(REPORT_ID, commit);
+    if (deviceDetails.modelConfig.disconnectOnSave) {
+      return true;    // Disconnect
+    }
+    return false;
   }
 
   return {
-    connect,
     getCurrentSlot,
     pushToDevice,
     pullFromDevice,
