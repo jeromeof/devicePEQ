@@ -9,40 +9,54 @@ export const UsbSerialConnector = (async function () {
 
   const getDeviceConnected = async () => {
     try {
-      const ports = await navigator.serial.requestPort({
+      const rawDevice = await navigator.serial.requestPort({
         filters: usbSerialDeviceHandlerConfig.map(entry => ({ usbVendorId: entry.vendorId }))
       });
 
-      const port = ports[0] || ports;
-      await port.open({ baudRate: 115200 });
+      const info = rawDevice.getInfo();
+      const productId = info.usbProductId;
 
-      const info = port.getInfo();
-      const vendorConfig = usbSerialDeviceHandlerConfig.find(entry => entry.vendorId === info.usbVendorId);
-      if (!vendorConfig) {
-        console.error("No configuration found for vendor:", info.usbVendorId);
-        return null;
+      let vendorConfig = null;
+      let modelName = null;
+      var modelConfig = {};
+      var handler = null;
+
+      for (const entry of usbSerialDeviceHandlerConfig) {
+        if (entry.vendorId === info.usbVendorId) {
+          for (const [name, model] of Object.entries(entry.devices)) {
+            if (model.usbProductId === productId) {
+              vendorConfig = entry;
+              modelName = name;
+              modelConfig = model.modelConfig || {};
+              handler = entry.handler;
+              break;
+            }
+          }
+        }
+        if (vendorConfig) break;
       }
 
+      if (!vendorConfig) {
+        document.getElementById('status').innerText =
+          `Status: Unsupported Device (0x${productId.toString(16)})`;
+        return;
+      }
+      await rawDevice.open({ baudRate: 115200 });
+
       const model = vendorConfig.model || "Unknown Serial Device";
-      const handler = vendorConfig.handler;
-      const modelConfig = vendorConfig.defaultModelConfig || {};
 
       currentDevice = {
-        rawPort: port,
+        rawDevice: rawDevice,
         info,
         manufacturer: vendorConfig.manufacturer,
         model,
         handler,
         modelConfig,
-        readable: port.readable.getReader(),
-        writable: port.writable.getWriter(),
+        readable: rawDevice.readable.getReader(),
+        writable: rawDevice.writable.getWriter(),
       };
 
-      if (handler && handler.connect) {
-        await handler.connect(currentDevice);
-      }
-
-      devices.push(currentDevice);
+        devices.push(currentDevice);
       return currentDevice;
     } catch (error) {
       console.error("Failed to connect to Serial device:", error);

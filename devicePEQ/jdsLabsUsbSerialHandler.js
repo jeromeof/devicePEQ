@@ -2,84 +2,113 @@
 // Pragmatic Audio - Handler for JDS Labs Element IV USB Serial EQ Control
 
 export const jdsLabsUsbSerial = (function () {
-  let textEncoder = new TextEncoder();
-  let textDecoder = new TextDecoder();
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder();
+  const describeCommand = { Product: "JDS Labs Element IV", Action: "Describe" };
 
-  async function connect(deviceDetails) {
-    const port = deviceDetails.rawDevice;
-    await port.open({ baudRate: 115200 });
-    deviceDetails.reader = port.readable.getReader();
-    deviceDetails.writer = port.writable.getWriter();
-    console.log("Connected to JDS Labs Element IV over Serial");
+  async function sendJsonCommand(device, json) {
+    const writer = device.writable;
+    const payload = textEncoder.encode(JSON.stringify(json) + "\0");
+    await writer.write(payload);
   }
 
-  async function disconnect(deviceDetails) {
-    try {
-      deviceDetails.reader?.releaseLock();
-      deviceDetails.writer?.releaseLock();
-      await deviceDetails.rawDevice.close();
-      console.log("Disconnected from JDS Labs Element IV");
-    } catch (e) {
-      console.error("Error during serial disconnect", e);
+  async function readJsonResponse(device) {
+    const reader = device.readable;
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done || !value) break;
+      buffer += textDecoder.decode(value);
+      if (buffer.includes("\0")) {
+        const jsonStr = buffer.split("\0")[0];
+        return JSON.parse(jsonStr);
+      }
     }
-  }
-
-  async function sendCommand(device, command) {
-    const writer = device.writer;
-    const fullCommand = `PEQ:${command}\n`;
-    await writer.write(textEncoder.encode(fullCommand));
-  }
-
-  async function readResponse(device) {
-    const reader = device.reader;
-    const { value, done } = await reader.read();
-    if (done || !value) return null;
-    return textDecoder.decode(value).trim();
+    return null;
   }
 
   async function getCurrentSlot(deviceDetails) {
-    await sendCommand(deviceDetails, "GET_SLOT");
-    const response = await readResponse(deviceDetails);
-    return parseInt(response.replace("SLOT:", ""));
+    await sendJsonCommand(deviceDetails, describeCommand);
+    const response = await readJsonResponse(deviceDetails);
+    if (!response || !response.Configuration || !response.Configuration.General) {
+      throw new Error("Invalid Describe response for slot extraction");
+    }
+    const currentInput = response.Configuration.General["Input Mode"]?.Current;
+    return currentInput === "USB" ? 0 : 1; // slot 0 for USB, slot 1 for SPDIF
   }
 
   async function pullFromDevice(deviceDetails, slot) {
-    await sendCommand(deviceDetails, `GET_EQ:${slot}`);
-    const response = await readResponse(deviceDetails);
-    // Example response: "PEQ:1,100,2.0,0.707;2,500,1.0,1.000"
-
-    if (!response.startsWith("PEQ:")) {
-      throw new Error("Unexpected response from device: " + response);
+    await sendJsonCommand(deviceDetails, describeCommand);
+    const response = await readJsonResponse(deviceDetails);
+    if (!response || !response.Configuration || !response.Configuration.DSP) {
+      throw new Error("Invalid Describe response for PEQ extraction");
     }
 
-    const filterText = response.substring(4);
-    const filters = filterText.split(";").map(f => {
-      const [index, freq, gain, q] = f.split(",").map(Number);
-      return { freq, gain, q };
-    });
+    const headphoneConfig = response.Configuration.DSP.Headphone;
+    const filters = [];
+    const filterNames = [
+      "Lowshelf",
+      "Peaking 1", "Peaking 2", "Peaking 3", "Peaking 4",
+      "Peaking 5", "Peaking 6", "Peaking 7", "Peaking 8",
+      "Highshelf"
+    ];
 
-    return { filters, globalGain: 0 }; // JDS Labs doesn't expose global gain
+    for (const name of filterNames) {
+      const filter = headphoneConfig[name];
+      if (!filter) continue;
+      filters.push({
+        freq: filter.Frequency.Current,
+        gain: filter.Gain.Current,
+        q: filter.Q.Current
+      });
+    }
+
+    const preampGain = headphoneConfig.Preamp?.Gain?.Current || 0;
+    return { filters, globalGain: preampGain };
   }
 
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
-    const filterLines = filters.map((f, i) => `${i},${f.freq},${f.gain},${f.q}`).join(";");
-    const command = `SET_EQ:${slot}:${filterLines}`;
-    await sendCommand(deviceDetails, command);
-    console.log("Filters pushed to JDS Labs Element IV");
-  }
+    const makeFilterObj = (filter) => ({
+      Gain: filter.gain,
+      Frequency: filter.freq,
+      Q: filter.q
+    });
 
-  async function enablePEQ(deviceDetails, enable, slotId) {
-    await sendCommand(deviceDetails, `SET_SLOT:${enable ? slotId : -1}`);
-    const response = await readResponse(deviceDetails);
-    console.log("PEQ Enable Response:", response);
+    const payload = {
+      Product: "JDS Labs Element IV",
+      FormatOutput: true,
+      Action: "Update",
+      Configuration: {
+        DSP: {
+          Headphone: {
+            Preamp: { Gain: globalGain, Mode: "AUTO" },
+            Lowshelf: makeFilterObj(filters[0]),
+            "Peaking 1": makeFilterObj(filters[1]),
+            "Peaking 2": makeFilterObj(filters[2]),
+            "Peaking 3": makeFilterObj(filters[3]),
+            "Peaking 4": makeFilterObj(filters[4]),
+            "Peaking 5": makeFilterObj(filters[5]),
+            "Peaking 6": makeFilterObj(filters[6]),
+            "Peaking 7": makeFilterObj(filters[7]),
+            "Peaking 8": makeFilterObj(filters[8]),
+            Highshelf: makeFilterObj(filters[9])
+          }
+        }
+      }
+    };
+
+    await sendJsonCommand(deviceDetails, payload);
+    const response = await readJsonResponse(deviceDetails);
+    if (response?.Status !== true) {
+      throw new Error("Device did not confirm PEQ update");
+    }
+    console.log("PEQ configuration pushed successfully");
   }
 
   return {
-    connect,
-    disconnect,
     getCurrentSlot,
     pullFromDevice,
     pushToDevice,
-    enablePEQ,
+    enablePEQ: async () => {}, // Not applicable for JDSLabs
   };
 })();
