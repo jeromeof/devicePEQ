@@ -1,17 +1,13 @@
 // networkDeviceConnector.js
 // Copyright 2024 : Pragmatic Audio
 
+const {wiimNetworkHandler} = await import('./wiimNetworkHandler.js');
+
 export const NetworkDeviceConnector = (function () {
     let currentDevice = null;
     const deviceHandlers = {
-        "WiiM": null, // Will be dynamically imported
+        "WiiM": wiimNetworkHandler, // Will be dynamically imported
     };
-
-    async function initialize() {
-        const { wiimNetworkHandler } = await import('./wiimNetworkHandler.js');
-        deviceHandlers["WiiM"] = wiimNetworkHandler;
-    }
-
     async function getDeviceConnected(deviceIP, deviceType) {
         try {
             if (!deviceIP) {
@@ -60,6 +56,20 @@ export const NetworkDeviceConnector = (function () {
         }
         return await currentDevice.handler.pullFromDevice(currentDevice.ip, slot);
     }
+    async function getCurrentSlot(device) {
+      if (!deviceHandlers[device.type]) {
+        console.warn("Unsupported Device Type.");
+        return null;
+      }
+      return await deviceHandlers[device.type].getCurrentSlot(device.IP);
+    }
+  async function getAvailableSlots(device) {
+    if (!deviceHandlers[device.type]) {
+      console.warn("Unsupported Device Type.");
+      return null;
+    }
+    return await deviceHandlers[device.type].getAvailableSlots(device.ip);
+  }
 
     async function enablePEQ(device, enabled, slotId) {
         if (!currentDevice) {
@@ -70,7 +80,8 @@ export const NetworkDeviceConnector = (function () {
     }
 
     return {
-        initialize,
+        getAvailableSlots,
+        getCurrentSlot,
         getDeviceConnected,
         disconnectDevice,
         pushToDevice,

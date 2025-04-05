@@ -520,7 +520,7 @@ async function initializeDeviceEqPlugin(context) {
 
           <p>As a result, when trying to connect via a web browser, you may see a <strong>security warning</strong> (e.g., "Your connection is not private"). This is normal and expected. If you choose to trust the device and accept the warning, this tool will attempt to access its PEQ API.</p>
 
-          <p>If you're okay proceeding:</p>
+          <p>If you're okay proceed you can at least push the PEQ to this device, reading from the device breaks this security and will fail</p>
           <div style="margin-top: 10px; text-align: center;">
             <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
               <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px;"> WiiM
