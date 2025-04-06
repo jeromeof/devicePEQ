@@ -220,7 +220,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ</h3>
+            <h3>About Device PEQ - v0.2</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -229,13 +229,15 @@ async function initializeDeviceEqPlugin(context) {
             </div>
 
             <div id="tab-overview" class="tab-content active">
-              <p>This section lets you connect to a compatible USB audio device (such as Moondrop, Tanchjim, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
+              <p>This section lets you connect to a compatible USB or network-connected audio device (such as Moondrop, Tanchjim, JDS Labs, WiiM, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
 
               <h4>Supported Brands & Tools</h4>
               <ul>
-                <li><strong>FiiO:</strong> supporting many of their dongle include JA11, KA15 and KA17 and many others </li>
-                <li><strong>Walkplay:</strong> OEM their technology to many companies including Moondrop, JCally and EPZ</li>
-                <li><strong>Tanchjim:</strong> Most existing Tanchjim DSP devices supported by their official Android App should work</li>
+                <li><strong>FiiO:</strong> Supports many of their USB dongles including JA11, KA15, KA17, and others</li>
+                <li><strong>Walkplay:</strong> Technology licensed by many brands including Moondrop, JCally, and EPZ</li>
+                <li><strong>Tanchjim:</strong> Existing Tanchjim DSP devices compatible with their Android app should work</li>
+                <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
+                <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network to WiiM Mini, Pro, Pro Plus, and Amp</li>
               </ul>
             </div>
 
@@ -244,43 +246,59 @@ async function initializeDeviceEqPlugin(context) {
                 <button class="sub-tab-button active" data-subtab="sub-fiio">FiiO</button>
                 <button class="sub-tab-button" data-subtab="sub-walkplay">Walkplay</button>
                 <button class="sub-tab-button" data-subtab="sub-tanchjim">Tanchjim</button>
+                <button class="sub-tab-button" data-subtab="sub-jdslabs">JDS Labs</button>
+                <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
               </div>
 
               <div id="sub-fiio" class="sub-tab-content active">
                 <h5>FiiO / Jade Audio</h5>
-                <p>FiiO also provide an excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a></p>
+                <p>Currently, I have tested the following FiiO devices: </p>
                 <ul>
                   <li>JA11</li>
                   <li>KA17</li>
                   <li>KA15</li>
                   <li><em>Note:</em> Retro Nano has limited compatibility</li>
                 </ul>
+                <p>Mostly if a FiiO device works with their excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a> it should work here also</p>
               </div>
 
               <div id="sub-walkplay" class="sub-tab-content">
                 <h5>Walkplay-Based Devices</h5>
-                <p>Walkplay also provide an excellent editor at <a href="https://peq.szwalkplay.com" target="_blank">peq.szwalkplay.com</a></p>
-                <p>Since Walkplay licenses their DSP technology to multiple brands, the following devices are known to work:</p>
+                <p>Since Walkplay licenses their DSP technology to multiple brands, the following devices are known to work but many other devices might work:</p>
                 <ul>
                   <li>Moondrop Quark2 DSP (IEM)</li>
                   <li>Moondrop Echo A (Dongle)</li>
                   <li>JCally JM20-Pro (Dongle)</li>
-                  <li>Walkplay "Hi-Max" (Dongle)</li>
+                  <li>Generic "Hi-Max" (Dongle)</li>
                   <li>EPZ G20 (IEM)</li>
                   <li>EPZ TP13 (Dongle)</li>
                 </ul>
+                <p>Walkplay also provide an excellent editor at <a href="https://peq.szwalkplay.com" target="_blank">peq.szwalkplay.com</a> and a decent Android App</p>
+                <p>Note: One quirk with Walkplay devices is their PEQ WebApp and their Android App 'daches' what it thinks is the current PEQ for a device in the cloud (once you register) so values pushed <b>may not be visible</b> to their Website or Mobile App</p>
               </div>
 
               <div id="sub-tanchjim" class="sub-tab-content">
                 <h5>Tanchjim Devices</h5>
-                <p>Use the official Tanchjim Android App for EQ and device configuration.</p>
+                <p>Currently I have tested the following Tanchjim DSP devices but many others should work</p>
                 <ul>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
-                  <li>Other models supported by their app may also be compatible</li>
                 </ul>
+                <p>You also use the official Tanchjim Android App for EQ and device configuration.</p>
               </div>
+
+            <div id="sub-jdslabs" class="sub-tab-content">
+              <h5>JDS Labs</h5>
+              <p>Supports PEQ control over USB Serial for compatible products like the JDS Labs Element IV, basically if it works on JDS Labs excellent <a href="https://core.jdslabs.com.">Core PEQ</a> it should work. You can push and pull filters directly to the device.</p>
+              <p>Note: This option is only visible in advanced mode </p>
             </div>
+
+            <div id="sub-wiim" class="sub-tab-content">
+              <h5>WiiM</h5>
+              <p>Supports network-based PEQ settings for WiiM devices using HTTP APIs. Requires entering the local IP address of the device and selecting the audio source (e.g., Wi-Fi, Bluetooth).</p>
+              <p>Note: This option is only visible in advanced mode </p>
+            </div>
+          </div>
 
             <div id="tab-howto" class="tab-content">
               <ul>
