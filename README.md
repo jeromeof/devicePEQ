@@ -1,154 +1,171 @@
 # **DeviceEQ Plugin - Pragmatic Audio**
 
 ## **📌 Overview**
-DeviceEQ is a **JavaScript-based plugin** designed to interface with **audio devices** that support **Parametric EQ (PEQ) adjustments**. It allows users to **connect to, configure, and manage PEQ settings** on their **USB or network-based audio devices**.
+DeviceEQ is a **JavaScript-based plugin** designed to interface with **audio devices** that support **Parametric EQ (PEQ) adjustments**. It allows users to **connect to, configure, and manage PEQ settings** on their **USB, Serial, or network-based audio devices**.
 
 ### **Key Features**
-- 🎛 **Supports USB and Network PEQ Devices**
-- 📡 **Connect via WebHID (USB) or HTTP API (Network)**
+- 🎛 **Supports USB, Serial, and Network PEQ Devices**
+- 📡 **Connect via WebHID, USB Serial, or HTTP API**
 - 🎚 **Real-Time PEQ Adjustments & Preamp Gain Calculations**
 - 🔗 **Dynamic PEQ Slot Selection & Configuration**
 
 ---
 
 ## **📂 Project Structure**
-DeviceEQ
-* plugin.js                  # Core plugin that integrates PEQ functionality
-* usbHidConnector.js         # USB connection manager for HID-based devices
-* networkDeviceConnector.js  # Network-based device connection manager
-* fiioUsbHidHandler.js       # PEQ handler for FiiO USB-based devices
-* wiimNetworkHandler.js      # PEQ handler for WiiM network-based devices
-* index.html                 # Simple UI for testing and demo purposes
+```
+DeviceEQ/
+├── plugin.js                # Core plugin that integrates PEQ functionality
+├── usbHidConnector.js       # USB HID connection manager
+├── serialConnector.js       # Serial-based connection manager (JDS Labs)
+├── networkDeviceConnector.js# Network device connection manager (WiiM)
+├── fiioUsbHidHandler.js     # PEQ handler for FiiO USB HID devices
+├── jdslabsSerialHandler.js  # PEQ handler for JDS Labs over USB Serial
+├── wiimNetworkHandler.js    # PEQ handler for WiiM network devices
+├── index.html               # Simple UI for testing and demo purposes
+```
+
 ---
 
 ## **🛠 Plugin: `plugin.js`**
 ### **🔹 What it does**
 - Loads UI elements dynamically inside a **designated container (`.extra-eq`)**.
-- Allows the user to **connect to a device (USB or Network)**.
+- Lets the user **connect to a device (USB HID, Serial, or Network)**.
 - Retrieves available **PEQ slots** from the device.
 - Provides **"Push" & "Pull" buttons** to transfer PEQ settings.
 - Handles **disconnections and device switching**.
 - Uses **cookies to persist the network device's IP and type**.
 
 ### **📌 How it Works**
-1. The user clicks **Connect**.
-2. A **popup asks if they want USB or Network**.
-3. If **USB** → Uses `usbHidConnector.js` to show device selection.
-4. If **Network** → Prompts for IP & connects using `networkDeviceConnector.js`.
-5. **PEQ slots are loaded dynamically**, and users can **edit filters**.
-6. Users can **push or pull** PEQ settings from the device.
-7. If a network device is used, the **IP and device type are saved in cookies**.
+1. User clicks **Connect**.
+2. A **popup asks for USB HID, Serial, or Network**.
+3. If **USB HID** → Uses `usbHidConnector.js`.
+4. If **Serial (JDS Labs)** → Uses `serialConnector.js`.
+5. If **Network** → Prompts for IP & uses `networkDeviceConnector.js`.
+6. Loads PEQ slots and editable filters.
+7. Users can **push/pull** PEQ settings.
+8. **Network device info is saved in cookies**.
 
 ---
 
-## **🔌 USB Connection: `usbHidConnector.js`**
+## **🔌 USB HID Connection: `usbHidConnector.js`**
 ### **🔹 What it does**
 - Uses **WebHID API** to detect and connect to **USB HID audio devices**.
-- Implements **device-specific handlers** (like `fiioUsbHidHandler.js`).
-- Supports querying **available PEQ slots & current PEQ settings**.
-- Handles **sending PEQ configurations to the device**.
+- Implements **handlers** like `fiioUsbHidHandler.js`.
+- Supports PEQ slot detection and filter read/write.
 
 ### **🔗 How it Works**
-1. When **USB is selected**, `usbHidConnector.js` opens the WebHID device picker.
-2. It finds a **supported device** and loads the correct **handler**.
-3. Uses `fiioUsbHidHandler.js` to manage **PEQ settings for FiiO devices**.
-4. Allows **retrieving (Pull) and applying (Push) PEQ settings** via USB.
-5. If the device is **disconnected**, the UI resets.
+1. USB HID picker is shown.
+2. Supported device is detected and the handler is loaded.
+3. Filter settings are pulled/pushed via HID reports.
+4. UI resets if the device disconnects.
+
+---
+
+## **🧭 USB Serial Connection: `serialConnector.js`**
+### **🔹 What it does**
+- Uses **Web Serial API** to support **JDS Labs devices** over USB.
+- Detects compatible serial ports and exchanges PEQ commands.
+- Uses `jdslabsSerialHandler.js` to manage filter logic.
+
+### **📌 Supported Devices**
+- **JDS Labs Element IV**
+- **JDS Labs Atom DAC 3**
+- (Any device supporting JDS Core PEQ over serial)
+
+### **🔗 How it Works**
+1. Prompts for serial port selection.
+2. Uses line-based text protocol to pull/push PEQ filters.
+3. Supports global gain and 10-band PEQ adjustments.
+4. Filters are parsed and applied using the same internal model.
 
 ---
 
 ## **🌍 Network Connection: `networkDeviceConnector.js`**
 ### **🔹 What it does**
-- Manages **network-based PEQ device connections**.
-- Uses **HTTP API calls** to communicate with supported **networked audio devices**.
-- Currently supports **WiiM devices (via `wiimNetworkHandler.js`)**.
-- Allows **retrieving, modifying, and applying PEQ settings** over the network.
-- **Persists the device's IP and type using cookies**.
+- Manages **network-based PEQ connections** (currently WiiM).
+- Uses **HTTP GET requests** with URL-encoded JSON.
+- Implements WiiM-specific logic via `wiimNetworkHandler.js`.
+
+### **📌 Supported Devices**
+- **WiiM Mini, Pro, Pro Plus, Ultra, Amp**
 
 ### **🔗 How it Works**
-1. When **Network is selected**, it prompts for an **IP address**.
-2. It attempts to connect and identifies **supported devices**.
-3. Uses `wiimNetworkHandler.js` for **WiiM devices**.
-4. Retrieves **available PEQ slots** and current PEQ configuration.
-5. Allows users to **apply or update PEQ settings** via HTTP API.
+1. Prompts for local IP address of the device.
+2. Uses WiiM's documented `EQGetLV2BandEx` and `EQSetLV2SourceBand`.
+3. Adjusts up to 10 bands with param names like `a_freq`, `a_q`, etc.
+4. Stores IP/device type for auto-reconnect.
 
 ---
 
-## **🎛 USB PEQ Handler: `fiioUsbHidHandler.js`**
+## **🎛 PEQ Handler: `fiioUsbHidHandler.js`**
 ### **🔹 What it does**
-- Handles **FiiO USB-based devices** that support **PEQ adjustments**.
-- Uses **HID commands** to **read/write PEQ filters and gain settings**.
-- Supports **multiple EQ slots** with individual configurations.
-- Implements **protocol-specific** PEQ commands.
+- Manages **FiiO USB HID** devices.
+- Sends/receives filter configuration via HID commands.
+- Supports slot switching and device-specific quirks.
 
-### **📌 Supported Devices**
-- **FiiO KA17, KA15, Q7, BTR13, Retro Nano, etc.**
-
-### **🔗 How it Works**
-1. **Reads current PEQ slot and filters**.
-2. **Allows modifying** PEQ parameters (gain, frequency, Q value).
-3. **Writes new settings** back to the device.
-4. Uses **custom HID messages** to interact with each device model.
+### **📌 Tested Devices**
+- **FiiO KA17, KA15, JA11, Q7, Retro Nano, BTR13**
 
 ---
 
-## **📡 Network PEQ Handler: `wiimNetworkHandler.js`**
+## **🧰 PEQ Handler: `jdslabsSerialHandler.js`**
 ### **🔹 What it does**
-- Handles **WiiM network-based devices** supporting **HTTP API PEQ control**.
-- Uses **REST API calls** to manage **PEQ settings over WiFi**.
-- Supports **real-time filter adjustments and preset management**.
+- Sends/receives PEQ data via text-based protocol.
+- Mirrors the functionality of **JDS Labs Core PEQ app**.
+- Supports **global gain** and **10 PEQ filters**.
 
-### **📌 Supported Devices**
-- **WiiM Mini, WiiM Pro, WiiM Ultra (and other WiiM-supported devices)**.
+---
 
-### **🔗 How it Works**
-1. **Fetches current PEQ settings** using `EQGetLV2BandEx`.
-2. **Applies new PEQ settings** using `EQSetLV2Band`.
-3. Supports **adjustments of up to 10-band PEQ filters**.
-4. Uses **HTTP requests to communicate with the device**.
+## **📡 PEQ Handler: `wiimNetworkHandler.js`**
+### **🔹 What it does**
+- Manages WiiM network devices over HTTP.
+- Pushes named presets (`name: "HeadphoneEQ"`) and source-specific EQ.
+- Supports stereo channel mode and EQStat toggling.
 
 ---
 
 ## **📌 Usage Instructions**
 ### **1️⃣ Setup**
-- Ensure your **USB or Network device is connected**.
-- Open the **web interface that includes `plugin.js`**.
+- Connect a supported device (USB, Serial, or Network).
+- Open the web interface that loads `plugin.js`.
 
-### **2️⃣ Connecting a Device**
+### **2️⃣ Connect to Device**
 - Click **"Connect to Device"**.
-- Choose between **USB or Network**.
-  - If **USB**, a device picker appears.
-  - If **Network**, enter the **IP Address**.
+- Choose:
+  - **USB HID** (e.g., FiiO, Tanchjim, Walkplay)
+  - **Serial** (e.g., JDS Labs)
+  - **Network** (e.g., WiiM)
 
-### **3️⃣ Modifying PEQ Settings**
-- Use the **drop-down menu** to select a PEQ slot.
-- Adjust **filters (frequency, gain, Q-factor, etc.)**.
+### **3️⃣ Adjust PEQ**
+- Pick a slot if applicable.
+- Change filters (freq, gain, Q).
+- Use preamp gain calculator for normalization.
 
-### **4️⃣ Pushing or Pulling Settings**
-- Click **"Pull From Device"** to load PEQ settings.
-- Click **"Push To Device"** to apply changes.
+### **4️⃣ Push / Pull**
+- **Pull** loads device settings.
+- **Push** applies new filter values.
 
-### **5️⃣ Saving Device Info**
-- The plugin **remembers your last-used network device** (IP & Type).
-- Next time you visit, it **auto-fills the IP and device type**.
+### **5️⃣ Persistent Info**
+- Device IP and type are saved for future sessions.
 
 ---
 
 ## **🔧 Future Enhancements**
-✔ **Support for more network devices** (e.g., `Other Devices Coming Soon`).
-✔ **More USB device handlers** for other brands.
-✔ **Advanced PEQ visualization UI**.
+- ☑ Additional network brands
+- ☑ WebUSB (non-HID) support
+- ☑ Device info syncing (e.g., model & firmware)
+- ☑ Offline presets / import & export
 
 ---
 
 ## **🎉 Contributions & Support**
-- **Developed by:** Pragmatic Audio
-- **Contributions:** Open-source improvements welcome!
-- **Bugs/Feature Requests:** Report issues via GitHub.
+- **Author:** Pragmatic Audio
+- **Contributions:** PRs and feature ideas welcome
+- **Issues:** Report via GitHub
 
 ---
 
 ## **🚀 Summary**
-The **DeviceEQ Plugin** enables **real-time PEQ management** for both **USB and networked audio devices**. It provides a **simple UI**, **auto-device detection**, **real-time updates**, and **persistent storage** for networked devices.
+The **DeviceEQ Plugin** brings **flexible, real-time PEQ control** to a growing range of **USB, Serial, and networked audio gear**. Whether you're tuning a dongle, an IEM, a desktop DAC, or a smart streamer—**DeviceEQ bridges the gap between pro-grade tuning and consumer gear**.
 
-👉 **Whether you use a USB DAC like FiiO or a network streamer like WiiM, DeviceEQ makes PEQ management easy!** 🎛🔥
+👉 **From FiiO to JDS Labs to WiiM – make your sound yours.** 🎚🔥
