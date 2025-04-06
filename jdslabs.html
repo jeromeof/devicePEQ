@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <title>JDS Labs Element IV Serial UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button { margin-right: 10px; }
+    pre, .json-viewer { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all; }
+    .status { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<h1>JDS Labs Element IV Serial Interface</h1>
+<div class="status" id="status">Status: Disconnected</div>
+<button id="connectBtn">Connect</button>
+<button id="getBtn" disabled>Get Settings</button>
+<button id="putBtn" disabled>Put Settings</button>
+<h3>Response:</h3>
+<div class="json-viewer" id="response"></div>
+
+<script>
+  const JDSLABS_VENDOR_ID = 0x152a;
+  const JDS_LABS_DEVICE_IDS = {
+    35066: "JDS Labs Element IV"
+  };
+
+  let port, writer, reader;
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  function identifyPort(port) {
+    try {
+      return JDS_LABS_DEVICE_IDS[port.getInfo().usbProductId] || `Unknown (${port.getInfo().usbProductId})`;
+    } catch (err) {
+      return "Unknown Device";
+    }
+  }
+
+  async function connectSerial() {
+    try {
+      port = await navigator.serial.requestPort({
+        filters: [{ usbVendorId: JDSLABS_VENDOR_ID }]
+      });
+
+      const info = port.getInfo();
+      const productId = info.usbProductId;
+      if (!JDS_LABS_DEVICE_IDS[productId]) {
+        document.getElementById('status').innerText = `Status: Unsupported Device (0x${productId.toString(16)})`;
+        return;
+      }
+
+      await port.open({ baudRate: 19200 });
+
+      writer = port.writable.getWriter();
+      reader = port.readable.getReader();
+
+      document.getElementById('status').innerText = `Status: Connected to ${identifyPort(port)}`;
+      document.getElementById('getBtn').disabled = false;
+      document.getElementById('putBtn').disabled = false;
+
+      listenToSerial();
+    } catch (err) {
+      console.error('Connection error:', err);
+      document.getElementById('status').innerText = 'Status: Connection Failed';
+    }
+  }
+
+  async function listenToSerial() {
+    let buffer = '';
+    while (port.readable) {
+      try {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value);
+        if (buffer.includes('\0')) {
+          const jsonStr = buffer.split('\0')[0];
+          const parsed = JSON.parse(jsonStr);
+          displayJson(parsed);
+          buffer = '';
+        }
+      } catch (e) {
+        console.error('Reading error:', e);
+        break;
+      }
+    }
+  }
+
+  function displayJson(obj) {
+    const output = document.getElementById('response');
+    output.innerText = JSON.stringify(obj, null, 2);
+  }
+
+  async function sendSerial(json) {
+    const payload = encoder.encode(JSON.stringify(json) + '\0');
+    await writer.write(payload);
+  }
+
+  document.getElementById('connectBtn').addEventListener('click', connectSerial);
+
+  document.getElementById('getBtn').addEventListener('click', () => {
+    sendSerial({ Product: "JDS Labs Element IV", Action: "Describe" });
+  });
+
+  document.getElementById('putBtn').addEventListener('click', () => {
+    const putPayload = {
+      Product: "JDS Labs Element IV",
+      FormatOutput: true,
+      Action: "Update",
+      Configuration: {
+        DSP: {
+          Headphone: {
+            Preamp: { Gain: -8.4, Mode: "AUTO" },
+            Lowshelf: { Q: 0.707, Gain: 0, Frequency: 80 },
+            "Peaking 1": { Q: 0.5, Gain: 5.1, Frequency: 20 },
+            "Peaking 2": { Q: 5.6, Gain: 0.5, Frequency: 20 },
+            "Peaking 3": { Q: 1, Gain: -2.5, Frequency: 170 },
+            "Peaking 4": { Q: 2.1, Gain: 0.7, Frequency: 560 },
+            "Peaking 5": { Q: 2.3, Gain: -2.4, Frequency: 1200 },
+            "Peaking 6": { Q: 2.5, Gain: 6.7, Frequency: 4600 },
+            "Peaking 7": { Q: 10, Gain: -7.7, Frequency: 6100 },
+            "Peaking 8": { Q: 2.9, Gain: 8, Frequency: 8000 },
+            Highshelf: { Q: 0.707, Gain: 0, Frequency: 12000 }
+          }
+        }
+      }
+    };
+    sendSerial(putPayload);
+  });
+</script>
+</body>
+</html>
+</title>
+</head>
+<body>
+
+</body>
+</html>

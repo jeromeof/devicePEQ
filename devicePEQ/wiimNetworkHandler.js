@@ -5,7 +5,6 @@
 //
 
 const PLUGIN_URI = "http://moddevices.com/plugins/caps/EqNp";
-const SOURCE_NAME = "wifi"; // Default source, can be changed dynamically
 
 export const wiimNetworkHandler = (function () {
 
@@ -51,41 +50,70 @@ export const wiimNetworkHandler = (function () {
   async function pushToDevice(ip, slot, preamp, filters) {
     try {
       const eqBandData = filters.map((filter, index) => ({
-        index,
         param_name: `${String.fromCharCode(97 + index)}_mode`,
         value: filter.disabled ? -1 : convertToWiimMode(filter.type),
       }));
 
       filters.forEach((filter, index) => {
         eqBandData.push(
-          {index, param_name: `${String.fromCharCode(97 + index)}_freq`, value: filter.freq},
-          {index, param_name: `${String.fromCharCode(97 + index)}_q`, value: filter.q},
-          {index, param_name: `${String.fromCharCode(97 + index)}_gain`, value: filter.gain}
+          {
+            param_name: `${String.fromCharCode(97 + index)}_freq`,
+            value: filter.freq
+          },
+          {
+            param_name: `${String.fromCharCode(97 + index)}_q`,
+            value: filter.q
+          },
+          {
+            param_name: `${String.fromCharCode(97 + index)}_gain`,
+            value: filter.gain
+          }
         );
       });
 
       const payload = {
-        pluginURI: PLUGIN_URI,
-        source_name: SOURCE_NAME,
+        pluginURI: PLUGIN_URI,           // e.g., "http://moddevices.com/plugins/caps/EqNp"
+        source_name: "wifi",             // or "bt", "line_in", etc. Always Wifi for now
         EQBand: eqBandData,
+        EQStat: "On",                    // Enable EQ
+        channelMode: "Stereo",          // Use stereo mode
       };
 
       const url = `https://${ip}/httpapi.asp?command=EQSetLV2SourceBand:${encodeURIComponent(JSON.stringify(payload))}`;
-      const response = await fetch(url, {method: "GET", mode: "no-cors"});
+      const response = await fetch(url, { method: "GET", mode: "no-cors" });
 
       if (response.status != 0)
         throw new Error(`Failed to push PEQ data: ${response.status}`);
 
-      if (response.type === "opaque"){
-        console.log("Cannot read response due to secrity reasons");
-        return true;
+      if (response.type !== "opaque") {
+        const data = await response.json();
+        if (data.status !== "OK")
+          throw new Error(`PEQ push failed: ${JSON.stringify(data)}`);
+      } else {
+        console.log("Cannot read response due to security reasons");
       }
 
-      const data = await response.json();
-      if (data.status !== "OK") throw new Error(`PEQ push failed: ${JSON.stringify(data)}`);
+      // Now set the Preset Name - ultimately get the headphone name from custom parameters but not for now
+      const presetNamePayload = {
+        pluginURI: PLUGIN_URI,           // e.g., "http://moddevices.com/plugins/caps/EqNp"
+        source_name: "wifi",             // or "bt", "line_in", etc.
+        Name: "HeadphoneEQ"             // Custom preset name
+      }
+      const presetNameUrl = `https://${ip}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
+      const presetNameResponse = await fetch(presetNameUrl, { method: "GET", mode: "no-cors" });
 
-      console.log("WiiM PEQ updated successfully:", data);
-      return true;
+      if (presetNameResponse.status != 0)
+        throw new Error(`Failed to push PEQ data: ${presetNameResponse.status}`);
+
+      if (presetNameResponse.type !== "opaque") {
+        const data = await presetNameResponse.json();
+        if (data.status !== "OK")
+          throw new Error(`PEQ Name push failed: ${JSON.stringify(data)}`);
+      }
+
+
+      console.log("WiiM PEQ updated successfully");
+      return false; // We don't need to restart
 
     } catch (error) {
       console.error("Error pushing PEQ settings to WiiM:", error);

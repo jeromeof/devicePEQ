@@ -18,7 +18,7 @@
       return;
     }
     const byteArray = new Uint8Array(hexString.split(/\s+/).map(byte => parseInt(byte, 16)));
-    sendReportToHIDDevice(0x4b, byteArray, packetCount);
+    sendReportToHIDDevice(0x3c, byteArray, packetCount);
   }
 
   async function decodeValues() {

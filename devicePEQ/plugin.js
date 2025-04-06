@@ -516,9 +516,11 @@ async function initializeDeviceEqPlugin(context) {
           <p>This section requires some basic understanding of networking. Please continue only if you are familiar with concepts like IP addresses and self-signed certificates.</p>
 
           <p><strong>Why the warning?</strong></p>
-          <p>Devices like the <strong>WiiM</strong> expose a local web server for configuration (similar to how home routers work). These devices often use a <em>self-signed certificate</em> to enable HTTPS, which is secure but not trusted by your browser by default.</p>
+          <p>Devices like the <strong>WiiM</strong> expose a local web server for configuration (similar to how home routers work). These devices often use a <em>self-signed certificate</em> to enable HTTPS, which is secure but <b>not trusted</b> by your browser by default.</p>
 
-          <p>As a result, when trying to connect via a web browser, you may see a <strong>security warning</strong> (e.g., "Your connection is not private"). This is normal and expected. If you choose to trust the device and accept the warning, this tool will attempt to access its PEQ API.</p>
+          <p>As a result, when trying to connect via a web browser, you may see a <strong>security warning</strong> (e.g., "Your connection is not private"). This is normal and expected. If you choose to <b>trust the device</b> and accept the warning, this tool will attempt to access its PEQ API.</p>
+
+          <p>Note: Due to this security restriction I can only push the PEQ filters to the WiiM Device and cannot read them. They will be called HeadphoneEQ when pushed.</p>
 
           <p>If you're okay proceed you can at least push the PEQ to this device, reading from the device breaks this security and will fail</p>
           <div style="margin-top: 10px; text-align: center;">
