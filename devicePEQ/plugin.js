@@ -220,7 +220,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.2</h3>
+            <h3>About Device PEQ - v0.3</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -231,13 +231,17 @@ async function initializeDeviceEqPlugin(context) {
             <div id="tab-overview" class="tab-content active">
               <p>This section lets you connect to a compatible USB or network-connected audio device (such as Moondrop, Tanchjim, JDS Labs, WiiM, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
 
-              <h4>Supported Brands & Tools</h4>
+              <h4>Supported Brands & Manufacturers</h4>
               <ul>
-                <li><strong>FiiO:</strong> Supports many of their USB dongles including JA11, KA15, KA17, and others</li>
-                <li><strong>Walkplay:</strong> Technology licensed by many brands including Moondrop, JCally, and EPZ</li>
-                <li><strong>Tanchjim:</strong> Existing Tanchjim DSP devices compatible with their Android app should work</li>
+                <li><strong>FiiO:</strong> Most of their USB dongles including JA11, KA15 and KA17</li>
+                <li><strong>Moondrop:</strong> Moondrop CDSP, Chu II DSP, Quark2 and others </li>
+                <li><strong>Tanchjim:</strong> Bunny DSP, One DSP and others should work</li>
+                <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
+                <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
+                <li><strong>EPZ:</strong> GM20 and TP13</li>
+                <li><strong>JCally:</strong> JM20 Pro and JM12 and possible others</li>
                 <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
-                <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network to WiiM Mini, Pro, Pro Plus, and Amp</li>
+                <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network</li>
               </ul>
             </div>
 
@@ -245,7 +249,7 @@ async function initializeDeviceEqPlugin(context) {
               <div class="sub-tabs">
                 <button class="sub-tab-button active" data-subtab="sub-fiio">FiiO</button>
                 <button class="sub-tab-button" data-subtab="sub-walkplay">Walkplay</button>
-                <button class="sub-tab-button" data-subtab="sub-tanchjim">Tanchjim</button>
+                <button class="sub-tab-button" data-subtab="sub-tanchjim">KTMicro</button>
                 <button class="sub-tab-button" data-subtab="sub-jdslabs">JDS Labs</button>
                 <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
               </div>
@@ -278,9 +282,11 @@ async function initializeDeviceEqPlugin(context) {
               </div>
 
               <div id="sub-tanchjim" class="sub-tab-content">
-                <h5>Tanchjim Devices</h5>
-                <p>Currently I have tested the following Tanchjim DSP devices but many others should work</p>
+                <h5>KTMicro Devices</h5>
+                <p>Currently, I have tested the following KTMicro DSP devices but many others should work</p>
                 <ul>
+                  <li>Moondrop CDSP</li>
+                  <li>Moondrop Quark2</li>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
                 </ul>

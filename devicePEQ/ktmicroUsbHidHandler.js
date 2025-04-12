@@ -1,4 +1,4 @@
-export const tanchjimUsbHidHandler = (function () {
+export const ktmicroUsbHidHandler = (function () {
   const FILTER_COUNT = 10;
   const REPORT_ID = 0x4b;
   const COMMAND_READ = 0x52;
@@ -12,7 +12,7 @@ export const tanchjimUsbHidHandler = (function () {
   function decodeGainFreqResponse(data) {
     const gainRaw = data[6] | (data[7] << 8);
     const gain = gainRaw > 0x7FFF ? gainRaw - 0x10000 : gainRaw; // signed 16-bit
-    const freq = (data[8] + (data[9] << 8)) * 2;
+    const freq = data[8] + (data[9] << 8);
     return { gain: gain / 10.0, freq };
   }
 
@@ -52,6 +52,7 @@ export const tanchjimUsbHidHandler = (function () {
         if ('gain' in result && 'freq' in result && 'q' in result) {
           clearTimeout(timeout);
           device.removeEventListener('inputreport', onReport);
+          result.type = "PK";
           resolve(result);
         }
       };
@@ -84,7 +85,7 @@ export const tanchjimUsbHidHandler = (function () {
   }
 
   function buildWritePacket(filterId, freq, gain) {
-    const freqBytes = toLittleEndianBytes(freq / 2);
+    const freqBytes = toLittleEndianBytes(freq);
     const gainBytes = toSignedLittleEndianBytes(gain, 10);
     return new Uint8Array([
       filterId, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, gainBytes[0], gainBytes[1], freqBytes[0], freqBytes[1]
@@ -97,6 +98,7 @@ export const tanchjimUsbHidHandler = (function () {
       filterId, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, qBytes[0], qBytes[1], 0x00, 0x00
     ]);
   }
+
   function buildCommit() {
     return new Uint8Array([
       0x00, 0x00, 0x00, 0x00, COMMAND_COMMIT, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -106,6 +108,8 @@ export const tanchjimUsbHidHandler = (function () {
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
     const device = deviceDetails.rawDevice;
     for (let i = 0; i < filters.length; i++) {
+      if (i >= deviceDetails.modelConfig.maxFilters) break;
+
       const filterId = 0x26 + i * 2;
       const writeGainFreq = buildWritePacket(filterId, filters[i].freq, filters[i].gain);
       const writeQ = buildQPacket(filterId + 1, filters[i].q);

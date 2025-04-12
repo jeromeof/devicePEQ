@@ -215,7 +215,7 @@ function parseIndividualPEQPacket(packet) {
 
   let gainRaw = packet[31] | (packet[32] << 8); // Gain (little-endian)
   if (gainRaw > 32767) gainRaw -= 65536; // Handle negative values
-  let gain = gainRaw / 256; // Convert to dB
+  let gain = Math.round((gainRaw / 256) * 10) / 10; // Convert to dB and round to 1 decimal
 
   return {
     type: filterType,

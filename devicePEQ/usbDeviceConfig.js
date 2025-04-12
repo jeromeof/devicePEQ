@@ -2,7 +2,9 @@
 const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
 const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
 const {moondropUsbHID} = await import('./moondropHidHandler.js');
-const {tanchjimUsbHidHandler}  = await import('./tanchjimUsbHidHandler.js');
+const {ktmicroUsbHidHandler}  = await import('./ktmicroUsbHidHandler.js');
+const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
+
 // Main list of HID devices - each vendor has one or more vendorId, and a list of devices associated,
 // each device has a model of how the slots are configured and a handler to handle reading / writing
 // the raw USBHID reports to the device
@@ -228,7 +230,7 @@ export const usbHidDeviceHandlerConfig = ( [
   {
     vendorId: 12722,
     manufacturer: "Tanchjim",
-    handler: tanchjimUsbHidHandler,
+    handler: ktmicroUsbHidHandler,
     defaultModelConfig:   {
       minGain: -12,
       maxGain: 12,
@@ -242,6 +244,32 @@ export const usbHidDeviceHandlerConfig = ( [
     devices: {
       "TANCHJIM BUNNY DSP": {},
       "TANCHJIM ONE DSP": {},
+    }
+  },
+  {
+    vendorId: 0x306D, // Qudelix 5K vendor ID (12397 in decimal)
+    manufacturer: "Qudelix",
+    handler: qudelixUsbHidHandler,
+    defaultModelConfig: {
+      minGain: -12,
+      maxGain: 12,
+      maxFilters: 10, // Qudelix 5K supports 10 PEQ bands
+      firstWritableEQSlot: 1,
+      maxWritableEQSlots: 4,
+      disconnectOnSave: false,
+      disabledPresetId: -1,
+      availableSlots: [
+        {id: 101, name: "Custom"},
+        {id: 1, name: "Preset 1"},
+        {id: 2, name: "Preset 2"},
+        {id: 3, name: "Preset 3"},
+        {id: 4, name: "Preset 4"}
+      ]
+    },
+    devices: {
+      "5K": {
+        modelConfig: {} // Inherit from default
+      }
     }
   }
 ])
