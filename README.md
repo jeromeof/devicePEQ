@@ -1,27 +1,32 @@
 # **DeviceEQ Plugin - Pragmatic Audio**
 
-## **📌 Overview**
-DeviceEQ is a **JavaScript-based plugin** designed to interface with **audio devices** that support **Parametric EQ (PEQ) adjustments**. It allows users to **connect to, configure, and manage PEQ settings** on their **USB, Serial, or network-based audio devices**.
-
-### **Key Features**
-- 🎛 **Supports USB, Serial, and Network PEQ Devices**
-- 📡 **Connect via WebHID, USB Serial, or HTTP API**
-- 🎚 **Real-Time PEQ Adjustments & Preamp Gain Calculations**
-- 🔗 **Dynamic PEQ Slot Selection & Configuration**
+## 📌 Overview
+DeviceEQ is a **JavaScript-based plugin** for interacting with **audio devices** that support **Parametric EQ (PEQ)**. It supports **USB HID**, **USB Serial**, and **network-connected** devices, offering full control over EQ filters, slot management, and device communication.
 
 ---
 
-## **📂 Project Structure**
+## ✨ Key Features
+- 🔌 **Cross-Protocol Support:** USB HID, Serial, and HTTP (Network)
+- 📡 **Advanced PEQ Push/Pull with Device Sync**
+- 🎚 **Real-Time Filter Editing + Preamp Gain Calculation**
+- 📦 **Dynamic Slot Discovery & Management**
+- 🧠 **Per-Device Handler Logic with Config Models**
+- 📘 **Integrated Modal UI for Info and Help**
+
+---
+
+## 📂 Project Structure
 ```
 DeviceEQ/
-├── plugin.js                # Core plugin that integrates PEQ functionality
-├── usbHidConnector.js       # USB HID connection manager
-├── serialConnector.js       # Serial-based connection manager (JDS Labs)
-├── networkDeviceConnector.js# Network device connection manager (WiiM)
-├── fiioUsbHidHandler.js     # PEQ handler for FiiO USB HID devices
-├── jdslabsSerialHandler.js  # PEQ handler for JDS Labs over USB Serial
-├── wiimNetworkHandler.js    # PEQ handler for WiiM network devices
-├── index.html               # Simple UI for testing and demo purposes
+├── plugin.js                  # Main plugin entry point and UI integration
+├── usbHidConnector.js         # WebHID connection & handler logic
+├── usbSerialConnector.js      # Web Serial handler for devices like JDS Labs
+├── networkDeviceConnector.js  # HTTP API logic for networked devices (WiiM)
+├── fiioUsbHidHandler.js       # PEQ logic for FiiO devices
+├── walkplayHidHandler.js      # PEQ logic for Walkplay-compatible DSPs
+├── moondropHidHandler.js      # Moondrop-specific USB HID logic
+├── ktmicroUsbHidHandler.js    # Tanchjim & KTMicro USB HID logic
+├── qudelixUsbHidHandler.js    # Handler for Qudelix 5K
 ```
 
 ---
