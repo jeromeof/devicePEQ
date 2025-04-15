@@ -257,7 +257,7 @@ export const usbHidDeviceHandlerConfig = ( [
       availableSlots: [{id: 101, name: "Custom"}]
     },
     devices: {
-      "TANCHJIM STARGATE DSP": {
+      "TANCHJIM-STARGATE II": {
         defaultModelConfig:   {
           maxFilters: 8
         }

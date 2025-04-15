@@ -15,15 +15,21 @@ export const moondropUsbHidHandler = (function () {
   function decodeFilterResponse(data) {
     const e = new Int8Array(data.buffer);
 
-    const freq = (e[28] & 0xff) | ((e[29] & 0xff) << 8);
+    const rawFreq = (e[27] & 0xff) | ((e[28] & 0xff) << 8);
+    const freq = rawFreq;
+
     const q = (e[30] & 0xff) + (e[29] & 0xff) / 256;
-    const gain = e[32] + (e[31] & 0xff) / 256;
+    const rawGain = e[32] + (e[31] & 0xff) / 256;
+    const gain = Math.floor(rawGain * 10) / 10;
+
+    const valid = freq > 10 && freq < 24000 && !isNaN(gain) && !isNaN(q);
 
     return {
       type: "PK",
-      freq,
-      q,
-      gain,
+      freq: valid ? freq : 0,
+      q: valid ? q : 1.0,
+      gain: valid ? gain : 0.0,
+      disabled: !valid
     };
   }
 
