@@ -1,7 +1,7 @@
 // Dynamically import manufacturer specific handlers for their unique devices
 const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
 const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
-const {moondropUsbHID} = await import('./moondropHidHandler.js');
+const {moondropUsbHidHandler} = await import('./moondropUsbHidHandler.js');
 const {ktmicroUsbHidHandler}  = await import('./ktmicroUsbHidHandler.js');
 const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
 
@@ -220,16 +220,31 @@ export const usbHidDeviceHandlerConfig = ( [
     {
       vendorId: 13784,
       manufacturer: "Moondrop",
+      handler: moondropUsbHidHandler,
+      defaultModelConfig: {
+        minGain: -12,
+        maxGain: 12,
+        maxFilters: 8,
+        firstWritableEQSlot: 7,         // Slot 7 is where we write filters
+        maxWritableEQSlots: 1,
+        disconnectOnSave: false,
+        disabledPresetId: -1,           // No preset disables EQ completely
+        availableSlots: [
+          { id: 0, name: "Default" },
+          { id: 1, name: "FPS 2" },
+          { id: 2, name: "Music Game" },
+          { id: 3, name: "Triple-A Game" },
+          { id: 4, name: "FPS 1" },
+          { id: 7, name: "Custom PEQ" },
+          { id: -99, name: "Unknown" }
+        ]
+      },
       devices: {
-        "ECHO-B": {
-          handler: moondropUsbHID,
-          modelConfig: {}
-        },
       }
     },
   {
     vendorId: 12722,
-    manufacturer: "Tanchjim",
+    manufacturer: "KT Micro",
     handler: ktmicroUsbHidHandler,
     defaultModelConfig:   {
       minGain: -12,
@@ -242,8 +257,11 @@ export const usbHidDeviceHandlerConfig = ( [
       availableSlots: [{id: 101, name: "Custom"}]
     },
     devices: {
-      "TANCHJIM BUNNY DSP": {},
-      "TANCHJIM ONE DSP": {},
+      "TANCHJIM STARGATE DSP": {
+        defaultModelConfig:   {
+          maxFilters: 8
+        }
+      }
     }
   },
   {

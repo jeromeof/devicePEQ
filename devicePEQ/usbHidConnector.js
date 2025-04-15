@@ -35,7 +35,11 @@ export const UsbHIDConnector = ( async function () {
                 // Look up the model-specific configuration from the vendor config.
                 // If no specific model configuration exists, fall back to a default if provided.
                 let deviceDetails = vendorConfig.devices[model] || {};
-                let modelConfig = deviceDetails.modelConfig || vendorConfig.defaultModelConfig || {};
+                let modelConfig = Object.assign(
+                  {},
+                  vendorConfig.defaultModelConfig || {},
+                  deviceDetails.modelConfig || {}
+                );
 
                 const manufacturer = deviceDetails.manufacturer | vendorConfig.manufacturer;
                 let handler = deviceDetails.handler ||  vendorConfig.handler;
