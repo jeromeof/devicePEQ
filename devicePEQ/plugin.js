@@ -426,6 +426,11 @@ async function initializeDeviceEqPlugin(context) {
 
               // Connect via Network using the provided IP
               const device = await NetworkDeviceConnector.getDeviceConnected(selection.ipAddress, selection.deviceType);
+              if (device?.handler == null) {
+                alert("Sorry, this network device is not currently supported.");
+                await NetworkDeviceConnector.disconnectDevice();
+                return;
+              }
               if (device) {
                 deviceEqUI.showConnectedState(
                   device,
@@ -437,6 +442,11 @@ async function initializeDeviceEqPlugin(context) {
             } else if (selection.connectionType == "usb") {
               // Connect via USB and show the HID device picker
               const device = await UsbHIDConnector.getDeviceConnected();
+              if (device?.handler == null) {
+                alert("Sorry, this USB device is not currently supported.");
+                await UsbHIDConnector.disconnectDevice();
+                return;
+              }
               if (device) {
                 deviceEqUI.showConnectedState(
                   device,
@@ -453,6 +463,11 @@ async function initializeDeviceEqPlugin(context) {
             } else if (selection.connectionType == "serial") {
               // Connect via USB and show the Serial device picker
               const device = await UsbSerialConnector.getDeviceConnected();
+              if (device?.handler == null) {
+                alert("Sorry, this USB Serial device is not currently supported.");
+                await UsbSerialConnector.disconnectDevice();
+                return;
+              }
               if (device) {
                 deviceEqUI.showConnectedState(
                   device,

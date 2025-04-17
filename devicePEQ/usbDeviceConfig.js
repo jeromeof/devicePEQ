@@ -220,7 +220,6 @@ export const usbHidDeviceHandlerConfig = ( [
     {
       vendorId: 13784,
       manufacturer: "Moondrop",
-      handler: moondropUsbHidHandler,
       defaultModelConfig: {
         minGain: -12,
         maxGain: 12,
@@ -240,6 +239,16 @@ export const usbHidDeviceHandlerConfig = ( [
         ]
       },
       devices: {
+        "Moondrop Rays": {
+          modelConfig:   {
+            handler: moondropUsbHidHandler,
+          }
+        },
+        "Moondrop Marigold": {
+          modelConfig:   {
+            handler: moondropUsbHidHandler,
+          }
+        }
       }
     },
   {
@@ -258,7 +267,7 @@ export const usbHidDeviceHandlerConfig = ( [
     },
     devices: {
       "TANCHJIM-STARGATE II": {
-        defaultModelConfig:   {
+        modelConfig:   {
           maxFilters: 8
         }
       }

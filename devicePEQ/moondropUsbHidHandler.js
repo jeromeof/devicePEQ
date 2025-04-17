@@ -45,6 +45,7 @@ export const moondropUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        console.log("Raw slot report received:", [...data]);
         if (data[0] !== 0x80 || data[1] !== 0x0F) return;
 
         clearTimeout(timeout);
@@ -68,6 +69,7 @@ export const moondropUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        console.log("Raw slot report received:", [...data]);
         if (data[0] !== COMMAND_READ || data[1] !== COMMAND_UPDATE_EQ) return;
 
         clearTimeout(timeout);
