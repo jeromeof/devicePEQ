@@ -190,6 +190,11 @@ export const usbHidDeviceHandlerConfig = ( [
         "Quark2": {
           manufacturer: "Moondrop"
         },
+        devices: {
+          "TANCHJIM-STARGATE II": {
+            manufacturer: "Tanchim",
+          }
+        }
       }
     },
     {
@@ -239,13 +244,6 @@ export const usbHidDeviceHandlerConfig = ( [
       disconnectOnSave: false,
       disabledPresetId: -1,
       availableSlots: [{id: 101, name: "Custom"}]
-    },
-    devices: {
-      "TANCHJIM-STARGATE II": {
-        modelConfig: {
-          maxFilters: 8
-        }
-      }
     }
   },
   {
