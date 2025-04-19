@@ -41,6 +41,7 @@ export const ktmicroUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        console.log("Raw slot report received:", [...data]);
         if (data[4] !== COMMAND_READ) return;
 
         if (data[0] === gainFreqId) {

@@ -171,31 +171,6 @@ export const usbHidDeviceHandlerConfig = ( [
       }
     },
     {
-      vendorId: 2578, // Snowsky
-      manufacturer: "FiiO",
-      handler: fiioUsbHID,
-      devices: {
-        "RETRO NANO": {
-          modelConfig: {
-            minGain: -12,
-            maxGain: 12,
-            maxFilters: 10,
-            firstWritableEQSlot: 7,
-            maxWritableEQSlots: 3,
-            disconnectOnSave: true,
-            disabledPresetId: 11,
-            availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
-              id: 3,
-              name: "Dance"
-            }, {id: 4, name: "R&B"}, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 8, name: "Retro"}, {
-              id: 11,
-              name: "Close"
-            }, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {id: 162, name: "USER3"}]
-          }
-        },
-      }
-    },
-    {
       vendorId: 13058,
       manufacturer: "WalkPlay",
       handler: walkplayUsbHID,
@@ -267,14 +242,14 @@ export const usbHidDeviceHandlerConfig = ( [
     },
     devices: {
       "TANCHJIM-STARGATE II": {
-        modelConfig:   {
+        modelConfig: {
           maxFilters: 8
         }
       }
     }
   },
   {
-    vendorId: 0x306D, // Qudelix 5K vendor ID (12397 in decimal)
+    vendorId: 2578, // Qudelix 5K vendor ID (12397 in decimal)
     manufacturer: "Qudelix",
     handler: qudelixUsbHidHandler,
     defaultModelConfig: {

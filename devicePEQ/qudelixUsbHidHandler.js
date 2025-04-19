@@ -6,20 +6,44 @@ export const qudelixUsbHidHandler = (function () {
   const REPORT_ID = 0x4b; // Assuming standard HID report ID, adjust if needed
 
   // Command types (from the 'hy' enum in the original code)
+// Update CMD constants to match eAppCmd from Qudelix code
   const CMD = {
-    Enable: 0x01,
-    Headroom: 0x02,
-    Preset: 0x03,
-    Type: 0x04,
-    Mode: 0x05,
-    PreGain: 0x06,
-    Gain: 0x07,
-    Q: 0x08,
-    Filter: 0x09,
-    Freq: 0x0A,
-    PresetName: 0x0B,
-    ReceiverInfo: 0x0C,
-    Band: 0x0D
+    // Request commands
+    ReqInitData: 0x0001,
+    ReqDevStatus: 0x0002,
+    ReqDevConfig: 0x0003,
+    ReqEqPreset: 0x0004,
+    ReqEqPresetName: 0x0005,
+    ReqBattLogData: 0x0006,
+
+    // Set commands
+    SetDevConfig: 0x0101,
+    SetEqEnable: 0x0102,
+    SetEqType: 0x0103,
+    SetEqHeadroom: 0x0104,
+    SetEqPreGain: 0x0105,
+    SetEqGain: 0x0106,
+    SetEqFilter: 0x0107,
+    SetEqFreq: 0x0108,
+    SetEqQ: 0x0109,
+    SetEqBandParam: 0x010A,
+    SetEqPreset: 0x010B,
+    SetEqPreset_L: 0x010C,
+    SetEqPreset_H: 0x010D,
+    SetEqPresetName: 0x010E,
+
+    // Response commands
+    RspInitData: 0x8001,
+    RspDevStatus: 0x8002,
+    RspDevConfig: 0x8003,
+    RspEqPreset: 0x8004,
+    RspEqPresetName: 0x8005,
+    RspEqPreset_L: 0x8006,
+    RspEqPreset_H: 0x8007,
+
+    // Additional commands
+    LoadEqPreset: 0x0201,
+    SaveEqPreset: 0x0202
   };
 
   // Filter types (from context of the converter functions)
@@ -36,12 +60,19 @@ export const qudelixUsbHidHandler = (function () {
   // Utility functions similar to 'wt' in the original code
   const utils = {
     toInt16: function(value) {
-      return (value << 16) >> 16;
+      return (value << 16) >> 16; // Convert to signed 16-bit
     },
 
     d16: function(array, offset) {
-      const n = (255 & array[offset]) << 8;
-      return (n | (255 & array[offset + 1])) & 0xFFFF;
+      return (array[offset] << 8) | array[offset + 1];
+    },
+
+    msb8: function(value) {
+      return (value >> 8) & 0xFF;
+    },
+
+    lsb8: function(value) {
+      return value & 0xFF;
     },
 
     toLittleEndianBytes: function(value) {
@@ -106,77 +137,76 @@ export const qudelixUsbHidHandler = (function () {
   async function pullFromDevice(deviceDetails, slot) {
     try {
       const device = deviceDetails.rawDevice;
-      const filters = [];
-      const maxBands = deviceDetails.modelConfig.maxFilters || 10; // Default to 10 bands if not specified
-      let globalGain = 0;
+      const maxBands = deviceDetails.modelConfig.maxFilters || 10;
 
-      // This would be a Promise that builds up the filters array
-      // by listening for device responses from our queries
+      // First, request the current preset data
+      await requestPresetData(device);
 
       return new Promise((resolve, reject) => {
-        // Set up a handler for device responses
+        let filters = [];
+        let globalGain = 0;
+        let receivedData = false;
+
         const responseHandler = function(event) {
           const data = new Uint8Array(event.data.buffer);
-          // Process data based on what we know about the Qudelix protocol
-          // For each band, we'd expect to receive type, freq, gain, and Q
 
-          // Example processing based on the code you provided:
-          if (data.length > 1) {
-            const cmdType = data[0];
+          // Check command type from the first 2 bytes
+          const cmdType = data[0] << 8 | data[1];
 
-            switch (cmdType) {
-              case CMD.Band:
-                const bandIndex = data[1];
-                const filterType = data[2];
-                const freq = utils.d16(data, 3);
-                const gain = utils.toInt16(utils.d16(data, 5));
-                const q = utils.d16(data, 7) / 100; // Assuming Q is stored multiplied by 100
+          if (cmdType === CMD.RspEqPreset ||
+            cmdType === CMD.RspEqPreset_L ||
+            cmdType === CMD.RspEqPreset_H) {
+            receivedData = true;
 
-                filters[bandIndex] = {
-                  type: mapQudelixToFilterType(filterType),
-                  freq: freq,
-                  gain: gain / 10, // Assuming gain is stored as dB * 10
-                  q: q,
-                  disabled: gain === 0 // Disable if gain is 0
-                };
-                break;
+            // Parse EQ preset data according to the format in the original code
+            // This is a simplified version - you'll need to adapt based on your exact needs
+            let offset = 2; // Skip command bytes
 
-              case CMD.PreGain:
-                // Extract pre-gain (global gain) values
-                const leftGain = utils.toInt16(utils.d16(data, 1));
-                const rightGain = utils.toInt16(utils.d16(data, 3));
-                // Use the average as the global gain
-                globalGain = (leftGain + rightGain) / 20; // Assuming gain is stored as dB * 10
-                break;
+            if (!deviceDetails.isV2) {
+              const group = data[offset++];
+              const flag = data[offset++];
+              // Parse remaining data as in rspPreset function
+            } else {
+              // For V2 devices, handle as in the V2 section of rspPreset
             }
+
+            // Process the preset data to extract filters
+            for (let i = 0; i < maxBands; i++) {
+              const filterType = data[offset + 0];
+              const freq = utils.d16(data, offset + 1);
+              const gain = utils.toInt16(utils.d16(data, offset + 3)) / 10;
+              const q = utils.d16(data, offset + 5) / 100;
+
+              filters.push({
+                type: mapQudelixToFilterType(filterType),
+                freq: freq,
+                gain: gain,
+                q: q,
+                disabled: gain === 0
+              });
+
+              offset += 7; // Move to next filter
+            }
+
+            // Extract global gain (PreGain)
+            globalGain = utils.toInt16(utils.d16(data, offset)) / 10;
           }
 
-          // Check if we've received all the data we need
-          if (filters.length === maxBands && globalGain !== undefined) {
+          if (receivedData) {
             device.removeEventListener('inputreport', responseHandler);
             resolve({ filters, globalGain });
           }
         };
 
-        // Set up the event listener for receiving data
         device.addEventListener('inputreport', responseHandler);
 
-        // Query for all the bands and PreGain
-        // This is where you'd send the appropriate HID reports to request the data
-
-        // Set a timeout to prevent hanging if we don't receive all the expected data
+        // Set timeout
         setTimeout(() => {
-          device.removeEventListener('inputreport', responseHandler);
-          // If we have some filters but not all, return what we have
-          if (filters.length > 0) {
-            resolve({ filters, globalGain });
-          } else {
+          if (!receivedData) {
+            device.removeEventListener('inputreport', responseHandler);
             reject(new Error("Timeout waiting for device response"));
           }
         }, 5000);
-
-        // TODO: Send the actual queries to the device
-        // This would involve sending multiple HID reports to request each band's settings
       });
     } catch (error) {
       console.error("Error pulling EQ from Qudelix:", error);
@@ -184,45 +214,103 @@ export const qudelixUsbHidHandler = (function () {
     }
   }
 
+// Helper function to request preset data
+  async function requestPresetData(device) {
+    // Send ReqEqPreset command similar to how reqPreset() works in the original code
+    const data = new Uint8Array([
+      CMD.ReqEqPreset >> 8,
+      CMD.ReqEqPreset & 0xFF,
+      0x01 // Group mask for usr group - adjust if needed
+    ]);
+
+    await device.sendReport(REPORT_ID, data);
+  }
+
   // Push EQ settings to the device
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
     try {
       const device = deviceDetails.rawDevice;
+      const isV2 = deviceDetails.isV2 || false;
 
-      // First, enable EQ
-      await sendEnableCommand(device, true);
+      // Enable EQ
+      await sendCommand(device, CMD.SetEqEnable, [1]);
 
-      // Set global gain (PreGain)
-      await sendPreGainCommand(device, globalGain * 10);
+      // Set PreGain (global gain)
+      const gainValue = Math.round(globalGain * 10);
+      const gainBytes = utils.toSignedLittleEndianBytes(gainValue);
 
-      // Send each filter band
+      if (isV2) {
+        // For V2 devices, use the format from v2_sendEqParam16x2
+        await sendCommand(device, CMD.SetEqPreGain, [
+          gainBytes[0], gainBytes[1], // Left channel
+          gainBytes[0], gainBytes[1]  // Right channel (same value)
+        ]);
+      } else {
+        // For non-V2 devices, use the format from sendEqParam
+        await sendCommand(device, CMD.SetEqPreGain, [
+          0, // Group (usr)
+          0x01, // Channel mask for left channel
+          0, // Band (unused for preGain)
+          gainBytes[0], gainBytes[1]
+        ]);
+      }
+
+      // Set each filter band
       for (let i = 0; i < filters.length; i++) {
         const filter = filters[i];
         if (i >= deviceDetails.modelConfig.maxFilters) break;
 
-        // We'll use the Band command to set all parameters at once
-        await sendBandCommand(
-          device,
-          i, // band index
-          mapFilterTypeToQudelix(filter.type),
-          filter.freq,
-          filter.gain * 10, // Convert to device format (dB * 10)
-          filter.q * 100 // Convert to device format (Q * 100)
-        );
+        const freqBytes = utils.toLittleEndianBytes(filter.freq);
+        const gainBytes = utils.toSignedLittleEndianBytes(filter.gain * 10);
+        const qBytes = utils.toLittleEndianBytes(filter.q * 100);
+        const filterType = mapFilterTypeToQudelix(filter.type);
+
+        if (isV2) {
+          // For V2 devices, use separate commands for each parameter
+          const band = i;
+          await sendCommand(device, CMD.SetEqFilter, [band, filterType]);
+          await sendCommand(device, CMD.SetEqFreq, [band, freqBytes[0], freqBytes[1]]);
+          await sendCommand(device, CMD.SetEqGain, [band, gainBytes[0], gainBytes[1]]);
+          await sendCommand(device, CMD.SetEqQ, [band, qBytes[0], qBytes[1]]);
+        } else {
+          // For non-V2 devices, use setBandParam approach
+          await sendCommand(device, CMD.SetEqBandParam, [
+            0, // Group (usr)
+            0x01, // Channel mask for left channel
+            i, // Band index
+            filterType,
+            freqBytes[0], freqBytes[1],
+            gainBytes[0], gainBytes[1],
+            qBytes[0], qBytes[1]
+          ]);
+        }
       }
 
       // Save to preset if needed
       if (slot > 0) {
-        await sendSaveToPresetCommand(device, slot);
+        await sendCommand(device, CMD.SaveEqPreset, [slot]);
       }
 
-      return deviceDetails.modelConfig.disconnectOnSave || false;
+      return true;
     } catch (error) {
       console.error("Error pushing EQ to Qudelix:", error);
       throw error;
     }
   }
 
+// Helper function to send commands with proper formatting
+  async function sendCommand(device, cmdType, payload) {
+    // Format: [cmdMSB, cmdLSB, ...payload]
+    const data = new Uint8Array(2 + payload.length);
+    data[0] = cmdType >> 8;
+    data[1] = cmdType & 0xFF;
+    data.set(payload, 2);
+
+    await device.sendReport(REPORT_ID, data);
+
+    // Add a small delay to avoid overwhelming the device
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
   // Helper function to send enable command
   async function sendEnableCommand(device, enable) {
     const data = new Uint8Array([
