@@ -10,7 +10,7 @@ const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
 // the raw USBHID reports to the device
 export const usbHidDeviceHandlerConfig = ([
   {
-    vendorIds: [0x2962],
+    vendorIds: [0x2972],
     manufacturer: "FiiO",
     handler: fiioUsbHID,
     defaultModelConfig: { // Fallback if we haven't got specific details yet
@@ -304,7 +304,7 @@ export const usbHidDeviceHandlerConfig = ([
     }
   },
   {
-    vendorIds: [0x31C2],
+    vendorIds: [0x31B2],
     manufacturer: "KT Micro",
     handler: ktmicroUsbHidHandler,
     defaultModelConfig: {
