@@ -41,25 +41,32 @@ export const ktmicroUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
-        console.log("Raw slot report received:", [...data]);
+        console.log(`USB Device PEQ: KTMicro onInputReport received data:`, data);
         if (data[4] !== COMMAND_READ) return;
 
         if (data[0] === gainFreqId) {
-          Object.assign(result, decodeGainFreqResponse(data));
+          const gainFreqData = decodeGainFreqResponse(data);
+          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} gain/freq decoded:`, gainFreqData);
+          Object.assign(result, gainFreqData);
         } else if (data[0] === qId) {
-          Object.assign(result, decodeQResponse(data));
+          const qData = decodeQResponse(data);
+          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} Q decoded:`, qData);
+          Object.assign(result, qData);
         }
 
         if ('gain' in result && 'freq' in result && 'q' in result) {
           clearTimeout(timeout);
           device.removeEventListener('inputreport', onReport);
           result.type = "PK";
+          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} complete:`, result);
           resolve(result);
         }
       };
 
       device.addEventListener('inputreport', onReport);
+      console.log(`USB Device PEQ: KTMicro sending gain/freq request for filter ${filterIndex}:`, requestGainFreq);
       await device.sendReport(REPORT_ID, requestGainFreq);
+      console.log(`USB Device PEQ: KTMicro sending Q request for filter ${filterIndex}:`, requestQ);
       await device.sendReport(REPORT_ID, requestQ);
     });
   }
@@ -116,11 +123,18 @@ export const ktmicroUsbHidHandler = (function () {
       const writeQ = buildQPacket(filterId + 1, filters[i].q);
 
       // We should verify it is saved correctly but for now lets assume once command is accepted it has worked
+      console.log(`USB Device PEQ: KTMicro sending gain/freq for filter ${i}:`, filters[i], writeGainFreq);
       await device.sendReport(REPORT_ID, writeGainFreq);
+
+      console.log(`USB Device PEQ: KTMicro sending Q for filter ${i}:`, filters[i].q, writeQ);
       await device.sendReport(REPORT_ID, writeQ);
     }
+
     const commit = buildCommit();
+    console.log(`USB Device PEQ: KTMicro sending commit command:`, commit);
     await device.sendReport(REPORT_ID, commit);
+
+    console.log(`USB Device PEQ: KTMicro successfully pushed ${filters.length} filters to device`);
     if (deviceDetails.modelConfig.disconnectOnSave) {
       return true;    // Disconnect
     }

@@ -31,7 +31,7 @@ export const walkplayUsbHID = (function () {
     const versionBytes = response.slice(3, 6);
     const version = String.fromCharCode(...versionBytes);
 
-    console.log("Walkplay firmware version:", version);
+    console.log("USB Device PEQ: Walkplay firmware version:", version);
     const versionNumber = parseFloat(version);
 
     if (isNaN(versionNumber)) {
@@ -97,22 +97,54 @@ export const walkplayUsbHID = (function () {
 
     device.oninputreport = async (event) => {
       const data = new Uint8Array(event.data.buffer);
+      console.log(`USB Device PEQ: Walkplay pullFromDevice onInputReport received data:`, data);
+
       if (data.length >= 32) {
         const filter = parseFilterPacket(data);
+        console.log(`USB Device PEQ: Walkplay parsed filter ${filter.filterIndex}:`, filter);
         filters[filter.filterIndex] = filter;
       }
-      if (data.length >= 40) globalGain = parseGlobalGain(data);
-      if (data.length >= 37) currentSlot = data[36];
+
+      if (data.length >= 40) {
+        globalGain = parseGlobalGain(data);
+        console.log(`USB Device PEQ: Walkplay parsed global gain: ${globalGain}dB`);
+      }
+
+      if (data.length >= 37) {
+        currentSlot = data[36];
+        console.log(`USB Device PEQ: Walkplay parsed current slot: ${currentSlot}`);
+      }
     };
 
+    // Send requests for each filter with increased delay
     for (let i = 0; i < DEFAULT_FILTER_COUNT; i++) {
       await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, i, END]);
-      await delay(50);
+      await delay(100); // Increased delay between requests
     }
 
+    // Check for missing filters after initial requests
+    await delay(200); // Wait a bit after sending all requests
+
+    // Retry for any missing filters
+    const missingIndices = [];
+    for (let i = 0; i < DEFAULT_FILTER_COUNT; i++) {
+      if (filters[i] === undefined) {
+        missingIndices.push(i);
+      }
+    }
+
+    if (missingIndices.length > 0) {
+      console.log(`Retrying missing filters: ${missingIndices.join(', ')}`);
+      for (const index of missingIndices) {
+        await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, index, END]);
+        await delay(200); // Even longer delay for retries
+      }
+    }
+
+    // Wait for filters with increased timeout
     const result = await waitForFilters(() => {
       return filters.filter(f => f !== undefined).length === DEFAULT_FILTER_COUNT;
-    }, device, 10000, () => ({
+    }, device, 15000, () => ({  // Increased timeout to 15 seconds
       filters,
       globalGain,
       currentSlot,
@@ -135,7 +167,7 @@ export const walkplayUsbHID = (function () {
 
     // Q factor (8.8 fixed-point)
     const qRaw = packet[29] | (packet[30] << 8);
-    const q = qRaw / 256;
+    const q = Math.round((qRaw / 256) * 10) / 10;
 
     // Gain (8.8 fixed-point signed)
     let gainRaw = packet[31] | (packet[32] << 8);
@@ -175,7 +207,7 @@ export const walkplayUsbHID = (function () {
   async function sendReport(device, reportId, packet) {
     if (!device) throw new Error("Device not connected.");
     const data = new Uint8Array(packet);
-    console.log("Sending:", data);
+    console.log(`USB Device PEQ: Walkplay sending report (ID: ${reportId}):`, data);
     await device.sendReport(reportId, data);
   }
 
@@ -183,12 +215,15 @@ export const walkplayUsbHID = (function () {
   async function waitForResponse(device, timeout = 5000) {
     return new Promise((resolve, reject) => {
       let response = null;
-      const timer = setTimeout(() => reject("Timeout waiting for HID response"), timeout);
+      const timer = setTimeout(() => {
+        console.log(`USB Device PEQ: Walkplay timeout waiting for response after ${timeout}ms`);
+        reject("Timeout waiting for HID response");
+      }, timeout);
 
       device.oninputreport = (event) => {
         clearTimeout(timer);
         response = new Uint8Array(event.data.buffer);
-        console.log("Received:", response);
+        console.log(`USB Device PEQ: Walkplay received response:`, response);
         resolve(response);
       };
     });
@@ -211,9 +246,20 @@ async function waitForFilters(condition, device, timeout, callback) {
     const timer = setTimeout(() => {
       if (!condition()) {
         console.warn("Timeout: Filters not fully received.");
-        reject(callback(device));
+        // Instead of rejecting with the callback result, create a proper result with partial data
+        const result = callback(device);
+        // Add information about the timeout to help with debugging
+        result.complete = false;
+        result.timedOut = true;
+        result.receivedCount = result.filters.filter(f => f !== undefined).length;
+        result.expectedCount = DEFAULT_FILTER_COUNT;
+        // Resolve with partial data instead of rejecting
+        resolve(result);
       } else {
-        resolve(callback(device));
+        const result = callback(device);
+        result.complete = true;
+        result.timedOut = false;
+        resolve(result);
       }
     }, timeout);
 
@@ -221,7 +267,10 @@ async function waitForFilters(condition, device, timeout, callback) {
       if (condition()) {
         clearTimeout(timer);
         clearInterval(interval);
-        resolve(callback(device));
+        const result = callback(device);
+        result.complete = true;
+        result.timedOut = false;
+        resolve(result);
       }
     }, 100);
   });

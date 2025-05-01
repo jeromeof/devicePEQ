@@ -16,10 +16,13 @@ export const wiimNetworkHandler = (function () {
    */
   async function pullFromDevice(ip, slot) {
     try {
-      const url = `https://${ip}/httpapi.asp?command=EQGetLV2SourceBandEx:${encodeURIComponent(JSON.stringify({
+      const payload = {
         source_name: SOURCE_NAME,
         pluginURI: PLUGIN_URI
-      }))}`;
+      };
+      const url = `https://${ip}/httpapi.asp?command=EQGetLV2SourceBandEx:${encodeURIComponent(JSON.stringify(payload))}`;
+      console.log(`Device PEQ: WiiM sending request to fetch EQ data:`, payload);
+
       const response = await fetch(url, {method: "GET", mode: "no-cors"});
 
       if (!response.status)
@@ -28,7 +31,7 @@ export const wiimNetworkHandler = (function () {
       const data = await response.json();
       if (data.status !== "OK") throw new Error(`PEQ fetch failed: ${JSON.stringify(data)}`);
 
-      console.log("WiiM PEQ Data:", data);
+      console.log("Device PEQ: WiiM received EQ data:", data);
 
       const filters = parseWiiMEQData(data);
       return {filters, globalGain: 0, currentSlot: slot, deviceDetails: {maxFilters: 10}};
@@ -80,6 +83,8 @@ export const wiimNetworkHandler = (function () {
       };
 
       const url = `https://${ip}/httpapi.asp?command=EQSetLV2SourceBand:${encodeURIComponent(JSON.stringify(payload))}`;
+      console.log(`Device PEQ: WiiM sending request to set EQ data:`, payload);
+
       const response = await fetch(url, { method: "GET", mode: "no-cors" });
 
       if (response.status != 0)
@@ -87,10 +92,11 @@ export const wiimNetworkHandler = (function () {
 
       if (response.type !== "opaque") {
         const data = await response.json();
+        console.log(`Device PEQ: WiiM received response for set EQ:`, data);
         if (data.status !== "OK")
           throw new Error(`PEQ push failed: ${JSON.stringify(data)}`);
       } else {
-        console.log("Cannot read response due to security reasons");
+        console.log("Device PEQ: WiiM cannot read response due to security reasons (CORS)");
       }
 
       // Now set the Preset Name - ultimately get the headphone name from custom parameters but not for now
@@ -100,6 +106,8 @@ export const wiimNetworkHandler = (function () {
         Name: "HeadphoneEQ"             // Custom preset name
       }
       const presetNameUrl = `https://${ip}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
+      console.log(`Device PEQ: WiiM sending request to save preset name:`, presetNamePayload);
+
       const presetNameResponse = await fetch(presetNameUrl, { method: "GET", mode: "no-cors" });
 
       if (presetNameResponse.status != 0)
@@ -107,9 +115,14 @@ export const wiimNetworkHandler = (function () {
 
       if (presetNameResponse.type !== "opaque") {
         const data = await presetNameResponse.json();
+        console.log(`Device PEQ: WiiM received response for preset name:`, data);
         if (data.status !== "OK")
           throw new Error(`PEQ Name push failed: ${JSON.stringify(data)}`);
+      } else {
+        console.log("Device PEQ: WiiM cannot read preset name response due to security reasons (CORS)");
       }
+
+      console.log("Device PEQ: WiiM settings successfully pushed to device");
 
 
       console.log("WiiM PEQ updated successfully");

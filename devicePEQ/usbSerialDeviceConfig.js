@@ -17,6 +17,7 @@ export const usbSerialDeviceHandlerConfig = [
           maxWritableEQSlots: 1,
           disconnectOnSave: false,
           disabledPresetId: -1,
+          experimental: true,
           availableSlots: [{ id: 0, name: "Headphones" },{ id: 1, name: "RCA" }]
         }
       }

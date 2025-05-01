@@ -45,15 +45,17 @@ export const moondropUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
-        console.log("Raw slot report received:", [...data]);
+        console.log(`USB Device PEQ: Moondrop onInputReport received slot data:`, data);
         if (data[0] !== 0x80 || data[1] !== 0x0F) return;
 
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
+        console.log(`USB Device PEQ: Moondrop current slot: ${data[3]}`);
         resolve(data[3]); // slot ID
       };
 
       device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending getCurrentSlot command:`, request);
       await device.sendReport(0x4B, request);
     });
   }
@@ -69,15 +71,18 @@ export const moondropUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
-        console.log("Raw slot report received:", [...data]);
+        console.log(`USB Device PEQ: Moondrop onInputReport received filter ${filterIndex} data:`, data);
         if (data[0] !== COMMAND_READ || data[1] !== COMMAND_UPDATE_EQ) return;
 
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
-        resolve(decodeFilterResponse(data));
+        const filter = decodeFilterResponse(data);
+        console.log(`USB Device PEQ: Moondrop filter ${filterIndex} decoded:`, filter);
+        resolve(filter);
       };
 
       device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readFilter ${filterIndex} command:`, packet);
       await device.sendReport(REPORT_ID, packet);
     });
   }
@@ -181,15 +186,19 @@ export const moondropUsbHidHandler = (function () {
 
     for (let i = 0; i < filters.length && i < deviceDetails.modelConfig.maxFilters; i++) {
       const writeFilter = buildWritePacket(i, filters[i]);
+      console.log(`USB Device PEQ: Moondrop sending filter ${i} data:`, filters[i], writeFilter);
       await device.sendReport(REPORT_ID, writeFilter);
 
       const enable = buildEnablePacket(i);
+      console.log(`USB Device PEQ: Moondrop sending enable command for filter ${i}:`, enable);
       await device.sendReport(REPORT_ID, enable);
     }
 
     const save = buildSavePacket();
+    console.log(`USB Device PEQ: Moondrop sending save command:`, save);
     await device.sendReport(REPORT_ID, save);
 
+    console.log(`USB Device PEQ: Moondrop successfully pushed ${filters.length} filters to device`);
     return false;
   }
 

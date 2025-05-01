@@ -10,7 +10,7 @@ const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
 // the raw USBHID reports to the device
 export const usbHidDeviceHandlerConfig = ([
   {
-    vendorIds: [0x2972],
+    vendorIds: [0x2972, 0x0A12],
     manufacturer: "FiiO",
     handler: fiioUsbHID,
     defaultModelConfig: { // Fallback if we haven't got specific details yet
@@ -21,6 +21,7 @@ export const usbHidDeviceHandlerConfig = ([
       maxWritableEQSlots: 0,
       disconnectOnSave: true,
       disabledPresetId: -1,
+      experimental: true,
       availableSlots: []
     },
     devices: {
@@ -33,6 +34,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 1,
           disconnectOnSave: true,
           disabledPresetId: 4,
+          experimental: false,
           availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
             id: 3,
             name: "USER1"
@@ -48,6 +50,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
+          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -69,6 +72,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
+          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -90,6 +94,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 12,
+          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -111,6 +116,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
+          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -138,6 +144,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
+          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -150,9 +157,6 @@ export const usbHidDeviceHandlerConfig = ([
           }]
         }
       },
-      "K17": {
-        modelConfig: {}
-      },
       "LS-TC2": {
         modelConfig: {
           minGain: -12,
@@ -162,10 +166,32 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 1,
           disconnectOnSave: true,
           disabledPresetId: 11,
+          experimental: true,
           availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
             id: 3,
             name: "Dance"
           }, {id: 4, name: "R&B"}, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 160, name: "USER1"}]
+        }
+      },
+      "Qudelix-5K USB DAC 48KHz": {
+        handler: qudelixUsbHidHandler,
+        manufacturer: "Qudelix",
+        defaultModelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10, // Qudelix 5K supports 10 PEQ bands
+          firstWritableEQSlot: 1,
+          maxWritableEQSlots: 4,
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: true,
+          availableSlots: [
+            {id: 101, name: "Custom"},
+            {id: 1, name: "Preset 1"},
+            {id: 2, name: "Preset 2"},
+            {id: 3, name: "Preset 3"},
+            {id: 4, name: "Preset 4"}
+          ]
         }
       }
     }
@@ -183,6 +209,7 @@ export const usbHidDeviceHandlerConfig = ([
       maxWritableEQSlots: 0,
       disconnectOnSave: false,
       disabledPresetId: -1,
+      experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
     },
     devices: {
@@ -203,95 +230,116 @@ export const usbHidDeviceHandlerConfig = ([
       "FreeDSP Pro": {
         manufacturer: "Moondrop"
       },
+      "Hi-MAX": {
+        modelConfig: {
+          experimental: false
+        }
+      },
       "BGVP MX1": {
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "DT04": {
         manufacturer: "LETSHUOER",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "MD-QT-042": {
         manufacturer: "Moondrop",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "MOONDROP HiFi with PD": {
         manufacturer: "Moondrop",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "DAWN PRO 2": {
         manufacturer: "Moondrop",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "CS431XX": {
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "ES9039 ": {
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "TANCHJIM-STARGATE II": {
         manufacturer: "Tanchim",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "didiHiFi DSP Cable - Memory": {
         manufacturer: "ddHifi",
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "Dual CS43198": {
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "ES9039 HiFi DSP Audio": {
         modelConfig: {
-          schemeNo: 15
+          schemeNo: 15,
+          experimental: true
         }
       },
       "AE6": {
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
       "KM_HA03": {
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
       "TP35 Pro": {
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
       "DA5": {
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
       "G303": {
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
       "HiFi DSP Audio with PD": {
@@ -299,6 +347,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          experimental: true
         }
       },
     }
@@ -315,33 +364,10 @@ export const usbHidDeviceHandlerConfig = ([
       maxWritableEQSlots: 0,
       disconnectOnSave: false,
       disabledPresetId: -1,
+      experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
-    }
-  },
-  {
-    vendorIds: [0x0A12], // Qudelix 5K vendor ID
-    manufacturer: "Qudelix",
-    handler: qudelixUsbHidHandler,
-    defaultModelConfig: {
-      minGain: -12,
-      maxGain: 12,
-      maxFilters: 10, // Qudelix 5K supports 10 PEQ bands
-      firstWritableEQSlot: 1,
-      maxWritableEQSlots: 4,
-      disconnectOnSave: false,
-      disabledPresetId: -1,
-      availableSlots: [
-        {id: 101, name: "Custom"},
-        {id: 1, name: "Preset 1"},
-        {id: 2, name: "Preset 2"},
-        {id: 3, name: "Preset 3"},
-        {id: 4, name: "Preset 4"}
-      ]
     },
     devices: {
-      "5K": {
-        modelConfig: {} // Inherit from default
-      }
     }
   }
 ])

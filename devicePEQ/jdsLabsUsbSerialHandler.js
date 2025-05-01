@@ -8,7 +8,9 @@ export const jdsLabsUsbSerial = (function () {
 
   async function sendJsonCommand(device, json) {
     const writer = device.writable;
-    const payload = textEncoder.encode(JSON.stringify(json) + "\0");
+    const jsonString = JSON.stringify(json);
+    const payload = textEncoder.encode(jsonString + "\0");
+    console.log(`USB Device PEQ: JDS Labs sending command:`, jsonString);
     await writer.write(payload);
   }
 
@@ -21,9 +23,12 @@ export const jdsLabsUsbSerial = (function () {
       buffer += textDecoder.decode(value);
       if (buffer.includes("\0")) {
         const jsonStr = buffer.split("\0")[0];
-        return JSON.parse(jsonStr);
+        const response = JSON.parse(jsonStr);
+        console.log(`USB Device PEQ: JDS Labs received response:`, response);
+        return response;
       }
     }
+    console.log(`USB Device PEQ: JDS Labs received no response`);
     return null;
   }
 

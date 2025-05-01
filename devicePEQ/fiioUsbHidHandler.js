@@ -31,13 +31,14 @@ export const fiioUsbHID = (function () {
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: getCurrentSlot() onInputReport received data:`, data);
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
             case PEQ_PRESET_SWITCH:
               currentSlot = handleEqPreset(data, deviceDetails);
               break;
             default:
-              console.log("Unhandled data type:", data[4]);
+              console.log("USB Device PEQ: Unhandled data type:", data[4], data);
           }
         }
       };
@@ -111,6 +112,7 @@ export const fiioUsbHID = (function () {
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: pullFromDevice() onInputReport received data:`, data);
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
             case PEQ_FILTER_COUNT:
@@ -121,6 +123,7 @@ export const fiioUsbHID = (function () {
               break;
             case PEQ_GLOBAL_GAIN:
               globalGain = handleGain(data[6], data[7]);
+              console.log(`USB Device PEQ: Global gain received: ${globalGain}dB`);
               break;
             case PEQ_PRESET_SWITCH:
               currentSlot = handleEqPreset(data, deviceDetails);
@@ -129,7 +132,7 @@ export const fiioUsbHID = (function () {
               savedEQ(data, device);
               break;
             default:
-              console.log("Unhandled data type:", data[4]);
+              console.log("USB Device PEQ: Unhandled data type:", data[4], data);
           }
         }
       };
@@ -192,6 +195,7 @@ async function setPeqParams(device, filterIndex, fc, gain, q, filterType) {
 
   const data = new Uint8Array(packet);
   const reportId = device.collections[0].outputReports[0].reportId;
+  console.log(`USB Device PEQ: setPeqParams() sending filter ${filterIndex} - Freq: ${fc}Hz, Gain: ${gain}dB, Q: ${q}, Type: ${filterType}`, data);
   await device.sendReport(reportId, data);
 }
 
@@ -203,6 +207,7 @@ async function setPresetPeq(device, presetId) { // Default to 0 if not specified
 
   const data = new Uint8Array(packet);
   const reportId = device.collections[0].outputReports[0].reportId;
+  console.log(`USB Device PEQ: setPresetPeq() switching to preset ${presetId}`, data);
   await device.sendReport(reportId, data);
 }
 
@@ -217,6 +222,7 @@ async function setGlobalGain(device, gain) {
 
   const data = new Uint8Array(packet);
   const reportId = device.collections[0].outputReports[0].reportId;
+  console.log(`USB Device PEQ: setGlobalGain() setting global gain to ${gain}dB`, data);
   await device.sendReport(reportId, data);
 }
 
@@ -228,6 +234,7 @@ async function setPeqCounter(device, counter) {
 
   const data = new Uint8Array(packet);
   const reportId = device.collections[0].outputReports[0].reportId;
+  console.log(`USB Device PEQ: setPeqCounter() setting filter count to ${counter}`, data);
   await device.sendReport(reportId, data);
 }
 
@@ -426,4 +433,3 @@ function waitForFilters(condition, device, timeout, callback) {
     }, 100);
   });
 }
-
