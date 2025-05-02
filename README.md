@@ -37,7 +37,7 @@ DeviceEQ/
 - Loads UI elements dynamically inside a **designated container (`.extra-eq`)**.
 - Lets the user **connect to a device (USB HID, Serial, or Network)**.
 - Retrieves available **PEQ slots** from the device.
-- Provides **"Push" & "Pull" buttons** to transfer PEQ settings.
+- Provides **"Push" & "Pull" buttons** to transfer PEQ settings
 - Handles **disconnections and device switching**.
 - Uses **cookies to persist the network device's IP and type**.
 
