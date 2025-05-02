@@ -609,7 +609,7 @@ async function initializeDeviceEqPlugin(context) {
         });
 
 
-  // Cookie functions
+        // Cookie functions
         function setCookie(name, value, days) {
           let expires = "";
           if (days) {
@@ -659,7 +659,7 @@ async function initializeDeviceEqPlugin(context) {
                   This means it hasn't been fully tested and while it may work perfectly, it may not work as expected.
                 </p>
                 <p style="color: black; margin-bottom: 15px;">
-                  If the device is working for you pleasse consider submiting feedback below and we will mark it as not experimental in the next release.
+                  If the device is working for you please consider submiting feedback below, and we will mark it as not experimental in the next release.
                   If you noticed any issues, please disconnect the device and then come back here and submit feedback below.
                 </p>
                 <p style="color: black; margin-bottom: 15px;">
@@ -703,6 +703,19 @@ async function initializeDeviceEqPlugin(context) {
                 </div>
               </div>
             `;
+
+            // Force checkboxes
+            const styleFix = document.createElement("style");
+            styleFix.innerHTML = `
+              input[type="checkbox"] {
+                appearance: auto !important;
+                -webkit-appearance: auto !important;
+                width: 16px;
+                height: 16px;
+                vertical-align: middle;
+              }
+            `;
+            document.head.appendChild(styleFix);
 
             const dialogContainer = document.createElement("div");
             dialogContainer.innerHTML = dialogHTML;
