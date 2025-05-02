@@ -1,4 +1,4 @@
-# **DeviceEQ Plugin - Pragmatic Audio**
+# **DeviceEQ Plugin v0.5 - Pragmatic Audio**
 
 ## 📌 Overview
 DeviceEQ is a **JavaScript-based plugin** for interacting with **audio devices** that support **Parametric EQ (PEQ)**. It supports **USB HID**, **USB Serial**, and **network-connected** devices, offering full control over EQ filters, slot management, and device communication.
@@ -12,6 +12,7 @@ DeviceEQ is a **JavaScript-based plugin** for interacting with **audio devices**
 - 📦 **Dynamic Slot Discovery & Management**
 - 🧠 **Per-Device Handler Logic with Config Models**
 - 📘 **Integrated Modal UI for Info and Help**
+- 📝 **Feedback Mechanism for Experimental Devices**
 
 ---
 
@@ -76,6 +77,7 @@ DeviceEQ/
 - **JDS Labs Element IV**
 - **JDS Labs Atom DAC 3**
 - (Any device supporting JDS Core PEQ over serial)
+- **Note:** This option is only visible in advanced mode
 
 ### **🔗 How it Works**
 1. Prompts for serial port selection.
@@ -93,6 +95,7 @@ DeviceEQ/
 
 ### **📌 Supported Devices**
 - **WiiM Mini, Pro, Pro Plus, Ultra, Amp**
+- **Note:** This option is only visible in advanced mode
 
 ### **🔗 How it Works**
 1. Prompts for local IP address of the device.
@@ -109,7 +112,14 @@ DeviceEQ/
 - Supports slot switching and device-specific quirks.
 
 ### **📌 Tested Devices**
-- **FiiO KA17, KA15, JA11, Q7, Retro Nano, BTR13**
+- **FiiO:** JA11, KA15, KA17 (Retro Nano has limited compatibility)
+- **Moondrop:** CDSP, Chu II DSP, Quark2, Echo A
+- **Tanchjim:** Bunny DSP, One DSP
+- **EPZ:** GM20, TP13
+- **Kiwi Ears:** Allegro, Allegro Pro
+- **JCally:** JM20 Pro, JM12, and possibly others
+- **Other Walkplay-compatible devices**
+- **KTMicro DSP devices**
 
 ---
 
@@ -153,6 +163,12 @@ DeviceEQ/
 ### **5️⃣ Persistent Info**
 - Device IP and type are saved for future sessions.
 
+### **6️⃣ Experimental Devices**
+- Some devices are marked as **experimental**.
+- When connecting to an experimental device, a warning dialog appears.
+- You can provide feedback about your experience with the device.
+- This feedback helps improve compatibility and support for more devices.
+
 ---
 
 ## **🔧 Future Enhancements**
@@ -170,7 +186,26 @@ DeviceEQ/
 
 ---
 
+## **📝 Feedback Mechanism**
+### **🔹 What it does**
+- Provides a **feedback form** for users to report their experience with **experimental devices**.
+- Allows users to indicate if the device is **working correctly**.
+- Optionally includes **console logs** to help diagnose issues.
+- Lets users add **comments** about their experience.
+- Submits feedback to developers via a **Google Form**.
+
+### **🔗 How it Works**
+1. When connecting to a device marked as **experimental**, a warning dialog appears.
+2. The dialog explains that the device hasn't been fully tested.
+3. Users can proceed with the connection and test the device.
+4. After testing, users can provide feedback about their experience.
+5. This feedback helps improve compatibility and support for more devices.
+
+---
+
 ## **🚀 Summary**
 The **DeviceEQ Plugin** brings **flexible, real-time PEQ control** to a growing range of **USB, Serial, and networked audio gear**. Whether you're tuning a dongle, an IEM, a desktop DAC, or a smart streamer—**DeviceEQ bridges the gap between pro-grade tuning and consumer gear**.
+
+The plugin now includes a **feedback mechanism** for experimental devices, allowing users to contribute to the project by reporting their experiences. This helps improve compatibility and support for a wider range of devices.
 
 👉 **From FiiO to JDS Labs to WiiM – make your sound yours.** 🎚🔥

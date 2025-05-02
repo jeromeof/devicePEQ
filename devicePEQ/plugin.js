@@ -302,12 +302,13 @@ async function initializeDeviceEqPlugin(context) {
                 <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2 </li>
                 <li><strong>Tanchjim:</strong> Bunny DSP, One DSP </li>
                 <li><strong>EPZ:</strong> GM20 and TP13</li>
-                <li><strong>JCally:</strong> JM20 Pro and JM12 and possible others</li>
-                <li><strong>Walkplay</strong> Many devices compatible with Walkplay Android APK</li>
+                <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
+                <li><strong>JCally:</strong> JM20 Pro, JM12</li>
+                <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
                 <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
                 <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
                 <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network</li>
-                <li><strong>Experimental:</strong> Devices that have yet to be tested, will be marked as 'Experimental'</li>
+                <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
               </ul>
             </div>
 
