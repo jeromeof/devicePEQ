@@ -85,6 +85,7 @@ async function initializeDeviceEqPlugin(context) {
       this.peqDropdown = document.getElementById('device-peq-slot-dropdown');
       this.pullButton = this.deviceEqArea.querySelector('.pull-filters-fromdevice');
       this.pushButton = this.deviceEqArea.querySelector('.push-filters-todevice');
+      this.lastPushTime = 0; // Track when the push button was last clicked
 
       this.useNetwork = false;
       this.currentDevice = null;
@@ -110,6 +111,26 @@ async function initializeDeviceEqPlugin(context) {
       this.pushButton.hidden = false;
       this.peqDropdown.hidden = false;
       this.peqSlotArea.hidden = false;
+
+      // Check if the push button should still be disabled based on lastPushTime
+      const currentTime = Math.floor(Date.now() / 1000);
+      const cooldownTime = 0.2; // Cooldown time in seconds (200ms)
+
+      if (currentTime < this.lastPushTime + cooldownTime) {
+        // Button is still in cooldown period
+        this.pushButton.disabled = true;
+        this.pushButton.style.opacity = "0.5";
+        this.pushButton.style.cursor = "not-allowed";
+
+        // Set a new timeout for the remaining cooldown time
+        const remainingTime = (this.lastPushTime + cooldownTime) - currentTime;
+        setTimeout(() => {
+          this.pushButton.disabled = false;
+          this.pushButton.style.opacity = "";
+          this.pushButton.style.cursor = "";
+          console.log("Push button re-enabled after cooldown period");
+        }, remainingTime * 1000); // Convert seconds to milliseconds
+      }
     }
 
     showDisconnectedState() {
@@ -991,6 +1012,17 @@ async function initializeDeviceEqPlugin(context) {
         // Push Button Event Listener
         deviceEqUI.pushButton.addEventListener('click', async () => {
           try {
+            // Check if the button is in cooldown period
+            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+            const cooldownTime = 0.2; // Cooldown period in seconds (200ms)
+
+            if (currentTime < deviceEqUI.lastPushTime + cooldownTime) {
+              const remainingTime = (deviceEqUI.lastPushTime + cooldownTime) - currentTime;
+              const remainingMinutes = Math.floor(remainingTime / 60);
+              const remainingSeconds = remainingTime % 60;
+              return;
+            }
+
             const device = deviceEqUI.currentDevice;
             const selectedSlot = deviceEqUI.peqDropdown.value;
             if (!device || !selectedSlot) {
@@ -1026,6 +1058,20 @@ async function initializeDeviceEqPlugin(context) {
               deviceEqUI.showDisconnectedState();
               alert("PEQ Saved - Restarting");
             }
+
+            // Set the last push time to current time and disable the button
+            deviceEqUI.lastPushTime = Math.floor(Date.now() / 1000);
+            deviceEqUI.pushButton.disabled = true;
+            deviceEqUI.pushButton.style.opacity = "0.5";
+            deviceEqUI.pushButton.style.cursor = "not-allowed";
+
+            // Set a timeout to re-enable the button after the cooldown period
+            setTimeout(() => {
+              deviceEqUI.pushButton.disabled = false;
+              deviceEqUI.pushButton.style.opacity = "";
+              deviceEqUI.pushButton.style.cursor = "";
+              console.log("Push button re-enabled after cooldown period");
+            }, 200); // 200ms timeout as requested
           } catch (error) {
 
             console.error("Error pushing PEQ filters:", error);
