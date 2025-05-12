@@ -18,7 +18,19 @@ export const ktmicroUsbHidHandler = (function () {
 
   function decodeQResponse(data) {
     const q = (data[6] + (data[7] << 8)) / 1000.0;
-    return { q };
+    let type = "PK"; // Default to Peak filter
+
+    // Read filter type from byte 8
+    const filterTypeValue = data[8];
+    if (filterTypeValue === 3) {
+      type = "LSQ"; // Low Shelf
+    } else if (filterTypeValue === 0) {
+      type = "PK"; // Peak
+    } else if (filterTypeValue === 4) {
+      type = "HSQ"; // High Shelf
+    }
+
+    return { q, type };
   }
 
   async function getCurrentSlot() {
@@ -54,10 +66,9 @@ export const ktmicroUsbHidHandler = (function () {
           Object.assign(result, qData);
         }
 
-        if ('gain' in result && 'freq' in result && 'q' in result) {
+        if ('gain' in result && 'freq' in result && 'q' in result && 'type' in result) {
           clearTimeout(timeout);
           device.removeEventListener('inputreport', onReport);
-          result.type = "PK";
           console.log(`USB Device PEQ: KTMicro filter ${filterIndex} complete:`, result);
           resolve(result);
         }

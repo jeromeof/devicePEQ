@@ -213,11 +213,19 @@ export const usbHidDeviceHandlerConfig = ([
       availableSlots: [{id: 101, name: "Custom"}]
     },
     devices: {
-      "MOONDROP RAYS": {
+      "Rays": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler
       },
-      "MOONDROP Marigold": {
+      "Marigold": {
+        manufacturer: "Moondrop",
+        handler: moondropUsbHidHandler
+      },
+      "FreeDSP Pro": {
+        manufacturer: "Moondrop",
+        handler: moondropUsbHidHandler
+      },
+      "ddHiFi DSP IEM - Memory": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler
       },
@@ -225,9 +233,6 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop"
       },
       "ECHO-A": {
-        manufacturer: "Moondrop"
-      },
-      "FreeDSP Pro": {
         manufacturer: "Moondrop"
       },
       "Hi-MAX": {

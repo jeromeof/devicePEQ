@@ -146,9 +146,7 @@ export const fiioUsbHID = (function () {
         return filters.length == peqCount
       }, device, 10000, (device) => ({
         filters: filters,
-        globalGain: globalGain,
-        currentSlot: currentSlot,
-        deviceDetails: deviceDetails.modelConfig
+        globalGain: globalGain
       }));
 
       return result;

@@ -55,6 +55,12 @@
   <h3>Filters</h3>
   <div id="filter-list" class="filter-list">
     <div class="filter-item">
+      <label>Type:</label>
+      <select class="filter-type">
+        <option value="PK">Peak</option>
+        <option value="LSQ">Low Shelf</option>
+        <option value="HSQ">High Shelf</option>
+      </select>
       <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
       <label>Gain:</label> <input type="number" class="filter-gain" value="0">
       <label>Q:</label> <input type="number" class="filter-q" value="0.707">
@@ -78,7 +84,15 @@
     filters.forEach(filter => {
       const filterItem = document.createElement("div");
       filterItem.className = "filter-item";
+      // Set default filter type to "PK" if not provided
+      const filterType = filter.type || "PK";
       filterItem.innerHTML = `
+                    <label>Type:</label>
+                    <select class="filter-type">
+                      <option value="PK" ${filterType === "PK" ? "selected" : ""}>Peak</option>
+                      <option value="LSQ" ${filterType === "LSQ" ? "selected" : ""}>Low Shelf</option>
+                      <option value="HSQ" ${filterType === "HSQ" ? "selected" : ""}>High Shelf</option>
+                    </select>
                     <label>Freq:</label> <input type="number" class="filter-freq" value="${filter.freq}">
                     <label>Gain:</label> <input type="number" class="filter-gain" value="${filter.gain}">
                     <label>Q:</label> <input type="number" class="filter-q" value="${filter.q}">
@@ -91,6 +105,7 @@
   function elemToFilters(includeDisabled) {
     const filterElems = document.querySelectorAll(".filter-item");
     const filters = Array.from(filterElems).map(elem => ({
+      type: elem.querySelector(".filter-type").value,
       freq: parseFloat(elem.querySelector(".filter-freq").value),
       gain: parseFloat(elem.querySelector(".filter-gain").value),
       q: parseFloat(elem.querySelector(".filter-q").value),
@@ -119,6 +134,12 @@
     const filterItem = document.createElement("div");
     filterItem.className = "filter-item";
     filterItem.innerHTML = `
+                <label>Type:</label>
+                <select class="filter-type">
+                  <option value="PK" selected>Peak</option>
+                  <option value="LSQ">Low Shelf</option>
+                  <option value="HSQ">High Shelf</option>
+                </select>
                 <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
                 <label>Gain:</label> <input type="number" class="filter-gain" value="0">
                 <label>Q:</label> <input type="number" class="filter-q" value="0.707">

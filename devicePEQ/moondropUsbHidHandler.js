@@ -21,16 +21,25 @@ export const moondropUsbHidHandler = (function () {
     const q = (e[30] & 0xff) + (e[29] & 0xff) / 256;
     const rawGain = e[32] + (e[31] & 0xff) / 256;
     const gain = Math.floor(rawGain * 10) / 10;
-
+    const filterType = convertToFilterType(e[33]);
     const valid = freq > 10 && freq < 24000 && !isNaN(gain) && !isNaN(q);
 
     return {
-      type: "PK",
+      type: filterType,
       freq: valid ? freq : 0,
       q: valid ? q : 1.0,
       gain: valid ? gain : 0.0,
       disabled: !valid
     };
+  }
+
+  function convertToFilterType(byte) {
+    switch (byte) {
+      case 1: return "LSQ"; // Low Shelf (if seen in future captures)
+      case 2: return "PK"; // Peaking
+      case 3: return "HSQ"; // High Shelf (future-proof)
+      default: return "PK";
+    }
   }
 
   async function getCurrentSlot(deviceDetails) {
@@ -87,6 +96,39 @@ export const moondropUsbHidHandler = (function () {
     });
   }
 
+  async function readPregain(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_SET_DAC_OFFSET, 0]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading pregain");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received pregain data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_SET_DAC_OFFSET) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const pregain = data[4];
+        console.log(`USB Device PEQ: Moondrop pregain value: ${pregain}`);
+        resolve(pregain);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readPregain command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writePregain(device, value) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_SET_DAC_OFFSET, 0, 0, value]);
+    console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
   async function pullFromDevice(deviceDetails) {
     const device = deviceDetails.rawDevice;
     const filters = [];
@@ -96,9 +138,11 @@ export const moondropUsbHidHandler = (function () {
       filters.push(filter);
     }
 
+    const globalGain = await readPregain(device);
+
     return {
       filters,
-      globalGain: 0,
+      globalGain
     };
   }
 
@@ -141,7 +185,7 @@ export const moondropUsbHidHandler = (function () {
     return arr;
   }
 
-  function buildWritePacket(filterIndex, { freq, gain, q }) {
+  function buildWritePacket(filterIndex, { freq, gain, q, type }) {
     const packet = new Uint8Array(63);
     packet[0] = COMMAND_WRITE;
     packet[1] = COMMAND_UPDATE_EQ;
@@ -158,11 +202,16 @@ export const moondropUsbHidHandler = (function () {
     packet[30] = Math.floor(q);
     packet[31] = Math.round(gain % 1 * 256);
     packet[32] = Math.floor(gain);
-    packet[33] = 2; // Filter type PEAKING
+    packet[33] = convertFromFilterType(type); // 2 by default
     packet[34] = 0;
     packet[35] = 7; // peqIndex
 
     return packet;
+  }
+
+  function convertFromFilterType(filterType) {
+    const mapping = {"PK": 2, "LSQ": 1, "HSQ": 3};
+    return mapping[filterType] !== undefined ? mapping[filterType] : 2;
   }
 
   function buildEnablePacket(filterIndex) {
@@ -193,6 +242,10 @@ export const moondropUsbHidHandler = (function () {
       console.log(`USB Device PEQ: Moondrop sending enable command for filter ${i}:`, enable);
       await device.sendReport(REPORT_ID, enable);
     }
+
+    // Write the global gain (pregain)
+    await writePregain(device, globalGain);
+    console.log(`USB Device PEQ: Moondrop set pregain to ${globalGain}`);
 
     const save = buildSavePacket();
     console.log(`USB Device PEQ: Moondrop sending save command:`, save);

@@ -17,6 +17,7 @@ export const walkplayUsbHID = (function () {
     TEMP_WRITE: 0x0A,
     FLASH_EQ: 0x01,
     GET_SLOT: 0x0F,
+    GLOBAL_GAIN: 0x03,
   };
 
   const DEFAULT_FILTER_COUNT = 8;
@@ -54,7 +55,7 @@ export const walkplayUsbHID = (function () {
   };
 
   // Push PEQ settings to Walkplay device
-  const pushToDevice = async (deviceDetails, slot, preampGain, filters) => {
+  const pushToDevice = async (deviceDetails, slot, globalGain, filters) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
     console.log("Pushing PEQ settings...");
@@ -73,7 +74,8 @@ export const walkplayUsbHID = (function () {
         ...convertToByteArray(filter.freq, 2),
         ...convertToByteArray(Math.round(filter.q * 256), 2),
         ...convertToByteArray(Math.round(filter.gain * 256), 2),
-        0x02, 0x00,
+        convertFromFilterType(filter.type),
+        0x00,
         slot,
         END
       ];
@@ -81,18 +83,26 @@ export const walkplayUsbHID = (function () {
       await sendReport(device, useAltReport ? ALT_REPORT_ID : REPORT_ID, packet);
     }
 
+    // Write the global gain
+    await writeGlobalGain(device, globalGain);
+    console.log(`USB Device PEQ: Walkplay set global gain to ${globalGain}`);
+
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
     await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, END]);
 
     console.log("PEQ filters successfully pushed to Walkplay device.");
   };
 
+  function convertFromFilterType(filterType) {
+    const mapping = {"PK": 2, "LSQ": 1, "HSQ": 3};
+    return mapping[filterType] !== undefined ? mapping[filterType] : 2;
+  }
+
   const pullFromDevice = async (deviceDetails, slot = -1) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
 
     const filters = [];
-    let globalGain = 0;
     let currentSlot = -1;
 
     device.oninputreport = async (event) => {
@@ -105,11 +115,6 @@ export const walkplayUsbHID = (function () {
         filters[filter.filterIndex] = filter;
       }
 
-      if (data.length >= 40) {
-        globalGain = parseGlobalGain(data);
-        console.log(`USB Device PEQ: Walkplay parsed global gain: ${globalGain}dB`);
-      }
-
       if (data.length >= 37) {
         currentSlot = data[36];
         console.log(`USB Device PEQ: Walkplay parsed current slot: ${currentSlot}`);
@@ -117,7 +122,7 @@ export const walkplayUsbHID = (function () {
     };
 
     // Send requests for each filter with increased delay
-    for (let i = 0; i < DEFAULT_FILTER_COUNT; i++) {
+    for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
       await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, i, END]);
       await delay(100); // Increased delay between requests
     }
@@ -125,31 +130,29 @@ export const walkplayUsbHID = (function () {
     // Check for missing filters after initial requests
     await delay(200); // Wait a bit after sending all requests
 
-    // Retry for any missing filters
-    const missingIndices = [];
-    for (let i = 0; i < DEFAULT_FILTER_COUNT; i++) {
-      if (filters[i] === undefined) {
-        missingIndices.push(i);
-      }
-    }
-
-    if (missingIndices.length > 0) {
-      console.log(`Retrying missing filters: ${missingIndices.join(', ')}`);
-      for (const index of missingIndices) {
-        await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, index, END]);
-        await delay(200); // Even longer delay for retries
-      }
-    }
-
     // Wait for filters with increased timeout
     const result = await waitForFilters(() => {
-      return filters.filter(f => f !== undefined).length === DEFAULT_FILTER_COUNT;
+      return filters.filter(f => f !== undefined).length === deviceDetails.modelConfig.maxFilters;
     }, device, 15000, () => ({  // Increased timeout to 15 seconds
       filters,
-      globalGain,
+      globalGain: 0, // Will be updated after waiting for filters
       currentSlot,
       deviceDetails: deviceDetails.modelConfig,
     }));
+
+    device.oninputreport = null;  // Stop listening on this callback for now
+
+
+    // Read global gain after waiting for filters
+    let globalGain = 0;
+    try {
+      globalGain = await readGlobalGain(device);
+      console.log(`USB Device PEQ: Walkplay read global gain: ${globalGain}dB`);
+      // Update the result with the global gain
+      result.globalGain = globalGain;
+    } catch (error) {
+      console.warn(`USB Device PEQ: Walkplay failed to read global gain: ${error}`);
+    }
 
     console.log("Pulled PEQ filters from Walkplay:", result);
     return result;
@@ -174,8 +177,8 @@ export const walkplayUsbHID = (function () {
     if (gainRaw > 32767) gainRaw -= 65536;
     const gain = Math.round((gainRaw / 256) * 10) / 10;
 
-    // Filter type — Walkplay seems to only use Peaking
-    const type = convertToFilterType(packet[26]);
+    // Filter type —
+    const type = convertToFilterType(packet[33]);
 
     return {
       filterIndex,
@@ -189,8 +192,8 @@ export const walkplayUsbHID = (function () {
 
   function convertToFilterType(byte) {
     switch (byte) {
-      case 0: return "PK"; // Peaking
       case 1: return "LSQ"; // Low Shelf (if seen in future captures)
+      case 2: return "PK"; // Peaking
       case 3: return "HSQ"; // High Shelf (future-proof)
       default: return "PK";
     }
@@ -229,6 +232,43 @@ export const walkplayUsbHID = (function () {
     });
   }
 
+  // Read global gain from device
+  async function readGlobalGain(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([READ, CMD.GLOBAL_GAIN, 0x00]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading global gain");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Walkplay onInputReport received global gain data:`, data);
+        if (data[0] !== READ || data[1] !== CMD.GLOBAL_GAIN) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const int8 = new Int8Array([data[4]])[0];
+        const globalGain = int8 / 5;
+        console.log(`USB Device PEQ: Walkplay global gain value: ${globalGain}`);
+        resolve(globalGain);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Walkplay sending readGlobalGain command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+// Write global gain to device
+  async function writeGlobalGain(device, value) {
+    const gainValue = Math.round(value * 5);
+    const request = new Uint8Array([WRITE, CMD.GLOBAL_GAIN, 0x00, 0x00, gainValue]);
+    console.log(`USB Device PEQ: Walkplay sending writeGlobalGain command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
   return {
     pushToDevice,
     pullFromDevice,
@@ -250,15 +290,13 @@ async function waitForFilters(condition, device, timeout, callback) {
         const result = callback(device);
         // Add information about the timeout to help with debugging
         result.complete = false;
-        result.timedOut = true;
         result.receivedCount = result.filters.filter(f => f !== undefined).length;
-        result.expectedCount = DEFAULT_FILTER_COUNT;
+        result.expectedCount = device.max;
         // Resolve with partial data instead of rejecting
         resolve(result);
       } else {
         const result = callback(device);
         result.complete = true;
-        result.timedOut = false;
         resolve(result);
       }
     }, timeout);
@@ -269,7 +307,6 @@ async function waitForFilters(condition, device, timeout, callback) {
         clearInterval(interval);
         const result = callback(device);
         result.complete = true;
-        result.timedOut = false;
         resolve(result);
       }
     }, 100);
@@ -277,13 +314,6 @@ async function waitForFilters(condition, device, timeout, callback) {
 }
 
 
-function parseGlobalGain(data) {
-  if (data.length < 40) return 0; // No global gain found
-
-  let gainRaw = data[38] | (data[39] << 8); // Extract gain (little-endian)
-  if (gainRaw > 32767) gainRaw -= 65536; // Convert to signed integer
-  return gainRaw / 256; // Convert to dB
-}
 
 // Compute IIR filter
 function computeIIRFilter(i, freq, gain, q) {
