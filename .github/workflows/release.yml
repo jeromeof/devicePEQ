@@ -25,11 +25,14 @@ jobs:
         run: |
           zip -r devicePEQ.zip devicePEQ
 
-      - name: Create Release
+      - name: Create Release (or skip if already exists)
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
