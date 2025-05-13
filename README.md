@@ -11,7 +11,7 @@ DeviceEQ is a **JavaScript-based plugin** for interacting with **audio devices**
 - 🎚 **Real-Time Filter Editing + Preamp Gain Calculation**
 - 📦 **Dynamic Slot Discovery & Management**
 - 🧠 **Per-Device Handler Logic with Config Models**
-- 🎛️ **LSQ/HSQ Filter Support + Global Gain Control**
+- 🎛️ **LSQ/HSQ Filter Support + Global Gain Control for some handlers**
 - 📘 **Integrated Modal UI for Info and Help**
 - 📝 **Feedback Mechanism for Experimental Devices**
 
