@@ -143,7 +143,6 @@ DeviceEQ/
 - Supports **global gain** and **10 PEQ filters**.
 - Handles both **10-band** and **12-band** device configurations.
 - Supports **Lowshelf/Highshelf filters** for advanced shelving EQ.
-- Automatically detects device capabilities for optimal configuration.
 
 ---
 
