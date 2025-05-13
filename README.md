@@ -11,6 +11,7 @@ DeviceEQ is a **JavaScript-based plugin** for interacting with **audio devices**
 - 🎚 **Real-Time Filter Editing + Preamp Gain Calculation**
 - 📦 **Dynamic Slot Discovery & Management**
 - 🧠 **Per-Device Handler Logic with Config Models**
+- 🎛️ **LSQ/HSQ Filter Support + Global Gain Control**
 - 📘 **Integrated Modal UI for Info and Help**
 - 📝 **Feedback Mechanism for Experimental Devices**
 
@@ -110,6 +111,8 @@ DeviceEQ/
 - Manages **FiiO USB HID** devices.
 - Sends/receives filter configuration via HID commands.
 - Supports slot switching and device-specific quirks.
+- Supports **LSQ/HSQ filters** for advanced shelving EQ.
+- Implements **global gain control** for overall volume adjustment.
 
 ### **📌 Tested Devices**
 - **FiiO:** JA11, KA15, KA17 (Retro Nano has limited compatibility)
@@ -123,11 +126,24 @@ DeviceEQ/
 
 ---
 
+## **🎧 PEQ Handler: `qudelixUsbHidHandler.js`**
+### **🔹 What it does**
+- Manages **Qudelix 5K** USB HID devices.
+- Sends/receives filter configuration via HID commands.
+- Supports **LSQ/HSQ filters** for advanced shelving EQ.
+- Implements **global gain control** for overall volume adjustment.
+- Handles device-specific protocol for Qudelix devices.
+
+---
+
 ## **🧰 PEQ Handler: `jdslabsSerialHandler.js`**
 ### **🔹 What it does**
 - Sends/receives PEQ data via text-based protocol.
 - Mirrors the functionality of **JDS Labs Core PEQ app**.
 - Supports **global gain** and **10 PEQ filters**.
+- Handles both **10-band** and **12-band** device configurations.
+- Supports **Lowshelf/Highshelf filters** for advanced shelving EQ.
+- Automatically detects device capabilities for optimal configuration.
 
 ---
 
@@ -206,6 +222,8 @@ DeviceEQ/
 ## **🚀 Summary**
 The **DeviceEQ Plugin** brings **flexible, real-time PEQ control** to a growing range of **USB, Serial, and networked audio gear**. Whether you're tuning a dongle, an IEM, a desktop DAC, or a smart streamer—**DeviceEQ bridges the gap between pro-grade tuning and consumer gear**.
 
-The plugin now includes a **feedback mechanism** for experimental devices, allowing users to contribute to the project by reporting their experiences. This helps improve compatibility and support for a wider range of devices.
+The plugin now includes **enhanced support for LSQ/HSQ filters and global gain control** across multiple device handlers, providing more advanced EQ capabilities for precise sound tuning. This allows for more sophisticated frequency shaping with shelf filters and overall volume adjustment.
+
+The plugin also includes a **feedback mechanism** for experimental devices, allowing users to contribute to the project by reporting their experiences. This helps improve compatibility and support for a wider range of devices.
 
 👉 **From FiiO to JDS Labs to WiiM – make your sound yours.** 🎚🔥
