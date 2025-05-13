@@ -221,8 +221,8 @@ DeviceEQ/
 ## **🚀 Summary**
 The **DeviceEQ Plugin** brings **flexible, real-time PEQ control** to a growing range of **USB, Serial, and networked audio gear**. Whether you're tuning a dongle, an IEM, a desktop DAC, or a smart streamer—**DeviceEQ bridges the gap between pro-grade tuning and consumer gear**.
 
-The plugin now includes **enhanced support for LSQ/HSQ filters and global gain control** across multiple device handlers, providing more advanced EQ capabilities for precise sound tuning. This allows for more sophisticated frequency shaping with shelf filters and overall volume adjustment.
-
+The plugin now includes
+**enhanced support for LSQ/HSQ filters and global gain control** across multiple device handlers, providing more advanced EQ capabilities for precise sound tuning. This allows for more sophisticated frequency shaping with shelf filters and overall volume adjustment.
 The plugin also includes a **feedback mechanism** for experimental devices, allowing users to contribute to the project by reporting their experiences. This helps improve compatibility and support for a wider range of devices.
 
 👉 **From FiiO to JDS Labs to WiiM – make your sound yours.** 🎚🔥
