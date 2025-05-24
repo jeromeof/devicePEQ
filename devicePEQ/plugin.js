@@ -368,7 +368,7 @@ async function initializeDeviceEqPlugin(context) {
               <ul>
                 <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17</li>
                 <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
-                <li><strong>Tanchjim:</strong> Bunny DSP, One DSP </li>
+                <li><strong>Tanchjim:</strong> Bunny DSP, One DSP, Stargate II </li>
                 <li><strong>EPZ:</strong> GM20 and TP13</li>
                 <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
                 <li><strong>JCally:</strong> JM20 Pro, JM12</li>
