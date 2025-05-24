@@ -22,7 +22,27 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: true,
       disabledPresetId: -1,
       experimental: true,
-      availableSlots: []
+      reportId: 7,
+      availableSlots: [
+        {id: 0, name: "Jazz"},
+        {id: 1, name: "Pop"},
+        {id: 2, name: "Rock"},
+        {id: 3, name: "Dance"},
+        {id: 4, name: "R&B"},
+        {id: 5, name: "Classic"},
+        {id: 6, name: "Hip-hop"},
+        {id: 7, name: "Monitor"},
+        {id: 160, name: "USER1"},
+        {id: 161, name: "USER2"},
+        {id: 162, name: "USER3"},
+        {id: 163, name: "USER4"},
+        {id: 164, name: "USER5"},
+        {id: 165, name: "USER6"},
+        {id: 166, name: "USER7"},
+        {id: 167, name: "USER8"},
+        {id: 168, name: "USER9"},
+        {id: 169, name: "USER10"}
+      ]
     },
     devices: {
       "JadeAudio JA11": {
@@ -35,6 +55,7 @@ export const usbHidDeviceHandlerConfig = ([
           disconnectOnSave: true,
           disabledPresetId: 4,
           experimental: false,
+          reportId: 2,
           availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
             id: 3,
             name: "USER1"
@@ -51,6 +72,7 @@ export const usbHidDeviceHandlerConfig = ([
           disconnectOnSave: false,
           disabledPresetId: 11,
           experimental: false,
+          reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -73,6 +95,76 @@ export const usbHidDeviceHandlerConfig = ([
           disconnectOnSave: false,
           disabledPresetId: 11,
           experimental: false,
+          reportId: 1,
+          availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
+            id: 3,
+            name: "Dance"
+          }, {
+            id: 5,
+            name: "R&B"
+          }, {id: 6, name: "Classic"}, {id: 7, name: "Hip-hop"}, {id: 4, name: "USER1"}, {id: 8, name: "USER2"}, {
+            id: 9,
+            name: "USER3"
+          }]
+        }
+      },
+      "FIIO KA17 (MQA HID)": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          experimental: false,
+          reportId: 1,
+          availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
+            id: 3,
+            name: "Dance"
+          }, {
+            id: 5,
+            name: "R&B"
+          }, {id: 6, name: "Classic"}, {id: 7, name: "Hip-hop"}, {id: 4, name: "USER1"}, {id: 8, name: "USER2"}, {
+            id: 9,
+            name: "USER3"
+          }]
+        }
+      },
+      "FIIO BT11 (UAC1.0)": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          experimental: false,
+          reportId: 1,
+          availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
+            id: 3,
+            name: "Dance"
+          }, {
+            id: 5,
+            name: "R&B"
+          }, {id: 6, name: "Classic"}, {id: 7, name: "Hip-hop"}, {id: 4, name: "USER1"}, {id: 8, name: "USER2"}, {
+            id: 9,
+            name: "USER3"
+          }]
+        }
+      },
+      "FIIO Air Link": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          experimental: false,
+          reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -116,23 +208,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
-          availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
-            id: 3,
-            name: "Dance"
-          }, {
-            id: 4,
-            name: "R&B"
-          }, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {
-            id: 162,
-            name: "USER3"
-          }, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {id: 162, name: "USER3"}, {id: 163, name: "USER4"}, {
-            id: 164,
-            name: "USER5"
-          }, {id: 165, name: "USER6"}, {id: 166, name: "USER7"}, {id: 167, name: "USER8"}, {id: 168, name: "USER9"}, {
-            id: 169,
-            name: "USER10"
-          }]
+          experimental: false
         }
       },
       "FIIO KA15": {
@@ -213,6 +289,40 @@ export const usbHidDeviceHandlerConfig = ([
       availableSlots: [{id: 101, name: "Custom"}]
     },
     devices: {
+      "FIIO FX17 ": {
+        manufacturer: "FiiO",
+        handler: fiioUsbHID,
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          experimental: false,
+          availableSlots: [
+            {id: 0, name: "Jazz"},
+            {id: 1, name: "Pop"},
+            {id: 2, name: "Rock"},
+            {id: 3, name: "Dance"},
+            {id: 4, name: "R&B"},
+            {id: 5, name: "Classic"},
+            {id: 6, name: "Hip-hop"},
+            {id: 7, name: "Monitor"},
+            {id: 160, name: "USER1"},
+            {id: 161, name: "USER2"},
+            {id: 162, name: "USER3"},
+            {id: 163, name: "USER4"},
+            {id: 164, name: "USER5"},
+            {id: 165, name: "USER6"},
+            {id: 166, name: "USER7"},
+            {id: 167, name: "USER8"},
+            {id: 168, name: "USER9"},
+            {id: 169, name: "USER10"}
+          ]
+        }
+      },
       "Rays": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler
@@ -290,7 +400,6 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Tanchim",
         modelConfig: {
           schemeNo: 15,
-          experimental: true
         }
       },
       "didiHiFi DSP Cable - Memory": {
@@ -367,12 +476,20 @@ export const usbHidDeviceHandlerConfig = ([
       maxFilters: 5,
       firstWritableEQSlot: -1,
       maxWritableEQSlots: 0,
-      disconnectOnSave: false,
-      disabledPresetId: -1,
+      compensate2X: true,  // Lets compenstate by default
+      disconnectOnSave: true,
+      disabledPresetId: 2,
       experimental: false,
-      availableSlots: [{id: 101, name: "Custom"}]
+      supportsPregain: false,
+      availableSlots: [{id: 0x03, name: "Custom"}]
     },
     devices: {
+      "TANCHJIM BUNNY DSP": {
+        manufacturer: "TANCHJIM",
+        modelConfig: {
+          compensate2X: false  // Seems to not need it
+        }
+      }
     }
   }
 ])

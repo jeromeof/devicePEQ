@@ -26,6 +26,7 @@ export const fiioUsbHID = (function () {
 
   const getCurrentSlot = async (deviceDetails) => {
     var device = deviceDetails.rawDevice;
+    var reportId = getFiioReportId(deviceDetails);
     try {
       let currentSlot = -99;
 
@@ -43,7 +44,7 @@ export const fiioUsbHID = (function () {
         }
       };
 
-      await getPresetPeq(device);
+      await getPresetPeq(device, reportId);
 
       // Wait at most 10 seconds for filters to be populated
       const result = await waitForFilters(() => {
@@ -62,14 +63,16 @@ export const fiioUsbHID = (function () {
   const pushToDevice = async (deviceDetails, slot, preamp_gain, filters) => {
     try {
       var device = deviceDetails.rawDevice;
+      var reportId = getFiioReportId(deviceDetails);
 
       // FiiO devices will automatically cut the max SPL by the maxGain (typically -12)
       // So, we can safely apply a +12 gain - the larged preamp_gain needed
       // .e.g. if we need to +5dB for a filter then we can still make the globalGain 7dB
-      await setGlobalGain(device, deviceDetails.modelConfig.maxGain + preamp_gain);
+      await setGlobalGain(device, deviceDetails.modelConfig.maxGain + preamp_gain, reportId);
       const maxFilters = deviceDetails.modelConfig.maxFilters;
       const maxFiltersToUse = Math.min(filters.length, maxFilters);
-      await setPeqCounter(device, maxFiltersToUse);
+      await setPeqCounter(device, maxFiltersToUse, reportId);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Added 100ms delay
 
       for (let filterIdx = 0; filterIdx < maxFiltersToUse; filterIdx++) {
         const filter = filters[filterIdx];
@@ -84,10 +87,12 @@ export const fiioUsbHID = (function () {
         }
         if (filter.q < 0.01 || filter.q > 100) {
           filter.q = 1;
-        }        await setPeqParams(device, filterIdx, filter.freq, gain, filter.q, convertFromFilterType(filter.type));
+        }
+        await setPeqParams(device, filterIdx, filter.freq, gain, filter.q, convertFromFilterType(filter.type), reportId);
       }
+      await new Promise(resolve => setTimeout(resolve, 100)); // Added 100ms delay
 
-      saveToDevice(device, slot);
+      saveToDevice(device, slot, reportId);
 
       console.log("PEQ filters pushed successfully.");
 
@@ -109,6 +114,7 @@ export const fiioUsbHID = (function () {
       let globalGain = 0;
       let currentSlot = 0;
       var device = deviceDetails.rawDevice;
+      var reportId = getFiioReportId(deviceDetails);
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
@@ -116,7 +122,7 @@ export const fiioUsbHID = (function () {
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
             case PEQ_FILTER_COUNT:
-              peqCount = handlePeqCounter(data, device);
+              peqCount = handlePeqCounter(data, device, reportId);
               break;
             case PEQ_FILTER_PARAMS:
               handlePeqParams(data, device, filters);
@@ -137,9 +143,9 @@ export const fiioUsbHID = (function () {
         }
       };
 
-      await getPresetPeq(device);
-      await getPeqCounter(device);
-      await getGlobalGain(device);
+      await getPresetPeq(device, reportId);
+      await getPeqCounter(device, reportId);
+      await getGlobalGain(device, reportId);
 
       // Wait at most 10 seconds for filters to be populated
       const result = await waitForFilters(() => {
@@ -158,12 +164,13 @@ export const fiioUsbHID = (function () {
 
   const enablePEQ = async (deviceDetails, enable, slotId) => {
 
-    var device = deviceDetails.rawDevice;
+    var device = deviceDetails.rawDevice
+    var reportId = getFiioReportId(deviceDetails);
 
     if (enable) {   // take the slotId we are given and switch to it
-      await setPresetPeq(device, slotId);
+      await setPresetPeq(device, slotId, reportId);
     } else {
-      await setPresetPeq(device, deviceDetails.modelConfig.maxFilters);
+      await setPresetPeq(device, deviceDetails.modelConfig.maxFilters, reportId);
     }
   }
   return {
@@ -177,7 +184,25 @@ export const fiioUsbHID = (function () {
 
 // Private Helper Functions
 
-async function setPeqParams(device, filterIndex, fc, gain, q, filterType) {
+/**
+ * Gets the appropriate reportId for a FiiO device based on its product name or modelConfig.
+ * @param {Object} device - The device object.
+ * @param {Object} [deviceDetails] - Optional deviceDetails object containing modelConfig.
+ * @returns {number} - The reportId to use for the device.
+ */
+function getFiioReportId(deviceDetails) {
+  // If deviceDetails is provided and has a modelConfig with reportId, use that
+  if (deviceDetails && deviceDetails.modelConfig && deviceDetails.modelConfig.reportId !== undefined) {
+    console.log(`Using reportId ${deviceDetails.modelConfig.reportId} from modelConfig for ${deviceDetails.model || "unknown device"}`);
+    return deviceDetails.modelConfig.reportId;
+  }
+
+  // Default reportId for FiiO devices is 7
+  console.log(`Using default reportId 7 for ${deviceDetails.model || "unknown device"}`);
+  return 7;
+}
+
+async function setPeqParams(device, filterIndex, fc, gain, q, filterType, reportId) {
   const [frequencyLow, frequencyHigh] = splitUnsignedValue(fc);
   const [gainLow, gainHigh] = fiioGainBytesFromValue(gain);
   const qFactorValue = Math.round(q * 100);
@@ -192,24 +217,22 @@ async function setPeqParams(device, filterIndex, fc, gain, q, filterType) {
   ];
 
   const data = new Uint8Array(packet);
-  const reportId = device.collections[0].outputReports[0].reportId;
   console.log(`USB Device PEQ: setPeqParams() sending filter ${filterIndex} - Freq: ${fc}Hz, Gain: ${gain}dB, Q: ${q}, Type: ${filterType}`, data);
   await device.sendReport(reportId, data);
 }
 
-async function setPresetPeq(device, presetId) { // Default to 0 if not specified
+async function setPresetPeq(device, presetId, reportId) { // Default to 0 if not specified
   const packet = [
     SET_HEADER1, SET_HEADER2, 0, 0, PEQ_PRESET_SWITCH, 1,
     presetId, 0, END_HEADERS
   ];
 
   const data = new Uint8Array(packet);
-  const reportId = device.collections[0].outputReports[0].reportId;
   console.log(`USB Device PEQ: setPresetPeq() switching to preset ${presetId}`, data);
   await device.sendReport(reportId, data);
 }
 
-async function setGlobalGain(device, gain) {
+async function setGlobalGain(device, gain, reportId) {
   const globalGain = Math.round(gain * 10);
   const gainBytes = toBytePair(globalGain);
 
@@ -219,19 +242,17 @@ async function setGlobalGain(device, gain) {
   ];
 
   const data = new Uint8Array(packet);
-  const reportId = device.collections[0].outputReports[0].reportId;
   console.log(`USB Device PEQ: setGlobalGain() setting global gain to ${gain}dB`, data);
   await device.sendReport(reportId, data);
 }
 
-async function setPeqCounter(device, counter) {
+async function setPeqCounter(device, counter, reportId) {
   const packet = [
     SET_HEADER1, SET_HEADER2, 0, 0, PEQ_FILTER_COUNT, 1,
     counter, 0, END_HEADERS
   ];
 
   const data = new Uint8Array(packet);
-  const reportId = device.collections[0].outputReports[0].reportId;
   console.log(`USB Device PEQ: setPeqCounter() setting filter count to ${counter}`, data);
   await device.sendReport(reportId, data);
 }
@@ -280,81 +301,56 @@ function combineBytes(lowByte, highByte) {
   return (lowByte << 8) | highByte;
 }
 
-function getGlobalGain(device) {
+function getGlobalGain(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_GLOBAL_GAIN, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getGlobalGain() Send data:", data);
-  const reportId = getFirstValidReportId(device);
   device.sendReport(reportId, data);
 }
 
-function getPeqCounter(device) {
+function getPeqCounter(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_FILTER_COUNT, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPeqCounter() Send data:", data);
-  const reportId = getFirstValidReportId(device);
   device.sendReport(reportId, data);
 }
 
-function getPeqParams(device, filterIndex) {
+function getPeqParams(device, filterIndex, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_FILTER_PARAMS, 1, filterIndex, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPeqParams() Send data:", data);
-  const reportId = getFirstValidReportId(device);
   device.sendReport(reportId, data);
 }
 
-function getPresetPeq(device) {
+function getPresetPeq(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_PRESET_SWITCH, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPresetPeq() Send data:", data);
-  const reportId = getFirstValidReportId(device);
   device.sendReport(reportId, data);
 }
 
-/**
- * Loops through all collections and returns the first valid reportId.
- * @param {Object} device - The device object.
- * @returns {string|null} - The first valid reportId, or null if none found.
- */
-function getFirstValidReportId(device) {
-  if (device.collections && device.collections.length > 0) {
-    for (const collection of device.collections) {
-      if (collection.outputReports && collection.outputReports.length > 0) {
-        for (const report of collection.outputReports) {
-          if (report.reportId) {
-            return report.reportId; // Return the first valid reportId
-          }
-        }
-      }
-    }
-  }
-  return null; // Return null if no valid reportId is found
-}
-
-function saveToDevice(device, slotId) {
+function saveToDevice(device, slotId, reportId) {
   const packet = [SET_HEADER1, SET_HEADER2, 0, 0, PEQ_SAVE_TO_DEVICE, 1, slotId, 0, END_HEADERS];
   const data = new Uint8Array(packet);
-  console.log("saveToDevice() reportId Send data:", data);
-  const reportId = getFirstValidReportId(device);
+  console.log(`USB Device PEQ: saveToDevice() using reportId ${reportId} for slot ${slotId}`, data);
   device.sendReport(reportId, data);
 }
 
-function handlePeqCounter(data, device) {
+function handlePeqCounter(data, device, reportId) {
   let peqCount = data[6];
   console.log("***********oninputreport peq counter=", peqCount);
   if (peqCount > 0) {
-    processPeqCount(device, peqCount);
+    processPeqCount(device, peqCount, reportId);
   }
   return peqCount;
 }
 
-function processPeqCount(device, peqCount) {
+function processPeqCount(device, peqCount, reportId) {
   console.log("PEQ Counter:", peqCount);
 
   // Fetch individual PEQ settings based on count
   for (let i = 0; i < peqCount; i++) {
-    getPeqParams(device, i);
+    getPeqParams(device, i, reportId);
   }
 }
 
@@ -395,7 +391,7 @@ function handleEqPreset(data, deviceDetails) {
   const presetId = data[6];
   console.log("EQ Preset ID:", presetId);
 
-  if (presetId == deviceDetails.modelConfig.disabledPresetId) {
+  if (presetId === deviceDetails.modelConfig.disabledPresetId) {
     return -1;      // with JA11 slot 4 == Off
   }
   // Handle preset switch if necessary

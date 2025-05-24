@@ -116,7 +116,7 @@ export const walkplayUsbHID = (function () {
       }
 
       if (data.length >= 37) {
-        currentSlot = data[36];
+        currentSlot = data[35];
         console.log(`USB Device PEQ: Walkplay parsed current slot: ${currentSlot}`);
       }
     };
@@ -124,16 +124,16 @@ export const walkplayUsbHID = (function () {
     // Send requests for each filter with increased delay
     for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
       await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, i, END]);
-      await delay(100); // Increased delay between requests
+      await delay(50); // Increased delay between requests
     }
 
     // Check for missing filters after initial requests
-    await delay(200); // Wait a bit after sending all requests
+    await delay(100); // Wait a bit after sending all requests
 
     // Wait for filters with increased timeout
     const result = await waitForFilters(() => {
       return filters.filter(f => f !== undefined).length === deviceDetails.modelConfig.maxFilters;
-    }, device, 15000, () => ({  // Increased timeout to 15 seconds
+    }, device, 10000, () => ({  // Increased timeout to 15 seconds
       filters,
       globalGain: 0, // Will be updated after waiting for filters
       currentSlot,
@@ -215,7 +215,7 @@ export const walkplayUsbHID = (function () {
   }
 
 // Wait for response
-  async function waitForResponse(device, timeout = 5000) {
+  async function waitForResponse(device, timeout = 2000) {
     return new Promise((resolve, reject) => {
       let response = null;
       const timer = setTimeout(() => {
@@ -240,17 +240,16 @@ export const walkplayUsbHID = (function () {
       const timeout = setTimeout(() => {
         device.removeEventListener("inputreport", onReport);
         reject("Timeout reading global gain");
-      }, 1000);
+      }, 100);
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
         console.log(`USB Device PEQ: Walkplay onInputReport received global gain data:`, data);
-        if (data[0] !== READ || data[1] !== CMD.GLOBAL_GAIN) return;
-
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
+        if (data[0] !== READ || data[1] !== CMD.GLOBAL_GAIN) return;
         const int8 = new Int8Array([data[4]])[0];
-        const globalGain = int8 / 5;
+        const globalGain = int8;
         console.log(`USB Device PEQ: Walkplay global gain value: ${globalGain}`);
         resolve(globalGain);
       };
@@ -263,7 +262,7 @@ export const walkplayUsbHID = (function () {
 
 // Write global gain to device
   async function writeGlobalGain(device, value) {
-    const gainValue = Math.round(value * 5);
+    const gainValue = Math.round(value);
     const request = new Uint8Array([WRITE, CMD.GLOBAL_GAIN, 0x00, 0x00, gainValue]);
     console.log(`USB Device PEQ: Walkplay sending writeGlobalGain command:`, request);
     await device.sendReport(REPORT_ID, request);

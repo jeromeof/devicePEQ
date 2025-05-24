@@ -352,7 +352,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.6</h3>
+            <h3>About Device PEQ - v0.7</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -366,8 +366,8 @@ async function initializeDeviceEqPlugin(context) {
 
               <h4>Supported Brands & Manufacturers</h4>
               <ul>
-                <li><strong>FiiO:</strong> JA11, KA15 and KA17</li>
-                <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2 </li>
+                <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17</li>
+                <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
                 <li><strong>Tanchjim:</strong> Bunny DSP, One DSP </li>
                 <li><strong>EPZ:</strong> GM20 and TP13</li>
                 <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
@@ -396,6 +396,7 @@ async function initializeDeviceEqPlugin(context) {
                   <li>JA11</li>
                   <li>KA17</li>
                   <li>KA15</li>
+                  <li>FX17 (with usbc adapter)</li>
                   <li><em>Note:</em> Retro Nano has limited compatibility</li>
                 </ul>
                 <p>Mostly if a FiiO device works with their excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a> it should work here also</p>
@@ -1204,11 +1205,15 @@ async function initializeDeviceEqPlugin(context) {
             }
 
             const device = deviceEqUI.currentDevice;
-            const selectedSlot = deviceEqUI.peqDropdown.value;
+            var selectedSlot = deviceEqUI.peqDropdown.value;
             if (!device || !selectedSlot) {
               showToast("No device connected or PEQ slot selected.", "error");
               return;
             }
+            if (typeof selectedSlot === 'string' && !isNaN(parseInt(selectedSlot, 10))) {
+              selectedSlot = parseInt(selectedSlot, 10);
+            }
+
 
             // ✅ Use context to get filters instead of undefined elemToFilters()
             const filters = context.elemToFilters(true);
