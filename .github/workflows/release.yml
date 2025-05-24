@@ -9,36 +9,33 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List repository contents
-        run: ls -la
+      - name: Archive plugin folder
+        run: zip -r devicePEQ.zip devicePEQ
 
-      - name: List devicePEQ directory contents
-        run: ls -la devicePEQ
-
-      - name: Archive just the plugin Folder
-        run: |
-          zip -r devicePEQ.zip devicePEQ
-
-      - name: Create Release (or skip if already exists)
+      - name: Create Release (if not exists)
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          fail_on_unmatched_files: false
           generate_release_notes: true
+          fail_on_unmatched_files: false
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
+        if: steps.create_release.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
         with:
-          files: devicePEQ.zip
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./devicePEQ.zip
+          asset_name: devicePEQ.zip
+          asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
