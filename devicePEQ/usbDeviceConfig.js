@@ -22,6 +22,9 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: true,
       disabledPresetId: -1,
       experimental: true,
+      supportsLSHSFilters: true,
+      supportsPregain: true,
+      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
       reportId: 7,
       availableSlots: [
         {id: 0, name: "Jazz"},
@@ -45,6 +48,33 @@ export const usbHidDeviceHandlerConfig = ([
       ]
     },
     devices: {
+      "SNOWSKY Melody": {
+        manufacturer: "FiiO",
+        handler: fiioUsbHID,
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 5,
+          firstWritableEQSlot: -1,
+          maxWritableEQSlots: 0,
+          disconnectOnSave: true,
+        }
+      },
+      "JadeAudio JIEZI": {
+        manufacturer: "FiiO",
+        handler: fiioUsbHID,
+          modelConfig: {
+            minGain: -12,
+            maxGain: 12,
+            maxFilters: 5,
+            firstWritableEQSlot: 3,
+            maxWritableEQSlots: 1,
+            disconnectOnSave: true,
+            disabledPresetId: 4,
+            experimental: false,
+            reportId: 2,
+          }
+        },
       "JadeAudio JA11": {
         modelConfig: {
           minGain: -12,
@@ -278,13 +308,16 @@ export const usbHidDeviceHandlerConfig = ([
     handler: walkplayUsbHID,
     defaultModelConfig: {
       minGain: -12,
-      maxGain: 12,
+      maxGain: 6,
       maxFilters: 8,
       schemeNo: 10,
       firstWritableEQSlot: -1,
       maxWritableEQSlots: 0,
       disconnectOnSave: false,
       disabledPresetId: -1,
+      supportsPregain: true,
+      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
+      supportsLSHSFilters: false,
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
     },
@@ -325,11 +358,24 @@ export const usbHidDeviceHandlerConfig = ([
       },
       "Rays": {
         manufacturer: "Moondrop",
-        handler: moondropUsbHidHandler
+        handler: moondropUsbHidHandler,
+        supportsLSHSFilters: false,
+        supportsPregain: true,
+      },
+      "EPZ TP13 AI ENC audio": {
+        manufacturer: "EPZ",
+        modelConfig: {
+          supportsLSHSFilters: false,
+          supportsPregain: true,
+        }
       },
       "Marigold": {
         manufacturer: "Moondrop",
-        handler: moondropUsbHidHandler
+        handler: moondropUsbHidHandler,
+        modelConfig: {
+          supportsLSHSFilters: false,
+          supportsPregain: true,
+        }
       },
       "FreeDSP Pro": {
         manufacturer: "Moondrop",
@@ -400,6 +446,7 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Tanchim",
         modelConfig: {
           schemeNo: 15,
+          supportsLSHSFilters: false
         }
       },
       "didiHiFi DSP Cable - Memory": {
@@ -438,8 +485,7 @@ export const usbHidDeviceHandlerConfig = ([
       "TP35 Pro": {
         modelConfig: {
           schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
+          maxFilters: 10
         }
       },
       "DA5": {
@@ -481,13 +527,41 @@ export const usbHidDeviceHandlerConfig = ([
       disabledPresetId: 2,
       experimental: false,
       supportsPregain: false,
+      supportsLSHSFilters: true,
+      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
       availableSlots: [{id: 0x03, name: "Custom"}]
     },
     devices: {
+      "Kiwi Ears-Allegro PRO": {
+        manufacturer: "Kiwi Ears",
+        modelConfig: {
+          supportsLSHSFilters: false,
+          disconnectOnSave: true,
+        }
+      },
+      "KT02H20 HIFI Audio": {
+        manufacturer: "JCally",
+        modelConfig: {
+          supportsLSHSFilters: false,
+        }
+      },
       "TANCHJIM BUNNY DSP": {
         manufacturer: "TANCHJIM",
         modelConfig: {
-          compensate2X: false  // Seems to not need it
+          compensate2X: false,
+          supportsPregain: true,
+        }
+      },
+      "CDSP": {
+        manufacturer: "Moondrop",
+        modelConfig: {
+          compensate2X: false
+        }
+      },
+      "Chu2 DSP": {
+        manufacturer: "Moondrop",
+        modelConfig: {
+          compensate2X: false
         }
       }
     }

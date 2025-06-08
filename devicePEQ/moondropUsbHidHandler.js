@@ -7,9 +7,19 @@ export const moondropUsbHidHandler = (function () {
   const COMMAND_UPDATE_EQ_COEFF_TO_REG = 10;
   const COMMAND_SAVE_EQ_TO_FLASH = 1;
   const COMMAND_SET_DAC_OFFSET = 3;
+  const COMMAND_CLEAR_FLASH = 0x05;
+  const COMMAND_CHANNEL_BALANCE = 0x16;
+  const COMMAND_DAC_GAIN = 0x19;
+  const COMMAND_DAC_MODE = 0x1D;
+  const COMMAND_LED_SWITCH = 0x18;
+  const COMMAND_DAC_FILTER = 0x11;
+  const COMMAND_VER = 0x0C;
+  const COMMAND_RESET_EQ = 0x05;
+  const COMMAND_RESET_FLASH = 0x17;
+  const COMMAND_UPGRADE = 0xFF;
 
   function buildReadPacket(filterIndex) {
-    return new Uint8Array([COMMAND_READ, COMMAND_UPDATE_EQ, 0, 0, filterIndex]);
+    return new Uint8Array([COMMAND_READ, COMMAND_UPDATE_EQ, 0x18, 0x00, filterIndex, 0x00]);
   }
 
   function decodeFilterResponse(data) {
@@ -98,7 +108,7 @@ export const moondropUsbHidHandler = (function () {
 
   async function readPregain(device) {
     return new Promise(async (resolve, reject) => {
-      const request = new Uint8Array([COMMAND_READ, COMMAND_SET_DAC_OFFSET, 0]);
+      const request = new Uint8Array([COMMAND_READ, COMMAND_SET_DAC_OFFSET]);
 
       const timeout = setTimeout(() => {
         device.removeEventListener("inputreport", onReport);
@@ -124,7 +134,7 @@ export const moondropUsbHidHandler = (function () {
   }
 
   async function writePregain(device, value) {
-    const request = new Uint8Array([COMMAND_WRITE, COMMAND_SET_DAC_OFFSET, 0, 0, value]);
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_SET_DAC_OFFSET, 0x02, 0x00, value]);
     console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
     await device.sendReport(REPORT_ID, request);
   }
@@ -189,9 +199,11 @@ export const moondropUsbHidHandler = (function () {
     const packet = new Uint8Array(63);
     packet[0] = COMMAND_WRITE;
     packet[1] = COMMAND_UPDATE_EQ;
-    packet[2] = 0; // bLength
-    packet[3] = 0;
+    packet[2] = 0x18; // bLength
+    packet[3] = 0x00;
     packet[4] = filterIndex;
+    packet[5] = 0x00;
+    packet[6] = 0x00;
 
     const coeffs = encodeToByteArray(encodeBiquad(freq, gain, q));
     packet.set(coeffs, 7);
@@ -227,7 +239,7 @@ export const moondropUsbHidHandler = (function () {
   }
 
   function buildSavePacket() {
-    return new Uint8Array([COMMAND_WRITE, COMMAND_SAVE_EQ_TO_FLASH, 0]);
+    return new Uint8Array([COMMAND_WRITE, COMMAND_SAVE_EQ_TO_FLASH]);
   }
 
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
@@ -255,10 +267,227 @@ export const moondropUsbHidHandler = (function () {
     return false;
   }
 
+  async function readVer(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_VER]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading version");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received version data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_VER) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const version = `${data[3]}.${data[4]}.${data[5]}`;
+        console.log(`USB Device PEQ: Moondrop version: ${version}`);
+        resolve(version);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readVer command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function readChannelBalance(device, lr) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_CHANNEL_BALANCE, 0, lr]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading channel balance");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received channel balance data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_CHANNEL_BALANCE) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const balance = data[5];
+        console.log(`USB Device PEQ: Moondrop channel balance value: ${balance}`);
+        resolve(balance);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readChannelBalance command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writeChannelBalance(device, lr, db) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_CHANNEL_BALANCE, 0, lr, 0, db, 0]);
+    console.log(`USB Device PEQ: Moondrop sending writeChannelBalance command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function readDACGain(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_DAC_GAIN, 0]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC gain");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received DAC gain data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_DAC_GAIN) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const gain = data[3];
+        console.log(`USB Device PEQ: Moondrop DAC gain value: ${gain}`);
+        resolve(gain);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readDACGain command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writeDACGain(device, vl) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_DAC_GAIN, 1, vl]);
+    console.log(`USB Device PEQ: Moondrop sending writeDACGain command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function readDACMode(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_DAC_MODE, 0]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC mode");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received DAC mode data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_DAC_MODE) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const mode = data[3];
+        console.log(`USB Device PEQ: Moondrop DAC mode value: ${mode}`);
+        resolve(mode);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readDACMode command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writeDACMode(device, vl) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_DAC_MODE, 1, vl]);
+    console.log(`USB Device PEQ: Moondrop sending writeDACMode command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function readLEDSwitch(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_LED_SWITCH, 0]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading LED switch");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received LED switch data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_LED_SWITCH) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const ledSwitch = data[3];
+        console.log(`USB Device PEQ: Moondrop LED switch value: ${ledSwitch}`);
+        resolve(ledSwitch);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readLEDSwitch command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writeLEDSwitch(device, vl) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_LED_SWITCH, 1, vl]);
+    console.log(`USB Device PEQ: Moondrop sending writeLEDSwitch command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function readDACFilter(device) {
+    return new Promise(async (resolve, reject) => {
+      const request = new Uint8Array([COMMAND_READ, COMMAND_DAC_FILTER, 0]);
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC filter");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        console.log(`USB Device PEQ: Moondrop onInputReport received DAC filter data:`, data);
+        if (data[0] !== COMMAND_READ || data[1] !== COMMAND_DAC_FILTER) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        const filter = data[3];
+        console.log(`USB Device PEQ: Moondrop DAC filter value: ${filter}`);
+        resolve(filter);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Moondrop sending readDACFilter command:`, request);
+      await device.sendReport(REPORT_ID, request);
+    });
+  }
+
+  async function writeDACFilter(device, vl) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_DAC_FILTER, 1, vl]);
+    console.log(`USB Device PEQ: Moondrop sending writeDACFilter command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function resetEQ(device) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_RESET_EQ, 1, 4, 0]);
+    console.log(`USB Device PEQ: Moondrop sending resetEQ command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
+  async function resetFlash(device) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_RESET_FLASH, 0]);
+    console.log(`USB Device PEQ: Moondrop sending resetFlash command:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
   return {
     getCurrentSlot,
     pullFromDevice,
     pushToDevice,
     enablePEQ: async () => {}, // not required for Moondrop
+    readVer,
+    readChannelBalance,
+    writeChannelBalance,
+    readDACGain,
+    writeDACGain,
+    readDACMode,
+    writeDACMode,
+    readLEDSwitch,
+    writeLEDSwitch,
+    readDACFilter,
+    writeDACFilter,
+    resetEQ,
+    resetFlash
   };
 })();

@@ -119,6 +119,7 @@
   function calcEqDevPreamp(filters) {
     const maxGain = Math.max(...filters.map(f => f.gain));
     console.log("Calculated Preamp Gain:", -maxGain);
+    if (maxGain < 0) return 0;  //
     return -maxGain; // Simple logic to avoid clipping
   }
 

@@ -55,7 +55,7 @@ export const walkplayUsbHID = (function () {
   };
 
   // Push PEQ settings to Walkplay device
-  const pushToDevice = async (deviceDetails, slot, globalGain, filters) => {
+  const pushToDevice = async (deviceDetails, slot, globalGain, filtersToWrite) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
     console.log("Pushing PEQ settings...");
@@ -64,8 +64,8 @@ export const walkplayUsbHID = (function () {
 
     const useAltReport = false;
 
-    for (let i = 0; i < filters.length; i++) {
-      const filter = filters[i];
+    for (let i = 0; i < filtersToWrite.length; i++) {
+      const filter = filtersToWrite[i];
       const bArr = computeIIRFilter(i, filter.freq, filter.gain, filter.q);
 
       const packet = [
@@ -200,8 +200,10 @@ export const walkplayUsbHID = (function () {
   }
   const enablePEQ = async (deviceDetails, enable, slotId) => {
     const device = deviceDetails.rawDevice;
-    if (!enable) slotId = 0x00;
-    const packet = [WRITE, CMD.FLASH_EQ, 0x00, slotId, END];
+    if (!enable) {
+      slotId = 0x00;
+    }
+    const packet = [WRITE, CMD.FLASH_EQ, enable ? 1:0, slotId, END];
     await sendReport(device, REPORT_ID, packet);
   };
 

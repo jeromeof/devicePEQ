@@ -106,11 +106,66 @@ export const UsbHIDConnector = ( async function () {
             throw Error("Device Disconnected");
         }
         if (device && device.handler) {
-            return await device.handler.pushToDevice(device, slot, preamp, filters);
-        } else {
-            console.error("No device handler available for pushing.");
-        }
-        return true;   // Disconnect anyway
+
+          // Create a copy of the filters array to avoid modifying the original
+          const filtersToWrite = [...filters];
+
+          // First, determine if we have LS/HS filters with non-zero gain
+          const hasLSHSFilters = filtersToWrite.some(filter =>
+            (filter.type === "LSQ" || filter.type === "HSQ") && filter.gain !== 0);
+
+          // Second, determine if we need pregain (only if globalGain is positive)
+          const needsPreGain = preamp < 0;
+
+          // Handle LS/HS filters if device doesn't support them
+          if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false) {
+            // Convert LS/HS filters with non-zero gain to PK with gain=0
+            for (let i = 0; i < filtersToWrite.length; i++) {
+              if ((filtersToWrite[i].type === "LSQ" || filtersToWrite[i].type === "HSQ") && filtersToWrite[i].gain !== 0) {
+                console.log(`USB Device PEQ: converting ${filtersToWrite[i].type} filter to PK with gain=0`);
+                filtersToWrite[i].type = "PK";
+                filtersToWrite[i].gain = 0;
+              }
+            }
+          }
+
+          // Handle warnings based on device capabilities and filter requirements
+          if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false &&
+            needsPreGain && device.modelConfig.supportsPregain === false) {
+            // Case 1: Device doesn't support both LSHS filters and pregain
+            console.warn("Device doesn't support LS/HS filters and auto pregain - both will be ignored");
+            if (window.showToast) {
+              window.showToast("Device doesn't support LS/HS filters and auto pregain - both will be ignored", "warning");
+            }
+          } else if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false) {
+            // Case 2: Device only doesn't support LSHS filters
+            console.warn("Device only supports Peak filters - ignoring LS/HS filters");
+            if (window.showToast) {
+              window.showToast("Device only supports Peak filters - ignoring LS/HS filters", "warning");
+            }
+          } else if (needsPreGain && device.modelConfig.supportsPregain === false) {
+            // Case 3: Device only doesn't support pregain
+            console.warn("Device does not support auto calculated pregain");
+            if (window.showToast) {
+              window.showToast("Device does not support auto calculated pregain", "warning");
+            }
+          }
+
+          // If we have fewer filters than maxFilters, fill the rest with defaultResetFiltersValues
+          if (filtersToWrite.length < device.modelConfig.maxFilters && device.modelConfig.defaultResetFiltersValues) {
+            const defaultFilter = device.modelConfig.defaultResetFiltersValues[0];
+            console.log(`USB Device PEQ: filling missing filters with defaults:`, defaultFilter);
+
+            for (let i = filtersToWrite.length; i < device.modelConfig.maxFilters; i++) {
+              filtersToWrite.push({...defaultFilter});
+            }
+          }
+
+          return await device.handler.pushToDevice(device, slot, preamp, filters);
+      } else {
+          console.error("No device handler available for pushing.");
+      }
+      return true;   // Disconnect anyway
     };
 
     // Helper Function to Get Available 'Custom' Slots Based on the Device that we can write too

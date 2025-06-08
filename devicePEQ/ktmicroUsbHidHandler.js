@@ -237,15 +237,23 @@ export const ktmicroUsbHidHandler = (function () {
     const clear = buildCommand(COMMAND_CLEAR);
     console.log(`USB Device PEQ: KTMicro sending clear command:`, clear);
     await device.sendReport(REPORT_ID, clear);
-    console.log(`USB Device PEQ: KTMicro sendReport clear sent`);
+    console.log(`USB Devic  e PEQ: KTMicro sendReport clear sent`);
 
-    await new Promise(resolve => setTimeout(resolve, 100)); // Added 100ms delay
+    await new Promise(resolve => setTimeout(resolve, 200)); // Added 100ms delay
   }
 
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
     const device = deviceDetails.rawDevice;
 
+    // First check if we need to enable PEQ
+    const currentSlot = await getCurrentSlot(deviceDetails);
+    if (currentSlot === deviceDetails.modelConfig.disabledPresetId) {
+      console.log(`USB Device PEQ: KTMicro device is disabled, enabling it first with slot ${slot}`);
+      await enablePEQ(deviceDetails, true, slot);
+    }
+
     try {
+
       // Now write the filters
       for (let i = 0; i < filters.length; i++) {
         if (i >= deviceDetails.modelConfig.maxFilters) break;
@@ -292,14 +300,15 @@ export const ktmicroUsbHidHandler = (function () {
 
   const enablePEQ = async (deviceDetails, enable, slotId) => {
 
+    // KT micro - has issue if device is PEQ was disabled we try to enable it
     var device = deviceDetails.rawDevice
-
-//    await pushClearToDevice(device);
-
 
     if (slotId === -1 || enable === false) {
       slotId = 0x02; // Disable
+      // Actually reset the filters on disable
+      //await pushClearToDevice(device);
     }
+
     const enableEQPacket = buildEnableEQPacket(slotId);
 
     console.log(`USB Device PEQ: KTMicro enable PEQ request`, enableEQPacket);
