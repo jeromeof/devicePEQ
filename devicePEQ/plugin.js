@@ -444,6 +444,7 @@ async function initializeDeviceEqPlugin(context) {
                   <li>Moondrop Quark2</li>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
+                  <li>JCally JM12</li>
                 </ul>
                 <p>You also use the official Tanchjim Android App for EQ and device configuration.</p>
               </div>
