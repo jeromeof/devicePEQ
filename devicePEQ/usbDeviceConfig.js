@@ -24,7 +24,7 @@ export const usbHidDeviceHandlerConfig = ([
       experimental: true,
       supportsLSHSFilters: true,
       supportsPregain: true,
-      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
+      defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       reportId: 7,
       availableSlots: [
         {id: 0, name: "Jazz"},
@@ -316,7 +316,7 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: false,
       disabledPresetId: -1,
       supportsPregain: true,
-      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
+      defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       supportsLSHSFilters: false,
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
@@ -524,11 +524,11 @@ export const usbHidDeviceHandlerConfig = ([
       maxWritableEQSlots: 0,
       compensate2X: true,  // Lets compenstate by default
       disconnectOnSave: true,
-      disabledPresetId: 2,
+      disabledPresetId: 0x02,
       experimental: false,
       supportsPregain: false,
       supportsLSHSFilters: true,
-      defaultResetFiltersValues:[{gain:0, freq: 100, qValue:1, filterType: "PK"}],
+      defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       availableSlots: [{id: 0x03, name: "Custom"}]
     },
     devices: {

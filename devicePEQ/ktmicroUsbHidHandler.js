@@ -248,6 +248,8 @@ export const ktmicroUsbHidHandler = (function () {
     // First check if we need to enable PEQ
     const currentSlot = await getCurrentSlot(deviceDetails);
     if (currentSlot === deviceDetails.modelConfig.disabledPresetId) {
+      // Use the first of the availableSlots to 'enable' that slot
+      slot = deviceDetails.modelConfig.availableSlots[0].id;
       console.log(`USB Device PEQ: KTMicro device is disabled, enabling it first with slot ${slot}`);
       await enablePEQ(deviceDetails, true, slot);
     }
@@ -303,9 +305,8 @@ export const ktmicroUsbHidHandler = (function () {
     // KT micro - has issue if device is PEQ was disabled we try to enable it
     var device = deviceDetails.rawDevice
 
-    if (slotId === -1 || enable === false) {
-      slotId = 0x02; // Disable
-      // Actually reset the filters on disable
+    if (slotId === deviceDetails.modelConfig.disabledPresetId || enable === false) {
+      slotId = deviceDetails.modelConfig.disabledPresetId; // Disable
       //await pushClearToDevice(device);
     }
 

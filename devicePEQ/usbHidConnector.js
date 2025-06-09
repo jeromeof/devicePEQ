@@ -161,7 +161,7 @@ export const UsbHIDConnector = ( async function () {
             }
           }
 
-          return await device.handler.pushToDevice(device, slot, preamp, filters);
+          return await device.handler.pushToDevice(device, slot, preamp, filtersToWrite);
       } else {
           console.error("No device handler available for pushing.");
       }
