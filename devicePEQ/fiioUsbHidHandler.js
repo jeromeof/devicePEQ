@@ -81,13 +81,6 @@ export const fiioUsbHID = (function () {
         if (!filter.disabled) {
           gain = filter.gain;
         }
-        // A quick sanity check on the filters
-        if (filter.freq < 20 || filter.freq > 20000) {
-          filter.freq = 100;
-        }
-        if (filter.q < 0.01 || filter.q > 100) {
-          filter.q = 1;
-        }
         await setPeqParams(device, filterIdx, filter.freq, gain, filter.q, convertFromFilterType(filter.type), reportId);
       }
       await new Promise(resolve => setTimeout(resolve, 100)); // Added 100ms delay

@@ -110,7 +110,28 @@ export const UsbHIDConnector = ( async function () {
           // Create a copy of the filters array to avoid modifying the original
           const filtersToWrite = [...filters];
 
-          // First, determine if we have LS/HS filters with non-zero gain
+          // Ensure array is at most the maxFilters
+          if (filtersToWrite.length > device.modelConfig.maxFilters) {
+            console.warn(`USB Device PEQ: Truncating ${filtersToWrite.length} filters to ${device.modelConfig.maxFilters} (device limit)`);
+            if (window.showToast) {
+              await window.showToast(`This device only supports ${device.modelConfig.maxFilters} PEQ filters - only first ${device.modelConfig.maxFilters} will be applied.`, "warning", 10000, true);
+            }
+
+            filtersToWrite.splice(device.modelConfig.maxFilters);
+          }
+
+          // And do an upfront sanity check on the values
+          for (let i = 0 ; i < filtersToWrite.length; i++) {
+            // A quick sanity check on the filters
+            if (filtersToWrite[i].freq < 20 || filtersToWrite[i].freq > 20000) {
+              filtersToWrite[i].freq = 100;
+            }
+            if (filtersToWrite[i].q < 0.01 || filtersToWrite[i].q > 100) {
+              filtersToWrite[i].q = 1;
+            }
+          }
+
+          // Next, determine if we have LS/HS filters with non-zero gain
           const hasLSHSFilters = filtersToWrite.some(filter =>
             (filter.type === "LSQ" || filter.type === "HSQ") && filter.gain !== 0);
 
@@ -157,6 +178,7 @@ export const UsbHIDConnector = ( async function () {
             console.log(`USB Device PEQ: filling missing filters with defaults:`, defaultFilter);
 
             for (let i = filtersToWrite.length; i < device.modelConfig.maxFilters; i++) {
+
               filtersToWrite.push({...defaultFilter});
             }
           }

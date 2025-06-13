@@ -265,7 +265,11 @@ export const ktmicroUsbHidHandler = (function () {
         if (deviceDetails.modelConfig.compensate2X) { // Most older KTMicro devices set the wrong frequency
           freqToWrite = filters[i].freq / 2;  // 100Hz seems to end up as 200Hz
         }
-        const writeGainFreq = buildWritePacket(filterId, freqToWrite, filters[i].gain);
+        var gain = filters[i].gain;
+        if (filters[i].disabled) {
+          gain = 0;
+        }
+        const writeGainFreq = buildWritePacket(filterId, freqToWrite, gain);
         const writeQ = buildQPacket(filterId + 1, filters[i].q, filters[i].type);
 
         // We should verify it is saved correctly but for now lets assume once command is accepted it has worked

@@ -176,52 +176,105 @@ async function initializeDeviceEqPlugin(context) {
   }
 
   // Function to show toast messages
-  function showToast(message, type = 'success') {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.id = `device-toast-${type}`; // Type-specific ID
-    toast.textContent = message;
+  // Parameters:
+  // - message: The text message to display
+  // - type: The type of toast (success, error, warning) with default 'success'
+  // - timeout: The time in milliseconds before the toast disappears (default 5000ms)
+  // - requireClick: If true, adds a "Continue" button that must be clicked to dismiss the toast (ignores timeout)
+  //                 and returns a Promise that resolves when the button is clicked
+  //
+  // Example usage with await to block execution until user clicks Continue:
+  // async function someFunction() {
+  //   // Show a toast and wait for user to click Continue
+  //   await showToast("Please confirm to continue", "warning", 0, true);
+  //   // Code here will only execute after the user clicks Continue
+  //   console.log("User clicked Continue");
+  // }
+  function showToast(message, type = 'success', timeout = 5000, requireClick = false) {
+    return new Promise((resolve) => {
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.id = `device-toast-${type}`; // Type-specific ID
 
-    // Set style based on type
-    if (type === 'success') {
-      toast.style.backgroundColor = '#4CAF50'; // Green
-      toast.style.bottom = '80px'; // Bottom position for success
-    } else if (type === 'error') {
-      toast.style.backgroundColor = '#F44336'; // Red
-      toast.style.top = '30px'; // Top position for error
-      toast.style.bottom = 'auto'; // Override bottom
-    } else if (type === 'warning') {
-      toast.style.backgroundColor = '#FF9800'; // Orange
-      toast.style.bottom = '30px'; // Bottom position for warning
-    }
+      // Create message container
+      const messageContainer = document.createElement('div');
+      messageContainer.textContent = message;
+      toast.appendChild(messageContainer);
 
-    // Common styles
-    toast.style.color = 'white';
-    toast.style.padding = '16px';
-    toast.style.borderRadius = '4px';
-    toast.style.position = 'fixed';
-    toast.style.zIndex = '10000';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.minWidth = '250px';
-    toast.style.textAlign = 'center';
-    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-
-    // Remove existing toast of the same type
-    const existingToast = document.getElementById(`device-toast-${type}`);
-    if (existingToast) {
-      document.body.removeChild(existingToast);
-    }
-
-    // Add to document
-    document.body.appendChild(toast);
-
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-      if (document.body.contains(toast)) {
-        document.body.removeChild(toast);
+      // Set style based on type
+      if (type === 'success') {
+        toast.style.backgroundColor = '#4CAF50'; // Green
+        toast.style.bottom = '80px'; // Bottom position for success
+      } else if (type === 'error') {
+        toast.style.backgroundColor = '#F44336'; // Red
+        toast.style.top = '30px'; // Top position for error
+        toast.style.bottom = 'auto'; // Override bottom
+      } else if (type === 'warning') {
+        toast.style.backgroundColor = '#FF9800'; // Orange
+        toast.style.bottom = '30px'; // Bottom position for warning
       }
-    }, 5000);
+
+      // Common styles
+      toast.style.color = 'white';
+      toast.style.padding = '16px';
+      toast.style.borderRadius = '4px';
+      toast.style.position = 'fixed';
+      toast.style.zIndex = '10000';
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%)';
+      toast.style.minWidth = '250px';
+      toast.style.textAlign = 'center';
+      toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+
+      // Check for existing toast of the same type
+      const existingToast = document.getElementById(`device-toast-${type}`);
+      if (existingToast) {
+        // Check if the existing toast has a continue button (requireClick=true)
+        const continueButton = existingToast.querySelector('button');
+        if (continueButton) {
+          // If there's an existing toast with a continue button, return early
+          // to allow the user to interact with it
+          return resolve(); // Resolve immediately since we're not showing a new toast
+        }
+        document.body.removeChild(existingToast);
+      }
+
+      // If requireClick is true, add a continue button
+      if (requireClick) {
+        // Add a continue button
+        const continueButton = document.createElement('button');
+        continueButton.textContent = 'Click here to Continue';
+        continueButton.style.marginTop = '10px';
+        continueButton.style.padding = '5px 15px';
+        continueButton.style.backgroundColor = 'white';
+        continueButton.style.color = toast.style.backgroundColor;
+        continueButton.style.border = 'none';
+        continueButton.style.borderRadius = '3px';
+        continueButton.style.cursor = 'pointer';
+        continueButton.style.fontWeight = 'bold';
+
+        // Add click event to remove the toast and resolve the promise
+        continueButton.addEventListener('click', () => {
+          if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+          }
+          resolve(); // Resolve the promise when the button is clicked
+        });
+
+        toast.appendChild(continueButton);
+      } else {
+        // Auto remove after xx seconds if requireClick is false
+        setTimeout(() => {
+          if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+          }
+          resolve(); // Resolve the promise when the toast is automatically removed
+        }, timeout);
+      }
+
+      // Add to document
+      document.body.appendChild(toast);
+    });
   }
 
   // Make showToast globally accessible for handlers
@@ -371,7 +424,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.8</h3>
+            <h3>About Device PEQ - v0.10</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
