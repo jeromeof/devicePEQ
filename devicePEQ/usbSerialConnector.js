@@ -9,41 +9,97 @@ export const UsbSerialConnector = (async function () {
 
   const getDeviceConnected = async () => {
     try {
-      const rawDevice = await navigator.serial.requestPort({
-        filters: usbSerialDeviceHandlerConfig.map(entry => ({ usbVendorId: entry.vendorId }))
-      });
+      // Build filters for device selection - support both USB and Bluetooth SPP
+      const filters = [];
 
+      // Add USB vendor ID filters for traditional USB devices
+      for (const entry of usbSerialDeviceHandlerConfig) {
+        if (entry.vendorId) {
+          filters.push({ usbVendorId: entry.vendorId });
+        }
+        // Add Bluetooth SPP filters for enhanced filtering
+        if (entry.filters && entry.filters.allowedBluetoothServiceClassIds) {
+          for (const serviceId of entry.filters.allowedBluetoothServiceClassIds) {
+            filters.push({ bluetoothServiceClassId: serviceId });
+          }
+        }
+      }
+
+      const requestOptions = {};
+      if (filters.length > 0) {
+        requestOptions.filters = filters;
+      }
+
+      // Also add allowedBluetoothServiceClassIds for Nothing devices
+      const bluetoothServiceIds = [];
+      for (const entry of usbSerialDeviceHandlerConfig) {
+        if (entry.filters && entry.filters.allowedBluetoothServiceClassIds) {
+          bluetoothServiceIds.push(...entry.filters.allowedBluetoothServiceClassIds);
+        }
+      }
+      if (bluetoothServiceIds.length > 0) {
+        requestOptions.allowedBluetoothServiceClassIds = bluetoothServiceIds;
+      }
+
+      const rawDevice = await navigator.serial.requestPort(requestOptions);
       const info = rawDevice.getInfo();
       const productId = info.usbProductId;
+      const bluetoothServiceClassId = info.bluetoothServiceClassId;
 
       let vendorConfig = null;
       let modelName = null;
       var modelConfig = {};
       var handler = null;
 
+      // Enhanced device matching - support both USB and Bluetooth SPP
       for (const entry of usbSerialDeviceHandlerConfig) {
-        if (entry.vendorId === info.usbVendorId) {
+        let deviceMatched = false;
+
+        // Check USB vendor ID match (traditional method)
+        if (entry.vendorId && entry.vendorId === info.usbVendorId) {
           for (const [name, model] of Object.entries(entry.devices)) {
             if (model.usbProductId === productId) {
               vendorConfig = entry;
               modelName = name;
               modelConfig = model.modelConfig || {};
               handler = entry.handler;
+              deviceMatched = true;
               break;
             }
           }
         }
-        if (vendorConfig) break;
+
+        // Check Bluetooth SPP UUID match (enhanced filtering)
+        if (!deviceMatched && entry.filters && entry.filters.bluetoothServiceClassId) {
+          if (bluetoothServiceClassId === entry.filters.bluetoothServiceClassId) {
+            // For Bluetooth devices, use the first (and typically only) device entry
+            const deviceEntries = Object.entries(entry.devices);
+            if (deviceEntries.length > 0) {
+              const [name, model] = deviceEntries[0];
+              vendorConfig = entry;
+              modelName = name;
+              modelConfig = model.modelConfig || {};
+              handler = entry.handler;
+              deviceMatched = true;
+            }
+          }
+        }
+
+        if (deviceMatched) break;
       }
 
       if (!vendorConfig) {
+        const deviceId = productId ? `0x${productId.toString(16)}` : bluetoothServiceClassId || 'Unknown';
         document.getElementById('status').innerText =
-          `Status: Unsupported Device (0x${productId.toString(16)})`;
+          `Status: Unsupported Device (${deviceId})`;
         return;
       }
-      await rawDevice.open({ baudRate: 115200 });
 
-      const model = vendorConfig.model || "Unknown Serial Device";
+      // Open device with appropriate baud rate
+      const baudRate = bluetoothServiceClassId ? 9600 : 115200; // Bluetooth SPP typically uses 9600
+      await rawDevice.open({ baudRate });
+
+      const model = vendorConfig.model || modelName || "Unknown Serial Device";
 
       currentDevice = {
         rawDevice: rawDevice,
@@ -56,7 +112,7 @@ export const UsbSerialConnector = (async function () {
         writable: rawDevice.writable.getWriter(),
       };
 
-        devices.push(currentDevice);
+      devices.push(currentDevice);
       return currentDevice;
     } catch (error) {
       console.error("Failed to connect to Serial device:", error);
