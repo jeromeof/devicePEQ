@@ -278,27 +278,6 @@ export const usbHidDeviceHandlerConfig = ([
             name: "Dance"
           }, {id: 4, name: "R&B"}, {id: 5, name: "Classic"}, {id: 6, name: "Hip-hop"}, {id: 160, name: "USER1"}]
         }
-      },
-      "Qudelix-5K USB DAC 48KHz": {
-        handler: qudelixUsbHidHandler,
-        manufacturer: "Qudelix",
-        defaultModelConfig: {
-          minGain: -12,
-          maxGain: 12,
-          maxFilters: 10, // Qudelix 5K supports 10 PEQ bands
-          firstWritableEQSlot: 1,
-          maxWritableEQSlots: 4,
-          disconnectOnSave: false,
-          disabledPresetId: -1,
-          experimental: true,
-          availableSlots: [
-            {id: 101, name: "Custom"},
-            {id: 1, name: "Preset 1"},
-            {id: 2, name: "Preset 2"},
-            {id: 3, name: "Preset 3"},
-            {id: 4, name: "Preset 4"}
-          ]
-        }
       }
     }
   },
@@ -552,6 +531,13 @@ export const usbHidDeviceHandlerConfig = ([
           supportsPregain: true,
         }
       },
+      "TANCHJIM FISSION": {
+        manufacturer: "TANCHJIM",
+        modelConfig: {
+          compensate2X: false,
+          supportsPregain: true,
+        }
+      },
       "CDSP": {
         manufacturer: "Moondrop",
         modelConfig: {
@@ -562,6 +548,55 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         modelConfig: {
           compensate2X: false
+        }
+      }
+    }
+  },
+  {
+    vendorIds: [0x2E75], // Qudelix vendor ID (example - may need verification)
+    manufacturer: "Qudelix",
+    handler: qudelixUsbHidHandler,
+    defaultModelConfig: {
+      minGain: -12,
+      maxGain: 12,
+      maxFilters: 10,
+      firstWritableEQSlot: 101,
+      maxWritableEQSlots: 4,
+      disconnectOnSave: false,
+      disabledPresetId: -1,
+      experimental: true,
+      supportsLSHSFilters: true,
+      supportsPregain: true,
+      availableSlots: [
+        {id: 101, name: "Custom"},
+        {id: 1, name: "Preset 1"},
+        {id: 2, name: "Preset 2"},
+        {id: 3, name: "Preset 3"},
+        {id: 4, name: "Preset 4"}
+      ]
+    },
+    devices: {
+      "Qudelix-5K USB DAC 48KHz": {
+        handler: qudelixUsbHidHandler,
+        manufacturer: "Qudelix",
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10, // Qudelix 5K supports 10 PEQ bands
+          firstWritableEQSlot: 101,
+          maxWritableEQSlots: 4,
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: true,
+          supportsLSHSFilters: true,
+          supportsPregain: true,
+          availableSlots: [
+            {id: 101, name: "Custom"},
+            {id: 1, name: "Preset 1"},
+            {id: 2, name: "Preset 2"},
+            {id: 3, name: "Preset 3"},
+            {id: 4, name: "Preset 4"}
+          ]
         }
       }
     }

@@ -424,7 +424,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.10</h3>
+            <h3>About Device PEQ - v0.11</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -440,13 +440,14 @@ async function initializeDeviceEqPlugin(context) {
               <ul>
                 <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17</li>
                 <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
-                <li><strong>Tanchjim:</strong> Bunny DSP, One DSP, Stargate II </li>
+                <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>
                 <li><strong>EPZ:</strong> GM20 and TP13</li>
                 <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
                 <li><strong>JCally:</strong> JM20 Pro, JM12</li>
                 <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
                 <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
                 <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
+                <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
                 <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network</li>
                 <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
               </ul>
@@ -458,6 +459,7 @@ async function initializeDeviceEqPlugin(context) {
                 <button class="sub-tab-button" data-subtab="sub-walkplay">Walkplay</button>
                 <button class="sub-tab-button" data-subtab="sub-tanchjim">KTMicro</button>
                 <button class="sub-tab-button" data-subtab="sub-jdslabs">JDS Labs</button>
+                <button class="sub-tab-button" data-subtab="sub-nothing">Nothing</button>
                 <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
               </div>
 
@@ -497,6 +499,7 @@ async function initializeDeviceEqPlugin(context) {
                   <li>Moondrop Quark2</li>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
+                  <li>Tanchjim Fission (IEM)</li>
                   <li>JCally JM12</li>
                 </ul>
                 <p>You also use the official Tanchjim Android App for EQ and device configuration.</p>
@@ -506,6 +509,16 @@ async function initializeDeviceEqPlugin(context) {
               <h5>JDS Labs</h5>
               <p>Supports PEQ control over USB Serial for compatible products like the JDS Labs Element IV, basically if it works on JDS Labs excellent <a href="https://core.jdslabs.com.">Core PEQ</a> it should work. You can push and pull filters directly to the device.</p>
               <p>Note: This option is only visible in advanced mode </p>
+            </div>
+
+            <div id="sub-nothing" class="sub-tab-content">
+              <h5>Nothing</h5>
+              <p>Beta support for Nothing Headphone (1) via Serial USB or Bluetooth connection. Supports reading and writing custom EQ profiles with up to 8 parametric filters.</p>
+              <ul>
+                <li>Nothing Headphone (1) - Beta support</li>
+              </ul>
+              <p>The Nothing headphones support multiple EQ profiles: Balanced, Voice, More Treble, More Bass, and Custom. Only the Custom profile supports writing parametric EQ filters.</p>
+              <p>Note: This is experimental devicePEQ Bluetooth support and requires compatible browser with Web Serial API.</p>
             </div>
 
             <div id="sub-wiim" class="sub-tab-content">
@@ -774,6 +787,15 @@ async function initializeDeviceEqPlugin(context) {
                   await NetworkDeviceConnector.getAvailableSlots(device),
                   await NetworkDeviceConnector.getCurrentSlot(device)
                 );
+
+                // Check if device supports fewer filters than currently in context
+                const currentFilters = context.elemToFilters(true);
+                if (currentFilters.length > device.modelConfig.maxFilters) {
+                  console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
+                  if (window.showToast) {
+                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                  }
+                }
               }
             } else if (selection.connectionType == "usb") {
               // Connect via USB and show the HID device picker
@@ -806,6 +828,15 @@ async function initializeDeviceEqPlugin(context) {
                   await UsbHIDConnector.getAvailableSlots(device),
                   await UsbHIDConnector.getCurrentSlot(device)
                 );
+
+                // Check if device supports fewer filters than currently in context
+                const currentFilters = context.elemToFilters(true);
+                if (currentFilters.length > device.modelConfig.maxFilters) {
+                  console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
+                  if (window.showToast) {
+                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                  }
+                }
 
                 device.rawDevice.addEventListener('disconnect', () => {
                   console.log(`Device ${device.rawDevice.productName} disconnected.`);
@@ -843,6 +874,15 @@ async function initializeDeviceEqPlugin(context) {
                   await UsbSerialConnector.getAvailableSlots(device),
                   await UsbSerialConnector.getCurrentSlot(device)
                 );
+
+                // Check if device supports fewer filters than currently in context
+                const currentFilters = context.elemToFilters(true);
+                if (currentFilters.length > device.modelConfig.maxFilters) {
+                  console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
+                  if (window.showToast) {
+                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                  }
+                }
 
                 device.rawDevice.addEventListener('disconnect', () => {
                   console.log(`Device ${device.rawDevice.productName} disconnected.`);
@@ -1098,7 +1138,7 @@ async function initializeDeviceEqPlugin(context) {
         <!-- Selection Buttons (Vertical Layout) -->
         <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
           <button id="usb-hid-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">USB Device</button>
-          <button id="usb-serial-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #6f42c1; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">USB Serial Device</button>
+          <button id="usb-serial-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #6f42c1; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Serial USB or Bluetooth Device</button>
           <button id="network-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Network</button>
         </div>
 

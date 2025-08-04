@@ -242,7 +242,7 @@ export const nothingUsbSerial = (function () {
         freq: frequency,
         gain: gain,
         q: qFactorValue,
-        type: filterType === 0 ? "LOWSHELF" : filterType === 2 ? "HIGHSHELF" : "PEAKING"
+        type: filterType === 0 ? "LSQ" : filterType === 2 ? "HSQ" : "PK"
       });
     }
 
@@ -280,7 +280,7 @@ export const nothingUsbSerial = (function () {
     if (eqBands) {
         for (const band of eqBands) {
             // Filter type (1 byte)
-            packet[offset++] = band.filterType || 1; // Default to PEAK
+            packet[offset++] = band.filterType; // Default to PEAK
 
             // Gain (4 bytes as float)
             const gainBytes = floatToBytes(band.gain || 0.0);
@@ -312,7 +312,7 @@ export const nothingUsbSerial = (function () {
 
     // Convert filters to the format expected by createEQDataPacket
     const eqBands = filters.map(filter => ({
-      filterType: filter.type === "LOWSHELF" ? 0 : filter.type === "HIGHSHELF" ? 2 : 1, // PEAKING = 1
+      filterType: filter.type === "LSQ" ? 0 : filter.type === "HSQ" ? 2 : 1, // PEAKING = 1
       gain: filter.gain,
       frequency: filter.freq,
       quality: filter.q

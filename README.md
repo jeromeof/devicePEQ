@@ -83,7 +83,7 @@ DeviceEQ/
 ### **🔗 How it Works**
 1. Prompts for serial port selection.
 2. Uses line-based text protocol to pull/push PEQ filters.
-3. Supports global gain and 10-band PEQ adjustments.
+3. Supports global gain and 12-band PEQ adjustments.
 4. Filters are parsed and applied using the same internal model.
 
 ---
@@ -140,8 +140,8 @@ DeviceEQ/
 ### **🔹 What it does**
 - Sends/receives PEQ data via text-based protocol.
 - Mirrors the functionality of **JDS Labs Core PEQ app**.
-- Supports **global gain** and **10 PEQ filters**.
-- Handles both **10-band** and **12-band** device configurations.
+- Supports **global gain** and **12 PEQ filters**.
+- Handles **12-band** device configurations.
 - Supports **Lowshelf/Highshelf filters** for advanced shelving EQ.
 
 ---

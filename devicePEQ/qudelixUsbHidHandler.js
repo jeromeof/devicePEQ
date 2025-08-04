@@ -2,8 +2,18 @@
 // Pragmatic Audio - Handler for Qudelix 5K USB HID EQ Control
 
 export const qudelixUsbHidHandler = (function () {
-  // Command constants based on the Qudelix TypeScript code
-  const REPORT_ID = 0x4b; // Standard HID report ID used by Qudelix devices
+  // HID Report IDs from Qudelix protocol
+  const HID_REPORT_ID = {
+    DATA_TRANSFER: 1,
+    RESPONSE: 2,
+    COMMAND: 3,
+    CONTROL: 4,
+    UPGRADE_DATA_TRANSFER: 5,
+    UPGRADE_RESPONSE: 6,
+    QX_OUT: 7,
+    QX_HOST_TO_DEVICE: 8,
+    QX_DEVICE_TO_HOST: 9
+  };
 
   // Qudelix EQ filter types
   const FILTER_TYPES = {
@@ -14,6 +24,11 @@ export const qudelixUsbHidHandler = (function () {
     LS: 10,     // 2nd order Low Shelf
     HS: 11      // 2nd order High Shelf
   };
+
+  // HID communication state
+  let hidReportInfo = [];
+  let sendReportId = 0;
+  let sendReportSize = 0;
 
   // App command definitions from qxApp_proto.ts
   const APP_CMD = {
@@ -91,6 +106,56 @@ export const qudelixUsbHidHandler = (function () {
     }
   };
 
+  // Initialize HID report information (similar to AppUsbHid.init_reportInfo)
+  function initHidReports(device) {
+    hidReportInfo = [];
+    const collections = device.collections;
+    
+    if (collections?.length) {
+      collections.forEach((info) => {
+        if (info.usagePage === 0xFF00) { // Vendor specification
+          // Process feature reports
+          info.featureReports?.forEach((report) => {
+            const reportId = report.reportId;
+            const reportSize = report.items?.[0]?.reportCount || 0;
+            hidReportInfo.push({ type: 'feature', id: reportId, size: reportSize });
+          });
+          
+          // Process input reports
+          info.inputReports?.forEach((report) => {
+            const reportId = report.reportId;
+            const reportSize = report.items?.[0]?.reportCount || 0;
+            hidReportInfo.push({ type: 'in', id: reportId, size: reportSize });
+          });
+          
+          // Process output reports
+          info.outputReports?.forEach((report) => {
+            const reportId = report.reportId;
+            const reportSize = report.items?.[0]?.reportCount || 0;
+            hidReportInfo.push({ type: 'out', id: reportId, size: reportSize });
+          });
+        }
+      });
+    }
+    
+    // Find the best report ID for sending (try qx_hostToDevice first, fallback to qx_out)
+    sendReportId = HID_REPORT_ID.QX_HOST_TO_DEVICE;
+    sendReportSize = getReportSize(sendReportId);
+    
+    if (sendReportSize === 0) {
+      sendReportId = HID_REPORT_ID.QX_OUT;
+      sendReportSize = getReportSize(sendReportId);
+    }
+    
+    console.log(`Qudelix HID: Using report ID ${sendReportId}, size ${sendReportSize}`);
+  }
+  
+  // Get report size for a given ID
+  function getReportSize(reportId) {
+    const report = hidReportInfo.find(r => r.id === reportId);
+    return report?.size || 0;
+  }
+
   // Map filter type from our PEQ format to Qudelix format
   function mapFilterTypeToQudelix(filterType) {
     switch (filterType) {
@@ -126,21 +191,28 @@ export const qudelixUsbHidHandler = (function () {
     }
   }
 
-  // Helper function to send commands with proper formatting
+  // Send HID command using proper Qudelix protocol
   async function sendCommand(device, cmdType, payload = []) {
-    // Format command: [cmdMSB, cmdLSB, ...payload]
-    const data = new Uint8Array(2 + payload.length);
-    data[0] = utils.msb8(cmdType);
-    data[1] = utils.lsb8(cmdType);
-
+    const cmdPayload = new Uint8Array(2 + payload.length);
+    cmdPayload[0] = utils.msb8(cmdType);
+    cmdPayload[1] = utils.lsb8(cmdType);
+    
     for (let i = 0; i < payload.length; i++) {
-      data[i + 2] = payload[i];
+      cmdPayload[i + 2] = payload[i];
     }
-
-    console.log(`Qudelix USB: Sending command 0x${cmdType.toString(16).padStart(4, '0')}:`, [...data].map(b => b.toString(16).padStart(2, '0')).join(' '));
-
-    await device.sendReport(REPORT_ID, data);
-
+    
+    // Create HID packet: length + 0x80 command + payload
+    const packet = new Uint8Array(sendReportSize);
+    packet.fill(0);
+    
+    packet[0] = cmdPayload.length + 1; // HID command + payload length
+    packet[1] = 0x80; // HID command
+    packet.set(cmdPayload, 2);
+    
+    console.log(`Qudelix USB: Sending command 0x${cmdType.toString(16).padStart(4, '0')}:`, [...packet].map(b => b.toString(16).padStart(2, '0')).join(' '));
+    
+    await device.sendReport(sendReportId, packet);
+    
     // Add a small delay to avoid overwhelming the device
     await new Promise(resolve => setTimeout(resolve, 20));
   }
@@ -152,6 +224,11 @@ export const qudelixUsbHidHandler = (function () {
     const filters = [];
 
     try {
+      // Initialize HID reports if not done already
+      if (hidReportInfo.length === 0) {
+        initHidReports(device);
+      }
+
       // First, request the current preset data
       await requestPresetData(device);
 
@@ -161,68 +238,68 @@ export const qudelixUsbHidHandler = (function () {
         let timeout = null;
 
         const responseHandler = function(event) {
+          const reportId = event.reportId;
           const data = new Uint8Array(event.data.buffer);
 
-          // Skip if the data is too short or doesn't look like valid EQ data
-          if (data.length < 4) return;
+          console.log(`Qudelix USB: Received report ID ${reportId}, length ${data.length}`);
 
-          // Extract command from first two bytes
-          const cmdType = (data[0] << 8) | data[1];
-          const dataStart = 2;
+          // Check if this is a response report (ID 2 or 9)
+          if (reportId === HID_REPORT_ID.RESPONSE || reportId === HID_REPORT_ID.QX_DEVICE_TO_HOST) {
+            // Parse HID packet: length + command + data
+            if (data.length < 3) return;
+            
+            const len = data[0]; // Length of command + data
+            const cmdType = (data[1] << 8) | data[2]; // Command type
+            const cmdData = data.slice(3, len + 1); // Command data
+            
+            console.log(`Qudelix USB: Received command 0x${cmdType.toString(16).padStart(4, '0')}, data length: ${cmdData.length}`);
 
-          console.log(`Qudelix USB: Received data, command: 0x${cmdType.toString(16).padStart(4, '0')}`);
+            // Look for EQ preset data responses
+            if (cmdType === 0x8004 || // RspEqPreset
+                cmdType === 0x8006 || // RspEqPreset_L
+                cmdType === 0x8007) { // RspEqPreset_H
 
-          // Look for EQ preset data responses
-          if (cmdType === 0x8004 || // RspEqPreset
-            cmdType === 0x8006 || // RspEqPreset_L
-            cmdType === 0x8007) { // RspEqPreset_H
+              receivedData = true;
 
-            receivedData = true;
+              // Parse EQ data from cmdData
+              let offset = 0;
 
-            // Parse the data - structure is based on the Qudelix TypeScript code
-            // The exact parsing depends on the protocol format used by Qudelix
+              // Parse global pre-gain and bands
+              for (let i = 0; i < maxBands && offset + 6 < cmdData.length; i++) {
+                // Extract filter parameters
+                const filterType = cmdData[offset++];
+                const freqBytes = [cmdData[offset++], cmdData[offset++]];
+                const gainBytes = [cmdData[offset++], cmdData[offset++]];
+                const qBytes = [cmdData[offset++], cmdData[offset++]];
 
-            // Example parsing based on seen data structure
-            let offset = dataStart;
+                const freq = (freqBytes[0] << 8) | freqBytes[1];
+                const gainRaw = (gainBytes[0] << 8) | gainBytes[1];
+                const gain = utils.toInt16(gainRaw) / 10; // Scale by 10
+                const q = ((qBytes[0] << 8) | qBytes[1]) / 100; // Scale by 100
 
-            // Parse global pre-gain and bands
-            for (let i = 0; i < maxBands; i++) {
-              // Make sure there's still data to read
-              if (offset + 6 >= data.length) break;
+                // Skip empty/unused bands
+                if (freq === 0 && gain === 0 && q === 0) continue;
 
-              // Extract filter parameters (structure from the TS code)
-              const filterType = data[offset++];
-              const freqBytes = [data[offset++], data[offset++]];
-              const gainBytes = [data[offset++], data[offset++]];
-              const qBytes = [data[offset++], data[offset++]];
+                filters.push({
+                  type: mapQudelixToFilterType(filterType),
+                  freq: freq,
+                  gain: gain,
+                  q: q,
+                  disabled: false
+                });
+              }
 
-              const freq = (freqBytes[0] << 8) | freqBytes[1];
-              const gainRaw = (gainBytes[0] << 8) | gainBytes[1];
-              const gain = utils.toInt16(gainRaw) / 10; // Scale by 10 as per TS code
-              const q = ((qBytes[0] << 8) | qBytes[1]) / 100; // Scale by 100 as per TS code
+              // Extract PreGain if available
+              if (offset + 2 <= cmdData.length) {
+                const preGainRaw = (cmdData[offset] << 8) | cmdData[offset + 1];
+                preGain = utils.toInt16(preGainRaw) / 10;
+              }
 
-              // Skip empty/unused bands
-              if (freq === 0 && gain === 0 && q === 0) continue;
-
-              filters.push({
-                type: mapQudelixToFilterType(filterType),
-                freq: freq,
-                gain: gain,
-                q: q,
-                disabled: false
-              });
+              // Clean up and resolve
+              if (timeout) clearTimeout(timeout);
+              device.removeEventListener('inputreport', responseHandler);
+              resolve({ filters, globalGain: preGain });
             }
-
-            // Extract PreGain if available (usually at the end)
-            if (offset + 2 <= data.length) {
-              const preGainRaw = (data[offset] << 8) | data[offset + 1];
-              preGain = utils.toInt16(preGainRaw) / 10; // Scale by 10 as per TS code
-            }
-
-            // Clean up and resolve the promise
-            if (timeout) clearTimeout(timeout);
-            device.removeEventListener('inputreport', responseHandler);
-            resolve({ filters, globalGain: preGain });
           }
         };
 
@@ -255,14 +332,18 @@ export const qudelixUsbHidHandler = (function () {
   // Push EQ settings to the device
   async function pushToDevice(deviceDetails, slot, preamp, filters) {
     const device = deviceDetails.rawDevice;
-    const isV2 = deviceDetails.isV2 || true; // Default to V2 protocol unless specified
 
     try {
+      // Initialize HID reports if not done already
+      if (hidReportInfo.length === 0) {
+        initHidReports(device);
+      }
+
       // Step 1: Enable EQ
       await sendCommand(device, APP_CMD.SetEqEnable, [1]);
 
       // Step 2: Set PreGain (global gain)
-      const preGainScaled = Math.round(preamp * 10); // Scale by 10 as per TS code
+      const preGainScaled = Math.round(preamp * 10); // Scale by 10
       const preGainBytes = utils.toSignedLittleEndianBytes(preGainScaled);
 
       // Set the same value for both channels
@@ -310,6 +391,11 @@ export const qudelixUsbHidHandler = (function () {
   async function enablePEQ(deviceDetails, enabled, slotId) {
     try {
       const device = deviceDetails.rawDevice;
+      
+      // Initialize HID reports if not done already
+      if (hidReportInfo.length === 0) {
+        initHidReports(device);
+      }
 
       // Enable/disable EQ
       await sendCommand(device, APP_CMD.SetEqEnable, [enabled ? 1 : 0]);
