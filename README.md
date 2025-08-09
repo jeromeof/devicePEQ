@@ -186,6 +186,35 @@ DeviceEQ/
 
 ---
 
+## **🔧 Bluetooth SPP Test Page & Web Bluetooth**
+A standalone utility page, bluetooth-spp-test.html, is included to experiment with:
+- Bluetooth Serial Port Profile (Classic RFCOMM) via the Web Serial API (where supported by the OS/browser).
+- Bluetooth Low Energy (BLE) via the Web Bluetooth API (GATT-only).
+- Discover GATT services (read-only) and list previously granted serial ports.
+- Connect to SPP (Nothing UUID or generic) and monitor raw traffic.
+- Tabs:
+  - Nothing Device Controls: prebuilt commands for a specific vendor protocol.
+  - Custom Payload: send arbitrary raw hex bytes.
+  - ASCII/AT Prober: send ASCII commands (e.g., AT, ATI, HELP, VERSION) with CR/LF/CRLF line endings and view both HEX and ASCII responses.
+Notes for Audeze Maxwell or other headsets: Many headsets do not use public AT commands over SPP. If AT/HELP does not return anything, try the Custom Payload tab or use the vendor app. The page logs non-framed traffic in HEX and ASCII to aid reverse-engineering.
+
+During BLE discovery, the page now also:
+- Lists all permitted primary services and enumerates characteristics (with properties) for each.
+- Attempts to read common standard characteristics when present:
+  - Device Information (0x180A): Manufacturer (0x2A29), Model (0x2A24), Firmware (0x2A26).
+  - Generic Access (0x1800): Device Name (0x2A00), Appearance (0x2A01).
+  - Battery Service (0x180F): Battery Level (0x2A19).
+This helps determine whether the device exposes anything useful over GATT; many headsets keep GATT minimal and use Classic Bluetooth (SPP) for vendor commands.
+
+Web Bluetooth vs Web Serial (Chrome capabilities):
+- Web Bluetooth (BLE GATT): can connect to BLE devices and read/write GATT characteristics/services you request in optionalServices. No access to Classic Bluetooth profiles (A2DP/AVRCP/HFP).
+- Web Serial (including Bluetooth SPP on some platforms): can open RFCOMM-like serial ports exposed by the OS. Useful for devices implementing SPP, but many modern headsets either don’t expose SPP or use proprietary stacks.
+- Practical tip for Maxwell: If it only exposes Device Information over BLE (0x180A) and no other writable GATT services, you likely can’t control it via Web Bluetooth. Control is probably via Classic (vendor app over SPP or another profile), which is not generally exposed to the web except limited SPP via Web Serial when available.
+
+BLE GATT Tools (in the page):
+- Provide a Service UUID and Characteristic UUID to Read or Write raw hex to a GATT characteristic. UUIDs can be 16-bit (e.g., 180a, 2a24) or full 128-bit. Names like device_information, model_number_string are recognized.
+- This is useful when a device documents BLE control points or you’re experimenting with a known writable characteristic.
+
 ## **🔧 Future Enhancements**
 - ☑ Additional network brands
 - ☑ WebUSB (non-HID) support

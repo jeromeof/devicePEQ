@@ -70,8 +70,15 @@ export const UsbSerialConnector = (async function () {
         }
 
         // Check Bluetooth SPP UUID match (enhanced filtering)
-        if (!deviceMatched && entry.filters && entry.filters.bluetoothServiceClassId) {
-          if (bluetoothServiceClassId === entry.filters.bluetoothServiceClassId) {
+        if (!deviceMatched && entry.filters) {
+          const svc = (bluetoothServiceClassId || '').toLowerCase();
+          const cfgSingle = (entry.filters.bluetoothServiceClassId || '').toLowerCase();
+          const cfgList = Array.isArray(entry.filters.allowedBluetoothServiceClassIds)
+            ? entry.filters.allowedBluetoothServiceClassIds.map(x => String(x).toLowerCase())
+            : [];
+          const matchesSingle = svc && cfgSingle && svc === cfgSingle;
+          const matchesAny = svc && cfgList.includes(svc);
+          if (matchesSingle || matchesAny) {
             // For Bluetooth devices, use the first (and typically only) device entry
             const deviceEntries = Object.entries(entry.devices);
             if (deviceEntries.length > 0) {
@@ -104,18 +111,38 @@ export const UsbSerialConnector = (async function () {
         : defaultBaud;
       await rawDevice.open({ baudRate });
 
-      // Set up readable and writable stream helpers for handlers expecting simple read()/write()
+      // Set up readable and writable shim helpers for handlers expecting simple read()/write()
+      // Important: do NOT hold reader/writer locks persistently to avoid blocking other handlers (e.g., FiiO)
       let readable = null;
       let writable = null;
       try {
         if (rawDevice.readable && typeof rawDevice.readable.getReader === 'function') {
-          readable = rawDevice.readable.getReader();
+          readable = {
+            async read() {
+              const r = rawDevice.readable.getReader();
+              try {
+                const res = await r.read();
+                return res;
+              } finally {
+                try { r.releaseLock(); } catch (_) {}
+              }
+            }
+          };
         }
         if (rawDevice.writable && typeof rawDevice.writable.getWriter === 'function') {
-          writable = rawDevice.writable.getWriter();
+          writable = {
+            async write(data) {
+              const w = rawDevice.writable.getWriter();
+              try {
+                await w.write(data);
+              } finally {
+                try { w.releaseLock(); } catch (_) {}
+              }
+            }
+          };
         }
       } catch (e) {
-        console.warn('UsbSerialConnector: Failed to get reader/writer:', e);
+        console.warn('UsbSerialConnector: Failed to set up read/write shims:', e);
       }
 
       const model = vendorConfig.model || modelName || "Unknown Serial Device";

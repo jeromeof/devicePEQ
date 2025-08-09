@@ -78,6 +78,11 @@
       font-weight: bold;
       color: #555;
     }
+    .tabs { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 8px; }
+    .tab-btn { background: #e0e0e0; color: #333; border: 1px solid #bbb; border-radius: 4px; padding: 6px 10px; }
+    .tab-btn.active { background: #007cba; color: white; border-color: #007cba; }
+    .tab-panel { display: none; margin-top: 8px; }
+    .tab-panel.active { display: block; }
   </style>
 </head>
 <body>
@@ -88,7 +93,11 @@
   <h3>Connection</h3>
   <div id="status" class="status disconnected">Disconnected</div>
   <div class="controls">
-    <button onclick="connectSPP()" id="connectBtn">Connect Bluetooth SPP Device</button>
+    <button onclick="connectSPP()" id="connectBtn">Connect Bluetooth SPP Device (Nothing UUID)</button>
+    <button onclick="selectAnySerialPort()" id="anySerialBtn">Select Any Serial Port (Discover Class ID)</button>
+    <button onclick="showUuidPrompt()" id="uuidBtn">Request Port by UUID…</button>
+    <button onclick="discoverGattServices()" id="gattBtn">Discover BLE GATT Services</button>
+    <button onclick="listGrantedSerialPorts()" id="listPortsBtn">List Granted Serial Ports</button>
     <button onclick="updateBudsInfo()" id="autoReconnectBtn">Auto-Reconnect</button>
     <button onclick="disconnectDevice()" id="disconnectBtn" disabled>Disconnect</button>
     <button onclick="initDevice()" id="initBtn" disabled>Initialize Device</button>
@@ -125,18 +134,207 @@
   </div>
 </div>
 
-<div class="container">
-  <h3>Device Controls</h3>
-  <div class="controls">
-    <button onclick="sendBattery()" id="batteryBtn" disabled>Read Battery</button>
-    <button onclick="getEQ()" id="eqBtn" disabled>Read EQ</button>
-    <button onclick="getEQValues()" id="eqValuesBtn" disabled>Read EQ Values</button>
-    <button onclick="sendANCread()" id="ancBtn" disabled>Read ANC</button>
-    <button onclick="getFirmware()" id="firmwareBtn" disabled>Read Firmware</button>
-    <button onclick="ringBuds(true)" id="ringBtn" disabled>Ring Buds</button>
-    <button onclick="ringBuds(false)" id="stopRingBtn" disabled>Stop Ring</button>
+<div class="container" id="bleGattInfo">
+  <h3>BLE GATT Info</h3>
+  <div class="device-info">
+    <div class="info-item">
+      <div class="info-label">Manufacturer (BLE):</div>
+      <div id="bleManufacturer">-</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Model (BLE):</div>
+      <div id="bleModel">-</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Firmware (BLE):</div>
+      <div id="bleFirmware">-</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Device Name (GATT):</div>
+      <div id="bleDeviceName">-</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Battery Level:</div>
+      <div id="bleBatteryLevel">-</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Appearance:</div>
+      <div id="bleAppearance">-</div>
+    </div>
+  </div>
+  <div class="info-label" style="margin-top:8px;">Primary Services (from last BLE discovery):</div>
+  <pre class="log" id="gattServicesList" style="max-height:200px;"></pre>
+</div>
+
+<div class="container" id="bleGattTools">
+  <h3>BLE GATT Tools</h3>
+  <div class="controls" style="display:grid; gap:8px; max-width:800px;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label class="info-label" for="gattServiceUuid" style="min-width:140px;">Service UUID:</label>
+      <input id="gattServiceUuid" type="text" placeholder="e.g. 180a or 0000180a-0000-1000-8000-00805f9b34fb" style="flex:1; padding:6px;" />
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label class="info-label" for="gattCharUuid" style="min-width:140px;">Characteristic UUID:</label>
+      <input id="gattCharUuid" type="text" placeholder="e.g. 2a24 or model_number_string" style="flex:1; padding:6px;" />
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label class="info-label" for="gattPayload" style="min-width:140px;">Payload (hex):</label>
+      <input id="gattPayload" type="text" placeholder="e.g. 01 02 03 or empty for read" style="flex:1; padding:6px;" />
+      <label for="gattWriteType">Write type:</label>
+      <select id="gattWriteType" style="width:200px;">
+        <option value="withResponse">write with response</option>
+        <option value="withoutResponse">write without response</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="tab-btn" onclick="bleGattRead()">Read Char (BLE)</button>
+      <button class="tab-btn" onclick="bleGattWrite()">Write Char (BLE)</button>
+    </div>
+    <div>
+      <label for="gattLastValue" class="info-label">Last value (HEX / ASCII preview):</label>
+      <textarea id="gattLastValue" rows="3" readonly style="width:100%; padding:6px; font-family:monospace;"></textarea>
+    </div>
+    <div style="color:#777; font-size:0.9em;">
+      Notes: Web Bluetooth can only access BLE GATT. You must know/guess the Service and Characteristic UUIDs and include the service in optionalServices. Many headsets expose read-only Device Information over BLE and use Classic Bluetooth (often SPP or vendor stack) for control, which the Web platform does not expose except limited Serial on some platforms.
+    </div>
   </div>
 </div>
+
+<div class="container" id="controlsTabs">
+  <h3>Controls</h3>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtn_nothingTab" onclick="showTab('nothingTab')">Nothing Device Controls</button>
+    <button class="tab-btn" id="tabBtn_customTab" onclick="showTab('customTab')">Custom Payload</button>
+    <button class="tab-btn" id="tabBtn_asciiTab" onclick="showTab('asciiTab')">ASCII/AT Prober</button>
+    <button class="tab-btn" id="tabBtn_builderTab" onclick="showTab('builderTab')">Airoha/SDK Builder</button>
+  </div>
+  <div id="nothingTab" class="tab-panel active">
+    <div class="controls">
+      <button onclick="sendBattery()" id="batteryBtn" disabled>Read Battery</button>
+      <button onclick="getEQ()" id="eqBtn" disabled>Read EQ</button>
+      <button onclick="getEQValues()" id="eqValuesBtn" disabled>Read EQ Values</button>
+      <button onclick="sendANCread()" id="ancBtn" disabled>Read ANC</button>
+      <button onclick="getFirmware()" id="firmwareBtn" disabled>Read Firmware</button>
+      <button onclick="ringBuds(true)" id="ringBtn" disabled>Ring Buds</button>
+      <button onclick="ringBuds(false)" id="stopRingBtn" disabled>Stop Ring</button>
+    </div>
+  </div>
+  <div id="customTab" class="tab-panel">
+      <div class="controls" style="display:grid; gap:8px; max-width:800px;">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <label for="customCommandInput" style="min-width:140px;">Nothing Command ID:</label>
+          <input id="customCommandInput" type="text" placeholder="e.g. 49229 or 0xC06D" style="flex:1; padding:6px;" />
+          <button id="customNothingBtn" onclick="sendCustomNothing()" disabled>Send Nothing Command</button>
+        </div>
+        <div>
+          <label for="customPayloadInput" class="info-label">Payload (hex bytes):</label>
+          <textarea id="customPayloadInput" rows="4" placeholder="e.g. 00 08 3F 80 00 00 …" style="width:100%; padding:6px;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button id="customRawBtn" onclick="sendCustomRaw()" disabled>Send Raw Bytes</button>
+          <span style="color:#555; font-size:0.9em;">Raw sends bytes exactly as entered to the SPP port (no Nothing header/CRC). Nothing Command wraps and CRCs using the existing Nothing protocol.</span>
+        </div>
+      </div>
+    </div>
+    <div id="asciiTab" class="tab-panel">
+      <div class="controls" style="display:grid; gap:8px; max-width:800px;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label class="info-label" for="asciiInput" style="min-width:120px;">ASCII command:</label>
+          <input id="asciiInput" type="text" placeholder="e.g. AT, ATI, HELP" style="flex:1; padding:6px;" />
+          <label for="asciiLineEnding">Line ending:</label>
+          <select id="asciiLineEnding" style="width:120px;">
+            <option value="CRLF">CRLF (\r\n)</option>
+            <option value="CR">CR (\r)</option>
+            <option value="LF">LF (\n)</option>
+            <option value="NONE">None</option>
+          </select>
+          <button id="asciiSendBtn" onclick="sendAscii()" disabled>Send</button>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="tab-btn" onclick="quickAt('AT')">AT</button>
+          <button class="tab-btn" onclick="quickAt('ATI')">ATI</button>
+          <button class="tab-btn" onclick="quickAt('AT+GMR')">AT+GMR</button>
+          <button class="tab-btn" onclick="quickAt('HELP')">HELP</button>
+          <button class="tab-btn" onclick="quickAt('?')">?</button>
+          <button class="tab-btn" onclick="quickAt('VERSION')">VERSION</button>
+        </div>
+        <div style="color:#777; font-size:0.9em;">
+          Tips: Many Bluetooth SPP devices respond to simple AT-style commands. Responses vary by vendor and may require specific framing. If nothing responds, try the Custom Payload tab with hex bytes, or the Builder to craft framed packets.
+        </div>
+      </div>
+    </div>
+    <div id="builderTab" class="tab-panel">
+      <div class="controls" style="display:grid; gap:8px; max-width:800px;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label class="info-label" for="builderPreset">Preset:</label>
+          <select id="builderPreset" onchange="applyBuilderPreset(this.value)">
+            <option value="none">— choose a preset —</option>
+            <option value="generic_ccitt">Generic framed (55 AA | len16le | cmd8 | payload | crc16-ccitt)</option>
+            <option value="generic_modbus">Generic framed (AA 55 | len8 | cmd16le | payload | crc16-modbus)</option>
+            <option value="airoha_exp">Airoha-like (experimental) — header 5A A5, len16le, cmd8, payload, xor8</option>
+          </select>
+          <span style="color:#777; font-size:0.85em;">Presets are examples; vendor firmwares vary.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label for="builderHeader" style="min-width:120px;">Header (hex):</label>
+          <input id="builderHeader" type="text" placeholder="e.g. 55 AA" style="flex:1; padding:6px;" />
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label for="builderCmdSize" style="min-width:120px;">Cmd size:</label>
+          <select id="builderCmdSize" style="width:120px;">
+            <option value="1">1 byte</option>
+            <option value="2">2 bytes (LE)</option>
+          </select>
+          <label for="builderCmdVal">Cmd value:</label>
+          <input id="builderCmdVal" type="text" placeholder="e.g. 0x01 or 100" style="flex:1; padding:6px;" />
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label for="builderLenField" style="min-width:120px;">Length field:</label>
+          <select id="builderLenField" style="width:160px;">
+            <option value="none">none</option>
+            <option value="len8">1 byte (after header+cmd)</option>
+            <option value="len16le">2 bytes LE (after header+cmd)</option>
+            <option value="len16be">2 bytes BE (after header+cmd)</option>
+          </select>
+          <label for="builderLenIncludes">Len includes:</label>
+          <select id="builderLenIncludes" style="width:200px;">
+            <option value="payload">payload only</option>
+            <option value="cmd_payload">cmd + payload</option>
+            <option value="header_cmd_payload">header + cmd + payload</option>
+          </select>
+        </div>
+        <div>
+          <label for="builderPayload" class="info-label">Payload (hex):</label>
+          <textarea id="builderPayload" rows="3" placeholder="e.g. 01 02 03" style="width:100%; padding:6px;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label for="builderChecksum" style="min-width:120px;">Checksum:</label>
+          <select id="builderChecksum" style="width:200px;">
+            <option value="none">none</option>
+            <option value="sum8">sum8 (LSB)</option>
+            <option value="xor8">xor8</option>
+            <option value="crc16ccitt">CRC16-CCITT (0x1021, init 0xFFFF)</option>
+            <option value="crc16modbus">CRC16-Modbus (0xA001, init 0xFFFF)</option>
+            <option value="crc8dallas">CRC8-Dallas/Maxim</option>
+          </select>
+          <label for="builderFooter">Footer (hex):</label>
+          <input id="builderFooter" type="text" placeholder="optional, e.g. 0D 0A" style="flex:1; padding:6px;" />
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button id="builderBuildBtn" onclick="builderBuild()">Build Packet</button>
+          <button id="builderSendBtn" onclick="builderSend()" disabled>Send Built Packet</button>
+          <span id="builderInfo" style="color:#555; font-size:0.9em;">—</span>
+        </div>
+        <div>
+          <label for="builderOutput" class="info-label">Built Packet (hex):</label>
+          <textarea id="builderOutput" rows="3" readonly style="width:100%; padding:6px; font-family:monospace;"></textarea>
+        </div>
+        <div style="color:#777; font-size:0.85em;">
+          Tips: Many SPP protocols frame as [HEADER][LEN][CMD][PAYLOAD][CHECKSUM][FOOTER]. Airoha-based TWS often use custom headers, a length field, and a simple 8-bit checksum or CRC; exact details vary by model/app.
+        </div>
+      </div>
+    </div>
+  </div>
 
 <div class="container">
   <h3>Communication Log</h3>
@@ -149,6 +347,7 @@
 // Bluetooth SPP Communication Code
 let SPPsocket = null;
 let writeQueue = Promise.resolve();
+let grantedPorts = []; // Previously granted serial ports cached for UI connect
 
 let modelSpecs = {};
 let modelBase = "";
@@ -189,6 +388,7 @@ function clearLog() {
 }
 
 function updateStatus(connected) {
+  const asciiSendBtn = document.getElementById("asciiSendBtn");
   const statusElement = document.getElementById("status");
   const connectBtn = document.getElementById("connectBtn");
   const disconnectBtn = document.getElementById("disconnectBtn");
@@ -200,8 +400,12 @@ function updateStatus(connected) {
   const firmwareBtn = document.getElementById("firmwareBtn");
   const ringBtn = document.getElementById("ringBtn");
   const stopRingBtn = document.getElementById("stopRingBtn");
+  const customNothingBtn = document.getElementById("customNothingBtn");
+  const customRawBtn = document.getElementById("customRawBtn");
+  const builderSendBtn = document.getElementById("builderSendBtn");
 
   if (connected) {
+  if (asciiSendBtn) asciiSendBtn.disabled = false;
     statusElement.textContent = "Connected";
     statusElement.className = "status connected";
     connectBtn.disabled = true;
@@ -214,7 +418,11 @@ function updateStatus(connected) {
     firmwareBtn.disabled = false;
     ringBtn.disabled = false;
     stopRingBtn.disabled = false;
+    if (customNothingBtn) customNothingBtn.disabled = false;
+    if (customRawBtn) customRawBtn.disabled = false;
+    if (builderSendBtn) builderSendBtn.disabled = false;
   } else {
+    if (asciiSendBtn) asciiSendBtn.disabled = true;
     statusElement.textContent = "Disconnected";
     statusElement.className = "status disconnected";
     connectBtn.disabled = false;
@@ -227,6 +435,24 @@ function updateStatus(connected) {
     firmwareBtn.disabled = true;
     ringBtn.disabled = true;
     stopRingBtn.disabled = true;
+    if (customNothingBtn) customNothingBtn.disabled = true;
+    if (customRawBtn) customRawBtn.disabled = true;
+    if (builderSendBtn) builderSendBtn.disabled = true;
+  }
+}
+
+function showTab(panelId) {
+  try {
+    const panels = document.querySelectorAll('.tab-panel');
+    panels.forEach(p => p.classList.remove('active'));
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById(panelId);
+    if (panel) panel.classList.add('active');
+    const btn = document.getElementById('tabBtn_' + panelId);
+    if (btn) btn.classList.add('active');
+  } catch (e) {
+    log('showTab error: ' + e);
   }
 }
 
@@ -511,7 +737,791 @@ async function connectSPP(sppPort=null) {
     }
 }
 
+// Select any serial port (no filter). Useful to discover bluetoothServiceClassId via getInfo()
+async function selectAnySerialPort() {
+    if (!navigator.serial) {
+        log("Web Serial API not supported");
+        return;
+    }
+    try {
+        const port = await navigator.serial.requestPort();
+        const info = port.getInfo?.() || {};
+        log(`Selected serial port (no filter): ${JSON.stringify(info)}`);
+        if (info.bluetoothServiceClassId) {
+            log(`Discovered bluetoothServiceClassId: ${info.bluetoothServiceClassId}`);
+        }
+        // Connect using existing logic
+        await connectSPP(port);
+    } catch (e) {
+        log(`selectAnySerialPort: ${e}`);
+    }
+}
+
+function showUuidPrompt() {
+    const presets = [
+        "aeac4a03-dff5-498f-843a-34487cf133eb", // Nothing (known)
+        "00001101-0000-1000-8000-00805f9b34fb"  // Standard SPP
+    ];
+    const current = presets.join("\n");
+    let uuid = prompt(
+        "Enter Bluetooth Service Class UUID to request (use one of the presets below or paste a custom 128-bit UUID):\n\n" + current,
+        presets[0]
+    );
+    if (uuid) {
+        requestPortByUuid(uuid.trim().toLowerCase());
+    }
+}
+
+async function requestPortByUuid(uuid) {
+    if (!navigator.serial) {
+        log("Web Serial API not supported");
+        return;
+    }
+    try {
+        log(`Requesting port by UUID: ${uuid}`);
+        const port = await navigator.serial.requestPort({
+            allowedBluetoothServiceClassIds: [uuid],
+            filters: [{ bluetoothServiceClassId: uuid }]
+        });
+        const info = port.getInfo?.() || {};
+        log(`Selected port: ${JSON.stringify(info)}`);
+        await connectSPP(port);
+    } catch (e) {
+        log(`requestPortByUuid failed for ${uuid}: ${e}`);
+    }
+}
+
+function ensureGrantedPortsUI() {
+    // Create a UI container for granted ports if it doesn't exist
+    let container = document.getElementById('grantedPortsUI');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'container';
+        container.id = 'grantedPortsUI';
+
+        const header = document.createElement('h3');
+        header.textContent = 'Granted Serial Ports';
+        container.appendChild(header);
+
+        const hint = document.createElement('div');
+        hint.style.marginBottom = '8px';
+        hint.textContent = 'These are previously granted ports from navigator.serial.getPorts(). Click Connect to open via SPP.';
+        container.appendChild(hint);
+
+        const refreshBtn = document.createElement('button');
+        refreshBtn.textContent = 'Refresh Granted Ports';
+        refreshBtn.onclick = () => listGrantedSerialPorts();
+        container.appendChild(refreshBtn);
+
+        const list = document.createElement('div');
+        list.id = 'grantedPortsList';
+        list.style.marginTop = '10px';
+        container.appendChild(list);
+
+        // Insert after the first .container (Connection section)
+        const firstContainer = document.querySelector('.container');
+        if (firstContainer && firstContainer.parentNode) {
+            firstContainer.parentNode.insertBefore(container, firstContainer.nextSibling);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+    return container;
+}
+
+function renderGrantedPortsList(ports) {
+    const container = ensureGrantedPortsUI();
+    const list = container.querySelector('#grantedPortsList');
+    list.innerHTML = '';
+
+    if (!ports || !ports.length) {
+        const empty = document.createElement('div');
+        empty.textContent = 'No previously granted serial ports';
+        list.appendChild(empty);
+        return;
+    }
+
+    ports.forEach((port, idx) => {
+        const info = port.getInfo?.() || {};
+        const item = document.createElement('div');
+        item.style.display = 'grid';
+        item.style.gridTemplateColumns = '1fr auto auto';
+        item.style.columnGap = '8px';
+        item.style.rowGap = '6px';
+        item.style.alignItems = 'center';
+        item.style.background = '#fff';
+        item.style.border = '1px solid #ddd';
+        item.style.borderRadius = '4px';
+        item.style.padding = '8px 10px';
+        item.style.marginBottom = '6px';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.style.fontFamily = 'monospace';
+        infoDiv.style.fontSize = '0.9em';
+        infoDiv.textContent = JSON.stringify(info);
+
+        const detailsBtn = document.createElement('button');
+        detailsBtn.textContent = 'Details';
+        detailsBtn.onclick = () => togglePortDetails(idx);
+
+        const connectBtn = document.createElement('button');
+        connectBtn.textContent = 'Connect';
+        connectBtn.onclick = () => connectGrantedPort(idx);
+
+        const detailsRow = document.createElement('div');
+        detailsRow.id = `portDetails_${idx}`;
+        detailsRow.style.gridColumn = '1 / span 3';
+        detailsRow.style.display = 'none';
+        detailsRow.style.background = '#f7f7f7';
+        detailsRow.style.border = '1px solid #eee';
+        detailsRow.style.borderRadius = '4px';
+        detailsRow.style.padding = '8px';
+        detailsRow.style.whiteSpace = 'pre-wrap';
+        detailsRow.style.fontFamily = 'monospace';
+        detailsRow.style.fontSize = '0.9em';
+
+        item.appendChild(infoDiv);
+        item.appendChild(detailsBtn);
+        item.appendChild(connectBtn);
+        item.appendChild(detailsRow);
+        list.appendChild(item);
+    });
+}
+
+async function listGrantedSerialPorts() {
+    if (!navigator.serial) {
+        log('Web Serial API not supported');
+        ensureGrantedPortsUI();
+        renderGrantedPortsList([]);
+        return;
+    }
+    try {
+        const ports = await navigator.serial.getPorts();
+        grantedPorts = ports;
+        if (!ports.length) {
+            log('No previously granted serial ports');
+        } else {
+            log(`Previously granted serial ports: ${ports.length}`);
+            for (const port of ports) {
+                const info = port.getInfo?.() || {};
+                log(`- ${JSON.stringify(info)}`);
+            }
+        }
+        ensureGrantedPortsUI();
+        renderGrantedPortsList(ports);
+    } catch (e) {
+        log(`listGrantedSerialPorts error: ${e}`);
+        ensureGrantedPortsUI();
+        renderGrantedPortsList([]);
+    }
+}
+
+async function connectGrantedPort(index) {
+    try {
+        const port = grantedPorts?.[index];
+        if (!port) {
+            log(`No port found at index ${index}`);
+            return;
+        }
+        log(`Connecting to granted port index ${index}: ${JSON.stringify(port.getInfo?.() || {})}`);
+        await connectSPP(port);
+    } catch (e) {
+        log(`connectGrantedPort(${index}) failed: ${e}`);
+    }
+}
+
+async function togglePortDetails(index) {
+    try {
+        const row = document.getElementById(`portDetails_${index}`);
+        if (!row) return;
+        if (row.style.display === 'none') {
+            row.style.display = 'block';
+            row.textContent = 'Probing port capabilities…';
+            const port = grantedPorts?.[index];
+            const caps = await probePortCapabilities(port);
+            const summary = summarizeCapabilities(caps);
+            row.textContent = summary + '\n\n' + JSON.stringify(caps, null, 2);
+        } else {
+            row.style.display = 'none';
+            row.textContent = '';
+        }
+    } catch (e) {
+        log(`togglePortDetails(${index}) error: ${e}`);
+    }
+}
+
+async function probePortCapabilities(port) {
+    const result = {
+        info: {},
+        isBluetooth: false,
+        bluetoothServiceClassId: null,
+        matchesNothingUUID: false,
+        matchesStandardSPP: false,
+        alreadyOpen: false,
+        openAttempts: [],
+        signals: null,
+        readableAvailable: false,
+        writableAvailable: false,
+        errors: []
+    };
+    try {
+        const info = port?.getInfo?.() || {};
+        result.info = info;
+        const svc = info.bluetoothServiceClassId || null;
+        result.bluetoothServiceClassId = svc;
+        result.isBluetooth = !!svc;
+        const NOTHING_UUID = 'aeac4a03-dff5-498f-843a-34487cf133eb';
+        const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
+        result.matchesNothingUUID = (svc || '').toLowerCase() === NOTHING_UUID;
+        result.matchesStandardSPP = (svc || '').toLowerCase() === SPP_UUID;
+
+        // If already open, just report basic status and try signals
+        if (port.readable || port.writable) {
+            result.alreadyOpen = true;
+            try { result.signals = await port.getSignals?.(); } catch (e) { result.errors.push(`getSignals failed: ${e}`); }
+            try { result.readableAvailable = !!port.readable; } catch {}
+            try { result.writableAvailable = !!port.writable; } catch {}
+            return result;
+        }
+
+        const configs = [
+            { baudRate: 9600 },
+            { baudRate: 115200 }
+        ];
+
+        for (const cfg of configs) {
+            const attempt = { config: cfg, success: false, error: null };
+            try {
+                await port.open(cfg);
+                attempt.success = true;
+                // Populate stream availability
+                result.readableAvailable = !!port.readable;
+                result.writableAvailable = !!port.writable;
+                // Try to read briefly without blocking forever
+                try {
+                    if (port.readable) {
+                        const reader = port.readable.getReader();
+                        try {
+                            await Promise.race([
+                                reader.read(),
+                                new Promise((resolve) => setTimeout(resolve, 150))
+                            ]);
+                        } catch {}
+                        try { reader.releaseLock(); } catch {}
+                    }
+                } catch (e) {
+                    result.errors.push(`read test failed: ${e}`);
+                }
+                // Try signals
+                try { result.signals = await port.getSignals?.(); } catch (e) { result.errors.push(`getSignals failed: ${e}`); }
+            } catch (e) {
+                attempt.error = String(e);
+            } finally {
+                result.openAttempts.push(attempt);
+                // Close if we opened
+                try { await port.close(); } catch {}
+                // small delay between attempts
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+    } catch (e) {
+        result.errors.push(String(e));
+    }
+    return result;
+}
+
+function summarizeCapabilities(caps) {
+    try {
+        const badges = [];
+        if (caps.isBluetooth) badges.push(`[Bluetooth] UUID=${caps.bluetoothServiceClassId}`);
+        if (caps.matchesNothingUUID) badges.push(`[Nothing UUID match]`);
+        if (caps.matchesStandardSPP) badges.push(`[Standard SPP UUID]`);
+        const openSumm = caps.openAttempts.map(a => `${a.config.baudRate}: ${a.success ? 'OK' : 'FAIL'}`).join(', ');
+        const sig = caps.signals ? `CTS=${caps.signals.clearToSend ?? '-'} DSR=${caps.signals.dataSetReady ?? '-'}` : 'signals: n/a';
+        const streams = `readable=${caps.readableAvailable} writable=${caps.writableAvailable}`;
+        const errs = (caps.errors && caps.errors.length) ? `\nErrors: ${caps.errors.join('; ')}` : '';
+        return `${badges.join(' ')}\nOpen attempts: ${openSumm || 'n/a'}\n${sig}\n${streams}${errs}`;
+    } catch (e) {
+        return `Could not summarize capabilities: ${e}`;
+    }
+}
+
+// ===== Custom Payload Helpers =====
+function parseCommand(value) {
+    if (typeof value !== 'string') return Number(value) || 0;
+    const v = value.trim();
+    if (!v) return 0;
+    // Allow 0xFFFF, FFFFh, decimal
+    if (/^0x[0-9a-f]+$/i.test(v)) return parseInt(v, 16);
+    if (/^[0-9a-f]+h$/i.test(v)) return parseInt(v.slice(0, -1), 16);
+    if (/^[0-9]+$/.test(v)) return parseInt(v, 10);
+    // Fallback try hex
+    if (/^[0-9a-f]+$/i.test(v)) return parseInt(v, 16);
+    return NaN;
+}
+
+function parseHexStringToBytes(str) {
+    if (!str || typeof str !== 'string') return [];
+    let s = str.trim();
+    if (!s) return [];
+    // Replace commas and multiple spaces with single space
+    s = s.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    let parts = s.split(' ');
+    if (parts.length === 1) {
+        // Maybe a continuous hex string without spaces
+        const only = parts[0].replace(/[^0-9a-f]/gi, '');
+        if (only.length % 2 === 0) {
+            const bytes = [];
+            for (let i = 0; i < only.length; i += 2) {
+                bytes.push(parseInt(only.substring(i, i + 2), 16));
+            }
+            return bytes;
+        }
+    }
+    const bytes = [];
+    for (const p of parts) {
+        const token = p.trim();
+        if (!token) continue;
+        if (/^0x[0-9a-f]+$/i.test(token)) {
+            bytes.push(parseInt(token, 16) & 0xFF);
+        } else if (/^[0-9a-f]{2}$/i.test(token)) {
+            bytes.push(parseInt(token, 16));
+        } else {
+            // Try decimal byte 0-255
+            const n = Number(token);
+            if (!Number.isNaN(n) && n >= 0 && n <= 255) bytes.push(n & 0xFF);
+        }
+    }
+    return bytes;
+}
+
+async function sendCustomNothing() {
+    try {
+        if (!SPPsocket) { log('No device connected'); return; }
+        const cmdInput = document.getElementById('customCommandInput');
+        const payloadInput = document.getElementById('customPayloadInput');
+        const cmdVal = parseCommand(cmdInput?.value || '');
+        if (!Number.isFinite(cmdVal)) { log('Invalid Command ID'); return; }
+        const payloadBytes = parseHexStringToBytes(payloadInput?.value || '');
+        log(`Sending Nothing command ${cmdVal} (0x${(cmdVal>>>0).toString(16)}) with ${payloadBytes.length} byte(s)`);
+        // Uses existing Nothing send() to wrap header + CRC and write
+        await send(cmdVal, payloadBytes, 'customNothing');
+    } catch (e) {
+        log(`sendCustomNothing error: ${e}`);
+    }
+}
+
+async function sendCustomRaw() {
+    try {
+        if (!SPPsocket) { log('No device connected'); return; }
+        const payloadInput = document.getElementById('customPayloadInput');
+        const payloadBytes = parseHexStringToBytes(payloadInput?.value || '');
+        if (!payloadBytes.length) { log('No bytes to send'); return; }
+        const writer = SPPsocket.writable.getWriter();
+        const data = new Uint8Array(payloadBytes);
+        log(`Sending RAW ${data.length} byte(s): ${Array.from(data).map(b=>b.toString(16).padStart(2,'0')).join(' ')}`);
+        await writer.write(data);
+        writer.releaseLock();
+    } catch (e) {
+        log(`sendCustomRaw error: ${e}`);
+    }
+}
+
+// ===== ASCII / AT helpers =====
+function quickAt(cmd) {
+    const input = document.getElementById('asciiInput');
+    input.value = cmd;
+    sendAscii();
+}
+async function sendAscii() {
+    try {
+        if (!SPPsocket) { log('No device connected'); return; }
+        const input = document.getElementById('asciiInput');
+        const endingSel = document.getElementById('asciiLineEnding');
+        let text = input?.value ?? '';
+        const ending = endingSel?.value || 'CRLF';
+        if (ending === 'CRLF') text += '\r\n';
+        else if (ending === 'CR') text += '\r';
+        else if (ending === 'LF') text += '\n';
+        const enc = new TextEncoder();
+        const data = enc.encode(text);
+        const writer = SPPsocket.writable.getWriter();
+        log(`TX (ASCII): "${text.replace(/\r/g,'\\r').replace(/\n/g,'\\n')}" HEX=[${Array.from(data).map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`);
+        await writer.write(data);
+        writer.releaseLock();
+    } catch (e) {
+        log(`sendAscii error: ${e}`);
+    }
+}
+
+// ===== Airoha/SDK Builder Helpers =====
+function bytesToHex(arr) {
+    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+}
+function hexToBytes(str) { return new Uint8Array(parseHexStringToBytes(str)); }
+function putUint16LE(arr, value) { arr.push(value & 0xFF, (value >> 8) & 0xFF); }
+function putUint16BE(arr, value) { arr.push((value >> 8) & 0xFF, value & 0xFF); }
+
+function cks_sum8(bytes) { let s = 0; for (const b of bytes) s = (s + b) & 0xFF; return s; }
+function cks_xor8(bytes) { let s = 0; for (const b of bytes) s ^= b; return s & 0xFF; }
+function cks_crc8_dallas(bytes) {
+    let crc = 0x00; // Dallas/Maxim init 0x00, poly 0x31
+    for (let b of bytes) {
+        crc ^= b;
+        for (let i = 0; i < 8; i++) {
+            if (crc & 0x80) crc = ((crc << 1) ^ 0x31) & 0xFF; else crc = (crc << 1) & 0xFF;
+        }
+    }
+    return crc & 0xFF;
+}
+function cks_crc16_ccitt(bytes) {
+    let crc = 0xFFFF; // poly 0x1021
+    for (const b of bytes) {
+        crc ^= (b << 8);
+        for (let i = 0; i < 8; i++) {
+            if (crc & 0x8000) crc = ((crc << 1) ^ 0x1021) & 0xFFFF; else crc = (crc << 1) & 0xFFFF;
+        }
+    }
+    return crc & 0xFFFF;
+}
+function cks_crc16_modbus(bytes) {
+    let crc = 0xFFFF; // poly 0xA001 (reflected)
+    for (const b of bytes) {
+        crc ^= b;
+        for (let i = 0; i < 8; i++) {
+            if (crc & 1) crc = ((crc >> 1) ^ 0xA001) & 0xFFFF; else crc = (crc >> 1) & 0xFFFF;
+        }
+    }
+    return crc & 0xFFFF;
+}
+
+function builderAssemble() {
+    const header = hexToBytes(document.getElementById('builderHeader').value || '');
+    const cmdSize = parseInt(document.getElementById('builderCmdSize').value, 10) || 1;
+    const cmdVal = parseCommand(document.getElementById('builderCmdVal').value || '0') >>> 0;
+    const lenField = document.getElementById('builderLenField').value;
+    const lenIncludes = document.getElementById('builderLenIncludes').value;
+    const payload = hexToBytes(document.getElementById('builderPayload').value || '');
+    const checksum = document.getElementById('builderChecksum').value;
+    const footer = hexToBytes(document.getElementById('builderFooter').value || '');
+
+    const body = [];
+    // command bytes
+    if (cmdSize === 2) {
+        putUint16LE(body, cmdVal & 0xFFFF);
+    } else {
+        body.push(cmdVal & 0xFF);
+    }
+    // append payload
+    for (const b of payload) body.push(b);
+
+    // compute length value
+    let lengthVal = 0;
+    if (lenField !== 'none') {
+        if (lenIncludes === 'payload') lengthVal = payload.length;
+        else if (lenIncludes === 'cmd_payload') lengthVal = body.length;
+        else if (lenIncludes === 'header_cmd_payload') lengthVal = header.length + body.length;
+    }
+
+    // construct pre-checksum packet
+    const packet = [];
+    // header
+    for (const b of header) packet.push(b);
+    // length (if any) placed after header+cmd by design; here we place immediately after header
+    if (lenField === 'len8') packet.push(lengthVal & 0xFF);
+    else if (lenField === 'len16le') putUint16LE(packet, lengthVal);
+    else if (lenField === 'len16be') putUint16BE(packet, lengthVal);
+    // body (cmd+payload)
+    for (const b of body) packet.push(b);
+
+    // checksum over what? common variants: over body, or header+len+body. We choose header+len+body (entire packet so far)
+    let chkBytes = new Uint8Array(packet);
+    const out = packet.slice();
+    if (checksum !== 'none') {
+        if (checksum === 'sum8') out.push(cks_sum8(chkBytes));
+        else if (checksum === 'xor8') out.push(cks_xor8(chkBytes));
+        else if (checksum === 'crc8dallas') out.push(cks_crc8_dallas(chkBytes));
+        else if (checksum === 'crc16ccitt') { const c = cks_crc16_ccitt(chkBytes); out.push(c & 0xFF, (c >> 8) & 0xFF); }
+        else if (checksum === 'crc16modbus') { const c = cks_crc16_modbus(chkBytes); out.push(c & 0xFF, (c >> 8) & 0xFF); }
+    }
+
+    // footer
+    for (const b of footer) out.push(b);
+
+    return new Uint8Array(out);
+}
+
+function builderBuild() {
+    try {
+        const pkt = builderAssemble();
+        document.getElementById('builderOutput').value = bytesToHex(pkt);
+        document.getElementById('builderInfo').textContent = `Length: ${pkt.length} bytes`;
+        log(`Builder: packet built (${pkt.length} bytes)`);
+    } catch (e) {
+        log(`Builder build error: ${e}`);
+    }
+}
+
+async function builderSend() {
+    try {
+        if (!SPPsocket) { log('No device connected'); return; }
+        const pkt = builderAssemble();
+        const writer = SPPsocket.writable.getWriter();
+        await writer.write(pkt);
+        writer.releaseLock();
+        log(`Builder: sent ${pkt.length} byte(s): ${bytesToHex(pkt)}`);
+    } catch (e) {
+        log(`Builder send error: ${e}`);
+    }
+}
+
+function applyBuilderPreset(val) {
+    // Fill the fields with a template
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    if (val === 'generic_ccitt') {
+        set('builderHeader', '55 AA');
+        set('builderCmdSize', '1');
+        set('builderCmdVal', '0x01');
+        set('builderLenField', 'len16le');
+        set('builderLenIncludes', 'cmd_payload');
+        set('builderPayload', '');
+        set('builderChecksum', 'crc16ccitt');
+        set('builderFooter', '');
+    } else if (val === 'generic_modbus') {
+        set('builderHeader', 'AA 55');
+        set('builderCmdSize', '2');
+        set('builderCmdVal', '0x0001');
+        set('builderLenField', 'len8');
+        set('builderLenIncludes', 'payload');
+        set('builderPayload', '');
+        set('builderChecksum', 'crc16modbus');
+        set('builderFooter', '');
+    } else if (val === 'airoha_exp') {
+        // Experimental example many Airoha-based firmwares use: header, length, cmd, payload, xor8
+        set('builderHeader', '5A A5');
+        set('builderCmdSize', '1');
+        set('builderCmdVal', '0x01');
+        set('builderLenField', 'len16le');
+        set('builderLenIncludes', 'cmd_payload');
+        set('builderPayload', '');
+        set('builderChecksum', 'xor8');
+        set('builderFooter', '');
+    }
+}
+
+function dvToString(dv) {
+    try {
+        if (!dv) return '';
+        let bytes;
+        if (dv instanceof DataView) {
+            bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+        } else if (dv.buffer) {
+            bytes = new Uint8Array(dv.buffer);
+        } else if (dv instanceof Uint8Array) {
+            bytes = dv;
+        } else {
+            return String(dv);
+        }
+        // Trim trailing nulls
+        let end = bytes.length;
+        while (end > 0 && bytes[end - 1] === 0) end--;
+        const td = new TextDecoder('utf-8');
+        return td.decode(bytes.subarray(0, end));
+    } catch (e) {
+        return '';
+    }
+}
+
+async function discoverGattServices() {
+    if (!('bluetooth' in navigator)) {
+        log("Web Bluetooth API not supported in this browser");
+        return;
+    }
+
+    // Try LE Scan for advertised services (best-effort)
+    if (navigator.bluetooth.requestLEScan) {
+        try {
+            log("Starting BLE scan for advertised services (10s)…");
+            const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true });
+            const onAdv = (event) => {
+                const uuids = (event.uuids || event.serviceUuids || []);
+                if (uuids && uuids.length) {
+                    log(`Advertisement from ${event.device?.name || 'unknown'}: services=${JSON.stringify(uuids)}`);
+                }
+            };
+            navigator.bluetooth.addEventListener('advertisementreceived', onAdv, { once: false });
+            // Stop after 10 seconds
+            setTimeout(() => {
+                try { navigator.bluetooth.removeEventListener('advertisementreceived', onAdv); } catch {}
+                try { scan.stop(); } catch {}
+                log("BLE scan stopped");
+            }, 10000);
+        } catch (e) {
+            log(`BLE scan not available or permission denied: ${e}`);
+        }
+    } else {
+        log("BLE advertisement scanning not supported in this environment");
+    }
+
+    // Also allow connecting to a device and listing permitted primary services
+    try {
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [
+                'generic_access',
+                'generic_attribute',
+                'device_information',
+                'battery_service'
+            ]
+        });
+        log(`Selected BLE device: ${device.name || '(no name)'} (${device.id})`);
+        const server = await device.gatt.connect();
+        const services = await server.getPrimaryServices();
+        const listEl = document.getElementById('gattServicesList');
+        if (listEl) listEl.textContent = '';
+        if (services && services.length) {
+            log(`Primary services (permitted): ${services.length}`);
+            const lines = [];
+            for (const s of services) {
+                log(`- ${s.uuid}`);
+                lines.push(`- ${s.uuid}`);
+            }
+            if (listEl) listEl.textContent = lines.join('\n');
+        } else {
+            log("No primary services accessible (consider adding more optionalServices)");
+            if (listEl) listEl.textContent = '(none)';
+        }
+
+        // Enumerate characteristics for each primary service and try readable ones
+        if (services && services.length) {
+            for (const s of services) {
+                try {
+                    const chars = await s.getCharacteristics();
+                    if (!chars || !chars.length) {
+                        log(`Service ${s.uuid}: no characteristics or not permitted`);
+                        continue;
+                    }
+                    log(`Service ${s.uuid}: ${chars.length} characteristic(s)`);
+                    for (const ch of chars) {
+                        const props = ch.properties || {};
+                        const propList = Object.keys(props).filter(k => props[k]).join(', ') || 'n/a';
+                        log(`  • Char ${ch.uuid} props=[${propList}]`);
+                        if (props.read) {
+                            try {
+                                const dv = await ch.readValue();
+                                const u8 = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+                                const hex = Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+                                const str = dvToString(dv);
+                                log(`    ↳ read: HEX=[${hex}] ASCII="${str}"`);
+                            } catch (re) {
+                                log(`    ↳ read failed: ${re}`);
+                            }
+                        }
+                    }
+                } catch (se) {
+                    log(`Service ${s.uuid}: could not enumerate characteristics: ${se}`);
+                }
+            }
+        }
+
+        // Try to query Device Information service (0x180A)
+        try {
+            const infoSvc = await server.getPrimaryService('device_information');
+            if (infoSvc) {
+                log('Reading Device Information service characteristics…');
+                const fields = {
+                    manufacturer: 'manufacturer_name_string', // 0x2A29
+                    model: 'model_number_string',            // 0x2A24
+                    firmware: 'firmware_revision_string'     // 0x2A26
+                };
+                let manufacturerValue = '', modelValue = '', firmwareValue = '';
+                try {
+                    const ch = await infoSvc.getCharacteristic(fields.manufacturer);
+                    manufacturerValue = dvToString(await ch.readValue());
+                } catch {}
+                try {
+                    const ch = await infoSvc.getCharacteristic(fields.model);
+                    modelValue = dvToString(await ch.readValue());
+                } catch {}
+                try {
+                    const ch = await infoSvc.getCharacteristic(fields.firmware);
+                    firmwareValue = dvToString(await ch.readValue());
+                } catch {}
+                if (manufacturerValue) {
+                    const el = document.getElementById('bleManufacturer');
+                    if (el) el.textContent = manufacturerValue;
+                    log(`Manufacturer: ${manufacturerValue}`);
+                }
+                if (modelValue) {
+                    const el = document.getElementById('bleModel');
+                    if (el) el.textContent = modelValue;
+                    log(`Model: ${modelValue}`);
+                }
+                if (firmwareValue) {
+                    const el = document.getElementById('bleFirmware');
+                    if (el) el.textContent = firmwareValue;
+                    log(`Firmware: ${firmwareValue}`);
+                }
+                if (!manufacturerValue && !modelValue && !firmwareValue) {
+                    log('Device Information service present but no readable Manufacturer/Model/Firmware values.');
+                }
+            }
+        } catch (e) {
+            log(`Device Information service not accessible or characteristics not readable: ${e}`);
+        }
+
+        // Try Generic Access (0x1800) for Device Name and Appearance
+        try {
+            const gap = await server.getPrimaryService('generic_access');
+            if (gap) {
+                log('Reading Generic Access service (device name, appearance)…');
+                try {
+                    const chName = await gap.getCharacteristic('gap.device_name'); // 0x2A00
+                    const val = dvToString(await chName.readValue());
+                    const el = document.getElementById('bleDeviceName');
+                    if (el && val) el.textContent = val;
+                    if (val) log(`Device Name: ${val}`);
+                } catch {}
+                try {
+                    const chApp = await gap.getCharacteristic('gap.appearance'); // 0x2A01
+                    const dv = await chApp.readValue();
+                    // Appearance is 16-bit
+                    const app = dv.getUint16 ? dv.getUint16(0, true) : (new DataView(dv.buffer)).getUint16(0, true);
+                    const elA = document.getElementById('bleAppearance');
+                    if (elA) elA.textContent = `0x${app.toString(16).padStart(4,'0')}`;
+                    log(`Appearance: 0x${app.toString(16).padStart(4,'0')}`);
+                } catch {}
+            }
+        } catch (e) {
+            log(`Generic Access service not accessible: ${e}`);
+        }
+
+        // Try Battery Service (0x180F)
+        try {
+            const batt = await server.getPrimaryService('battery_service');
+            if (batt) {
+                log('Reading Battery Service…');
+                try {
+                    const lvlChar = await batt.getCharacteristic('battery_level'); // 0x2A19
+                    const dv = await lvlChar.readValue();
+                    const lvl = dv.getUint8 ? dv.getUint8(0) : (new DataView(dv.buffer)).getUint8(0);
+                    const elB = document.getElementById('bleBatteryLevel');
+                    if (elB) elB.textContent = `${lvl}%`;
+                    log(`Battery Level: ${lvl}%`);
+                } catch {}
+            }
+        } catch (e) {
+            log(`Battery Service not accessible: ${e}`);
+        }
+
+        try { await server.disconnect(); } catch {}
+    } catch (e) {
+        log(`BLE GATT discovery aborted or failed: ${e}`);
+    }
+}
+
 async function readFromDevice(reader) {
+    const asciiDecoder = new TextDecoder('utf-8', { fatal: false });
     try {
         while (SPPsocket && SPPsocket.readable) {
             const { value, done } = await reader.read();
@@ -529,8 +1539,15 @@ async function readFromDevice(reader) {
             }
 
             let rawData = new Uint8Array(value.buffer);
-            //check if first byte is 0x55, else continue
+            // If packet does not look like the Nothing header (0x55 ...), log raw data (ASCII + hex) for generic/AT devices
             if (rawData[0] !== 85 || rawData.length < 8) {
+                const hex = Array.from(rawData).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+                // Attempt ASCII preview for printable bytes
+                let ascii = '';
+                for (const b of rawData) {
+                    ascii += (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.';
+                }
+                log(`RX (raw): HEX=[${hex}] ASCII="${ascii}"`);
                 continue;
             }
 
@@ -1246,6 +2263,88 @@ window.addEventListener('load', () => {
     }
 });
 
+function normalizeUuid(u) {
+  if (!u) return '';
+  let s = String(u).trim();
+  // allow known names
+  const names = {
+    'device_information':'0000180a-0000-1000-8000-00805f9b34fb',
+    'generic_access':'00001800-0000-1000-8000-00805f9b34fb',
+    'battery_service':'0000180f-0000-1000-8000-00805f9b34fb',
+    'manufacturer_name_string':'00002a29-0000-1000-8000-00805f9b34fb',
+    'model_number_string':'00002a24-0000-1000-8000-00805f9b34fb',
+    'firmware_revision_string':'00002a26-0000-1000-8000-00805f9b34fb',
+    'gap.device_name':'00002a00-0000-1000-8000-00805f9b34fb',
+    'gap.appearance':'00002a01-0000-1000-8000-00805f9b34fb',
+    'battery_level':'00002a19-0000-1000-8000-00805f9b34fb'
+  };
+  if (names[s.toLowerCase()]) return names[s.toLowerCase()];
+  // 16-bit UUID
+  if (/^[0-9a-f]{4}$/i.test(s)) return `0000${s.toLowerCase()}-0000-1000-8000-00805f9b34fb`;
+  // 128-bit UUID
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return s.toLowerCase();
+  return s;
+}
+
+async function bleGattRead() {
+  try {
+    if (!('bluetooth' in navigator)) { log('Web Bluetooth API not supported'); return; }
+    const svcIn = document.getElementById('gattServiceUuid');
+    const chIn = document.getElementById('gattCharUuid');
+    const serviceUUID = normalizeUuid(svcIn?.value || '');
+    const charUUID = normalizeUuid(chIn?.value || '');
+    if (!serviceUUID || !charUUID) { log('Provide both Service and Characteristic UUIDs'); return; }
+    log(`Requesting BLE device (service ${serviceUUID})…`);
+    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [serviceUUID] });
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(serviceUUID);
+    const characteristic = await service.getCharacteristic(charUUID);
+    const dv = await characteristic.readValue();
+    const u8 = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+    const hex = Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+    const str = dvToString(dv);
+    log(`GATT READ ${charUUID}: HEX=[${hex}] ASCII="${str}"`);
+    const out = document.getElementById('gattLastValue');
+    if (out) out.value = `HEX: ${hex}\nASCII: ${str}`;
+    try { await server.disconnect(); } catch {}
+  } catch (e) {
+    log(`bleGattRead error: ${e}`);
+  }
+}
+
+async function bleGattWrite() {
+  try {
+    if (!('bluetooth' in navigator)) { log('Web Bluetooth API not supported'); return; }
+    const svcIn = document.getElementById('gattServiceUuid');
+    const chIn = document.getElementById('gattCharUuid');
+    const payloadIn = document.getElementById('gattPayload');
+    const writeType = document.getElementById('gattWriteType')?.value || 'withResponse';
+    const serviceUUID = normalizeUuid(svcIn?.value || '');
+    const charUUID = normalizeUuid(chIn?.value || '');
+    if (!serviceUUID || !charUUID) { log('Provide both Service and Characteristic UUIDs'); return; }
+    const bytes = parseHexStringToBytes(payloadIn?.value || '');
+    const data = new Uint8Array(bytes);
+    log(`Requesting BLE device (service ${serviceUUID}) to WRITE ${charUUID}: ${bytes.length} byte(s)`);
+    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [serviceUUID] });
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(serviceUUID);
+    const characteristic = await service.getCharacteristic(charUUID);
+    // choose write method
+    if (writeType === 'withoutResponse' && characteristic.writeValueWithoutResponse) {
+      await characteristic.writeValueWithoutResponse(data);
+    } else if (characteristic.writeValueWithResponse) {
+      await characteristic.writeValueWithResponse(data);
+    } else if (characteristic.writeValue) {
+      await characteristic.writeValue(data);
+    } else {
+      throw new Error('Characteristic does not support write in this browser');
+    }
+    log(`GATT WRITE done: ${Array.from(data).map(b=>b.toString(16).padStart(2,'0')).join(' ')}`);
+    try { await server.disconnect(); } catch {}
+  } catch (e) {
+    log(`bleGattWrite error: ${e}`);
+  }
+}
 </script>
 
 </body>
