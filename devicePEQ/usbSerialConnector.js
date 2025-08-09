@@ -96,8 +96,27 @@ export const UsbSerialConnector = (async function () {
       }
 
       // Open device with appropriate baud rate
-      const baudRate = bluetoothServiceClassId ? 9600 : 115200; // Bluetooth SPP typically uses 9600
+      // - Bluetooth SPP typically uses 9600
+      // - Otherwise default to 115200 unless overridden by modelConfig.baudRate
+      const defaultBaud = bluetoothServiceClassId ? 9600 : 115200;
+      const baudRate = (modelConfig && modelConfig.baudRate && !bluetoothServiceClassId)
+        ? modelConfig.baudRate
+        : defaultBaud;
       await rawDevice.open({ baudRate });
+
+      // Set up readable and writable stream helpers for handlers expecting simple read()/write()
+      let readable = null;
+      let writable = null;
+      try {
+        if (rawDevice.readable && typeof rawDevice.readable.getReader === 'function') {
+          readable = rawDevice.readable.getReader();
+        }
+        if (rawDevice.writable && typeof rawDevice.writable.getWriter === 'function') {
+          writable = rawDevice.writable.getWriter();
+        }
+      } catch (e) {
+        console.warn('UsbSerialConnector: Failed to get reader/writer:', e);
+      }
 
       const model = vendorConfig.model || modelName || "Unknown Serial Device";
 
@@ -108,8 +127,9 @@ export const UsbSerialConnector = (async function () {
         model,
         handler,
         modelConfig,
-        readable: rawDevice.readable.getReader(),
-        writable: rawDevice.writable.getWriter(),
+        // Backward-compatibility for handlers (e.g., Nothing) that call device.readable.read() / device.writable.write()
+        readable,
+        writable
       };
 
       devices.push(currentDevice);
@@ -121,11 +141,25 @@ export const UsbSerialConnector = (async function () {
   };
 
   const disconnectDevice = async () => {
-    if (currentDevice && currentDevice.rawPort) {
+    if (currentDevice && currentDevice.rawDevice) {
       try {
-        await currentDevice.readable.releaseLock();
-        await currentDevice.writable.releaseLock();
-        await currentDevice.rawPort.close();
+        // Release reader/writer if we created them
+        try {
+          if (currentDevice.readable && typeof currentDevice.readable.releaseLock === 'function') {
+            currentDevice.readable.releaseLock();
+          }
+        } catch (e) {
+          console.warn('UsbSerialConnector: releasing readable lock failed', e);
+        }
+        try {
+          if (currentDevice.writable && typeof currentDevice.writable.releaseLock === 'function') {
+            currentDevice.writable.releaseLock();
+          }
+        } catch (e) {
+          console.warn('UsbSerialConnector: releasing writable lock failed', e);
+        }
+
+        await currentDevice.rawDevice.close();
         devices = devices.filter(d => d !== currentDevice);
         currentDevice = null;
         console.log("Serial device disconnected.");

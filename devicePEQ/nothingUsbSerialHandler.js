@@ -2,11 +2,8 @@
 // Pragmatic Audio - Handler for Nothing Headphones USB Serial/Bluetooth SPP EQ Control
 
 export const nothingUsbSerial = (function () {
-  const textEncoder = new TextEncoder();
-  const textDecoder = new TextDecoder();
 
   // Nothing headphone protocol constants
-  const SPP_UUID = "aeac4a03-dff5-498f-843a-34487cf133eb";
   const PROTOCOL_HEADER = [0x55, 0x60, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00];
 
   // Command constants from bluetooth-spp-test.html
@@ -127,7 +124,8 @@ export const nothingUsbSerial = (function () {
       return null;
     }
 
-    let header = rawData.slice(0, 6);
+    // Use full 8-byte protocol header to align payload offset correctly
+    let header = rawData.slice(0, 8);
     let command = getCommand(header);
 
     return {
@@ -162,6 +160,16 @@ export const nothingUsbSerial = (function () {
     }
   }
 
+  function getProfileName(deviceDetails, profileId) {
+    const slots = deviceDetails?.modelConfig?.availableSlots;
+    if (Array.isArray(slots)) {
+      const match = slots.find(s => s.id === profileId);
+      if (match && match.name) return match.name;
+    }
+    // Removed hardcoded fallback; rely on config-provided names
+    return `Slot ${profileId}`;
+  }
+
   async function pullFromDevice(deviceDetails, slot) {
     console.log(`Nothing USB Serial: pulling EQ from device slot ${slot}`);
 
@@ -175,11 +183,11 @@ export const nothingUsbSerial = (function () {
       currentProfile = slot;
     }
 
-    // For profiles 0, 1, 2, 3 (Balanced, Voice, More Treble, More Bass),
+    // For profiles that are not the first writable EQ slot, we can only read basic EQ settings
+    const firstWritableSlot = deviceDetails?.modelConfig?.firstWritableEQSlot ?? 5;
     // we can only read basic EQ settings - these don't have detailed parametric EQ data
-    if (currentProfile !== 5) {
-      const profileNames = { 0: "Balanced", 1: "Voice", 2: "More Treble", 3: "More Bass" };
-      const profileName = profileNames[currentProfile] || "Unknown";
+    if (currentProfile !== firstWritableSlot) {
+      const profileName = getProfileName(deviceDetails, currentProfile);
       console.log(`Nothing USB Serial: reading basic EQ for profile ${currentProfile} (${profileName})`);
 
       return {
@@ -191,8 +199,9 @@ export const nothingUsbSerial = (function () {
       };
     }
 
-    // For Custom profile (ID 5), read detailed EQ values
-    console.log(`Nothing USB Serial: reading EQ values for Custom profile ${currentProfile}`);
+    // For Custom profile (first writable slot), read detailed EQ values
+    const customProfileName = getProfileName(deviceDetails, firstWritableSlot);
+    console.log(`Nothing USB Serial: reading EQ values for ${customProfileName} profile ${currentProfile}`);
     const payload = toByteArray(0, 0, 1);
     await sendCommand(deviceDetails, READ_COMMANDS.READ_EQ_VALUES, payload, "readEQValues");
 
@@ -226,7 +235,7 @@ export const nothingUsbSerial = (function () {
       const filterType = hexArray[offset++];
 
       const gainBytes = hexArray.slice(offset, offset + 4);
-      const gain = bytesToFloat(gainBytes);
+      const gain = Math.round(bytesToFloat(gainBytes) * 100)/100;
       offset += 4;
 
       const freqBytes = hexArray.slice(offset, offset + 4);
@@ -246,7 +255,7 @@ export const nothingUsbSerial = (function () {
       });
     }
 
-    const profileName = "Custom";
+    const profileName = getProfileName(deviceDetails, currentProfile);
     console.log(`Nothing USB Serial: pulled ${filters.length} filters with global gain ${totalGain} for ${profileName}`);
     return {
       filters,
@@ -305,9 +314,11 @@ export const nothingUsbSerial = (function () {
   async function pushToDevice(deviceDetails, slot, globalGain, filters) {
     console.log(`Nothing USB Serial: pushing ${filters.length} filters to device slot ${slot}`);
 
-    // Only Custom profile (slot 5) supports writing EQ values
-    if (slot !== 5) {
-      throw new Error(`EQ writing only supported for Custom profile (slot 5), requested slot: ${slot}`);
+    // Only the first writable slot supports writing EQ values
+    const firstWritableSlot = deviceDetails?.modelConfig?.firstWritableEQSlot ?? 5;
+    if (slot !== firstWritableSlot) {
+      const name = getProfileName(deviceDetails, firstWritableSlot);
+      throw new Error(`EQ writing only supported for ${name} (slot ${firstWritableSlot}), requested slot: ${slot}`);
     }
 
     // Convert filters to the format expected by createEQDataPacket
@@ -343,10 +354,6 @@ export const nothingUsbSerial = (function () {
     getCurrentSlot,
     pullFromDevice,
     pushToDevice,
-    enablePEQ,
-    READ_COMMANDS,    // Export READ_ commands for sending values to SSP port
-    WRITE_COMMANDS,   // Export WRITE_ commands for sending values to SSP port
-    RESPONSE_COMMANDS, // Export RESPONSE_ commands for reading results
-    SPP_UUID // Export the SPP UUID for device recognition
+    enablePEQ
   };
 })();

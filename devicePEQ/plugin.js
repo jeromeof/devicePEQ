@@ -438,9 +438,10 @@ async function initializeDeviceEqPlugin(context) {
 
               <h4>Supported Brands & Manufacturers</h4>
               <ul>
-                <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17</li>
+                <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17, QX13</li>
                 <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
                 <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>
+                <li><strong>Truthear</strong> KeyX </li>
                 <li><strong>EPZ:</strong> GM20 and TP13</li>
                 <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
                 <li><strong>JCally:</strong> JM20 Pro, JM12</li>
@@ -448,7 +449,7 @@ async function initializeDeviceEqPlugin(context) {
                 <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
                 <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
                 <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
-                <li><strong>WiiM:</strong> Supports pushing parametric EQ over the home network</li>
+                <li><strong>WiiM:</strong> Supports limited pushing of parametric EQ over the home network</li>
                 <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
               </ul>
             </div>
@@ -471,6 +472,7 @@ async function initializeDeviceEqPlugin(context) {
                   <li>KA17</li>
                   <li>KA15</li>
                   <li>FX17 (with usbc adapter)</li>
+                  <li>QX13</li>
                   <li><em>Note:</em> Retro Nano has limited compatibility</li>
                 </ul>
                 <p>Mostly if a FiiO device works with their excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a> it should work here also</p>
@@ -1252,7 +1254,7 @@ async function initializeDeviceEqPlugin(context) {
             } else if (deviceEqUI.connectionType == "usb")  {
               await UsbHIDConnector.disconnectDevice();
             } else if (deviceEqUI.connectionType == "serial")  {
-              // serial support here
+              await UsbSerialConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
           } catch (error) {

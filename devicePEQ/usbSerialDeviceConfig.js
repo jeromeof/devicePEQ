@@ -44,8 +44,8 @@ export const usbSerialDeviceHandlerConfig = [
           minGain: -12,
           maxGain: 12,
           maxFilters: 8, // Based on the EQ values parsing in the HTML
-          firstWritableEQSlot: 0,
-          maxWritableEQSlots: 5, // Support for 5 EQ profiles (no 6th mode)
+          firstWritableEQSlot: 5,
+          maxWritableEQSlots: 1, // Only the Custom profile is writable
           disconnectOnSave: false,
           disabledPresetId: -1,
           experimental: true,
@@ -69,6 +69,10 @@ export const usbSerialDeviceHandlerConfig = [
       "FiiO Audio DSP": {
         usbProductId: 21971,
         modelConfig: {
+          // Serial configuration
+          baudRate: 57600,
+
+          // Model capabilities
           minGain: -12,
           maxGain: 12,
           maxFilters: 10, // Typical FiiO EQ band count

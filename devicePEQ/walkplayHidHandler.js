@@ -76,7 +76,7 @@ export const walkplayUsbHID = (function () {
         ...convertToByteArray(Math.round(filter.gain * 256), 2),
         convertFromFilterType(filter.type),
         0x00,
-        slot,
+        (deviceDetails.modelConfig && typeof deviceDetails.modelConfig.defaultIndex !== 'undefined') ? deviceDetails.modelConfig.defaultIndex : slot,
         END
       ];
 
@@ -265,7 +265,8 @@ export const walkplayUsbHID = (function () {
 // Write global gain to device
   async function writeGlobalGain(device, value) {
     const gainValue = Math.round(value);
-    const request = new Uint8Array([WRITE, CMD.GLOBAL_GAIN, 0x00, 0x00, gainValue]);
+    // Match attached KeyX JS format: [WRITE, GLOBAL_GAIN, 0x02, 0x00, gain]
+    const request = new Uint8Array([WRITE, CMD.GLOBAL_GAIN, 0x02, 0x00, gainValue]);
     console.log(`USB Device PEQ: Walkplay sending writeGlobalGain command:`, request);
     await device.sendReport(REPORT_ID, request);
   }
