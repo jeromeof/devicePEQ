@@ -377,7 +377,7 @@ export const usbHidDeviceHandlerConfig = ([
       "ECHO-A": {
         manufacturer: "Moondrop"
       },
-      "Truthear KeyX": {
+      "Truthear KEYX": {
         manufacturer: "Truthear",
         handler: walkplayUsbHID,
         modelConfig: {
