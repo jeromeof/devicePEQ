@@ -155,7 +155,8 @@
 
   // Typically this should be put into the config.js in a Cringraph
   let extraEQplugins = [
-    './devicePEQ/plugin.js' // Path to one or more "extraEQ" plugins
+    './devicePEQ/plugin.js', // Path to one or more "extraEQ" plugins
+    './sharePEQ/plugin.js' // Path to one or more "extraEQ" plugins
   ];
 
   /**
@@ -199,6 +200,34 @@
       config
     });
   }
+
+  // On load: check URL for F/T/G/Q/D params and auto-add that many filters for testing
+  (function autoAddFiltersFromUrl(){
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      let maxIndex = 0;
+      for (const key of params.keys()) {
+        // Match F1/T2/G10/Q3/D4 etc.
+        const m = /^([FTGQD])(\d+)$/.exec(key);
+        if (m) {
+          const idx = parseInt(m[2], 10);
+          if (!isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
+        }
+      }
+      if (maxIndex > 0) {
+        const list = document.getElementById('filter-list');
+        const current = (list && list.querySelectorAll('.filter-item').length) || 0;
+        for (let i = current; i < maxIndex; i++) {
+          addFilter();
+        }
+        // Optionally, we could populate values here, but requirement only asks to add rows.
+        // Fire an event similar to what plugins might listen to, for consistency.
+        try { document.dispatchEvent(new CustomEvent('UpdateExtensionFilters')); } catch(_) {}
+      }
+    } catch(e) {
+      console.warn('Auto-add filters from URL failed:', e);
+    }
+  })();
 </script>
 
 </body>

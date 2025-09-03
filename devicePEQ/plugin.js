@@ -281,7 +281,16 @@ async function initializeDeviceEqPlugin(context) {
   window.showToast = showToast;
 
   function loadHtml() {
-    // Define the HTML to insert
+    // Set default values for configuration
+    var headingTag = 'h4';
+
+    // Override with context config values if available
+    if (context && context.config) {
+      if (context.config.devicePEQHeadingTag) {
+          headingTag = context.config.devicePEQHeadingTag;
+      }
+    }
+      // Define the HTML to insert
     const deviceEqHTML = `
         <div class="device-eq disabled" id="deviceEqArea">
         <style>
@@ -403,7 +412,7 @@ async function initializeDeviceEqPlugin(context) {
     }
 
         </style>
-            <h5>Device PEQ</h5>
+            <${headingTag}>Device PEQ</${headingTag}>
             <div class="settings-row">
                 <button class="connect-device">Connect to Device</button>
                 <button class="disconnect-device">Disconnect From <span id="deviceName">None</span></button>
@@ -580,13 +589,25 @@ async function initializeDeviceEqPlugin(context) {
           </div>
         </div>
     `;
-    // Find the <div class="extra-eq"> element
-    const extraEqElement = document.querySelector('.extra-eq');
+    // More flexible way to insert HTML into the DOM
+    var placement = 'afterend';
+    var anchorDiv = '.extra-eq';
+    if (context && context.config ) {
+        if (context.config.devicePEQPlacement) {
+            placement = context.config.devicePEQPlacement;
+        }
+        if (context.config.devicePEQAnchorDiv) {
+            anchorDiv = context.config.devicePEQAnchorDiv;
+        }
+    }
+
+      // Find the <div class="extra-eq"> element
+    const extraEqElement = document.querySelector(anchorDiv);
 
     if (extraEqElement) {
       // Insert the new HTML below the "extra-eq" div
-      extraEqElement.insertAdjacentHTML('afterend', deviceEqHTML);
-      console.log('Device EQ UI added below <div class="extra-eq">');
+      extraEqElement.insertAdjacentHTML(placement, deviceEqHTML);
+      console.log('Device EQ UI added ' + placement + ' <div class="' + deviceEqHTML + '">');
     } else {
       console.error('Element <div class="extra-eq"> not found in the DOM.');
     }
@@ -1336,7 +1357,10 @@ async function initializeDeviceEqPlugin(context) {
               showToast("Please add at least one filter before pushing.", "error");
               return;
             }
-
+            // Make sure that the phoneObj is set
+            if (typeof context.applyEQ === 'function') {
+              context.applyEQ();
+            }
             const preamp_gain = context.calcEqDevPreamp(filters);
             let disconnect = false;
             if (deviceEqUI.connectionType == "network") {

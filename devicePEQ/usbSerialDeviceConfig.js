@@ -48,7 +48,7 @@ export const usbSerialDeviceHandlerConfig = [
           maxWritableEQSlots: 1, // Only the Custom profile is writable
           disconnectOnSave: false,
           disabledPresetId: -1,
-          experimental: true,
+          experimental: false,
           readOnly: false, // Enable writing for Custom profile
           availableSlots: [
             { id: 0, name: "Balanced" },

@@ -472,6 +472,10 @@ export const usbHidDeviceHandlerConfig = ([
           experimental: true
         }
       },
+      "Protocol Max": {
+        schemeNo: 16,
+        maxFilters: 10
+      },
       "AE6": {
         modelConfig: {
           schemeNo: 16,
