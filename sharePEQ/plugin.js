@@ -13,6 +13,11 @@ function encodeFiltersToParam(filters, options = {}) {
     if (preamp !== undefined && preamp !== null) {
         params.set('P', String(Number(preamp) || 0));
     }
+    // Include the selected phone if available
+    const selectedPhone = options.selectedPhone;
+    if (selectedPhone) {
+        params.set('selphone', selectedPhone);
+    }
     (filters || []).forEach((f, idx) => {
         const i = idx + 1;
         const T = f.type || 'PK';
@@ -31,7 +36,7 @@ function encodeFiltersToParam(filters, options = {}) {
 
 function buildUrlWithParam(paramsToApply) {
     // Build a new URL that preserves existing raw query encoding (e.g., commas in `share`)
-    // while replacing only PEQ-related params (F*/T*/G*/Q*/D*/P).
+    // while replacing only PEQ-related params (F*/T*/G*/Q*/D*/P) and selphone.
     const href = window.location.href;
     const [base, hash = ''] = href.split('#');
     const [path, query = ''] = base.split('?');
@@ -44,7 +49,7 @@ function buildUrlWithParam(paramsToApply) {
         // Decode key for matching only; keep raw token for output
         let key;
         try { key = decodeURIComponent(rawKey); } catch(_) { key = rawKey; }
-        return !(/^([FTGQD]\d+|P)$/.test(key));
+        return !(/^([FTGQD]\d+|P|selphone)$/.test(key));
     });
 
     // Append new PEQ params (safe to encode these fresh keys/values)
@@ -85,7 +90,8 @@ async function initializePeqUrlPlugin(context) {
                 filters.push({ type, freq, gain, q, disabled });
             }
             const preamp = sp.has('P') ? parseFloat(sp.get('P') || '0') : undefined;
-            return { filters, preamp };
+            const selectedPhone = sp.has('selphone') ? sp.get('selphone').replace(/_/g, ' ') : undefined;
+            return { filters, preamp, selectedPhone };
         } catch (e) {
             return null;
         }
@@ -206,11 +212,13 @@ async function initializePeqUrlPlugin(context) {
             output.value = '';
             return '';
         }
-        if (typeof context.applyEQ === 'function') {
-            context.applyEQ();
-        }
+
+        // Get the selected phone
+        const eqPhoneSelect = document.querySelector('div.extra-eq select[name="phone"]');
+        const selectedPhone = eqPhoneSelect && eqPhoneSelect.value ? eqPhoneSelect.value.replace(/ /g, '_') : '';
+        
         const preamp = (typeof context.calcEqDevPreamp === 'function') ? context.calcEqDevPreamp(filters) : 0;
-        const params = encodeFiltersToParam(filters, { preamp });
+        const params = encodeFiltersToParam(filters, { preamp, selectedPhone });
         const url = buildUrlWithParam(params);
         output.value = url;
         // Update browser address bar without reloading
@@ -387,20 +395,35 @@ async function initializePeqUrlPlugin(context) {
             if (typeof context.filtersToElem === 'function') {
                 context.filtersToElem(decoded.filters);
             }
+            
+            // If a specific phone was selected in the URL, store it for later use
+            if (decoded.selectedPhone) {
+                // Store the selected phone for use after the phone list is populated
+                window.selectedPhoneName = decoded.selectedPhone;
+                
+                // Try to select it now if the select element already exists and has options
+                try {
+                    const eqPhoneSelect = document.querySelector('div.extra-eq select[name="phone"]');
+                    if (eqPhoneSelect && eqPhoneSelect.options.length > 1) {
+                        // Find the option that matches the selected phone
+                        const options = Array.from(eqPhoneSelect.options);
+                        const matchingOption = options.find(opt => opt.value === decoded.selectedPhone);
+                        if (matchingOption) {
+                            eqPhoneSelect.value = decoded.selectedPhone;
+                        }
+                    }
+                } catch (_) {}
+            }
+            
             try { document.dispatchEvent(new CustomEvent('UpdateExtensionFilters')); } catch(_) {}
         }
     } catch (_) {}
 
-    // Initial generation on load (if filters present)
-    try {
-        const initUrl = generate();
-        if (initUrl && qrInline && qrInline.style.display === 'block') updateQr(initUrl);
-    } catch (_) {}
-
-    // If the URL contains new PEQ share parameters, automatically open the Equalizer tab
+    // If the URL contains new PEQ share parameters or selphone, automatically open the Equalizer tab
     try {
         const urlObj = new URL(window.location.href);
-        const hasNewParams = [...urlObj.searchParams.keys()].some(k => /^[FTGQD]\d+$/.test(k) || k === 'P');
+        const hasNewParams = [...urlObj.searchParams.keys()].some(k => 
+            /^[FTGQD]\d+$/.test(k) || k === 'P' || k === 'selphone');
         if (hasNewParams && typeof window.showExtraPanel === 'function') {
             // Defer to allow graphtool to finish rendering and tabs to exist
             requestAnimationFrame(() => {
@@ -409,6 +432,27 @@ async function initializePeqUrlPlugin(context) {
                     const extraEq = document.querySelector('.extra-eq');
                     if (extraEq && typeof extraEq.scrollIntoView === 'function') {
                         extraEq.scrollIntoView({ behavior: 'instant', block: 'start' });
+                    }
+                    
+                    // If we have a selected phone in the URL, try to select it after a short delay
+                    // to ensure the phone list has been populated
+                    if (urlObj.searchParams.has('selphone') && window.selectedPhoneName) {
+                        setTimeout(() => {
+                            try {
+                                const eqPhoneSelect = document.querySelector('div.extra-eq select[name="phone"]');
+                                if (eqPhoneSelect && eqPhoneSelect.options.length > 1) {
+                                    // Find and select the matching option
+                                    for (let i = 0; i < eqPhoneSelect.options.length; i++) {
+                                        if (eqPhoneSelect.options[i].value === window.selectedPhoneName) {
+                                            eqPhoneSelect.selectedIndex = i;
+                                            // Trigger change event to apply the EQ
+                                            eqPhoneSelect.dispatchEvent(new Event('input', { bubbles: true }));
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (_) {}
+                        }, 500); // Give time for the phones list to populate
                     }
                 } catch (_) {}
             });
