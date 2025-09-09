@@ -1,5 +1,5 @@
 // Copyright 2025 : Pragmatic Audio
-// PEQ URL Generator Plugin
+// PEQ URL Generator Plugin v0.12
 // This extraEQ plugin reads current PEQ filters from the graphtool context
 // and generates a shareable URL with an encoded PEQ parameter.
 
@@ -106,7 +106,7 @@ async function initializePeqUrlPlugin(context) {
         var headingTag = 'h4';
         var placement = 'afterend';
         var anchorDiv = '.extra-eq';
-        
+
         // Override with context config values if available
         if (context && context.config) {
             if (context.config.sharePEQHeadingTag) {
@@ -119,7 +119,7 @@ async function initializePeqUrlPlugin(context) {
                 anchorDiv = context.config.sharePEQAnchorDiv;
             }
         }
-        
+
         container.innerHTML = `
       <style>
         #peqUrlPlugin .peq-url-row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
@@ -216,7 +216,7 @@ async function initializePeqUrlPlugin(context) {
         // Get the selected phone
         const eqPhoneSelect = document.querySelector('div.extra-eq select[name="phone"]');
         const selectedPhone = eqPhoneSelect && eqPhoneSelect.value ? eqPhoneSelect.value.replace(/ /g, '_') : '';
-        
+
         const preamp = (typeof context.calcEqDevPreamp === 'function') ? context.calcEqDevPreamp(filters) : 0;
         const params = encodeFiltersToParam(filters, { preamp, selectedPhone });
         const url = buildUrlWithParam(params);
@@ -395,12 +395,12 @@ async function initializePeqUrlPlugin(context) {
             if (typeof context.filtersToElem === 'function') {
                 context.filtersToElem(decoded.filters);
             }
-            
+
             // If a specific phone was selected in the URL, store it for later use
             if (decoded.selectedPhone) {
                 // Store the selected phone for use after the phone list is populated
                 window.selectedPhoneName = decoded.selectedPhone;
-                
+
                 // Try to select it now if the select element already exists and has options
                 try {
                     const eqPhoneSelect = document.querySelector('div.extra-eq select[name="phone"]');
@@ -414,7 +414,7 @@ async function initializePeqUrlPlugin(context) {
                     }
                 } catch (_) {}
             }
-            
+
             try { document.dispatchEvent(new CustomEvent('UpdateExtensionFilters')); } catch(_) {}
         }
     } catch (_) {}
@@ -422,7 +422,7 @@ async function initializePeqUrlPlugin(context) {
     // If the URL contains new PEQ share parameters or selphone, automatically open the Equalizer tab
     try {
         const urlObj = new URL(window.location.href);
-        const hasNewParams = [...urlObj.searchParams.keys()].some(k => 
+        const hasNewParams = [...urlObj.searchParams.keys()].some(k =>
             /^[FTGQD]\d+$/.test(k) || k === 'P' || k === 'selphone');
         if (hasNewParams && typeof window.showExtraPanel === 'function') {
             // Defer to allow graphtool to finish rendering and tabs to exist
@@ -433,7 +433,7 @@ async function initializePeqUrlPlugin(context) {
                     if (extraEq && typeof extraEq.scrollIntoView === 'function') {
                         extraEq.scrollIntoView({ behavior: 'instant', block: 'start' });
                     }
-                    
+
                     // If we have a selected phone in the URL, try to select it after a short delay
                     // to ensure the phone list has been populated
                     if (urlObj.searchParams.has('selphone') && window.selectedPhoneName) {
