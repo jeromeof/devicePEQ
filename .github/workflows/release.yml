@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Archive plugin folder
-        run: zip -r devicePEQ.zip devicePEQ
+        run: zip -r devicePEQ.zip devicePEQ sharePEQ
 
       - name: Create Release (if not exists)
         id: create_release
