@@ -431,7 +431,7 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         modelConfig: {
           schemeNo: 15,
-          experimental: true
+          experimental: false
         }
       },
       "CS431XX": {
