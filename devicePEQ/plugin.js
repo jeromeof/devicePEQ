@@ -433,7 +433,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.12</h3>
+            <h3>About Device PEQ - v0.13</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -447,6 +447,7 @@ async function initializeDeviceEqPlugin(context) {
 
               <h4>Supported Brands & Manufacturers</h4>
               <ul>
+                <li><strong>CrinEar:</strong> Protocol Max</li>
                 <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17, QX13</li>
                 <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
                 <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>

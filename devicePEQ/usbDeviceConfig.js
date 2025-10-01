@@ -4,6 +4,7 @@ const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
 const {moondropUsbHidHandler} = await import('./moondropUsbHidHandler.js');
 const {ktmicroUsbHidHandler} = await import('./ktmicroUsbHidHandler.js');
 const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
+const {toppingUsbHidHandler} = await import('./toppingUsbHidHandler.js');
 
 // Main list of HID devices - each vendor has one or more vendorId, and a list of devices associated,
 // each device has a model of how the slots are configured and a handler to handle reading / writing
@@ -21,7 +22,7 @@ export const usbHidDeviceHandlerConfig = ([
       maxWritableEQSlots: 0,
       disconnectOnSave: true,
       disabledPresetId: -1,
-      experimental: true,
+      experimental: false,
       supportsLSHSFilters: true,
       supportsPregain: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
@@ -51,7 +52,6 @@ export const usbHidDeviceHandlerConfig = ([
       "FIIO QX13": {
         modelConfig: {
           maxFilters: 10,
-          experimental: false,
           disconnectOnSave: false
         }
       },
@@ -61,10 +61,21 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           minGain: -12,
           maxGain: 12,
-          maxFilters: 5,
+          maxFilters: 10,
           firstWritableEQSlot: -1,
+          disabledPresetId: 240,
           maxWritableEQSlots: 0,
-          disconnectOnSave: true,
+          availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
+            id: 3,
+            name: "Dance"
+          }, {
+            id: 5,
+            name: "R&B"
+          }, {id: 6, name: "Classic"}, {id: 7, name: "Hip-hop"}, {id: 160, name: "USER1"}, {id: 161, name: "USER2"}, {
+            id: 162,
+            name: "USER3"
+          }]
+
         }
       },
       "JadeAudio JIEZI": {
@@ -78,7 +89,6 @@ export const usbHidDeviceHandlerConfig = ([
             maxWritableEQSlots: 1,
             disconnectOnSave: true,
             disabledPresetId: 4,
-            experimental: false,
             reportId: 2,
           }
         },
@@ -91,7 +101,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 1,
           disconnectOnSave: true,
           disabledPresetId: 4,
-          experimental: false,
           reportId: 2,
           availableSlots: [{id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {
             id: 3,
@@ -108,7 +117,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
@@ -131,7 +139,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
@@ -154,7 +161,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
@@ -177,7 +183,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
@@ -200,7 +205,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           reportId: 1,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
@@ -223,7 +227,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 12,
-          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -245,7 +248,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false
         }
       },
       "FIIO KA15": {
@@ -257,7 +259,6 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          experimental: false,
           availableSlots: [{id: 0, name: "Jazz"}, {id: 1, name: "Pop"}, {id: 2, name: "Rock"}, {
             id: 3,
             name: "Dance"
@@ -345,8 +346,10 @@ export const usbHidDeviceHandlerConfig = ([
       "Rays": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
-        supportsLSHSFilters: false,
-        supportsPregain: true,
+        modelConfig: {
+          supportsLSHSFilters: true,
+          supportsPregain: true,
+        }
       },
       "EPZ TP13 AI ENC audio": {
         manufacturer: "EPZ",
@@ -365,7 +368,11 @@ export const usbHidDeviceHandlerConfig = ([
       },
       "FreeDSP Pro": {
         manufacturer: "Moondrop",
-        handler: moondropUsbHidHandler
+        handler: moondropUsbHidHandler,
+        modelConfig: {
+          supportsLSHSFilters: true,
+          supportsPregain: true,
+        }
       },
       "ddHiFi DSP IEM - Memory": {
         manufacturer: "Moondrop",
@@ -473,8 +480,12 @@ export const usbHidDeviceHandlerConfig = ([
         }
       },
       "Protocol Max": {
-        schemeNo: 16,
-        maxFilters: 10
+        modelConfig: {
+          schemeNo: 16,
+          maxFilters: 10,
+          supportsLSHSFilters: true,
+          supportsPregain: true
+        }
       },
       "AE6": {
         modelConfig: {
@@ -577,6 +588,38 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         modelConfig: {
           compensate2X: false
+        }
+      }
+    }
+  },
+  {
+    vendorIds: [0x152A], // 5418 in decimal = 0x152A in hex
+    manufacturer: "Topping",
+    handler: toppingUsbHidHandler,
+    defaultModelConfig: {
+      minGain: -12,
+      maxGain: 12,
+      maxFilters: 10,
+      firstWritableEQSlot: 0,
+      maxWritableEQSlots: 3,
+      disconnectOnSave: false,
+      disabledPresetId: -1,
+      experimental: true,
+      supportsPregain: true,
+      supportsLSHSFilters: true,
+      defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
+      availableSlots: [
+        {id: 0, name: "Custom 1"},
+        {id: 1, name: "Custom 2"},
+        {id: 2, name: "Custom 3"}
+      ]
+    },
+    devices: {
+      "DX5 II": {
+        productId: 0x8740, // 34640 in decimal = 0x8740 in hex
+        modelConfig: {
+          maxFilters: 10,
+          experimental: true
         }
       }
     }
