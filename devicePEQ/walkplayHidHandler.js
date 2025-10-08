@@ -83,9 +83,14 @@ export const walkplayUsbHID = (function () {
       await sendReport(device, useAltReport ? ALT_REPORT_ID : REPORT_ID, packet);
     }
 
-    // Write the global gain
-    await writeGlobalGain(device, globalGain);
-    console.log(`USB Device PEQ: Walkplay set global gain to ${globalGain}`);
+    if (deviceDetails.modelConfig && typeof deviceDetails.modelConfig.autoGlobalGain !== 'undefined') {
+      // If the walkplay device auto calculates global gain we can leave the global gain as it was
+      if (!deviceDetails.modelConfig.autoGlobalGain) {
+        // Write the global gain
+        await writeGlobalGain(device, globalGain);
+        console.log(`USB Device PEQ: Walkplay set global gain to ${globalGain}`);
+      }
+    }
 
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
     await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, END]);
@@ -170,12 +175,12 @@ export const walkplayUsbHID = (function () {
 
     // Q factor (8.8 fixed-point)
     const qRaw = packet[29] | (packet[30] << 8);
-    const q = Math.round((qRaw / 256) * 10) / 10;
+    const q = Math.round((qRaw / 256) * 100) / 100;
 
     // Gain (8.8 fixed-point signed)
     let gainRaw = packet[31] | (packet[32] << 8);
     if (gainRaw > 32767) gainRaw -= 65536;
-    const gain = Math.round((gainRaw / 256) * 10) / 10;
+    const gain = Math.round((gainRaw / 256) * 100) / 100;
 
     // Filter type —
     const type = convertToFilterType(packet[33]);

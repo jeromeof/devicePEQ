@@ -305,6 +305,7 @@ export const usbHidDeviceHandlerConfig = ([
       supportsPregain: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       supportsLSHSFilters: false,
+      autoGlobalGain: false,
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
     },
@@ -483,6 +484,9 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
+          minGain: -10,
+          maxGain: 10,
+          autoGlobalGain: true,
           supportsLSHSFilters: true,
           supportsPregain: true
         }
