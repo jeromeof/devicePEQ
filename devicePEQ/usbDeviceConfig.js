@@ -280,7 +280,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
-          reportId: 7,
+          reportId: 1,
           availableSlots: [
             {id: 0, name: "Jazz"},
             {id: 1, name: "Pop"},
