@@ -295,30 +295,6 @@ export const usbHidDeviceHandlerConfig = ([
           ]
         }
       },
-      "FIIO K11 R2R": {
-        modelConfig: {
-          minGain: -12,
-          maxGain: 12,
-          maxFilters: 10,
-          firstWritableEQSlot: 7,
-          maxWritableEQSlots: 3,
-          disconnectOnSave: false,
-          disabledPresetId: 11,
-          reportId: 7,
-          availableSlots: [
-            {id: 0, name: "Jazz"},
-            {id: 1, name: "Pop"},
-            {id: 2, name: "Rock"},
-            {id: 3, name: "Dance"},
-            {id: 5, name: "R&B"},
-            {id: 6, name: "Classic"},
-            {id: 7, name: "Hip-hop"},
-            {id: 4, name: "USER1"},
-            {id: 8, name: "USER2"},
-            {id: 9, name: "USER3"}
-          ]
-        }
-      },
       "LS-TC2": {
         modelConfig: {
           minGain: -12,
