@@ -276,8 +276,8 @@ export const usbHidDeviceHandlerConfig = ([
           minGain: -12,
           maxGain: 12,
           maxFilters: 10,
-          firstWritableEQSlot: 7,
-          maxWritableEQSlots: 3,
+          firstWritableEQSlot: 4,
+          maxWritableEQSlots: 10,
           disconnectOnSave: false,
           disabledPresetId: 11,
           reportId: 1,
@@ -289,9 +289,18 @@ export const usbHidDeviceHandlerConfig = ([
             {id: 5, name: "R&B"},
             {id: 6, name: "Classic"},
             {id: 7, name: "Hip-hop"},
+            {id: 8, name: "Monitor"},
             {id: 4, name: "USER1"},
-            {id: 8, name: "USER2"},
-            {id: 9, name: "USER3"}
+            {id: 9, name: "USER2"},
+            {id: 10, name: "USER3"},
+            {id: 11, name: "USER4"},
+            {id: 12, name: "USER5"},
+            {id: 13, name: "USER6"},
+            {id: 14, name: "USER7"},
+            {id: 15, name: "USER8"},
+            {id: 16, name: "USER9"},
+            {id: 17, name: "USER10"},
+            {id: 18, name: "BYPASS"}
           ]
         }
       },
