@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal USB HID Device Diagnostic Tool</title>
+  <style>
+    body {
+      font-family: 'Consolas', 'Monaco', monospace;
+      margin: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #252526;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #4ec9b0;
+      border-bottom: 2px solid #4ec9b0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #569cd6;
+      margin-top: 20px;
+    }
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1177bb;
+    }
+    button:disabled {
+      background: #3c3c3c;
+      cursor: not-allowed;
+    }
+    .info-box {
+      background: #1e1e1e;
+      border: 1px solid #3c3c3c;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .success {
+      color: #4ec9b0;
+      font-weight: bold;
+    }
+    .error {
+      color: #f48771;
+      font-weight: bold;
+    }
+    .warning {
+      color: #dcdcaa;
+      font-weight: bold;
+    }
+    .key {
+      color: #9cdcfe;
+    }
+    .value {
+      color: #ce9178;
+    }
+    .code-block {
+      background: #1e1e1e;
+      border-left: 3px solid #4ec9b0;
+      padding: 15px;
+      margin: 15px 0;
+      font-family: 'Consolas', monospace;
+      overflow-x: auto;
+    }
+    #output {
+      min-height: 100px;
+    }
+    .vendor-selector {
+      margin: 15px 0;
+    }
+    select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #3c3c3c;
+      border-radius: 4px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      margin: 5px;
+    }
+    .command-input {
+      margin: 10px 0;
+    }
+    input[type="text"] {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #3c3c3c;
+      border-radius: 4px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      width: 200px;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Universal USB HID Device Diagnostic Tool</h1>
+    
+    <p>This tool helps diagnose any USB HID device for use with devicePEQ. It works with any manufacturer and device type.</p>
+    
+    <div class="vendor-selector">
+      <h2>Step 1: Select Device Type</h2>
+      <select id="vendorSelect" onchange="updateVendorInfo()">
+        <option value="custom">Custom Device (Any Vendor)</option>
+        <option value="fiio">FiiO Devices</option>
+        <option value="moondrop">Moondrop Devices</option>
+        <option value="tanchjim">Tanchjim Devices</option>
+        <option value="qudelix">Qudelix Devices</option>
+        <option value="jdslabs">JDS Labs Devices</option>
+        <option value="walkplay">Walkplay Devices</option>
+      </select>
+      <div id="vendorInfo" class="info-box">
+        <span class="info">Select a device type to see vendor information</span>
+      </div>
+    </div>
+    
+    <h2>Step 2: Connect Device</h2>
+    <button id="connectBtn" onclick="connectDevice()">🔌 Connect to Device</button>
+    
+    <h2>📊 Diagnostic Results:</h2>
+    <div id="output" class="info-box">
+      <span class="warning">⏳ Waiting for device connection...</span>
+    </div>
+    
+    <h2>✅ Configuration Template:</h2>
+    <div id="configFix" class="info-box">
+      <span class="warning">Connect device first to generate config...</span>
+    </div>
+    
+    <h2>🧪 Communication Test:</h2>
+    <div class="command-input">
+      <input type="text" id="commandInput" placeholder="Enter hex command (e.g., BB 0B 00 00 0B 00 00 EE)" value="BB 0B 00 00 0B 00 00 EE">
+      <button onclick="sendCustomCommand()">Send Command</button>
+    </div>
+    
+    <button id="copyBtn" onclick="copyConfig()" style="display:none;">📋 Copy Config to Clipboard</button>
+  </div>
+
+  <script>
+    let selectedDevice = null;
+    let correctConfig = null;
+    const vendorInfo = {
+      fiio: { vendorIds: [0x2972, 0x0A12], name: "FiiO", commands: ["BB 0B 00 00 0B 00 00 EE"] },
+      moondrop: { vendorIds: [0x2B8A], name: "Moondrop", commands: ["BB 01 00 00 01 00 00 EE"] },
+      tanchjim: { vendorIds: [0x2B8A], name: "Tanchjim", commands: ["BB 01 00 00 01 00 00 EE"] },
+      qudelix: { vendorIds: [0x04DD], name: "Qudelix", commands: ["BB 01 00 00 01 00 00 EE"] },
+      jdslabs: { vendorIds: [0x152A], name: "JDS Labs", commands: ["BB 01 00 00 01 00 00 EE"] },
+      walkplay: { vendorIds: [0x3302, 0x0762, 0x35D8, 0x2FC6, 0x0104, 0xB445, 0x0661, 0x0666, 0x0D8C], name: "Walkplay", commands: ["BB 01 00 00 01 00 00 EE"] },
+      custom: { vendorIds: [], name: "Custom", commands: [] }
+    };
+
+    function updateVendorInfo() {
+      const vendor = document.getElementById('vendorSelect').value;
+      const info = vendorInfo[vendor];
+      const vendorInfoDiv = document.getElementById('vendorInfo');
+      
+      if (vendor === 'custom') {
+        vendorInfoDiv.innerHTML = '<span class="info">Custom device - will show all available HID devices</span>';
+      } else {
+        let html = `<span class="key">Vendor:</span> <span class="value">${info.name}</span>\n`;
+        html += `<span class="key">Vendor IDs:</span> <span class="value">${info.vendorIds.map(id => '0x' + id.toString(16).toUpperCase()).join(', ')}</span>\n`;
+        html += `<span class="key">Test Commands:</span> <span class="value">${info.commands.join(', ')}</span>`;
+        vendorInfoDiv.innerHTML = html;
+      }
+    }
+
+    async function connectDevice() {
+      const output = document.getElementById('output');
+      const configFix = document.getElementById('configFix');
+      const vendor = document.getElementById('vendorSelect').value;
+      const info = vendorInfo[vendor];
+      
+      try {
+        output.innerHTML = '<span class="warning">⏳ Opening device picker...</span>';
+        
+        // Request HID devices
+        const filters = info.vendorIds.length > 0 ? info.vendorIds.map(id => ({ vendorId: id })) : [];
+        const devices = await navigator.hid.requestDevice({
+          filters: filters
+        });
+        
+        if (devices.length === 0) {
+          output.innerHTML = '<span class="error">❌ No device selected</span>';
+          return;
+        }
+        
+        selectedDevice = devices[0];
+        
+        // Open the device
+        if (!selectedDevice.opened) {
+          await selectedDevice.open();
+        }
+        
+        // Get detailed device information
+        const deviceInfo = {
+          productName: selectedDevice.productName,
+          manufacturer: selectedDevice.manufacturerString || info.name,
+          vendorId: "0x" + selectedDevice.vendorId.toString(16).toUpperCase(),
+          productId: "0x" + selectedDevice.productId.toString(16).toUpperCase(),
+          opened: selectedDevice.opened,
+          collections: selectedDevice.collections
+        };
+        
+        // Display results
+        let html = '<span class="success">✅ Device Connected Successfully!</span>\n\n';
+        html += '<span class="key">Product Name:</span> <span class="value">"' + deviceInfo.productName + '"</span>\n';
+        html += '<span class="key">Manufacturer:</span> <span class="value">"' + deviceInfo.manufacturer + '"</span>\n';
+        html += '<span class="key">Vendor ID:</span> <span class="value">' + deviceInfo.vendorId + '</span>\n';
+        html += '<span class="key">Product ID:</span> <span class="value">' + deviceInfo.productId + '</span>\n';
+        html += '<span class="key">Device Opened:</span> <span class="value">' + deviceInfo.opened + '</span>\n\n';
+        
+        html += '<span class="key">HID Collections:</span>\n';
+        deviceInfo.collections.forEach((col, idx) => {
+          html += `  Collection ${idx}:\n`;
+          html += `    Usage Page: 0x${col.usagePage.toString(16).toUpperCase()}\n`;
+          html += `    Usage: 0x${col.usage.toString(16).toUpperCase()}\n`;
+          if (col.inputReports?.length) {
+            html += `    Input Reports: ${col.inputReports.map(r => `${r.reportId} (size: ${r.items?.[0]?.reportSize || 'unknown'})`).join(', ')}\n`;
+          } else {
+            html += `    Input Reports: None\n`;
+          }
+          if (col.outputReports?.length) {
+            html += `    Output Reports: ${col.outputReports.map(r => `${r.reportId} (size: ${r.items?.[0]?.reportSize || 'unknown'})`).join(', ')}\n`;
+          } else {
+            html += `    Output Reports: None\n`;
+          }
+          if (col.featureReports?.length) {
+            html += `    Feature Reports: ${col.featureReports.map(r => `${r.reportId} (size: ${r.items?.[0]?.reportSize || 'unknown'})`).join(', ')}\n`;
+          }
+        });
+        
+        output.innerHTML = html;
+        
+        // Generate configuration template
+        const exactProductName = deviceInfo.productName;
+        const reportId = deviceInfo.collections[0]?.outputReports?.[0]?.reportId;
+        const reportIdToUse = (reportId !== undefined) ? reportId : 0;
+        
+        correctConfig = `"${exactProductName}": {
+  modelConfig: {
+    minGain: -12,
+    maxGain: 12,
+    maxFilters: 10,
+    firstWritableEQSlot: 7,
+    maxWritableEQSlots: 3,
+    disconnectOnSave: false,
+    disabledPresetId: 11,
+    reportId: ${reportIdToUse},
+    availableSlots: [
+      {id: 0, name: "Jazz"},
+      {id: 1, name: "Pop"},
+      {id: 2, name: "Rock"},
+      {id: 3, name: "Dance"},
+      {id: 5, name: "R&B"},
+      {id: 6, name: "Classic"},
+      {id: 7, name: "Hip-hop"},
+      {id: 4, name: "USER1"},
+      {id: 8, name: "USER2"},
+      {id: 9, name: "USER3"}
+    ]
+  }
+}`;
+        
+        let configHtml = '<span class="success">✅ Configuration Template Generated!</span>\n\n';
+        configHtml += '<span class="warning">⚠️ This is a template - adjust values as needed for your device!</span>\n\n';
+        configHtml += '<span class="key">Device Name:</span> <span class="value">"' + exactProductName + '"</span>\n';
+        configHtml += '<span class="key">Detected Report ID:</span> <span class="value">' + reportIdToUse + '</span>\n\n';
+        configHtml += '<span class="info">Add this to usbDeviceConfig.js in the appropriate vendor section:</span>\n\n';
+        configHtml += '<div class="code-block">' + correctConfig + '</div>';
+        
+        configFix.innerHTML = configHtml;
+        
+        // Show copy button
+        document.getElementById('copyBtn').style.display = 'inline-block';
+        
+        // Update command input with vendor-specific commands
+        if (info.commands.length > 0) {
+          document.getElementById('commandInput').value = info.commands[0];
+        }
+        
+      } catch (error) {
+        output.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>\n\n';
+        output.innerHTML += 'Stack trace:\n' + error.stack;
+      }
+    }
+    
+    function copyConfig() {
+      if (correctConfig) {
+        navigator.clipboard.writeText(correctConfig).then(() => {
+          alert('✅ Configuration copied to clipboard!\n\nNow add this to usbDeviceConfig.js in the appropriate vendor section.');
+        });
+      }
+    }
+    
+    async function sendCustomCommand() {
+      if (!selectedDevice) {
+        alert('Please connect device first!');
+        return;
+      }
+      
+      const output = document.getElementById('output');
+      const commandInput = document.getElementById('commandInput').value.trim();
+      
+      if (!commandInput) {
+        alert('Please enter a command!');
+        return;
+      }
+      
+      try {
+        // Parse hex command
+        const hexBytes = commandInput.split(/\s+/).map(byte => parseInt(byte, 16));
+        if (hexBytes.some(byte => isNaN(byte))) {
+          alert('Invalid hex command! Use format like: BB 0B 00 00 0B 00 00 EE');
+          return;
+        }
+        
+        const command = new Uint8Array(hexBytes);
+        
+        output.innerHTML += '\n\n<span class="warning">🧪 Testing custom command...</span>\n';
+        output.innerHTML += `Command: ${Array.from(command).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}\n`;
+        
+        // Listen for response
+        selectedDevice.oninputreport = (event) => {
+          const data = new Uint8Array(event.data.buffer);
+          output.innerHTML += '<span class="success">✅ Received response!</span>\n';
+          output.innerHTML += 'Response: ' + Array.from(data).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ') + '\n';
+        };
+        
+        // Get report ID
+        const reportId = selectedDevice.collections[0]?.outputReports?.[0]?.reportId;
+        const reportIdToUse = (reportId !== undefined) ? reportId : 0;
+        
+        output.innerHTML += `Sending command (reportId: ${reportIdToUse})...\n`;
+        await selectedDevice.sendReport(reportIdToUse, command);
+        
+        // Wait for response
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        output.innerHTML += '\n<span class="success">✅ Command test complete!</span>\n';
+        
+      } catch (error) {
+        output.innerHTML += '<span class="error">❌ Command error: ' + error.message + '</span>\n';
+      }
+    }
+    
+    // Initialize
+    updateVendorInfo();
+  </script>
+</body>
+</html>

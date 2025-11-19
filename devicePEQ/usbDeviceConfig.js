@@ -271,6 +271,40 @@ export const usbHidDeviceHandlerConfig = ([
           }]
         }
       },
+      "FIIO K13 R2R": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 10,
+          maxWritableEQSlots: 10,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          reportId: 1,
+          availableSlots: [
+            {id: 0, name: "BYPASS"},
+            {id: 1, name: "Jazz"},
+            {id: 2, name: "Pop"},
+            {id: 3, name: "Rock"},
+            {id: 4, name: "Dance"},
+            {id: 5, name: "R&B"},
+            {id: 6, name: "Classic"},
+            {id: 7, name: "Hip-Pop"},
+            {id: 8, name: "De-essing 1"},
+            {id: 9, name: "De-essing 2"},
+            {id: 10, name: "USER1"},
+            {id: 11, name: "USER2"},
+            {id: 12, name: "USER3"},
+            {id: 13, name: "USER4"},
+            {id: 14, name: "USER5"},
+            {id: 15, name: "USER6"},
+            {id: 16, name: "USER7"},
+            {id: 17, name: "USER8"},
+            {id: 18, name: "USER9"},
+            {id: 19, name: "USER10"}
+          ]
+        }
+      },
       "LS-TC2": {
         modelConfig: {
           minGain: -12,

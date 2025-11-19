@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K13 R2R - Connection Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #667eea;
+      margin-top: 0;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .log {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .success { color: #10b981; font-weight: bold; }
+    .error { color: #ef4444; font-weight: bold; }
+    .info { color: #3b82f6; }
+    .warning { color: #f59e0b; }
+    .step {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎵 FiiO K13 R2R Connection Test</h1>
+    
+    <div class="step">
+      <strong>📌 Important:</strong> Press <code>Ctrl+Shift+R</code> (Windows) or <code>Cmd+Shift+R</code> (Mac) to do a hard refresh and clear cache before testing!
+    </div>
+    
+    <button onclick="testConnection()">🔌 Test Connection</button>
+    <button onclick="viewConfig()">📄 View Current Config</button>
+    <button onclick="clearLog()">🗑️ Clear Log</button>
+    
+    <div id="log" class="log">Ready to test...</div>
+  </div>
+
+  <script type="module">
+    window.testConnection = async function() {
+      const log = document.getElementById('log');
+      log.innerHTML = '';
+      
+      function addLog(msg, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        log.innerHTML += `<span class="${type}">[${timestamp}] ${msg}</span>\n`;
+        log.scrollTop = log.scrollHeight;
+      }
+      
+      try {
+        addLog('🔄 Loading device configuration...', 'info');
+        
+        // Import with cache-busting timestamp
+        const timestamp = Date.now();
+        const config = await import('./devicePEQ/usbDeviceConfig.js?' + timestamp);
+        
+        addLog('✅ Configuration loaded successfully!', 'success');
+        
+        // Check if K13 R2R is in the config
+        const fiioConfig = config.usbHidDeviceHandlerConfig.find(c => c.manufacturer === "FiiO");
+        
+        if (!fiioConfig) {
+          addLog('❌ FiiO configuration not found!', 'error');
+          return;
+        }
+        
+        addLog('✅ FiiO vendor config found', 'success');
+        addLog(`   Vendor IDs: ${fiioConfig.vendorIds.map(v => '0x' + v.toString(16)).join(', ')}`, 'info');
+        
+        const k13Config = fiioConfig.devices["FIIO K13 R2R"];
+        
+        if (k13Config) {
+          addLog('✅ "FIIO K13 R2R" configuration found!', 'success');
+          addLog('   Configuration details:', 'info');
+          addLog('   - Max Filters: ' + k13Config.modelConfig.maxFilters, 'info');
+          addLog('   - Report ID: ' + k13Config.modelConfig.reportId, 'info');
+          addLog('   - Disconnect on Save: ' + k13Config.modelConfig.disconnectOnSave, 'info');
+          addLog('   - Available Slots: ' + k13Config.modelConfig.availableSlots.length, 'info');
+        } else {
+          addLog('❌ "FIIO K13 R2R" NOT found in config!', 'error');
+          addLog('Available devices:', 'warning');
+          Object.keys(fiioConfig.devices).forEach(name => {
+            addLog('   - "' + name + '"', 'warning');
+          });
+          return;
+        }
+        
+        addLog('', 'info');
+        addLog('🔌 Attempting to connect to device...', 'info');
+        
+        // Request HID device
+        const devices = await navigator.hid.requestDevice({
+          filters: fiioConfig.vendorIds.map(vendorId => ({ vendorId }))
+        });
+        
+        if (devices.length === 0) {
+          addLog('⚠️ No device selected', 'warning');
+          return;
+        }
+        
+        const device = devices[0];
+        addLog('✅ Device selected!', 'success');
+        addLog(`   Product Name: "${device.productName}"`, 'info');
+        addLog(`   Vendor ID: 0x${device.vendorId.toString(16)}`, 'info');
+        addLog(`   Product ID: 0x${device.productId.toString(16)}`, 'info');
+        
+        // Check if the product name matches
+        if (device.productName === "FIIO K13 R2R") {
+          addLog('✅ PERFECT MATCH! Product name matches config!', 'success');
+        } else {
+          addLog('❌ NAME MISMATCH!', 'error');
+          addLog(`   Expected: "FIIO K13 R2R"`, 'error');
+          addLog(`   Got: "${device.productName}"`, 'error');
+          return;
+        }
+        
+        // Try to open the device
+        if (!device.opened) {
+          addLog('🔓 Opening device...', 'info');
+          await device.open();
+          addLog('✅ Device opened successfully!', 'success');
+        } else {
+          addLog('✅ Device already open', 'success');
+        }
+        
+        // Test sending a command
+        addLog('', 'info');
+        addLog('🧪 Testing FiiO protocol communication...', 'info');
+        
+        const reportId = k13Config.modelConfig.reportId;
+        const versionCommand = new Uint8Array([0xBB, 0x0B, 0x00, 0x00, 0x0B, 0x00, 0x00, 0xEE]);
+        
+        // Set up listener
+        let responseReceived = false;
+        device.oninputreport = (event) => {
+          const data = new Uint8Array(event.data.buffer);
+          responseReceived = true;
+          addLog('✅ Device responded!', 'success');
+          addLog('   Response: ' + Array.from(data).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '), 'info');
+          
+          // Try to parse version if it's a version response
+          if (data[0] === 0xBB && data[1] === 0x0B && data[4] === 0x0B) {
+            addLog('   This looks like a firmware version response!', 'success');
+          }
+        };
+        
+        addLog(`   Sending command (reportId: ${reportId})...`, 'info');
+        await device.sendReport(reportId, versionCommand);
+        
+        // Wait for response
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        if (responseReceived) {
+          addLog('', 'info');
+          addLog('🎉 SUCCESS! Device is working perfectly!', 'success');
+          addLog('✅ Configuration is correct', 'success');
+          addLog('✅ Communication is working', 'success');
+          addLog('', 'info');
+          addLog('👉 You should now be able to use the main interface!', 'success');
+          addLog('   Open: http://localhost:8000/index.html', 'info');
+        } else {
+          addLog('', 'info');
+          addLog('⚠️ No response received from device', 'warning');
+          addLog('Possible issues:', 'warning');
+          addLog('   - Wrong reportId (currently: ' + reportId + ')', 'warning');
+          addLog('   - Device needs different command format', 'warning');
+          addLog('   - Device is busy with other software', 'warning');
+        }
+        
+      } catch (error) {
+        addLog('❌ ERROR: ' + error.message, 'error');
+        addLog('Stack trace:', 'error');
+        addLog(error.stack, 'error');
+      }
+    };
+    
+    window.viewConfig = async function() {
+      const log = document.getElementById('log');
+      log.innerHTML = '';
+      
+      try {
+        const timestamp = Date.now();
+        const config = await import('./devicePEQ/usbDeviceConfig.js?' + timestamp);
+        
+        const fiioConfig = config.usbHidDeviceHandlerConfig.find(c => c.manufacturer === "FiiO");
+        const k13Config = fiioConfig?.devices["FIIO K13 R2R"];
+        
+        if (k13Config) {
+          log.innerHTML = '<span class="success">✅ FIIO K13 R2R Configuration:</span>\n\n';
+          log.innerHTML += JSON.stringify(k13Config, null, 2);
+        } else {
+          log.innerHTML = '<span class="error">❌ Configuration not found!</span>';
+        }
+      } catch (error) {
+        log.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+      }
+    };
+    
+    window.clearLog = function() {
+      document.getElementById('log').innerHTML = 'Ready to test...';
+    };
+  </script>
+</body>
+</html>
+

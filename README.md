@@ -115,7 +115,7 @@ DeviceEQ/
 - Implements **global gain control** for overall volume adjustment.
 
 ### **📌 Tested Devices**
-- **FiiO:** JA11, KA15, KA17 (Retro Nano has limited compatibility)
+- **FiiO:** JA11, KA15, KA17, K11 R2R, K13 R2R (Retro Nano has limited compatibility)
 - **Moondrop:** CDSP, Chu II DSP, Quark2, Echo A
 - **Tanchjim:** Bunny DSP, One DSP
 - **EPZ:** GM20, TP13
