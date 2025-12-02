@@ -343,6 +343,27 @@ export const usbHidDeviceHandlerConfig = ([
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
     },
+    deviceGroups: {
+      "SchemeNo11": {
+        productIds: [0x13D4,0x98C0,0x98C0,0x93D1,0x13D7,0x12C0,0x1264,0x43D1,0x1266,0x51C0,0x13C1,0x13D3,0x1251,0x1262,0x1261,0x12C1,0x98D5],
+        modelConfig: {
+          supportsLSHSFilters: false,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo16": {
+        productIds: [0x4380, 0x43B6,0x43E1,0x43D7,0x43D8,0x43E4,0x98D4,0x43C0,0x43E8,0xF808,0xEE10,0x4352,0xEE20,0x43C5,0x43E6,0x4351,0x43DE,0x4358,0x4359,0x43DB,0x435A,0x4355,0x435C,0x435D,0x435E,0x43EF,0x43EC,0x4361,0x4363,0x4366,0x4364,0x4360,0x4382,0x4383,0x4386,0x43C6,0x43C7,0x011D,0x43C8,0x43DA,0x43C9,0x43CA,0x43CC,0x43CD,0x43CF,0x43B1,0x43C2,0x43B7,0x43B8,0x39C3],
+        modelConfig: {
+          schemeNo: 16,
+          maxFilters: 10,
+          minGain: -10,
+          maxGain: 10,
+          autoGlobalGain: false,
+          supportsLSHSFilters: true,
+          supportsPregain: true
+        }
+      }
+    },
     devices: {
       "FIIO FX17 ": {
         manufacturer: "FiiO",
@@ -386,13 +407,6 @@ export const usbHidDeviceHandlerConfig = ([
           supportsPregain: true,
         }
       },
-      "EPZ TP13 AI ENC audio": {
-        manufacturer: "EPZ",
-        modelConfig: {
-          supportsLSHSFilters: false,
-          supportsPregain: true,
-        }
-      },
       "Marigold": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
@@ -413,11 +427,17 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler
       },
-      "Quark2": {
-        manufacturer: "Moondrop"
-      },
-      "ECHO-A": {
-        manufacturer: "Moondrop"
+      "Protocol Max": {
+        manufacturer: "CrinEar",
+        modelConfig: {
+          schemeNo: 16,
+          maxFilters: 10,
+          minGain: -10,
+          maxGain: 10,
+          autoGlobalGain: true,
+          supportsLSHSFilters: true,
+          supportsPregain: true
+        }
       },
       "Truthear KEYX": {
         manufacturer: "Truthear",
@@ -435,11 +455,6 @@ export const usbHidDeviceHandlerConfig = ([
           experimental: false,
           defaultIndex: 0x17,
           availableSlots: [{id: 101, name: "Custom"}]
-        }
-      },
-      "Hi-MAX": {
-        modelConfig: {
-          experimental: false
         }
       },
       "BGVP MX1": {
@@ -498,8 +513,7 @@ export const usbHidDeviceHandlerConfig = ([
       "didiHiFi DSP Cable - Memory": {
         manufacturer: "ddHifi",
         modelConfig: {
-          schemeNo: 15,
-          experimental: true
+          schemeNo: 15
         }
       },
       "Dual CS43198": {
@@ -513,60 +527,7 @@ export const usbHidDeviceHandlerConfig = ([
           schemeNo: 15,
           experimental: true
         }
-      },
-      "Protocol Max": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          minGain: -10,
-          maxGain: 10,
-          autoGlobalGain: true,
-          supportsLSHSFilters: true,
-          supportsPregain: true
-        }
-      },
-      "AE6": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
-        }
-      },
-      "KM_HA03": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
-        }
-      },
-      "TP35 Pro": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10
-        }
-      },
-      "DA5": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
-        }
-      },
-      "G303": {
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
-        }
-      },
-      "HiFi DSP Audio with PD": {
-        manufacturer: "ddHifi",
-        modelConfig: {
-          schemeNo: 16,
-          maxFilters: 10,
-          experimental: true
-        }
-      },
+      }
     }
   },
   {

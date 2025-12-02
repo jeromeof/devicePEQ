@@ -229,7 +229,7 @@ export const jdsLabsUsbSerial = (function () {
     return alignedFilters;
   }
 
-  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
 
     console.log(`USB Device PEQ: JDS Labs building settings for 12-band device`);
 

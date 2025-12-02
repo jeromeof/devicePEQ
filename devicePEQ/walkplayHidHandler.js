@@ -55,7 +55,7 @@ export const walkplayUsbHID = (function () {
   };
 
   // Push PEQ settings to Walkplay device
-  const pushToDevice = async (deviceDetails, slot, globalGain, filtersToWrite) => {
+  const pushToDevice = async (deviceDetails, phoneObj, slot, globalGain, filtersToWrite) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
     console.log("Pushing PEQ settings...");

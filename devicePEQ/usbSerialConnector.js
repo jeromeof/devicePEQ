@@ -196,9 +196,9 @@ export const UsbSerialConnector = (async function () {
     }
   };
 
-  const pushToDevice = async (device, slot, preamp, filters) => {
+  const pushToDevice = async (device, phoneObj, slot, preamp, filters) => {
     if (!device || !device.handler) return;
-    return await device.handler.pushToDevice(device, slot, preamp, filters);
+    return await device.handler.pushToDevice(device, phoneObj, slot, preamp, filters);
   };
 
   const pullFromDevice = async (device, slot) => {

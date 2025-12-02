@@ -2,11 +2,14 @@
 // Copyright 2024 : Pragmatic Audio
 
 const {wiimNetworkHandler} = await import('./wiimNetworkHandler.js');
+const {luxsinNetworkHandler} = await import('./luxsinNetworkHandler.js');
+const {networkDeviceHandlerConfig} = await import('./networkDeviceConfig.js');
 
 export const NetworkDeviceConnector = (function () {
     let currentDevice = null;
     const deviceHandlers = {
-        "WiiM": wiimNetworkHandler, // Will be dynamically imported
+        "WiiM": wiimNetworkHandler,
+        "Luxsin": luxsinNetworkHandler,
     };
     async function getDeviceConnected(deviceIP, deviceType) {
         try {
@@ -15,15 +18,30 @@ export const NetworkDeviceConnector = (function () {
                 return null;
             }
 
+            // Basic IP address validation (IPv4)
+            const ipPattern = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+            if (!ipPattern.test(deviceIP)) {
+                console.warn("Invalid IP address format.");
+                return null;
+            }
+
             if (!deviceHandlers[deviceType]) {
                 console.warn("Unsupported Device Type.");
                 return null;
             }
 
+            // Build model information from config
+            const deviceConfig = networkDeviceHandlerConfig.devices?.[deviceType] || {};
+            const defaultModelConfig = networkDeviceHandlerConfig.defaultModelConfig || {};
+            const modelConfig = Object.assign({}, defaultModelConfig, deviceConfig.modelConfig || {});
+
             currentDevice = {
                 ip: deviceIP,
                 type: deviceType,
-                handler: deviceHandlers[deviceType]
+                handler: deviceHandlers[deviceType],
+                manufacturer: deviceConfig.manufacturer || deviceType,
+                model: deviceConfig.model || `${deviceType} Device`,
+                modelConfig: modelConfig,
             };
 
             console.log(`Connected to ${deviceType} at ${deviceIP}`);
@@ -41,12 +59,20 @@ export const NetworkDeviceConnector = (function () {
         }
     }
 
-    async function pushToDevice(device, slot, preamp, filters) {
+    async function pushToDevice(device, phoneObj, slot, preamp, filters) {
         if (!currentDevice) {
             console.warn("No network device connected.");
             return;
         }
-        return await currentDevice.handler.pushToDevice(currentDevice.ip, slot, preamp, filters);
+        // Pass modelConfig so handlers can respect device-specific limits (e.g., maxFilters)
+        return await currentDevice.handler.pushToDevice(
+          currentDevice.ip,
+          phoneObj,
+          slot,
+          preamp,
+          filters,
+          currentDevice.modelConfig
+        );
     }
 
     async function pullFromDevice(device, slot) {
@@ -61,7 +87,7 @@ export const NetworkDeviceConnector = (function () {
         console.warn("Unsupported Device Type.");
         return null;
       }
-      return await deviceHandlers[device.type].getCurrentSlot(device.IP);
+      return await deviceHandlers[device.type].getCurrentSlot(device.ip);
     }
   async function getAvailableSlots(device) {
     if (!deviceHandlers[device.type]) {

@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Treble Smoothing Studio</title>
+  <style>
+
+    /* ===========================================================
+       DARK STUDIO THEME – FABFILTER / IZOTOPE INSPIRED
+       =========================================================== */
+
+    :root {
+      --bg-main: #16181b;
+      --bg-panel: #1f2226;
+      --bg-panel-alt: #25292e;
+      --border: #2c3035;
+      --text: #e3e3e3;
+      --text-dim: #9ea2a8;
+      --accent: #3fa9f5;
+      --accent2: #f53fad;
+      --danger: #d94040;
+      --success: #3fd96a;
+      --warn: #f5b83f;
+      --radius: 8px;
+      --shadow: 0 3px 12px rgba(0,0,0,0.45);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-main);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Panels & layout ---------------------------------------------------------- */
+
+    .container {
+      display: grid;
+      grid-template-columns: 330px 1fr 420px;
+      height: 100vh;
+      gap: 14px;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* Left panel content -------------------------------------------------------- */
+
+    .label {
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text-dim);
+    }
+
+    input[type=range] {
+      width: 100%;
+    }
+
+    /* Buttons ------------------------------------------------------------------ */
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 6px;
+      margin-top: 6px;
+      transition: 0.15s;
+    }
+    button:hover {
+      opacity: 0.85;
+    }
+    button.secondary {
+      background: #555;
+    }
+    button.danger {
+      background: var(--danger);
+    }
+    button.success {
+      background: var(--success);
+    }
+    button.warn {
+      background: var(--warn);
+    }
+
+    /* Table for markers and filters -------------------------------------------- */
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    th {
+      background: var(--bg-panel-alt);
+      text-align: left;
+      padding: 6px;
+    }
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 6px;
+    }
+
+    /* PEQ input fields */
+
+    .peq-input {
+      width: 64px;
+      background: #101215;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+
+    /* Graph canvas -------------------------------------------------------------- */
+
+    #eqCanvas {
+      width: 100%;
+      height: 100%;
+      background: #0f1113;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    /* HUD for 3-tone mode ------------------------------------------------------- */
+
+    #toneHUD {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      background: rgba(30, 32, 36, 0.85);
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      pointer-events: none;
+      border: 1px solid var(--border);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    /* Bottom help bar ----------------------------------------------------------- */
+
+    #helpBar {
+      position: absolute;
+      left: 0; bottom: 0;
+      width: 100%;
+      padding: 6px 18px;
+      background: rgba(28, 30, 34, 0.95);
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-dim);
+      box-sizing: border-box;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- ========================= LEFT PANEL ============================= -->
+  <div class="panel" id="leftPanel">
+
+    <h2>1. Sweep Analyzer</h2>
+
+    <div class="label">Sweep Range: 4 kHz → 16 kHz</div>
+
+    <div class="label">Sweep Speed (seconds): <span id="sweepSpeedLabel">10</span></div>
+    <input type="range" id="sweepSpeed" min="4" max="20" value="10" step="1">
+
+    <div class="label">Current Sweep Frequency: <b><span id="sweepFreqLabel">—</span></b> Hz</div>
+
+    <label style="display:block;margin-top:8px;font-size:13px;color: var(--text-dim);">
+      <input type="checkbox" id="sweepApplyFilters"> Apply Saved Filters during Sweep
+    </label>
+
+    <button id="sweepStartBtn">Start Sweep</button>
+    <button id="sweepStopBtn" class="secondary">Stop</button>
+    <button id="sweepMarkBtn" class="warn">Mark</button>
+
+    <h3 style="margin-top:20px;">Marked Treble Issues</h3>
+    <div class="label">Press <b>M</b> during sweep to mark an issue.</div>
+
+    <table>
+      <thead>
+      <tr><th>Freq (Hz)</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="markTable"></tbody>
+    </table>
+
+  </div>
+
+
+  <!-- ========================= CENTER PANEL (GRAPH) ============================= -->
+  <div class="panel" id="centerPanel">
+    <canvas id="eqCanvas"></canvas>
+  </div>
+
+
+  <!-- ========================= RIGHT PANEL ============================= -->
+  <div class="panel" id="rightPanel">
+
+    <h2>2. 3-Tone Comparator</h2>
+
+    <div class="label">Center Frequency (Hz): <span id="toneCenterLabel">8000</span></div>
+    <input type="range" id="toneCenter" min="4000" max="16000" value="8000" step="10">
+
+    <div class="label" style="margin-top:8px;">± Range (Hz): <span id="toneStepLabel">10</span></div>
+    <input type="range" id="toneStep" min="5" max="100" value="10" step="5">
+    <div class="label" style="margin-top:2px;color: var(--text-dim);">Use the ± range to hear tones just below and above the center.</div>
+
+    <div class="label" style="margin-top:10px;">Q-Value: <span id="toneQLabel">0.70</span></div>
+    <input type="range" id="toneQ" min="0" max="10" value="0.7" step="0.01">
+
+    <div class="label">Center Gain (dB): <span id="toneGainLabel">0</span></div>
+    <input type="range" id="toneGain" min="-12" max="12" value="0" step="0.5">
+
+    <button id="toneStartBtn">Start 3-Tone Test</button>
+    <button id="toneStopBtn" class="secondary">Stop</button>
+
+    <h3 style="margin-top:20px;">Save PEQ Filter</h3>
+
+    <button id="saveFilterBtn" class="success">Save Filter</button>
+
+    <table>
+      <thead>
+      <tr><th>Freq</th><th>Gain</th><th>Q</th><th></th></tr>
+      </thead>
+      <tbody id="peqTable"></tbody>
+    </table>
+
+  </div>
+
+</div> <!-- end container -->
+
+<!-- Tone HUD -->
+<div id="toneHUD">Tone A — 7500 Hz</div>
+
+<!-- Help Bar -->
+<div id="helpBar">
+  Keyboard:
+  ←/→ shift freq |
+  Q/W change Q-Value |
+  ↑/↓ central gain |
+  M = mark sweep issue |
+  Enter = save filter
+</div>
+
+<script>
+  /* ------------------------------
+     Global Sweep Variables
+  -------------------------------- */
+
+  let audioCtx = null;
+  let sweepOsc = null;
+  let sweepGain = null;
+  let sweepActive = false;
+  let sweepStartTime = 0;
+  let sweepDurationSec = 10; // default
+  let sweepMarks = [];       // stores: { freq, time }
+  let sweepRAF = null;
+  let currentSweepFreq = null;
+
+  /* Sweep constants */
+  const SWEEP_F_START = 4000;
+  const SWEEP_F_END   = 16000;
+
+  /* UI references */
+  const sweepSpeed = document.getElementById("sweepSpeed");
+  const sweepSpeedLabel = document.getElementById("sweepSpeedLabel");
+  const sweepStartBtn = document.getElementById("sweepStartBtn");
+  const sweepStopBtn  = document.getElementById("sweepStopBtn");
+  const sweepMarkBtn  = document.getElementById("sweepMarkBtn");
+  const sweepFreqLabel = document.getElementById("sweepFreqLabel");
+  const sweepApplyFilters = document.getElementById("sweepApplyFilters");
+  const markTable = document.getElementById("markTable");
+
+  /* ------------------------------
+     Sweep Speed Slider
+  -------------------------------- */
+
+  sweepSpeed.oninput = () => {
+    sweepSpeedLabel.textContent = sweepSpeed.value;
+    sweepDurationSec = parseFloat(sweepSpeed.value);
+  };
+
+
+  /* ================================================================
+     LOG SWEEP FORMULA
+     f(t) = f0 * (F1/F0)^(t/T)
+  ================================================================ */
+
+  function sweepFrequencyAtTime(t, totalTime) {
+    const ratio = SWEEP_F_END / SWEEP_F_START;
+    const frac = t / totalTime;
+    return SWEEP_F_START * Math.pow(ratio, frac);
+  }
+
+
+  /* ================================================================
+     START SWEEP
+  ================================================================ */
+
+  // nodes for optional filter application during sweep
+  let sweepFilterNodes = [];
+
+  function disconnectSweepChain() {
+    try {
+      if (sweepOsc) sweepOsc.disconnect();
+      if (sweepGain) sweepGain.disconnect();
+      sweepFilterNodes.forEach(n => { try { n.disconnect(); } catch(e){} });
+    } catch(e){}
+    sweepFilterNodes = [];
+  }
+
+  function buildSweepChain() {
+    // Build audio routing: sweepOsc -> sweepGain -> [filters?] -> destination
+    if (!sweepOsc || !sweepGain) return;
+    const apply = sweepApplyFilters && sweepApplyFilters.checked;
+    if (!apply || !Array.isArray(peqFilters) || peqFilters.length === 0) {
+      sweepOsc.connect(sweepGain).connect(audioCtx.destination);
+      return;
+    }
+    // create filters
+    let last = sweepGain;
+    peqFilters.forEach(b => {
+      const biq = audioCtx.createBiquadFilter();
+      biq.type = "peaking";
+      biq.frequency.value = b.fc;
+      biq.gain.value = b.gain;
+      biq.Q.value = Math.max(b.q, 0.0001);
+      last.connect(biq);
+      last = biq;
+      sweepFilterNodes.push(biq);
+    });
+    sweepOsc.connect(sweepGain);
+    last.connect(audioCtx.destination);
+  }
+
+  function startSweep() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    stopSweep(); // ensure clean state
+
+    sweepOsc = audioCtx.createOscillator();
+    sweepGain = audioCtx.createGain();
+    sweepGain.gain.value = 0.15; // safe listening level
+
+    sweepOsc.type = "sine";
+    disconnectSweepChain();
+    buildSweepChain();
+
+    sweepStartTime = audioCtx.currentTime;
+    sweepDurationSec = parseFloat(sweepSpeed.value);
+
+    sweepActive = true;
+    sweepOsc.start();
+    sweepRAF = requestAnimationFrame(updateSweep);
+
+    sweepStartBtn.disabled = true;
+    sweepStopBtn.disabled = false;
+  }
+
+  sweepStartBtn.onclick = startSweep;
+
+
+  /* ================================================================
+     STOP SWEEP
+  ================================================================ */
+
+  function stopSweep() {
+    sweepActive = false;
+
+    if (sweepOsc) {
+      try { sweepOsc.stop(); } catch(e){}
+      sweepOsc = null;
+    }
+    if (sweepRAF) cancelAnimationFrame(sweepRAF);
+    sweepFreqLabel.textContent = "—";
+    currentSweepFreq = null;
+
+    sweepStartBtn.disabled = false;
+    sweepStopBtn.disabled = true;
+  }
+
+  sweepStopBtn.onclick = stopSweep;
+
+  // Mark button: works during sweep, mirrors the 'M' keyboard shortcut
+  sweepMarkBtn.onclick = () => {
+    if (!sweepActive || !currentSweepFreq) return;
+    addSweepMark(currentSweepFreq);
+    drawEQGraph();
+  };
+
+  // Rebuild sweep chain if toggle changes while running
+  if (sweepApplyFilters) {
+    sweepApplyFilters.addEventListener("change", () => {
+      if (!audioCtx || !sweepOsc || !sweepGain) return;
+      disconnectSweepChain();
+      buildSweepChain();
+    });
+  }
+
+
+  /* ================================================================
+     SWEEP UPDATE (called every animation frame)
+  ================================================================ */
+
+  function updateSweep() {
+
+    if (!sweepActive || !sweepOsc) return;
+
+    const now = audioCtx.currentTime;
+    const t = now - sweepStartTime;
+
+    if (t > sweepDurationSec) {
+      stopSweep();
+      return;
+    }
+
+    const f = sweepFrequencyAtTime(t, sweepDurationSec);
+    sweepOsc.frequency.setValueAtTime(f, now);
+    // update UI label and redraw sweep cursor
+    if (sweepFreqLabel) sweepFreqLabel.textContent = Math.round(f);
+    currentSweepFreq = f;
+    drawEQGraph();
+
+    sweepRAF = requestAnimationFrame(updateSweep);
+  }
+
+
+  /* ================================================================
+     MARKING SYSTEM — Press "M" to mark the current frequency
+  ================================================================ */
+
+  document.addEventListener("keydown", (e) => {
+    if (!sweepActive) return;
+    if (e.key.toLowerCase() !== "m") return;
+
+    const now = audioCtx.currentTime;
+    const t = now - sweepStartTime;
+    const f = sweepFrequencyAtTime(t, sweepDurationSec);
+    addSweepMark(f);
+  });
+
+
+  /* ------------------------------
+     Add a sweep mark
+  -------------------------------- */
+
+  function addSweepMark(freq) {
+    sweepMarks.push({ freq: Math.round(freq) });
+    renderMarkTable();
+  }
+
+  function deleteSweepMark(index) {
+    sweepMarks.splice(index, 1);
+    renderMarkTable();
+  }
+
+  function renderMarkTable() {
+    markTable.innerHTML = "";
+    sweepMarks.forEach((m, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${m.freq}</td>
+        <td>
+          <button class="success" onclick="jumpToMark(${m.freq})">Revisit</button>
+          <button class="danger" onclick="deleteSweepMark(${i})">Remove</button>
+        </td>
+      `;
+      markTable.appendChild(row);
+    });
+    // redraw to show graph markers
+    drawEQGraph();
+  }
+
+
+  /* ------------------------------
+     Jump to a marked region
+  -------------------------------- */
+
+  function jumpToMark(freq) {
+    // center the 3-tone comparator on this freq
+    document.getElementById("toneCenter").value = freq;
+    document.getElementById("toneCenterLabel").textContent = freq;
+    // user will then start the comparator manually
+    drawEQGraph();
+  }
+
+  const eqCanvas = document.getElementById("eqCanvas");
+  const eqCtx = eqCanvas.getContext("2d");
+
+  /* Resize canvas to actual pixel size */
+  function resizeEQCanvas() {
+    eqCanvas.width = eqCanvas.clientWidth;
+    eqCanvas.height = eqCanvas.clientHeight;
+    drawEQGraph();
+  }
+  window.addEventListener("resize", resizeEQCanvas);
+  setTimeout(resizeEQCanvas, 100);
+
+
+  /* ---------------------------------------------------------------
+     Utility: Convert frequency (4k–16k) to X coordinate
+  ---------------------------------------------------------------- */
+  function freqToX(f) {
+    const f0 = 4000;
+    const f1 = 16000;
+    const ratio = Math.log(f / f0) / Math.log(f1 / f0);
+    return ratio * eqCanvas.width;
+  }
+
+  /* Convert Y in dB (±12 dB range) to canvas Y coordinate */
+  function dBToY(db) {
+    const maxDB = 12;
+    const minDB = -12;
+    const frac = (db - maxDB) / (minDB - maxDB); // invert
+    return frac * eqCanvas.height;
+  }
+
+
+  /* ---------------------------------------------------------------
+     RBJ Peaking EQ magnitude using Q (realistic definition)
+     Q = center frequency / bandwidth. Higher Q -> narrower band.
+  ---------------------------------------------------------------- */
+  function biquadMagQ(fc, gain, Q, f) {
+    if (!(Q > 0)) return 0; // treat Q<=0 as flat contribution
+    const A = Math.pow(10, gain / 40);
+    const w0 = 2 * Math.PI * (fc / 48000);
+    const alpha = Math.sin(w0) / (2 * Q);
+
+    // RBJ peaking EQ coefficients
+    const b0 = 1 + alpha * A;
+    const b1 = -2 * Math.cos(w0);
+    const b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A;
+    const a1 = -2 * Math.cos(w0);
+    const a2 = 1 - alpha / A;
+
+    const w = 2 * Math.PI * f / 48000;
+    const cosw = Math.cos(w);
+    const sinw = Math.sin(w);
+    const cos2w = Math.cos(2 * w);
+    const sin2w = Math.sin(2 * w);
+
+    const Nr = b0 + b1 * cosw + b2 * cos2w;
+    const Ni = b1 * sinw + b2 * sin2w;
+    const Dr = a0 + a1 * cosw + a2 * cos2w;
+    const Di = a1 * sinw + a2 * sin2w;
+
+    const mag = Math.sqrt((Nr * Nr + Ni * Ni) / (Dr * Dr + Di * Di));
+    return 20 * Math.log10(mag);
+  }
+
+
+  /* ---------------------------------------------------------------
+     Apply all PEQ filters at frequency f
+  ---------------------------------------------------------------- */
+  function totalEQGainAtFreq(f) {
+    if (!peqFilters.length) return 0;
+
+    let sum = 0;
+    for (const b of peqFilters) {
+      const g = b.gain;  // gain can be positive or negative
+      const qVal = Math.max(0, Math.min(10, parseFloat(b.q)));
+      sum += biquadMagQ(b.fc, g, qVal, f);
+    }
+    return sum;
+  }
+
+
+  /* ---------------------------------------------------------------
+     Draw background grid
+  ---------------------------------------------------------------- */
+  function drawGrid() {
+    const W = eqCanvas.width;
+    const H = eqCanvas.height;
+
+    eqCtx.strokeStyle = "#2f3338";
+    eqCtx.lineWidth = 1;
+
+    /* Horizontal lines every 6 dB */
+    for (let db = -12; db <= 12; db += 6) {
+      const y = dBToY(db);
+      eqCtx.beginPath();
+      eqCtx.moveTo(0, y);
+      eqCtx.lineTo(W, y);
+      eqCtx.stroke();
+
+      eqCtx.fillStyle = "#555";
+      eqCtx.font = "12px Inter";
+      eqCtx.fillText(db + " dB", 4, y - 4);
+    }
+
+    /* Vertical lines at 4k, 5k, 8k, 10k, 15k, 16k (log spacing) */
+    [4000, 5000, 8000, 10000, 15000, 16000].forEach(freq => {
+      const x = freqToX(freq);
+      eqCtx.beginPath();
+      eqCtx.moveTo(x, 0);
+      eqCtx.lineTo(x, H);
+      eqCtx.stroke();
+
+      eqCtx.fillStyle = "#555";
+      eqCtx.fillText((freq >= 1000 ? (freq/1000 + "k") : freq+" Hz"), x + 4, 14);
+    });
+
+    // Title
+    eqCtx.fillStyle = "#9ea2a8";
+    eqCtx.font = "16px Inter";
+    const title = "Treble";
+    const tw = eqCtx.measureText(title).width;
+    eqCtx.fillText(title, (W - tw) / 2, 22);
+  }
+
+
+  /* ---------------------------------------------------------------
+     Draw EQ Curve
+  ---------------------------------------------------------------- */
+  function drawEQCurve() {
+    const W = eqCanvas.width;
+    const H = eqCanvas.height;
+
+    eqCtx.strokeStyle = "#3fa9f5";
+    eqCtx.lineWidth = 2;
+
+    eqCtx.beginPath();
+
+    for (let i = 0; i < W; i++) {
+      const frac = i / W;
+      const f = 4000 * Math.pow(16000/4000, frac);
+
+      const g = totalEQGainAtFreq(f);
+      const y = dBToY(g);
+
+      if (i === 0) eqCtx.moveTo(i, y);
+      else eqCtx.lineTo(i, y);
+    }
+
+    eqCtx.stroke();
+  }
+
+
+  /* ---------------------------------------------------------------
+     Main draw function
+  ---------------------------------------------------------------- */
+  function drawEQGraph() {
+    if (!eqCanvas.width) return;
+
+    eqCtx.clearRect(0, 0, eqCanvas.width, eqCanvas.height);
+
+    drawGrid();
+    drawSavedFilterCurves();
+    drawEQCurve();
+
+    // overlay: sweep cursor if active
+    if (currentSweepFreq) {
+      const x = freqToX(currentSweepFreq);
+      eqCtx.strokeStyle = "#f5b83f";
+      eqCtx.lineWidth = 1.5;
+      eqCtx.beginPath();
+      eqCtx.moveTo(x, 0);
+      eqCtx.lineTo(x, eqCanvas.height);
+      eqCtx.stroke();
+    }
+
+    // overlay: the single current editable filter curve and tone sample lines
+    drawCurrentFilterOverlay();
+
+    // overlay: draw markers for marked sweep frequencies
+    drawSweepMarks();
+  }
+
+  // Draw each saved filter curve individually to visualize contributions
+  function drawSavedFilterCurves() {
+    if (!peqFilters || !peqFilters.length) return;
+    const W = eqCanvas.width;
+    const palette = [
+      "rgba(245, 63, 173, 0.6)",
+      "rgba(63, 169, 245, 0.6)",
+      "rgba(63, 217, 106, 0.6)",
+      "rgba(245, 184, 63, 0.6)",
+      "rgba(150, 100, 255, 0.6)"
+    ];
+    peqFilters.forEach((b, idx) => {
+      const qVal = Math.max(0, Math.min(10, b.q));
+      eqCtx.strokeStyle = palette[idx % palette.length];
+      eqCtx.lineWidth = 1.2;
+      eqCtx.beginPath();
+      for (let i = 0; i < W; i++) {
+        const frac = i / W;
+        const f = 4000 * Math.pow(16000/4000, frac);
+        const y = dBToY(biquadMagQ(b.fc, b.gain, qVal, f));
+        if (i === 0) eqCtx.moveTo(i, y); else eqCtx.lineTo(i, y);
+      }
+      eqCtx.stroke();
+    });
+  }
+
+  function drawCurrentFilterOverlay() {
+    if (!toneCenter || !toneQ || !toneGain) return;
+    const fc = parseFloat(toneCenter.value);
+    const Qraw  = parseFloat(toneQ.value);
+    const qVal = Math.max(0, Qraw);
+    const g  = parseFloat(toneGain.value);
+    const W = eqCanvas.width;
+
+    // Draw the single peaking filter curve for current params
+    eqCtx.strokeStyle = "rgba(63,169,245,0.9)";
+    eqCtx.lineWidth = 1.7;
+    eqCtx.beginPath();
+    for (let i = 0; i < W; i++) {
+      const frac = i / W;
+      const f = 4000 * Math.pow(16000/4000, frac);
+      const y = dBToY(biquadMagQ(fc, g, qVal, f));
+      if (i === 0) eqCtx.moveTo(i, y); else eqCtx.lineTo(i, y);
+    }
+    eqCtx.stroke();
+
+    // Show the three tone sample positions as vertical ticks at Fc±range and Fc
+    const stepHz = parseFloat(toneStep.value);
+    [fc - stepHz, fc, fc + stepHz].forEach((fTick, idx) => {
+      if (fTick < 4000 || fTick > 16000) return;
+      const x = freqToX(fTick);
+      eqCtx.strokeStyle = idx === 1 ? "#3fa9f5" : "#888";
+      eqCtx.lineWidth = 1;
+      eqCtx.beginPath();
+      eqCtx.moveTo(x, 0);
+      eqCtx.lineTo(x, 10);
+      eqCtx.stroke();
+    });
+  }
+
+  function drawSweepMarks() {
+    if (!sweepMarks || !sweepMarks.length) return;
+    const y0 = dBToY(0);
+    sweepMarks.forEach(m => {
+      const x = freqToX(m.freq);
+      eqCtx.fillStyle = "#f53fad";
+      eqCtx.beginPath();
+      eqCtx.arc(x, y0, 3, 0, Math.PI * 2);
+      eqCtx.fill();
+    });
+  }
+
+
+  /* ================================================================
+     Hover Frequency Cursor (optional — helps debugging)
+  ================================================================ */
+
+  eqCanvas.addEventListener("mousemove", (e) => {
+    const rect = eqCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const W = eqCanvas.width;
+
+    const frac = x / W;
+    const freq = 4000 * Math.pow(16000/4000, frac);
+
+    // You can display this if needed
+    // console.log("Hover Freq:", Math.round(freq));
+  });
+
+  /* UI references */
+  const toneCenter = document.getElementById("toneCenter");
+  const toneCenterLabel = document.getElementById("toneCenterLabel");
+
+  const toneQ = document.getElementById("toneQ");
+  const toneQLabel = document.getElementById("toneQLabel");
+
+  const toneStep = document.getElementById("toneStep");
+  const toneStepLabel = document.getElementById("toneStepLabel");
+
+  const toneGain = document.getElementById("toneGain");
+  const toneGainLabel = document.getElementById("toneGainLabel");
+
+  const toneStartBtn = document.getElementById("toneStartBtn");
+  const toneStopBtn  = document.getElementById("toneStopBtn");
+
+  const toneHUD = document.getElementById("toneHUD");
+
+  /* Global state for comparator */
+  let toneOscA = null;
+  let toneOscB = null;
+  let toneOscC = null;
+  let toneGainA = null;
+  let toneGainB = null;
+  let toneGainC = null;
+
+  let toneActive = false;
+  let toneInterval = null;
+
+  /* ---------------------------------------------------------------
+     Update labels on sliders
+  ---------------------------------------------------------------- */
+  toneCenter.oninput = () => { toneCenterLabel.textContent = toneCenter.value; drawEQGraph(); };
+  toneQ.oninput = () => {
+    // Clamp to [0,10] to keep UI consistent with requested range
+    const qVal = Math.max(0, Math.min(10, parseFloat(toneQ.value)));
+    toneQ.value = qVal;
+    toneQLabel.textContent = qVal.toFixed(2);
+    drawEQGraph();
+  };
+  toneStep.oninput = () => { toneStepLabel.textContent = toneStep.value; drawEQGraph(); };
+  toneGain.oninput = () => { toneGainLabel.textContent = toneGain.value; drawEQGraph(); };
+
+
+  /* ================================================================
+     Start 3-tone comparator
+  ================================================================ */
+
+  function start3Tone() {
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    stop3Tone(); // safety
+
+    toneOscA = audioCtx.createOscillator();
+    toneOscB = audioCtx.createOscillator();
+    toneOscC = audioCtx.createOscillator();
+
+    toneGainA = audioCtx.createGain();
+    toneGainB = audioCtx.createGain();
+    toneGainC = audioCtx.createGain();
+
+    const fc = parseFloat(toneCenter.value);
+    const stepHz = parseFloat(toneStep.value);
+    const Q  = parseFloat(toneQ.value);
+    const gDB  = parseFloat(toneGain.value);
+
+    toneOscA.type = toneOscB.type = toneOscC.type = "sine";
+
+    toneOscA.frequency.value = fc - stepHz;
+    toneOscB.frequency.value = fc;
+    toneOscC.frequency.value = fc + stepHz;
+
+    toneGainA.gain.value = 0;
+    toneGainB.gain.value = 0;
+    toneGainC.gain.value = 0;
+
+    // route all to destination
+    toneOscA.connect(toneGainA).connect(audioCtx.destination);
+    toneOscB.connect(toneGainB).connect(audioCtx.destination);
+    toneOscC.connect(toneGainC).connect(audioCtx.destination);
+
+    toneOscA.start();
+    toneOscB.start();
+    toneOscC.start();
+
+    toneActive = true;
+
+    runThreeToneCycle();
+
+    toneStartBtn.disabled = true;
+    toneStopBtn.disabled  = false;
+  }
+
+  toneStartBtn.onclick = start3Tone;
+
+
+  /* ================================================================
+     3-TONE CYCLE (A → B → C → silence)
+  ================================================================ */
+
+  function runThreeToneCycle() {
+
+    let phase = 0;
+    const dur = 600;     // ms per tone (longer to focus)
+    const fade = 40;     // ms crossfade to avoid clicks
+    const silent = 200;  // ms silence
+
+    toneInterval = setInterval(() => {
+
+      if (!toneActive) return;
+
+      const fc = parseFloat(toneCenter.value);
+      const Qraw  = parseFloat(toneQ.value);
+      const stepHz = parseFloat(toneStep.value);
+      const gDB  = parseFloat(toneGain.value);
+      const Q = Math.max(Qraw, 0.0001);
+
+      // Update frequencies
+      toneOscA.frequency.setValueAtTime(fc - stepHz, audioCtx.currentTime);
+      toneOscB.frequency.setValueAtTime(fc, audioCtx.currentTime);
+      toneOscC.frequency.setValueAtTime(fc + stepHz, audioCtx.currentTime);
+
+      // Compute per-tone gains based on filter magnitude at those freqs (RBJ Q)
+      // If Q <= 0, treat as flat (0 dB) so tones are unshaped.
+      const gDbA = (Qraw <= 0 ? 0 : biquadMagQ(fc, gDB, Q, fc - stepHz));
+      const gDbB = (Qraw <= 0 ? 0 : biquadMagQ(fc, gDB, Q, fc));
+      const gDbC = (Qraw <= 0 ? 0 : biquadMagQ(fc, gDB, Q, fc + stepHz));
+      const gLinA = Math.pow(10, gDbA / 20);
+      const gLinB = Math.pow(10, gDbB / 20);
+      const gLinC = Math.pow(10, gDbC / 20);
+
+      // Prepare frequencies
+      const fA = Math.round(fc - stepHz);
+      const fB = Math.round(fc);
+      const fC = Math.round(fc + stepHz);
+
+      // Console debugging: print frequency and gain used for each tone
+      try {
+        console.log(`[3-tone] A ${fA}Hz → ${gDbA.toFixed(2)} dB (${gLinA.toFixed(3)}x), ` +
+                    `B ${fB}Hz → ${gDbB.toFixed(2)} dB (${gLinB.toFixed(3)}x), ` +
+                    `C ${fC}Hz → ${gDbC.toFixed(2)} dB (${gLinC.toFixed(3)}x) | ` +
+                    `Q=${Qraw.toFixed(2)}, Gain=${gDB.toFixed(2)} dB`);
+      } catch(e) { /* no-op */ }
+
+      // update gains for each phase
+      if (phase === 0) {
+        // fade in A, fade out others
+        toneGainA.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainB.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainC.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainA.gain.setValueAtTime(toneGainA.gain.value, audioCtx.currentTime);
+        toneGainA.gain.linearRampToValueAtTime(gLinA, audioCtx.currentTime + fade/1000);
+        toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        renderToneDebugHUD('A', fA, gDbA, gLinA, fB, gDbB, gLinB, fC, gDbC, gLinC, Qraw, gDB);
+
+      } else if (phase === 1) {
+        toneGainA.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainB.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainC.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainB.gain.setValueAtTime(toneGainB.gain.value, audioCtx.currentTime);
+        toneGainB.gain.linearRampToValueAtTime(gLinB, audioCtx.currentTime + fade/1000);
+        toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        renderToneDebugHUD('B', fA, gDbA, gLinA, fB, gDbB, gLinB, fC, gDbC, gLinC, Qraw, gDB);
+
+      } else if (phase === 2) {
+        toneGainA.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainB.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainC.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainC.gain.setValueAtTime(toneGainC.gain.value, audioCtx.currentTime);
+        toneGainC.gain.linearRampToValueAtTime(gLinC, audioCtx.currentTime + fade/1000);
+        toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        renderToneDebugHUD('C', fA, gDbA, gLinA, fB, gDbB, gLinB, fC, gDbC, gLinC, Qraw, gDB);
+
+      } else {
+        // silence — all 0
+        toneGainA.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainB.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainC.gain.cancelScheduledValues(audioCtx.currentTime);
+        toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000);
+        renderToneDebugHUD('-', fA, gDbA, gLinA, fB, gDbB, gLinB, fC, gDbC, gLinC, Qraw, gDB);
+      }
+
+      phase = (phase + 1) % 4;
+
+    }, dur + silent);
+  }
+
+
+  /* ---------------------------------------------------------------
+     Stop 3-tone comparator
+  ---------------------------------------------------------------- */
+  function stop3Tone() {
+    toneActive = false;
+    if (toneInterval) clearInterval(toneInterval);
+
+    if (toneOscA) { try{toneOscA.stop();}catch(e){} }
+    if (toneOscB) { try{toneOscB.stop();}catch(e){} }
+    if (toneOscC) { try{toneOscC.stop();}catch(e){} }
+
+    toneOscA = toneOscB = toneOscC = null;
+
+    toneGainA = toneGainB = toneGainC = null;
+
+    toneStartBtn.disabled = false;
+    toneStopBtn.disabled = true;
+
+    hideToneHUD();
+  }
+
+  toneStopBtn.onclick = stop3Tone;
+
+
+  /* ================================================================
+     TONE HUD — Floating indicator in corner
+  ================================================================ */
+
+  function showToneHUD(label, freq) {
+    toneHUD.style.opacity = "1";
+    toneHUD.textContent = label + (freq>0 ? (" — " + Math.round(freq) + " Hz") : "");
+  }
+
+  function hideToneHUD() {
+    toneHUD.style.opacity = "0";
+  }
+
+  // Debug HUD renderer: shows frequency and gain for all three tones
+  // active: one of 'A', 'B', 'C', or '-' during silence
+  function renderToneDebugHUD(active, fA, gDbA, gLinA, fB, gDbB, gLinB, fC, gDbC, gLinC, qVal, centerGainDb) {
+    if (!toneHUD) return;
+    toneHUD.style.opacity = "1";
+    const row = (label, f, db, lin, isActive) => {
+      const star = isActive ? '●' : '○';
+      return `<div>${star} ${label}: ${Math.round(f)} Hz — ${db.toFixed(2)} dB (${lin.toFixed(3)}x)</div>`;
+    };
+    toneHUD.innerHTML =
+      `<div style="font-weight:600;margin-bottom:4px;">3‑Tone Debug (Active: ${active})</div>`+
+      `<div style="font-size:12px;color:#9ea2a8;margin-bottom:6px;">Q=${(isFinite(qVal)?qVal:0).toFixed(2)}, Center Gain=${centerGainDb.toFixed(2)} dB</div>`+
+      row('A', fA, gDbA, gLinA, active==='A') +
+      row('B', fB, gDbB, gLinB, active==='B') +
+      row('C', fC, gDbC, gLinC, active==='C');
+  }
+
+
+  /* ================================================================
+     KEYBOARD CONTROLS FOR PRECISION TUNING
+  ================================================================ */
+  document.addEventListener("keydown", (e) => {
+
+    if (!toneActive) return;
+
+    const step = parseFloat(toneStep.value);
+
+    switch (e.key) {
+
+      /* Shift region left */
+      case "ArrowLeft":
+        toneCenter.value = parseFloat(toneCenter.value) - step;
+        toneCenterLabel.textContent = toneCenter.value;
+        break;
+
+      /* Shift region right */
+      case "ArrowRight":
+        toneCenter.value = parseFloat(toneCenter.value) + step;
+        toneCenterLabel.textContent = toneCenter.value;
+        break;
+
+      /* Increase Q (narrower) */
+      case "q":
+      case "Q":
+        toneQ.value = Math.min(10, parseFloat(toneQ.value) + 0.2);
+        toneQLabel.textContent = parseFloat(toneQ.value).toFixed(2);
+        drawEQGraph();
+        break;
+
+      /* Decrease Q (wider) */
+      case "w":
+      case "W":
+        toneQ.value = Math.max(0, parseFloat(toneQ.value) - 0.2);
+        toneQLabel.textContent = parseFloat(toneQ.value).toFixed(2);
+        drawEQGraph();
+        break;
+
+      /* Decrease center gain */
+      case "ArrowDown":
+        toneGain.value = parseFloat(toneGain.value) - 0.5;
+        toneGainLabel.textContent = toneGain.value;
+        drawEQGraph();
+        break;
+
+      /* Increase center gain */
+      case "ArrowUp":
+        toneGain.value = parseFloat(toneGain.value) + 0.5;
+        toneGainLabel.textContent = toneGain.value;
+        drawEQGraph();
+        break;
+
+      /* Save filter */
+      case "Enter":
+        savePEQfrom3Tone();
+        break;
+    }
+
+  });
+
+  /* UI references */
+  const peqTable = document.getElementById("peqTable");
+  const saveFilterBtn = document.getElementById("saveFilterBtn");
+
+  /* PEQ Filter Storage */
+  let peqFilters = [];
+  // Each filter: { fc, gain, q }
+
+  /* ---------------------------------------------------------------
+     Convert width → Q
+     Q = fc / (2 * width)
+  ---------------------------------------------------------------- */
+  function widthToQ(fc, width) {
+    return fc / (2 * width);
+  }
+
+  // (removed) effectiveStepHz: step is now used exactly as ± range around center
+
+
+  /* ================================================================
+     Save PEQ from 3-Tone Mode
+  ================================================================ */
+
+  function savePEQfrom3Tone() {
+
+    const fc = parseFloat(toneCenter.value);
+    const g  = parseFloat(toneGain.value);
+    const q  = parseFloat(toneQ.value);
+
+    peqFilters.push({
+      fc: Math.round(fc),
+      gain: parseFloat(g.toFixed(2)),
+      q: parseFloat(q.toFixed(3))
+    });
+
+    updatePEQTable();
+    drawEQGraph();
+  }
+
+  saveFilterBtn.onclick = savePEQfrom3Tone;
+
+
+  /* ================================================================
+     Update PEQ Table
+  ================================================================ */
+
+  function updatePEQTable() {
+    peqTable.innerHTML = "";
+
+    peqFilters.forEach((b, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+            <td>${b.fc}</td>
+            <td>${b.gain}</td>
+            <td>${b.q}</td>
+            <td>
+              <button class="success" onclick="revisitPEQ(${i})">Revisit</button>
+              <button class="danger" onclick="deletePEQ(${i})">Delete</button>
+            </td>
+        `;
+      peqTable.appendChild(row);
+    });
+  }
+
+
+  /* ---------------------------------------------------------------
+     Delete a filter
+  ---------------------------------------------------------------- */
+  function deletePEQ(i) {
+    peqFilters.splice(i, 1);
+    updatePEQTable();
+    drawEQGraph();
+  }
+
+  function revisitPEQ(i) {
+    const b = peqFilters[i];
+    if (!b) return;
+    toneCenter.value = b.fc;
+    toneCenterLabel.textContent = b.fc;
+    toneGain.value = b.gain;
+    toneGainLabel.textContent = b.gain;
+    const qClamped = Math.max(0, Math.min(10, parseFloat(b.q)));
+    toneQ.value = qClamped;
+    toneQLabel.textContent = qClamped.toFixed(2);
+    drawEQGraph();
+  }
+
+
+  /* ================================================================
+     EXPORT FUNCTIONS
+  ================================================================ */
+
+  function exportAPO() {
+    let out = "";
+    peqFilters.forEach((b,i) => {
+      out += `Filter ${i+1}: ON PK Fc ${b.fc} Gain ${b.gain} Q ${b.q}\n`;
+    });
+    downloadText("peq_apo.txt", out);
+  }
+
+  function exportMiniDSP() {
+    let out = "";
+    peqFilters.forEach((b,i) => {
+      out += `PEQ ${i+1}: Fc=${b.fc}Hz Gain=${b.gain}dB Q=${b.q}\n`;
+    });
+    downloadText("peq_minidsp.txt", out);
+  }
+
+  function exportRME() {
+    let out = "";
+    peqFilters.forEach((b,i) => {
+      out += `Band ${i+1}: Peak ${b.fc}Hz ${b.gain}dB Q=${b.q}\n`;
+    });
+    downloadText("peq_rme.txt", out);
+  }
+
+  function exportQudelix() {
+    downloadText("peq_qudelix.json", JSON.stringify(peqFilters, null, 2));
+  }
+
+  function exportCSV() {
+    let out = "freq,gain,q\n";
+    peqFilters.forEach(b => {
+      out += `${b.fc},${b.gain},${b.q}\n`;
+    });
+    downloadText("peq.csv", out);
+  }
+
+  function exportJSON() {
+    downloadText("peq.json", JSON.stringify(peqFilters, null, 2));
+  }
+
+
+  /* Download helper */
+  function downloadText(name, text) {
+    const blob = new Blob([text], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+  }
+
+
+  /* ================================================================
+     PROFILE SAVE / LOAD (LocalStorage)
+  ================================================================ */
+
+  function saveProfile() {
+    localStorage.setItem("TrebleStudioProfile", JSON.stringify(peqFilters));
+  }
+
+  function loadProfile() {
+    const p = localStorage.getItem("TrebleStudioProfile");
+    if (!p) return alert("No profile saved.");
+    // Clamp any legacy Q values loaded from storage into [0,10]
+    try {
+      const parsed = JSON.parse(p) || [];
+      peqFilters = parsed.map(b => ({
+        fc: b.fc,
+        gain: b.gain,
+        q: Math.max(0, Math.min(10, parseFloat(b.q)))
+      }));
+    } catch (e) {
+      console.warn("Failed to parse profile; clearing.", e);
+      peqFilters = [];
+    }
+    updatePEQTable();
+    drawEQGraph();
+  }
+
+  /* END SCRIPT */
+</script>
+
+</body>
+</html>

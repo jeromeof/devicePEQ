@@ -283,7 +283,7 @@ export const fiioUsbSerial = (function () {
     }
   }
 
-  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
     try {
       // Set global gain
       await sendReportAndListen(deviceDetails, createSetGlobalGainCmd(globalGain));

@@ -10,17 +10,17 @@ export const wiimNetworkHandler = (function () {
 
   /**
    * Fetch PEQ settings from the device
-   * @param {string} ip - The device IP address
+   * @param {string} device - The device
    * @param {number} slot - The PEQ slot (currently not used in WiiM API)
    * @returns {Promise<Object>} The parsed EQ settings
    */
-  async function pullFromDevice(ip, slot) {
+  async function pullFromDevice(device, slot) {
     try {
       const payload = {
         source_name: SOURCE_NAME,
         pluginURI: PLUGIN_URI
       };
-      const url = `https://${ip}/httpapi.asp?command=EQGetLV2SourceBandEx:${encodeURIComponent(JSON.stringify(payload))}`;
+      const url = `https://${device.ip}/httpapi.asp?command=EQGetLV2SourceBandEx:${encodeURIComponent(JSON.stringify(payload))}`;
       console.log(`Device PEQ: WiiM sending request to fetch EQ data:`, payload);
 
       const response = await fetch(url, {method: "GET", mode: "no-cors"});
@@ -44,35 +44,46 @@ export const wiimNetworkHandler = (function () {
 
   /**
    * Push PEQ settings to the device
-   * @param {string} ip - The device IP address
+   * @param {string} device - The device
    * @param {number} slot - The PEQ slot (currently not used in WiiM API)
    * @param {number} preamp - The preamp gain
    * @param {Array} filters - Array of PEQ filters
    * @returns {Promise<boolean>} Returns true if push was successful
    */
-  async function pushToDevice(ip, slot, preamp, filters) {
+  async function pushToDevice(device, phoneObj, slot, preamp, filters, _modelConfig) {
     try {
-      const eqBandData = filters.map((filter, index) => ({
+      const MAX_BANDS = 10; //fallback to 10
+
+      // Only take up to MAX_BANDS filters
+      const effectiveFilters = Array.isArray(filters) ? filters.slice(0, MAX_BANDS) : [];
+
+      // 1) Populate provided filters (a..? up to MAX_BANDS)
+      const eqBandData = effectiveFilters.map((filter, index) => ({
         param_name: `${String.fromCharCode(97 + index)}_mode`,
         value: filter.disabled ? -1 : convertToWiimMode(filter.type),
       }));
 
-      filters.forEach((filter, index) => {
+      effectiveFilters.forEach((filter, index) => {
+        const band = String.fromCharCode(97 + index);
         eqBandData.push(
-          {
-            param_name: `${String.fromCharCode(97 + index)}_freq`,
-            value: filter.freq
-          },
-          {
-            param_name: `${String.fromCharCode(97 + index)}_q`,
-            value: filter.q
-          },
-          {
-            param_name: `${String.fromCharCode(97 + index)}_gain`,
-            value: filter.gain
-          }
+          { param_name: `${band}_freq`, value: filter.freq },
+          { param_name: `${band}_q`, value: filter.q },
+          { param_name: `${band}_gain`, value: filter.gain }
         );
       });
+
+      // 2) Reset any remaining bands up to MAX_BANDS
+      //    This ensures previously-set filters on the device are cleared.
+      //    We explicitly set gain to 0 and disable the band (mode -1).
+      for (let i = effectiveFilters.length; i < MAX_BANDS; i++) {
+        const band = String.fromCharCode(97 + i); // a..j
+        eqBandData.push(
+          { param_name: `${band}_mode`, value: -1 }, // Off
+          { param_name: `${band}_freq`, value: 1000 }, // sensible default (unused when Off)
+          { param_name: `${band}_q`, value: 1 },
+          { param_name: `${band}_gain`, value: 0 }
+        );
+      }
 
       const payload = {
         pluginURI: PLUGIN_URI,           // e.g., "http://moddevices.com/plugins/caps/EqNp"
@@ -82,7 +93,8 @@ export const wiimNetworkHandler = (function () {
         channelMode: "Stereo",          // Use stereo mode
       };
 
-      const url = `https://${ip}/httpapi.asp?command=EQSetLV2SourceBand:${encodeURIComponent(JSON.stringify(payload))}`;
+      const deviceIp = typeof device === 'string' ? device : device.ip;
+      const url = `https://${deviceIp}/httpapi.asp?command=EQSetLV2SourceBand:${encodeURIComponent(JSON.stringify(payload))}`;
       console.log(`Device PEQ: WiiM sending request to set EQ data:`, payload);
 
       const response = await fetch(url, { method: "GET", mode: "no-cors" });
@@ -105,7 +117,12 @@ export const wiimNetworkHandler = (function () {
         source_name: "wifi",             // or "bt", "line_in", etc.
         Name: "HeadphoneEQ"             // Custom preset name
       }
-      const presetNameUrl = `https://${ip}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
+      // Optional preset naming hint if API supports it in future
+      if (phoneObj && phoneObj.fileName) {
+        presetNamePayload.Name = phoneObj.fileName;
+      }
+
+      const presetNameUrl = `https://${device.ip}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
       console.log(`Device PEQ: WiiM sending request to save preset name:`, presetNamePayload);
 
       const presetNameResponse = await fetch(presetNameUrl, { method: "GET", mode: "no-cors" });
@@ -136,16 +153,16 @@ export const wiimNetworkHandler = (function () {
 
   /**
    * Enable or disable PEQ
-   * @param {string} ip - The device IP address
+   * @param {string} device - The device
    * @param {boolean} enabled - Whether to enable or disable PEQ
    * @param {number} slotId - The PEQ slot (currently not used in WiiM API)
    * @returns {Promise<void>}
    */
-  async function enablePEQ(ip, enabled, slotId) {
+  async function enablePEQ(device, enabled, slotId) {
     try {
       const command = enabled ? "EQChangeSourceFX" : "EQSourceOff";
       const payload = {source_name: SOURCE_NAME, pluginURI: PLUGIN_URI};
-      const url = `https://${ip}/httpapi.asp?command=${command}:${encodeURIComponent(JSON.stringify(payload))}`;
+      const url = `https://${device.ip}/httpapi.asp?command=${command}:${encodeURIComponent(JSON.stringify(payload))}`;
       const response = await fetch(url, {method: "GET"});
 
       if (!response.ok) throw new Error(`Failed to ${enabled ? "enable" : "disable"} PEQ: ${response.status}`);
@@ -216,12 +233,12 @@ export const wiimNetworkHandler = (function () {
     }
   }
 
-  async function getCurrentSlot(ip) {
+  async function getCurrentSlot(device) {
     return 0;
   }
 
-  async function getAvailableSlots(ip) {
-    const url = `https://${ip}/httpapi.asp?command=EQv2GetList:${encodeURIComponent(PLUGIN_URI)}`;
+  async function getAvailableSlots(device) {
+    const url = `https://${device.ip}/httpapi.asp?command=EQv2GetList:${encodeURIComponent(PLUGIN_URI)}`;
     try {
       const response = await fetch(url, {method: "GET", mode: "no-cors" });
       if (!response.status == 0) {

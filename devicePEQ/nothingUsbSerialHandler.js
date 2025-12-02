@@ -311,7 +311,7 @@ export const nothingUsbSerial = (function () {
     return packet;
   }
 
-  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
     console.log(`Nothing USB Serial: pushing ${filters.length} filters to device slot ${slot}`);
 
     // Only the first writable slot supports writing EQ values

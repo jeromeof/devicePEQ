@@ -242,7 +242,7 @@ export const moondropUsbHidHandler = (function () {
     return new Uint8Array([COMMAND_WRITE, COMMAND_SAVE_EQ_TO_FLASH]);
   }
 
-  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
     const device = deviceDetails.rawDevice;
 
     for (let i = 0; i < filters.length && i < deviceDetails.modelConfig.maxFilters; i++) {

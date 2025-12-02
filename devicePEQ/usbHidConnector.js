@@ -34,8 +34,28 @@ export const UsbHIDConnector = ( async function () {
                 const model = rawDevice.productName;
 
                 // Look up the model-specific configuration from the vendor config.
-                // If no specific model configuration exists, fall back to a default if provided.
-                let deviceDetails = vendorConfig.devices[model] || {};
+                // Try three matching strategies in order of preference:
+                // 1. Match by productName in devices
+                // 2. Match by productId in deviceGroups
+                // 3. Fall back to defaultModelConfig
+                let deviceDetails = vendorConfig.devices?.[model];
+
+                // If no productName match, try matching by productId in deviceGroups
+                if (!deviceDetails && vendorConfig.deviceGroups) {
+                  for (const [groupName, groupConfig] of Object.entries(vendorConfig.deviceGroups)) {
+                    // Check if this group has a productIds array matching our device
+                    if (Array.isArray(groupConfig.productIds) &&
+                        groupConfig.productIds.includes(rawDevice.productId)) {
+                      deviceDetails = groupConfig;
+                      console.log(`Matched device by productId in group: ${groupName} (0x${rawDevice.productId.toString(16)})`);
+                      break;
+                    }
+                  }
+                }
+
+                // Fall back to empty object if still no match
+                deviceDetails = deviceDetails || {};
+
                 let modelConfig = Object.assign(
                   {},
                   vendorConfig.defaultModelConfig || {},
@@ -58,8 +78,8 @@ export const UsbHIDConnector = ( async function () {
                     rawDevice: rawDevice,
                     manufacturer: manufacturer,
                     model: model,
-                    handler: handler,
-                    modelConfig: modelConfig
+                    modelConfig: modelConfig,
+                    handler: handler
                 };
 
                 return currentDevice;
@@ -101,7 +121,7 @@ export const UsbHIDConnector = ( async function () {
         return true;
     };
 
-    const pushToDevice = async (device, slot, preamp, filters) => {
+    const pushToDevice = async (device, phoneObj, slot, preamp, filters) => {
         if (!await checkDeviceConnected(device)) {
             throw Error("Device Disconnected");
         }
@@ -183,7 +203,7 @@ export const UsbHIDConnector = ( async function () {
             }
           }
 
-          return await device.handler.pushToDevice(device, slot, preamp, filtersToWrite);
+          return await device.handler.pushToDevice(device, phoneObj, slot, preamp, filtersToWrite);
       } else {
           console.error("No device handler available for pushing.");
       }

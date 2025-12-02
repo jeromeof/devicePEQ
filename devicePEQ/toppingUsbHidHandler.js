@@ -223,7 +223,7 @@ export const toppingUsbHidHandler = (function () {
     return new Uint8Array([0x00]);
   }
 
-  async function pushToDevice(deviceDetails, _slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, _slot, globalGain, filters) {
     console.log("USB Device PEQ: Topping pushToDevice (using discovered per-band scheme).");
     const device = deviceDetails.rawDevice;
     const max = Math.min(filters.length, deviceDetails.modelConfig.maxFilters || filters.length);

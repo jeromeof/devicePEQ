@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two-Tone Treble Tuning Studio</title>
+  <style>
+    /* ===== DARK STUDIO THEME ===== */
+    body {
+      margin: 0;
+      background: #1b1d20;
+      color: #e5e5e6;
+      font-family: Arial, sans-serif;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+
+    .panel {
+      background: #25282c;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 6px #0008;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 320px 1fr 420px;
+      height: 100vh;
+      gap: 16px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    input[type=range] {
+      width: 100%;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #3f80ff;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+    button:hover { background: #2f67d0; }
+
+    .secondary {
+      background: #555;
+    }
+    .secondary:hover {
+      background: #666;
+    }
+
+    .danger {
+      background: #c32f2f;
+    }
+    .danger:hover {
+      background: #9f2626;
+    }
+
+    .small-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      margin-right: 3px;
+    }
+
+    .grid-label {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: #bbb;
+    }
+
+    #eqCanvas {
+      width: 100%;
+      height: 100%;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    th {
+      background: #333;
+      padding: 6px;
+    }
+    td {
+      padding: 6px;
+      border-bottom: 1px solid #333;
+    }
+
+    .peq-input {
+      width: 64px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- ====================== LEFT SIDE ======================= -->
+  <div style="overflow-y: auto;">
+
+    <!-- Generator -->
+    <div class="panel">
+      <h2>Generator</h2>
+
+      <div class="grid-label">Test Frequency: <span id="freqLabel">3000</span> Hz</div>
+      <input id="freqSlider" type="range" min="1500" max="14000" value="3000" step="1">
+
+      <div class="grid-label">Level (dB): <span id="levelLabel">-20</span></div>
+      <input id="levelSlider" type="range" min="-40" max="0" value="-20" step="1">
+
+      <div class="grid-label">Channel</div>
+      <button class="small-btn secondary" onclick="setChannel('L')">Left</button>
+      <button class="small-btn secondary" onclick="setChannel('R')">Right</button>
+      <button class="small-btn" onclick="setChannel('B')">Both</button>
+
+      <div class="grid-label" style="margin-top:10px;">Tone Duration (ms): <span id="abDurLabel">600</span></div>
+      <input id="abDuration" type="range" min="200" max="1200" value="600" step="50">
+
+      <div class="grid-label">Silence Between Tones (ms): <span id="abSilenceLabel">400</span></div>
+      <input id="abSilence" type="range" min="100" max="1000" value="400" step="50">
+    </div>
+
+    <!-- Adaptive Test -->
+    <div class="panel">
+      <h2>Adaptive Threshold Test</h2>
+
+      <div style="background:#1a1c1f; padding:10px; border-radius:6px; margin-bottom:10px;">
+        <div class="grid-label">Current Delta: <span id="currentDelta" style="color:#3fa9f5; font-size:20px; font-weight:bold;">200</span> Hz</div>
+        <div class="grid-label">Trial: <span id="trialCount">0</span> / <span id="maxTrials">20</span></div>
+        <div class="grid-label">Status: <span id="testStatus" style="color:#aaa;">Ready</span></div>
+      </div>
+
+      <button onclick="startAdaptiveTest()" style="width:100%; margin-bottom:8px;">Start Adaptive Test</button>
+
+      <div id="responseButtons" style="display:none; margin-top:10px;">
+        <div class="grid-label">Which tone was higher?</div>
+        <button onclick="userResponse('first')" style="width:100%; margin-bottom:6px; background:#2a7d2a;">First Tone Higher</button>
+        <button onclick="userResponse('second')" style="width:100%; margin-bottom:6px; background:#2a7d2a;">Second Tone Higher</button>
+        <button onclick="userResponse('same')" style="width:100%; margin-bottom:6px; background:#666;">Same / Can't Tell</button>
+      </div>
+
+      <div id="testResults" style="display:none; margin-top:10px; background:#1a1c1f; padding:10px; border-radius:6px;">
+        <div class="grid-label">Test Complete!</div>
+        <div style="color:#3fa9f5; font-size:16px; margin:8px 0;">
+          Threshold: <span id="thresholdResult">-</span> Hz
+        </div>
+        <button onclick="saveThresholdToMarker()" style="width:100%;">Mark Peak at Test Frequency</button>
+      </div>
+    </div>
+
+    <!-- Manual Mode -->
+    <div class="panel">
+      <h2>Manual Two-Tone Test</h2>
+
+      <div class="grid-label">Delta (Hz): <span id="deltaLabel">50</span></div>
+      <input id="deltaSlider" type="range" min="1" max="500" value="50" step="1">
+
+      <button id="manualTestBtn" onclick="startManualTest()">Play Test Tones</button>
+      <div id="manualIndicator" style="margin-top:6px; color:#aaa; font-size:12px;">(Stopped)</div>
+    </div>
+
+
+
+    <!-- Sweep -->
+    <div class="panel">
+      <h2>Sweep</h2>
+
+      <div class="grid-label">Sweep Start: <span id="swStartLabel">2000</span> Hz</div>
+      <input id="swStart" type="range" min="1500" max="14000" value="2000">
+
+      <div class="grid-label">Sweep End: <span id="swEndLabel">12000</span> Hz</div>
+      <input id="swEnd" type="range" min="1500" max="14000" value="12000">
+
+      <div class="grid-label">Speed (oct/sec): <span id="swSpeedLabel">0.5</span></div>
+      <input id="swSpeed" type="range" min="0.1" max="2" step="0.1" value="0.5">
+
+      <button onclick="startSweep()">Start Sweep</button>
+      <button class="secondary" onclick="stopSweep()">Stop Sweep</button>
+      <button class="secondary" onclick="toggleLoop()">Loop: <span id="loopLabel">Off</span></button>
+    </div>
+
+  </div>
+
+  <!-- ====================== CENTER: EQ GRAPH ======================= -->
+  <div class="panel">
+    <canvas id="eqCanvas"></canvas>
+  </div>
+
+  <!-- ====================== RIGHT SIDE ======================= -->
+  <div style="overflow-y: auto;">
+
+    <!-- PEQ Bands -->
+    <div class="panel">
+      <h2>PEQ Bands</h2>
+      <button onclick="addMark('peak')">Mark Peak</button>
+      <button class="secondary" onclick="addMark('dip')">Mark Dip</button>
+
+      <table>
+        <thead>
+        <tr>
+          <th>Type</th>
+          <th>Freq</th>
+          <th>Gain</th>
+          <th>Q</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody id="peqTable"></tbody>
+      </table>
+
+      <button class="danger" onclick="clearPEQ()">Clear</button>
+    </div>
+
+    <!-- Undo / Redo / A/B -->
+    <div class="panel">
+      <h2>Tools</h2>
+      <button onclick="undo()">Undo</button>
+      <button onclick="redo()">Redo</button>
+      <br><br>
+      <button onclick="storeA()">Store A</button>
+      <button onclick="storeB()">Store B</button>
+      <button class="secondary" onclick="compareAB()">A/B Compare</button>
+    </div>
+
+    <!-- Export -->
+    <div class="panel">
+      <h2>Export</h2>
+      <button onclick="exportAPO()">Export APO</button>
+      <button onclick="exportMiniDSP()">MiniDSP</button>
+      <button onclick="exportQudelix()">Qudelix</button>
+      <button onclick="exportRME()">RME</button>
+      <button onclick="exportCSV()">CSV</button>
+      <button onclick="exportJSON()">JSON</button>
+    </div>
+
+    <!-- Profiles -->
+    <div class="panel">
+      <h2>Profiles</h2>
+      <button onclick="saveProfile()">Save Profile</button>
+      <button onclick="loadProfile()">Load Profile</button>
+      <br><br>
+      <input type="file" id="jsonImport" onchange="importJSONfile()" style="margin-top:10px;">
+    </div>
+
+  </div>
+
+</div> <!-- container -->
+
+<script>
+  /* ------------------------------------------------------------
+     AUDIO ENGINE
+  ------------------------------------------------------------ */
+  let audioCtx;
+  let osc1, osc2;
+  let gainL, gainR, gainA, gainB;
+  let running = false;
+  let channelMode = "B"; // L, R, B
+  let toneMode = "beat";   // "beat", "drift", "ab"
+  let abInterval = null;
+  let driftInterval = null;
+  let temporalABInterval = null;
+  let currentABState = "idle";
+
+  /* ------------------------------------------------------------
+     ADAPTIVE TEST ENGINE
+  ------------------------------------------------------------ */
+  let adaptiveTest = {
+    active: false,
+    trials: [],
+    currentDelta: 200,
+    minDelta: 1,
+    maxDelta: 500,
+    trialCount: 0,
+    maxTrials: 20,
+    correctCount: 0,
+    incorrectCount: 0,
+    firstToneHigher: true, // randomize which tone is higher
+    threshold: null,
+    stepSize: 50 // initial step size
+  };
+
+  function startAdaptiveTest() {
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    // Reset test state
+    adaptiveTest = {
+      active: true,
+      trials: [],
+      currentDelta: 200,
+      minDelta: 1,
+      maxDelta: 500,
+      trialCount: 0,
+      maxTrials: 20,
+      correctCount: 0,
+      incorrectCount: 0,
+      firstToneHigher: true,
+      threshold: null,
+      stepSize: 50
+    };
+
+    document.getElementById('responseButtons').style.display = 'block';
+    document.getElementById('testResults').style.display = 'none';
+    document.getElementById('testStatus').textContent = 'Playing...';
+    document.getElementById('testStatus').style.color = '#3fa9f5';
+
+    playNextTrial();
+  }
+
+  function playNextTrial() {
+    if (!adaptiveTest.active) return;
+
+    adaptiveTest.trialCount++;
+    document.getElementById('trialCount').textContent = adaptiveTest.trialCount;
+    document.getElementById('currentDelta').textContent = Math.round(adaptiveTest.currentDelta);
+
+    // Randomize which tone is higher
+    adaptiveTest.firstToneHigher = Math.random() > 0.5;
+
+    const baseFreq = parseFloat(freqSlider.value);
+    const delta = adaptiveTest.currentDelta;
+    const duration = parseInt(abDuration.value);
+    const silence = parseInt(abSilence.value);
+    const level = Math.pow(10, parseFloat(levelSlider.value) / 20);
+
+    // Create oscillators for this trial
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.connect(gain);
+
+    // Route to correct channel
+    if (channelMode === 'L' || channelMode === 'B') {
+      gain.connect(audioCtx.destination);
+    }
+    if (channelMode === 'R' || channelMode === 'B') {
+      gain.connect(audioCtx.destination);
+    }
+
+    gain.gain.value = level;
+
+    const now = audioCtx.currentTime;
+
+    // First tone
+    const freq1 = adaptiveTest.firstToneHigher ? baseFreq + delta : baseFreq;
+    osc.frequency.setValueAtTime(freq1, now);
+
+    // Second tone (after duration + silence)
+    const switchTime = now + (duration / 1000);
+    const freq2 = adaptiveTest.firstToneHigher ? baseFreq : baseFreq + delta;
+    osc.frequency.setValueAtTime(freq2, switchTime + (silence / 1000));
+
+    // Gain envelope
+    gain.gain.setValueAtTime(level, now);
+    gain.gain.setValueAtTime(level, switchTime);
+    gain.gain.setValueAtTime(0, switchTime); // silence
+    gain.gain.setValueAtTime(0, switchTime + (silence / 1000));
+    gain.gain.setValueAtTime(level, switchTime + (silence / 1000));
+
+    const endTime = switchTime + (silence / 1000) + (duration / 1000);
+    gain.gain.setValueAtTime(0, endTime);
+
+    osc.start(now);
+    osc.stop(endTime + 0.1);
+
+    document.getElementById('testStatus').textContent = 'Listen carefully...';
+  }
+
+  function userResponse(response) {
+    if (!adaptiveTest.active) return;
+
+    let correct = false;
+
+    if (response === 'first' && adaptiveTest.firstToneHigher) {
+      correct = true;
+    } else if (response === 'second' && !adaptiveTest.firstToneHigher) {
+      correct = true;
+    } else if (response === 'same') {
+      correct = false; // treating "can't tell" as incorrect
+    }
+
+    // Store trial result
+    adaptiveTest.trials.push({
+      delta: adaptiveTest.currentDelta,
+      correct: correct,
+      response: response
+    });
+
+    // Adaptive staircase logic (simple 2-down-1-up)
+    if (correct) {
+      adaptiveTest.correctCount++;
+      if (adaptiveTest.correctCount >= 2) {
+        // Make it harder (decrease delta)
+        adaptiveTest.stepSize = Math.max(5, adaptiveTest.stepSize * 0.8);
+        adaptiveTest.currentDelta = Math.max(adaptiveTest.minDelta, adaptiveTest.currentDelta - adaptiveTest.stepSize);
+        adaptiveTest.correctCount = 0;
+      }
+    } else {
+      adaptiveTest.incorrectCount++;
+      // Make it easier (increase delta)
+      adaptiveTest.stepSize = Math.max(5, adaptiveTest.stepSize * 0.8);
+      adaptiveTest.currentDelta = Math.min(adaptiveTest.maxDelta, adaptiveTest.currentDelta + adaptiveTest.stepSize * 1.5);
+      adaptiveTest.correctCount = 0;
+    }
+
+    // Check if test is complete
+    if (adaptiveTest.trialCount >= adaptiveTest.maxTrials) {
+      completeAdaptiveTest();
+      return;
+    }
+
+    // Play next trial after a short delay
+    document.getElementById('testStatus').textContent = correct ? 'Correct! Next...' : 'Next...';
+    document.getElementById('testStatus').style.color = correct ? '#2a7d2a' : '#c32f2f';
+
+    setTimeout(() => {
+      if (adaptiveTest.active) {
+        document.getElementById('testStatus').textContent = 'Playing...';
+        document.getElementById('testStatus').style.color = '#3fa9f5';
+        playNextTrial();
+      }
+    }, 800);
+  }
+
+  function completeAdaptiveTest() {
+    adaptiveTest.active = false;
+
+    // Calculate threshold (average of last 6 reversals or trials)
+    const recentTrials = adaptiveTest.trials.slice(-6);
+    const sum = recentTrials.reduce((acc, t) => acc + t.delta, 0);
+    adaptiveTest.threshold = Math.round(sum / recentTrials.length);
+
+    document.getElementById('responseButtons').style.display = 'none';
+    document.getElementById('testResults').style.display = 'block';
+    document.getElementById('thresholdResult').textContent = adaptiveTest.threshold;
+    document.getElementById('testStatus').textContent = 'Complete!';
+    document.getElementById('testStatus').style.color = '#2a7d2a';
+  }
+
+  function saveThresholdToMarker() {
+    if (adaptiveTest.threshold === null) return;
+
+    const fc = parseFloat(freqSlider.value);
+    const delta = adaptiveTest.threshold;
+
+    peq.push({
+      type: 'peak',
+      fc: fc,
+      gain: 3,
+      q: autoQ(delta)
+    });
+
+    pushHistory();
+    updatePEQ();
+    drawEQ();
+
+    alert(`Peak marked at ${fc} Hz with Q=${autoQ(delta).toFixed(1)} (based on ${delta} Hz threshold)`);
+  }
+
+  /* ------------------------------------------------------------
+     MANUAL TEST MODE
+  ------------------------------------------------------------ */
+  let manualTestActive = false;
+  let manualTestTimeout = null;
+
+  function startManualTest() {
+    if (manualTestActive) {
+      stopManualTest();
+      return;
+    }
+
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    manualTestActive = true;
+    document.getElementById('manualTestBtn').textContent = 'Stop';
+
+    playManualTrial();
+  }
+
+  function playManualTrial() {
+    if (!manualTestActive) return;
+
+    const baseFreq = parseFloat(freqSlider.value);
+    const delta = parseFloat(deltaSlider.value);
+    const duration = parseInt(abDuration.value);
+    const silence = parseInt(abSilence.value);
+    const level = Math.pow(10, parseFloat(levelSlider.value) / 20);
+
+    // Randomize order
+    const firstIsHigher = Math.random() > 0.5;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.connect(gain).connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+    const freq1 = firstIsHigher ? baseFreq + delta : baseFreq;
+    const freq2 = firstIsHigher ? baseFreq : baseFreq + delta;
+
+    // First tone
+    osc.frequency.setValueAtTime(freq1, now);
+    gain.gain.setValueAtTime(level, now);
+
+    // Silence
+    const silenceStart = now + (duration / 1000);
+    gain.gain.setValueAtTime(0, silenceStart);
+
+    // Second tone
+    const secondToneStart = silenceStart + (silence / 1000);
+    osc.frequency.setValueAtTime(freq2, secondToneStart);
+    gain.gain.setValueAtTime(level, secondToneStart);
+
+    // End
+    const endTime = secondToneStart + (duration / 1000);
+    gain.gain.setValueAtTime(0, endTime);
+
+    osc.start(now);
+    osc.stop(endTime + 0.1);
+
+    document.getElementById('manualIndicator').textContent = firstIsHigher ?
+      '(First tone +' + delta + ' Hz)' : '(Second tone +' + delta + ' Hz)';
+    document.getElementById('manualIndicator').style.color = '#3fa9f5';
+
+    // Schedule next trial
+    const totalTime = (duration * 2 + silence + 500); // add 500ms pause
+    manualTestTimeout = setTimeout(() => {
+      if (manualTestActive) {
+        playManualTrial();
+      }
+    }, totalTime);
+  }
+
+  function stopManualTest() {
+    manualTestActive = false;
+    if (manualTestTimeout) {
+      clearTimeout(manualTestTimeout);
+      manualTestTimeout = null;
+    }
+    document.getElementById('manualTestBtn').textContent = 'Play Test Tones';
+    document.getElementById('manualIndicator').textContent = '(Stopped)';
+    document.getElementById('manualIndicator').style.color = '#aaa';
+  }
+
+  function startAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    osc1 = audioCtx.createOscillator();
+    osc2 = audioCtx.createOscillator();
+    gainL = audioCtx.createGain();
+    gainR = audioCtx.createGain();
+
+    gainA = audioCtx.createGain();
+    gainB = audioCtx.createGain();
+
+    const baseF = parseFloat(freqSlider.value);
+    const deltaF = parseFloat(deltaSlider.value);
+    const lvl = Math.pow(10, parseFloat(levelSlider.value) / 20);
+
+    /* ROUTING */
+    osc1.connect(gainA);
+    osc2.connect(gainB);
+
+    gainA.connect(gainL);
+    gainB.connect(gainL);
+    gainL.connect(audioCtx.destination);
+
+    gainA.connect(gainR);
+    gainB.connect(gainR);
+    gainR.connect(audioCtx.destination);
+
+    // Channel mode
+    gainL.gain.value = (channelMode === "L" || channelMode === "B") ? lvl : 0;
+    gainR.gain.value = (channelMode === "R" || channelMode === "B") ? lvl : 0;
+
+    /* ============================
+            MODE 1: BEAT MODE
+       ============================ */
+    if (toneMode === "beat") {
+      gainA.gain.value = 1.0;
+      gainB.gain.value = 1.0;
+
+      osc1.frequency.value = baseF;
+      osc2.frequency.value = baseF + deltaF;
+    }
+
+    /* ============================
+          MODE 2: DUAL SWEEP DRIFT
+       ============================ */
+    if (toneMode === "drift") {
+      gainA.gain.value = 1.0;
+      gainB.gain.value = 1.0;
+
+      osc1.frequency.value = baseF;
+      osc2.frequency.value = baseF + deltaF;
+
+      driftInterval = setInterval(() => {
+        const r = Math.random() * 0.3 - 0.15;
+        osc1.frequency.linearRampToValueAtTime(
+          osc1.frequency.value + r,
+          audioCtx.currentTime + 0.4
+        );
+        osc2.frequency.linearRampToValueAtTime(
+          osc2.frequency.value + r,
+          audioCtx.currentTime + 0.4
+        );
+      }, 400);
+    }
+
+    /* ============================
+       MODE 3: A/B ALTERNATION
+       ============================ */
+    if (toneMode === "ab") {
+      // amplitudes alternate, not beating
+      gainA.gain.value = 1.0;
+      gainB.gain.value = 0.0;
+
+      osc1.frequency.value = baseF;
+      osc2.frequency.value = baseF + deltaF;
+
+      abInterval = setInterval(() => {
+        gainA.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.01);
+        gainB.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.01);
+
+        setTimeout(() => {
+          gainA.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.01);
+          gainB.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.01);
+        }, 150);
+      }, 300);
+    }
+
+    if (toneMode === "wide") {
+      const hugeDelta = parseFloat(deltaSlider.value);
+
+      gainA.gain.value = 1.0;
+      gainB.gain.value = 1.0;
+
+      osc1.frequency.value = baseF;
+      osc2.frequency.value = baseF + hugeDelta;
+
+      // no beating, clearly separated tones
+    }
+
+    if (toneMode === "temporalAB") {
+      runTemporalAB();
+    }
+
+    osc1.start();
+    osc2.start();
+
+    running = true;
+  }
+
+  function stopAudio() {
+    if (osc1) {
+      try { osc1.stop(); } catch(e){}
+      try { osc2.stop(); } catch(e){}
+    }
+
+    if (temporalABInterval)
+      clearInterval(temporalABInterval);
+    abIndicator.textContent = "(Idle)";
+
+    // Clear any intervals from modes
+    if (abInterval) { clearInterval(abInterval); abInterval = null; }
+    if (driftInterval) { clearInterval(driftInterval); driftInterval = null; }
+
+    running = false;
+  }
+
+  function setChannel(mode) {
+    channelMode = mode;
+
+    if (!running) return;
+
+    const level = Math.pow(10, parseFloat(levelSlider.value) / 20);
+
+    // Update gains based on mode
+    if (mode === "L") {
+      gainL.gain.value = level;
+      gainR.gain.value = 0;
+    } else if (mode === "R") {
+      gainL.gain.value = 0;
+      gainR.gain.value = level;
+    } else {  // Both
+      gainL.gain.value = level;
+      gainR.gain.value = level;
+    }
+  }
+
+  function runTemporalAB() {
+    if (!running) return;
+
+    const f = parseFloat(freqSlider.value);
+    const d = parseFloat(deltaSlider.value);
+    const dur = parseInt(abDuration.value);
+    const pause = parseInt(abSilence.value);
+
+    // Sequence: A → silence → B → silence → repeat
+
+    let phase = 0;  // 0=A, 1=silence, 2=B, 3=silence
+
+    temporalABInterval = setInterval(() => {
+
+      if (!running) return;
+
+      if (phase === 0) {
+        // Tone A
+        osc1.frequency.setValueAtTime(f, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(f + 1, audioCtx.currentTime); // inaudible
+        gainA.gain.value = 1;
+        gainB.gain.value = 0;
+        abIndicator.textContent = "Playing: Tone A";
+      }
+
+      if (phase === 1) {
+        // Silence
+        gainA.gain.value = 0;
+        gainB.gain.value = 0;
+        abIndicator.textContent = "(Silence)";
+      }
+
+      if (phase === 2) {
+        // Tone B
+        osc1.frequency.setValueAtTime(f + d, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(f + d + 1, audioCtx.currentTime);
+        gainA.gain.value = 1;
+        gainB.gain.value = 0;
+        abIndicator.textContent = "Playing: Tone B";
+      }
+
+      if (phase === 3) {
+        // Silence
+        gainA.gain.value = 0;
+        gainB.gain.value = 0;
+        abIndicator.textContent = "(Silence)";
+      }
+
+      phase = (phase + 1) % 4;
+
+    }, dur + pause);
+  }
+
+  /* ------------------------------------------------------------
+     SLIDER UPDATES
+  ------------------------------------------------------------ */
+  freqSlider.oninput = () => {
+    freqLabel.textContent = freqSlider.value;
+    if (running) {
+      osc1.frequency.setValueAtTime(freqSlider.value, audioCtx.currentTime);
+      osc2.frequency.setValueAtTime(
+        parseFloat(freqSlider.value) + parseFloat(deltaSlider.value),
+        audioCtx.currentTime
+      );
+    }
+    drawEQ();
+  };
+
+  deltaSlider.oninput = () => {
+    deltaLabel.textContent = deltaSlider.value;
+    if (running) {
+      osc2.frequency.setValueAtTime(
+        parseFloat(freqSlider.value) + parseFloat(deltaSlider.value),
+        audioCtx.currentTime
+      );
+    }
+  };
+
+  levelSlider.oninput = () => {
+    levelLabel.textContent = levelSlider.value;
+    if (running) {
+      const level = Math.pow(10, parseFloat(levelSlider.value) / 20);
+      gainL.gain.value = (channelMode === "L" || channelMode === "B") ? level : 0;
+      gainR.gain.value = (channelMode === "R" || channelMode === "B") ? level : 0;
+    }
+  };
+
+  abDuration.oninput = () => {
+    abDurLabel.textContent = abDuration.value;
+  };
+
+  abSilence.oninput = () => {
+    abSilenceLabel.textContent = abSilence.value;
+  };
+
+  /* ------------------------------------------------------------
+     SWEEP ENGINE
+  ------------------------------------------------------------ */
+  let sweepOsc = null;
+  let sweepGain = null;
+  let sweepActive = false;
+  let sweepLooping = false;
+
+  function startSweep() {
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    sweepOsc = audioCtx.createOscillator();
+    sweepGain = audioCtx.createGain();
+
+    sweepOsc.type = "sine";
+    sweepGain.gain.value = Math.pow(10, parseFloat(levelSlider.value) / 20);
+
+    sweepOsc.connect(sweepGain).connect(audioCtx.destination);
+
+    sweepActive = true;
+    sweepOsc.start();
+
+    sweepStep();
+  }
+
+  function stopSweep() {
+    sweepActive = false;
+    if (sweepOsc) {
+      try { sweepOsc.stop(); } catch(e){}
+    }
+  }
+
+  function toggleLoop() {
+    sweepLooping = !sweepLooping;
+    loopLabel.textContent = sweepLooping ? "On" : "Off";
+  }
+
+  function sweepStep() {
+    if (!sweepActive) return;
+
+    const start = parseFloat(swStart.value);
+    const end = parseFloat(swEnd.value);
+    const speed = parseFloat(swSpeed.value);
+
+    if (!sweepOsc) return;
+
+    let f = sweepOsc.frequency.value;
+    const dt = 1/60;
+    f *= Math.pow(2, speed * dt);
+
+    if (f > end) {
+      if (sweepLooping) f = start;
+      else return stopSweep();
+    }
+
+    sweepOsc.frequency.setValueAtTime(f, audioCtx.currentTime);
+    requestAnimationFrame(sweepStep);
+  }
+  /* ------------------------------------------------------------
+     PEQ STORAGE
+  ------------------------------------------------------------ */
+  let peq = [];
+
+  function autoQ(delta) {
+    if (delta <= 3) return 9;
+    if (delta <= 8) return 5;
+    if (delta <= 15) return 3;
+    return 1.5;
+  }
+
+  function addMark(type) {
+    let fc = parseFloat(freqSlider.value);
+    let delta = parseFloat(deltaSlider.value);
+    peq.push({
+      type,
+      fc,
+      gain: 3,
+      q: autoQ(delta)
+    });
+    pushHistory();
+    updatePEQ();
+    drawEQ();
+  }
+
+  function updatePEQ() {
+    const table = document.getElementById("peqTable");
+    table.innerHTML = "";
+
+    peq.forEach((b, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+            <td>${b.type}</td>
+            <td>${Math.round(b.fc)}</td>
+            <td><input class="peq-input" value="${b.gain}" onchange="editGain(${i}, this.value)"></td>
+            <td><input class="peq-input" value="${b.q}" onchange="editQ(${i}, this.value)"></td>
+            <td><button class="small-btn danger" onclick="removeBand(${i})">X</button></td>
+        `;
+      table.appendChild(row);
+    });
+  }
+
+  function editGain(i, v) { peq[i].gain = parseFloat(v); pushHistory(); drawEQ(); }
+  function editQ(i, v) { peq[i].q = parseFloat(v); pushHistory(); drawEQ(); }
+
+  function removeBand(i) {
+    peq.splice(i,1);
+    pushHistory();
+    updatePEQ();
+    drawEQ();
+  }
+
+  function clearPEQ() {
+    peq = [];
+    pushHistory();
+    updatePEQ();
+    drawEQ();
+  }
+
+  /* ------------------------------------------------------------
+     UNDO / REDO
+  ------------------------------------------------------------ */
+  let history = [];
+  let historyIndex = -1;
+
+  function pushHistory() {
+    history = history.slice(0, historyIndex + 1);
+    history.push(JSON.stringify(peq));
+    historyIndex++;
+  }
+
+  function undo() {
+    if (historyIndex > 0) {
+      historyIndex--;
+      peq = JSON.parse(history[historyIndex]);
+      updatePEQ();
+      drawEQ();
+    }
+  }
+
+  function redo() {
+    if (historyIndex < history.length - 1) {
+      historyIndex++;
+      peq = JSON.parse(history[historyIndex]);
+      updatePEQ();
+      drawEQ();
+    }
+  }
+
+  function setMode(m) {
+    toneMode = m;
+    document.getElementById("modeLabel").textContent =
+      m === "beat" ? "(Beat)" :
+        m === "drift" ? "(Dual Sweep)" :
+          "(A/B Compare)";
+
+    // Clear any running intervals
+    if (abInterval) { clearInterval(abInterval); abInterval = null; }
+    if (driftInterval) { clearInterval(driftInterval); driftInterval = null; }
+
+    // Restart audio if running
+    if (running) {
+      stopAudio();
+      setTimeout(startAudio, 200);
+    }
+  }
+
+  /* ------------------------------------------------------------
+     A/B COMPARISON
+  ------------------------------------------------------------ */
+  let A = null;
+  let B = null;
+
+  function storeA() { A = JSON.stringify(peq); }
+  function storeB() { B = JSON.stringify(peq); }
+
+  function compareAB() {
+    if (!(A && B)) return alert("Store A and B first");
+    const aBands = JSON.parse(A);
+    const bBands = JSON.parse(B);
+    peq = bBands;
+    updatePEQ();
+    drawEQ();
+  }
+
+  /* ------------------------------------------------------------
+   EQ CURVE RENDERER (LOG SCALE)
+------------------------------------------------------------ */
+  const canvas = document.getElementById("eqCanvas");
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    drawEQ();
+  }
+  window.onresize = resizeCanvas;
+  setTimeout(resizeCanvas, 200);
+
+  function biquadMag(fc, gain, q, f) {
+    const A = Math.pow(10, gain / 40);
+    const w0 = 2 * Math.PI * (fc / 48000);
+    const alpha = Math.sin(w0) / (2 * q);
+
+    const b0 = 1 + alpha * A;
+    const b1 = -2 * Math.cos(w0);
+    const b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A;
+    const a1 = -2 * Math.cos(w0);
+    const a2 = 1 - alpha / A;
+
+    const w = 2 * Math.PI * f / 48000;
+
+    const cosw = Math.cos(w);
+    const sinw = Math.sin(w);
+
+    const cos2w = Math.cos(2*w);
+    const sin2w = Math.sin(2*w);
+
+    const Nr = b0 + b1 * cosw + b2 * cos2w;
+    const Ni = b1 * sinw + b2 * sin2w;
+
+    const Dr = a0 + a1 * cosw + a2 * cos2w;
+    const Di = a1 * sinw + a2 * sin2w;
+
+    const mag = Math.sqrt((Nr*Nr + Ni*Ni) / (Dr*Dr + Di*Di));
+
+    return 20 * Math.log10(mag);
+  }
+
+  function totalGain(f) {
+    let sum = 0;
+    for (const b of peq) {
+      const g = b.type === "peak" ? -b.gain : b.gain;
+      sum += biquadMag(b.fc, g, b.q, f);
+    }
+    return sum;
+  }
+
+  function drawEQ() {
+    if (!canvas.width) return;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    /* Grid */
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+
+    for (let db = -10; db <= 10; db += 5) {
+      const y = H/2 - db * (H/40);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+
+    for (let f = 1500; f <= 14000; f *= 2) {
+      const x = (Math.log10(f/1500) / Math.log10(14000/1500)) * W;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+
+    /* Curve */
+    ctx.strokeStyle = "#3fa9f5";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    for (let i = 0; i < W; i++) {
+      const frac = i / W;
+      const f = 1500 * Math.pow(14000/1500, frac);
+      const g = totalGain(f);
+      const y = H/2 - g * (H/40);
+      if (i === 0) ctx.moveTo(i, y);
+      else ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+  }
+
+  /* ------------------------------------------------------------
+     EXPORT FORMATS
+  ------------------------------------------------------------ */
+  function exportAPO() {
+    let out = "";
+    peq.forEach((b,i) => {
+      const g = b.type === "peak" ? -b.gain : b.gain;
+      out += `Filter ${i+1}: ON PK Fc ${b.fc} Gain ${g} Q ${b.q}\n`;
+    });
+    downloadText("peq_apo.txt", out);
+  }
+
+  function exportMiniDSP() {
+    let out = "";
+    peq.forEach((b,i) => {
+      const g = b.type === "peak" ? -b.gain : b.gain;
+      out += `PEQ ${i+1}: Fc=${b.fc} Hz Gain=${g} dB Q=${b.q}\n`;
+    });
+    downloadText("peq_minidsp.txt", out);
+  }
+
+  function exportQudelix() {
+    let out = JSON.stringify(peq, null, 2);
+    downloadText("peq_qudelix.json", out);
+  }
+
+  function exportRME() {
+    let out = "";
+    peq.forEach((b,i) => {
+      const g = b.type === "peak" ? -b.gain : b.gain;
+      out += `Band ${i+1}: Type=Peak Freq=${b.fc} Gain=${g} Q=${b.q}\n`;
+    });
+    downloadText("peq_rme.txt", out);
+  }
+
+  function exportCSV() {
+    let out = "type,fc,gain,q\n";
+    peq.forEach(b => out += `${b.type},${b.fc},${b.gain},${b.q}\n`);
+    downloadText("peq.csv", out);
+  }
+
+  function exportJSON() {
+    downloadText("peq.json", JSON.stringify(peq, null, 2));
+  }
+
+  function downloadText(name, text) {
+    const blob = new Blob([text], {type: "text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    a.click();
+  }
+
+  /* ------------------------------------------------------------
+     PROFILES
+  ------------------------------------------------------------ */
+  function saveProfile() {
+    localStorage.setItem("peqProfile", JSON.stringify(peq));
+  }
+
+  function loadProfile() {
+    const p = localStorage.getItem("peqProfile");
+    if (!p) return alert("No profile saved.");
+    peq = JSON.parse(p);
+    updatePEQ();
+    drawEQ();
+  }
+
+  function importJSONfile() {
+    const file = jsonImport.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      peq = JSON.parse(reader.result);
+      updatePEQ();
+      drawEQ();
+    };
+    reader.readAsText(file);
+  }
+
+  /* ------------------------------------------------------------
+     INITIAL DRAW
+  ------------------------------------------------------------ */
+  drawEQ();
+
+</script>
+</body>
+</html>

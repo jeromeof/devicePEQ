@@ -34,7 +34,7 @@ export const qudelixUsbHidHandler = (function () {
   const APP_CMD = {
     // Basic commands
     ReqInitData: 0x0001,
-    
+
     // Request commands
     ReqDevConfig: 0x0003,
     ReqEqPreset: 0x0004,
@@ -113,10 +113,10 @@ export const qudelixUsbHidHandler = (function () {
   function initHidReports(device) {
     hidReportInfo = [];
     const collections = device.collections;
-    
+
     console.log('Qudelix HID: Initializing reports from collections:', collections);
     console.log('Qudelix HID: Total collections found:', collections?.length);
-    
+
     // Debug all collections first
     if (collections?.length) {
       collections.forEach((info, collectionIndex) => {
@@ -128,11 +128,11 @@ export const qudelixUsbHidHandler = (function () {
         console.log(`  outputReports: ${info.outputReports?.length || 0}`);
       });
     }
-    
+
     if (collections?.length) {
       collections.forEach((info, collectionIndex) => {
         console.log(`Processing collection ${collectionIndex}: usagePage=0x${info.usagePage?.toString(16)}`);
-        
+
         // Only process vendor-defined collections (0xFF00)
         if (info.usagePage !== 0xFF00) {
           console.log(`Skipping collection ${collectionIndex} - not vendor-defined (0xFF00)`);
@@ -145,7 +145,7 @@ export const qudelixUsbHidHandler = (function () {
           hidReportInfo.push({ type: 'feature', id: reportId, size: reportSize });
           console.log(`Found feature report: ID=${reportId}, size=${reportSize}`);
         });
-        
+
         // Process input reports
         info.inputReports?.forEach((report) => {
           const reportId = report.reportId;
@@ -153,7 +153,7 @@ export const qudelixUsbHidHandler = (function () {
           hidReportInfo.push({ type: 'in', id: reportId, size: reportSize });
           console.log(`Found input report: ID=${reportId}, size=${reportSize}`);
         });
-        
+
         // Process output reports
         info.outputReports?.forEach((report) => {
           const reportId = report.reportId;
@@ -163,18 +163,18 @@ export const qudelixUsbHidHandler = (function () {
         });
       });
     }
-    
+
     console.log('Qudelix HID: All found reports:', hidReportInfo);
-    
+
     // Find the best report ID for sending (try qx_hostToDevice first, fallback to qx_out)
     sendReportId = HID_REPORT_ID.QX_HOST_TO_DEVICE;
     sendReportSize = getReportSize(sendReportId);
-    
+
     if (sendReportSize === 0) {
       sendReportId = HID_REPORT_ID.QX_OUT;
       sendReportSize = getReportSize(sendReportId);
     }
-    
+
     // If still no size found, use the first available output report
     if (sendReportSize === 0) {
       const firstOutputReport = hidReportInfo.find(r => r.type === 'out');
@@ -189,10 +189,10 @@ export const qudelixUsbHidHandler = (function () {
         console.log(`Qudelix HID: No reports found, using defaults: ID=${sendReportId}, size=${sendReportSize}`);
       }
     }
-    
+
     console.log(`Qudelix HID: Using report ID ${sendReportId}, size ${sendReportSize}`);
   }
-  
+
   // Get report size for a given ID
   function getReportSize(reportId) {
     const report = hidReportInfo.find(r => r.id === reportId);
@@ -240,16 +240,16 @@ export const qudelixUsbHidHandler = (function () {
     const cmdPayload = new Uint8Array(2 + payload.length);
     cmdPayload[0] = utils.msb8(cmdType);
     cmdPayload[1] = utils.lsb8(cmdType);
-    
+
     for (let i = 0; i < payload.length; i++) {
       cmdPayload[i + 2] = payload[i];
     }
-    
+
     console.log(`Qudelix USB: Sending command 0x${cmdType.toString(16).padStart(4, '0')}:`, [...cmdPayload].map(b => b.toString(16).padStart(2, '0')).join(' '));
-    
+
     // Send via the HID send_cmd method (this will add the HID packet wrapper)
     await sendHidCommand(device, cmdPayload);
-    
+
     // Add a small delay to avoid overwhelming the device
     await new Promise(resolve => setTimeout(resolve, 20));
   }
@@ -259,14 +259,14 @@ export const qudelixUsbHidHandler = (function () {
     // Create HID packet: length + 0x80 + payload
     const packet = new Uint8Array(sendReportSize);
     packet.fill(0);
-    
+
     // The length field should be: command (1 byte) + payload length
     packet[0] = payload.length + 1; // 0x80 command + payload
     packet[1] = 0x80; // HID command identifier
     packet.set(payload, 2); // Copy payload starting at index 2
-    
+
     console.log(`Qudelix HID: Sending packet (len=${packet[0]}, cmd=0x${packet[1].toString(16)}):`, [...packet.slice(0, packet[0] + 1)].map(b => b.toString(16).padStart(2, '0')).join(' '));
-    
+
     await device.sendReport(sendReportId, packet);
   }
 
@@ -295,42 +295,42 @@ export const qudelixUsbHidHandler = (function () {
         console.error('Qudelix USB: WRONG INTERFACE! This appears to be the consumer control interface.');
         console.error('Qudelix USB: You need to select the vendor-defined HID interface when connecting.');
         console.error('Qudelix USB: Look for the interface with usagePage=0xFF00 in the browser device picker.');
-        
-        return { 
-          filters: [], 
-          globalGain: 0, 
-          error: 'Wrong HID interface selected. Please reconnect and choose the vendor-defined interface.' 
+
+        return {
+          filters: [],
+          globalGain: 0,
+          error: 'Wrong HID interface selected. Please reconnect and choose the vendor-defined interface.'
         };
       }
 
       // First, let's just listen for any data the device might be sending
       console.log('Qudelix USB: Setting up listeners to detect any device activity...');
-      
+
       // Try a very simple approach - just listen for any input reports for 2 seconds
       return new Promise((resolve, reject) => {
         let timeout = null;
         let anyDataReceived = false;
-        
+
         const universalHandler = function(event) {
           anyDataReceived = true;
           const reportId = event.reportId;
           const data = new Uint8Array(event.data.buffer);
-          
+
           console.log(`Qudelix USB: DETECTED DATA! Report ID ${reportId}, length ${data.length}, data:`, [...data].map(b => b.toString(16).padStart(2, '0')).join(' '));
-          
+
           // Try to parse any data we receive
           if (data.length > 2) {
             const cmd = (data[0] << 8) | data[1];
             console.log(`Qudelix USB: Possible command response: 0x${cmd.toString(16).padStart(4, '0')}`);
           }
         };
-        
+
         device.addEventListener('inputreport', universalHandler);
-        
+
         // Set a shorter timeout to see if device sends anything spontaneously
         timeout = setTimeout(() => {
           device.removeEventListener('inputreport', universalHandler);
-          
+
           if (anyDataReceived) {
             console.log('Qudelix USB: Device is sending data! Check logs above.');
             resolve({ filters: [], globalGain: 0, message: 'Device communicating but need to decode protocol' });
@@ -351,7 +351,7 @@ export const qudelixUsbHidHandler = (function () {
   // Try initialization commands if no spontaneous data
   async function tryInitialization(device, resolve, reject) {
     console.log('Qudelix USB: Trying initialization sequence...');
-    
+
     try {
       let timeout = null;
       let receivedData = false;
@@ -375,10 +375,10 @@ export const qudelixUsbHidHandler = (function () {
         // For now, just return success if we get any response
         if (timeout) clearTimeout(timeout);
         device.removeEventListener('inputreport', responseHandler);
-        resolve({ 
-          filters, 
-          globalGain: preGain, 
-          message: `Got response on report ID ${reportId}` 
+        resolve({
+          filters,
+          globalGain: preGain,
+          message: `Got response on report ID ${reportId}`
         });
       };
 
@@ -405,12 +405,12 @@ export const qudelixUsbHidHandler = (function () {
   // Test different communication approaches
   async function testCommunication(device) {
     console.log('Qudelix USB: Testing different packet formats...');
-    
+
     // Test 1: Try direct ReqDevConfig with HID wrapper
     console.log('Qudelix USB: Test 1 - ReqDevConfig with HID wrapper');
     await sendCommand(device, APP_CMD.ReqDevConfig, []);
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // Test 2: Try raw packet without 0x80 wrapper
     console.log('Qudelix USB: Test 2 - Raw ReqDevConfig packet');
     const rawPacket = new Uint8Array(sendReportSize);
@@ -420,7 +420,7 @@ export const qudelixUsbHidHandler = (function () {
     console.log(`Qudelix USB: Sending raw packet:`, [...rawPacket.slice(0, 8)].map(b => b.toString(16).padStart(2, '0')).join(' '));
     await device.sendReport(sendReportId, rawPacket);
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // Test 3: Try different report ID (7)
     if (sendReportId !== 7) {
       console.log('Qudelix USB: Test 3 - Trying report ID 7');
@@ -432,7 +432,7 @@ export const qudelixUsbHidHandler = (function () {
       await device.sendReport(7, packet7);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     // Test 4: Try feature reports (might be needed for initialization)
     console.log('Qudelix USB: Test 4 - Trying feature report ID 4');
     try {
@@ -446,7 +446,7 @@ export const qudelixUsbHidHandler = (function () {
     } catch (error) {
       console.log('Qudelix USB: Feature report failed:', error.message);
     }
-    
+
     // Test 5: Try a simple "ping" or status request
     console.log('Qudelix USB: Test 5 - Simple status request on report ID 1');
     const statusPacket = new Uint8Array(65); // Report ID 1, size 65
@@ -458,7 +458,7 @@ export const qudelixUsbHidHandler = (function () {
   }
 
   // Push EQ settings to the device
-  async function pushToDevice(deviceDetails, slot, preamp, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, preamp, filters) {
     const device = deviceDetails.rawDevice;
 
     try {
@@ -519,7 +519,7 @@ export const qudelixUsbHidHandler = (function () {
   async function enablePEQ(deviceDetails, enabled, slotId) {
     try {
       const device = deviceDetails.rawDevice;
-      
+
       // Initialize HID reports if not done already
       if (hidReportInfo.length === 0) {
         initHidReports(device);

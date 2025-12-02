@@ -60,7 +60,7 @@ export const fiioUsbHID = (function () {
     }
   };
 
-  const pushToDevice = async (deviceDetails, slot, preamp_gain, filters) => {
+  const pushToDevice = async (deviceDetails, phoneObj, slot, preamp_gain, filters) => {
     try {
       var device = deviceDetails.rawDevice;
       var reportId = getFiioReportId(deviceDetails);

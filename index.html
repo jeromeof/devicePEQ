@@ -61,8 +61,30 @@
         <option value="LSQ">Low Shelf</option>
         <option value="HSQ">High Shelf</option>
       </select>
+      <label>Freq:</label> <input type="number" class="filter-freq" value="100">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="-3">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+    </div>
+    <div class="filter-item">
+      <label>Type:</label>
+      <select class="filter-type">
+        <option value="PK">Peak</option>
+        <option value="LSQ">Low Shelf</option>
+        <option value="HSQ">High Shelf</option>
+      </select>
       <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
-      <label>Gain:</label> <input type="number" class="filter-gain" value="0">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="1">
+      <label>Q:</label> <input type="number" class="filter-q" value="1.0">
+    </div>
+    <div class="filter-item">
+      <label>Type:</label>
+      <select class="filter-type">
+        <option value="PK">Peak</option>
+        <option value="LSQ">Low Shelf</option>
+        <option value="HSQ">High Shelf</option>
+      </select>
+      <label>Freq:</label> <input type="number" class="filter-freq" value="2000">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="3">
       <label>Q:</label> <input type="number" class="filter-q" value="0.707">
     </div>
   </div>
@@ -73,9 +95,132 @@
 </div>
 
 <div class="extra-eq">
+  <button id="btnLoadFR">Load FR...</button>
+  <input type="file" id="frFileInput" accept=".txt" style="display:none;">
+  <button id="btnLoadTargetFR">Load Target FR...</button>
+  <input type="file" id="targetFRFileInput" accept=".txt" style="display:none;">
 </div>
 
 <script>
+  // Global phoneObj holds the loaded FR data for plugins
+  const phoneObj = {
+    rawChannels: []  // Array of {freq, spl, phase} objects
+  }
+  const targetObj = {
+    rawChannels: []  // Array of {freq, spl, phase} objects
+  };
+
+  window.phoneObj = phoneObj;
+  // Helper: ensure default flat FR if none loaded
+  function ensureDefaultFRIntoPhone() {
+    if (phoneObj.rawChannels && phoneObj.rawChannels.length) return;
+    const points = 256;
+    const fMin = 20, fMax = 20000;
+    const logMin = Math.log10(fMin), logMax = Math.log10(fMax);
+    phoneObj.rawChannels = [];
+    for (let i = 0; i < points; i++) {
+      const t = i / (points - 1);
+      const f = Math.pow(10, logMin + t * (logMax - logMin));
+      phoneObj.rawChannels.push({ freq: f, spl: 0, phase: 0 });
+    }
+  }
+
+  // Parse FR .txt file (expects header row then f spl phase columns)
+  function parseFRTextIntoPhone(text) {
+    try {
+      const lines = text.trim().split(/\r?\n/);
+      const rawChannels = [];
+      for (let line of lines.slice(1)) {
+        const parts = line.trim().split(/\s+/).map(Number);
+        if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+          rawChannels.push({
+            freq: parts[0],
+            spl: parts[1],
+            phase: (parts.length >= 3 && !Number.isNaN(parts[2])) ? parts[2] : 0
+          });
+        }
+      }
+      if (rawChannels.length) {
+        phoneObj.rawChannels = rawChannels;
+        console.log('FR loaded into phoneObj:', { points: rawChannels.length });
+        document.dispatchEvent(new CustomEvent('PhoneFRLoaded'));
+      } else {
+        console.warn('FR file parsed but no usable rows found');
+      }
+    } catch (e) {
+      console.error('Failed parsing FR file:', e);
+    }
+  }
+
+  // Wire up FR loader UI
+  const btnLoadFR = document.getElementById('btnLoadFR');
+  const frInput = document.getElementById('frFileInput');
+  if (btnLoadFR && frInput) {
+    btnLoadFR.addEventListener('click', () => frInput.click());
+    frInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => parseFRTextIntoPhone(ev.target.result);
+      reader.readAsText(file);
+      // Reset input so selecting same file again triggers change
+      e.target.value = '';
+    });
+  }
+
+  // Parse Target FR .txt file
+  function parseTargetFRTextIntoPhone(text) {
+    try {
+      const lines = text.trim().split(/\r?\n/);
+      const rawChannels = [];
+      for (let line of lines.slice(1)) {
+        const parts = line.trim().split(/\s+/).map(Number);
+        if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+          rawChannels.push({
+            freq: parts[0],
+            spl: parts[1],
+            phase: 0  // Target usually doesn't have phase
+          });
+        }
+      }
+      if (rawChannels.length) {
+        targetObj.rawChannels = rawChannels;
+        console.log('Target FR loaded into targetObj:', { points: rawChannels.length });
+        document.dispatchEvent(new CustomEvent('TargetFRLoaded'));
+      } else {
+        console.warn('Target FR file parsed but no usable rows found');
+      }
+    } catch (e) {
+      console.error('Failed parsing Target FR file:', e);
+    }
+  }
+
+  // Wire up Target FR loader UI
+  const btnLoadTargetFR = document.getElementById('btnLoadTargetFR');
+  const targetFRInput = document.getElementById('targetFRFileInput');
+  if (btnLoadTargetFR && targetFRInput) {
+    btnLoadTargetFR.addEventListener('click', () => targetFRInput.click());
+    targetFRInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => parseTargetFRTextIntoPhone(ev.target.result);
+      reader.readAsText(file);
+      // Reset input so selecting same file again triggers change
+      e.target.value = '';
+    });
+  }
+
+  // Wire up Normalize FR input
+  const normalizeFRInput = document.getElementById('normalizeFRInput');
+  if (normalizeFRInput) {
+    normalizeFRInput.addEventListener('input', () => {
+      const value = parseFloat(normalizeFRInput.value);
+      phoneObj.normalizeFRFreq = (!isNaN(value) && value >= 20 && value <= 20000) ? value : null;
+      console.log('Normalize FR frequency set to:', phoneObj.normalizeFRFreq);
+      document.dispatchEvent(new CustomEvent('NormalizeFRChanged'));
+    });
+  }
   // Mock function to populate PEQ fields from device settings
   function filtersToElem(filters) {
     console.log("Applying filters from device:", filters);
@@ -128,6 +273,15 @@
 
   }
 
+  let norm_fr = 1000;
+  let getCurrentPhoneTargetNormalisation = () => {
+
+    return {
+      phoneObj,
+      targetObj,
+      norm_fr
+    };
+  }
 
     // Utility function to add a new filter entry
   function addFilter() {
@@ -153,11 +307,27 @@
     document.getElementById("filter-list").innerHTML = "";
   }
 
-  // Typically this should be put into the config.js in a Cringraph
-  let extraEQplugins = [
-    './devicePEQ/plugin.js', // Path to one or more "extraEQ" plugins
-    './sharePEQ/plugin.js' // Path to one or more "extraEQ" plugins
-  ];
+      // Typically this should be put into the config.js in a Cringraph
+      let extraEQplugins = [
+        './devicePEQ/plugin.js', // Path to one or more "extraEQ" plugins
+        './sharePEQ/plugin.js', // Path to one or more "extraEQ" plugins
+        './visualizePEQ/plugin.js',  // Add the visualizePEQ plugin
+        './subjectizePEQ/plugin.js'  // Add the subjectizePEQ plugin
+      ];
+
+      // ... existing code ...
+
+      // Might come from the config.js
+      let config = {
+        advanced: true,
+        showLogs: true,
+        renderPEQ: {
+          enabled: true,
+          position: 'peq-controls',
+          buttonText: 'PEQ Visualizer',
+          buttonClass: 'renderPEQ-control-btn'
+        }
+      };
 
   /**
    * Dynamically load a plugin from a sub-folder passing it the useful context
@@ -187,19 +357,50 @@
       }
     }
   }
-  // Might come from the config.js
-  let config = {advanced:true, showLogs:true}; // Show the extra selection of network based devices for now
 
-  // Load the plugin with the provided functions
+  // Ensure phoneObj has at least a flat FR before plugins use it
+  ensureDefaultFRIntoPhone();
+
+  // Load the plugin with the provided functions and phoneObj
   if (typeof extraEQplugins !== "undefined") {
     loadPlugins(extraEQplugins, {
       filtersToElem,  // Put Filters back to Html Elements
       elemToFilters,  // Get Filters from Html Elements
       calcEqDevPreamp,// Reuse existing gain calculations
-      applyEQ,         // Apply EQ
-      config
+      applyEQ,        // Apply EQ
+      config,
+      getCurrentPhoneTargetNormalisation
     });
   }
+
+  // After plugins load, wire up the button to call openOverlay with phoneObj
+  // This simulates how graphtool.js will call the plugin
+  setTimeout(() => {
+    const openPEQBtn = document.getElementById('openPEQOverlay');
+    if (openPEQBtn && typeof window.renderPEQOpenOverlay === 'function') {
+      // Override the button click to pass phoneObj directly
+      openPEQBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // targetObj already has rawChannels format - no conversion needed
+
+        // Get alignment frequency from normalizeFRInput
+        const alignFreq = phoneObj.normalizeFRFreq || null;
+
+        // Optional: Define limits for gain and Q values (defaults: maxGain=12, minGain=-12, minQ=0.2, maxQ=10)
+        const limits = {
+          maxGain: 12,
+          minGain: -12,
+          minQ: 0.2,
+          maxQ: 10
+        };
+
+        // Call the openOverlay method with the optional parameters
+        window.renderPEQOpenOverlay(phoneObj, targetObj, alignFreq, limits);
+      }, true); // Use capture phase to intercept before plugin's handler
+    }
+  }, 500); // Wait for plugin to initialize
 
   // On load: check URL for F/T/G/Q/D params and auto-add that many filters for testing
   (function autoAddFiltersFromUrl(){

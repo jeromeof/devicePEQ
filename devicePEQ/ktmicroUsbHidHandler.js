@@ -242,7 +242,7 @@ export const ktmicroUsbHidHandler = (function () {
     await new Promise(resolve => setTimeout(resolve, 200)); // Added 100ms delay
   }
 
-  async function pushToDevice(deviceDetails, slot, globalGain, filters) {
+  async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
     const device = deviceDetails.rawDevice;
 
     // First check if we need to enable PEQ

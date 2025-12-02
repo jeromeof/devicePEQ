@@ -433,7 +433,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.14</h3>
+            <h3>About Device PEQ - v0.16</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -445,23 +445,28 @@ async function initializeDeviceEqPlugin(context) {
             <div id="tab-overview" class="tab-content active">
               <p>This section lets you connect to a compatible USB or network-connected audio device (such as Moondrop, Tanchjim, JDS Labs, WiiM, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
 
-              <h4>Supported Brands & Manufacturers</h4>
-              <ul>
-                <li><strong>CrinEar:</strong> Protocol Max</li>
-                <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17, QX13</li>
-                <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays </li>
-                <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>
-                <li><strong>Truthear</strong> KeyX </li>
-                <li><strong>EPZ:</strong> GM20 and TP13</li>
-                <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
-                <li><strong>JCally:</strong> JM20 Pro, JM12</li>
-                <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
-                <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
-                <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
-                <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
-                <li><strong>WiiM:</strong> Supports limited pushing of parametric EQ over the home network</li>
-                <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
-              </ul>
+              <details>
+                <summary style="cursor: pointer; font-weight: bold;">Supported Brands & Manufacturers <span style="font-weight: normal; color: #666; font-size: 90%;">(click to expand)</span></summary>
+                <ul style="margin-top: 8px;">
+                  <li><strong>CrinEar:</strong> Protocol Max</li>
+                  <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17, QX13</li>
+                  <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays, Marigold </li>
+                  <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>
+                  <li><strong>Truthear</strong> KeyX </li>
+                  <li><strong>EPZ:</strong> GM20 and TP13</li>
+                  <li><strong>Nicehck:</strong> Octave</li>
+                  <li><strong>TRN:</strong> Black Pearl</li>
+                  <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
+                  <li><strong>JCally:</strong> JM20 Pro, JM12, JM98 Pro</li>
+                  <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
+                  <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
+                  <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
+                  <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
+                  <li><strong>WiiM:</strong> Supports limited pushing of parametric EQ over the home network</li>
+                  <li><strong>Luxsin:</strong> X9 supports reading and writing PEQ over your home network (HTTP)</li>
+                  <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
+                </ul>
+              </details>
             </div>
 
             <div id="tab-supported" class="tab-content">
@@ -472,6 +477,7 @@ async function initializeDeviceEqPlugin(context) {
                 <button class="sub-tab-button" data-subtab="sub-jdslabs">JDS Labs</button>
                 <button class="sub-tab-button" data-subtab="sub-nothing">Nothing</button>
                 <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
+                <button class="sub-tab-button" data-subtab="sub-luxsin">Luxsin</button>
               </div>
 
               <div id="sub-fiio" class="sub-tab-content active">
@@ -538,6 +544,18 @@ async function initializeDeviceEqPlugin(context) {
               <p>Supports network-based PEQ settings for WiiM devices using HTTP APIs. Requires entering the local IP address of the device and selecting the audio source (e.g., Wi-Fi, Bluetooth).</p>
               <p>Note: This option is only visible in advanced mode </p>
             </div>
+
+            <div id="sub-luxsin" class="sub-tab-content">
+              <h5>Luxsin X9</h5>
+              <p>Supports full network-based PEQ control for the Luxsin X9 using its local HTTP interface. You can both read (pull) and write (push) PEQ filters.</p>
+              <ul>
+                <li>Find the X9 IP address in the Luxsin/WalkPlay app.</li>
+                <li>Use "Connect to Device" → "Network", select "Luxsin X9", and enter the IP.</li>
+                <li>Optional: Use "Test IP" to open <code>/dev/info.cgi?action=syncData</code>; you should see encoded text if the IP is correct.</li>
+                <li>After connecting, choose the PEQ slot, then Pull or Push filters as needed.</li>
+              </ul>
+              <p>Tip: No HTTPS certificate steps are needed; Luxsin uses plain HTTP on the local network.</p>
+            </div>
           </div>
 
             <div id="tab-howto" class="tab-content">
@@ -549,6 +567,9 @@ async function initializeDeviceEqPlugin(context) {
                 <li><strong>Disconnect:</strong> Cleanly close the USB connection.</li>
               </ul>
               <p>⚠️ Please ensure your device is compatible and unlocked. Some may require the official app to enable USB EQ editing.</p>
+              <h5 style="margin-top:10px;">Network Devices</h5>
+              <p><strong>Luxsin X9:</strong> Choose Network → Luxsin X9, enter the device IP (from the Luxsin/WalkPlay app), and optionally click Test IP. A new tab should show encoded text at <code>/dev/info.cgi?action=syncData</code>. You can Pull and Push PEQ filters after connecting.</p>
+              <p><strong>WiiM:</strong> Choose Network → WiiM and accept the self-signed HTTPS certificate in the browser when prompted. Pushing PEQ is supported; pulling may be limited by browser security.</p>
             </div>
 
             <div id="tab-feedback" class="tab-content">
@@ -1169,29 +1190,41 @@ async function initializeDeviceEqPlugin(context) {
         <!-- IP Address Input -->
         <input type="text" id="ip-input" placeholder="Enter IP Address" value="${storedIP}" style="display: none; margin-top: 10px; width: 80%;">
         <!-- Test IP Button (Initially Hidden) -->
-        <button id="test-ip-button" style="display: none; margin-top: 10px; padding: 8px 12px; font-size: 13px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;">
-          Test IP Address (Open in Browser Tab)
-        </button>
+        <button id="test-ip-button" style="display: none; margin-top: 10px; padding: 8px 12px; font-size: 13px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;">Test IP Address</button>
         <!-- Network Options -->
         <div id="network-options" style="display: none; margin-top: 15px; text-align: left; background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 14px; color: #222;">
-          <p style="margin-bottom: 10px;"><strong>⚠️ Advanced Network Configuration</strong></p>
-          <p>This section requires some basic understanding of networking. Please continue only if you are familiar with concepts like IP addresses and self-signed certificates.</p>
-
-          <p><strong>Why the warning?</strong></p>
-          <p>Devices like the <strong>WiiM</strong> expose a local web server for configuration (similar to how home routers work). These devices often use a <em>self-signed certificate</em> to enable HTTPS, which is secure but <b>not trusted</b> by your browser by default.</p>
-
-          <p>As a result, when trying to connect via a web browser, you may see a <strong>security warning</strong> (e.g., "Your connection is not private"). This is normal and expected. If you choose to <b>trust the device</b> and accept the warning, this tool will attempt to access its PEQ API.</p>
-
-          <p>Note: Due to this security restriction I can only push the PEQ filters to the WiiM Device and cannot read them. They will be called HeadphoneEQ when pushed.</p>
-
-          <p>If you're okay proceed you can at least push the PEQ to this device, reading from the device breaks this security and will fail</p>
+          <p style="margin-bottom: 10px;"><strong>Network Device Selection</strong></p>
+          <p>Select which network device you are using. We recommend using the official apps to find the IP address on your network.</p>
+          <ul style="margin: 8px 0 12px 22px; color: #333;">
+            <li>WiiM: Use the WiiM Home app to find the device IP</li>
+            <li>Luxsin X9: Use the Luxsin/WalkPlay app to find the device IP</li>
+          </ul>
           <div style="margin-top: 10px; text-align: center;">
             <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
-              <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px;"> WiiM
+              <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> WiiM
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
+              <input type="radio" name="network-device" value="Luxsin" ${storedDeviceType === "Luxsin" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> Luxsin X9
             </label>
             <label style="display: inline-flex; align-items: center; gap: 5px; font-weight: bold; color: gray;">
-              <input type="radio" name="network-device" value="coming-soon" disabled ${storedDeviceType === "coming-soon" ? "checked" : ""} style="width: 18px; height: 18px;"> Other Devices Coming Soon
+              <input type="radio" name="network-device" value="coming-soon" disabled ${storedDeviceType === "coming-soon" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> Other Devices (coming soon)
             </label>
+          </div>
+
+          <!-- Device-specific help -->
+          <div id="device-help" style="margin-top: 12px; background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 10px;">
+            <div id="help-wiim" style="display: none; color: #222;">
+              <p><strong>WiiM process</strong></p>
+              <p>WiiM uses HTTPS with a self-signed certificate on its local web server. Your browser will likely warn that the connection is not private. This is expected.</p>
+              <p>To proceed, open the device page in a new tab and accept the certificate warning. After that, this tool can push PEQ settings to the device (reading settings is limited by browser security and may not work).</p>
+              <p>Tip: Use the WiiM Home app to find the device IP address.</p>
+            </div>
+            <div id="help-luxsin" style="display: none; color: #222;">
+              <p><strong>Luxsin X9 process</strong></p>
+              <p>Luxsin X9 uses a simple HTTP interface. When you test the IP, this tool opens <code>/dev/info.cgi?action=syncData</code> on the device; if the IP is correct you should see text/plain content that looks like encoded gibberish (this is expected).</p>
+              <p>No HTTPS certificate acceptance is required. You can both read (pull) and write (push) PEQ settings.</p>
+              <p>Tip: Use the Luxsin/WalkPlay app to find the device IP address. Advanced users can also check <code>/dev/info.cgi?action=syncPeq</code> for current PEQ.</p>
+            </div>
           </div>
         </div>
         <!-- Action Buttons -->
@@ -1209,6 +1242,8 @@ async function initializeDeviceEqPlugin(context) {
             const networkOptions = document.getElementById("network-options");
             const submitButton = document.getElementById("submit-button");
             const testIpButton = document.getElementById("test-ip-button");
+            const helpWiim = document.getElementById("help-wiim");
+            const helpLuxsin = document.getElementById("help-luxsin");
             // Event: USB HID
             document.getElementById("usb-hid-button").addEventListener("click", () => {
               document.body.removeChild(dialogContainer);
@@ -1226,6 +1261,10 @@ async function initializeDeviceEqPlugin(context) {
               ipInput.style.display = "block";
               networkOptions.style.display = "block";
               submitButton.style.display = "inline-block";
+              // Initialize help visibility based on stored device type
+              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
+              helpWiim.style.display = selectedDevice === "WiiM" ? "block" : "none";
+              helpLuxsin.style.display = selectedDevice === "Luxsin" ? "block" : "none";
             });
 
             // Watch for IP input to show the Test IP button
@@ -1236,13 +1275,43 @@ async function initializeDeviceEqPlugin(context) {
               submitButton.style.display = isValid ? "inline-block" : "none";
             });
 
+            // Switch help text and test button hint when selecting device type
+            const deviceRadios = document.querySelectorAll('input[name="network-device"]');
+            // Defensive: Force radios to render even if host app CSS sets appearance:none
+            deviceRadios.forEach(r => {
+              try {
+                r.style.setProperty('appearance', 'auto', 'important');
+                r.style.setProperty('-webkit-appearance', 'radio', 'important');
+                r.style.setProperty('-moz-appearance', 'radio', 'important');
+                r.style.setProperty('accent-color', '#007BFF');
+                r.type = 'radio'; // ensure input remains radio
+              } catch (e) { /* ignore */ }
+              r.addEventListener('change', () => {
+                const val = document.querySelector('input[name="network-device"]:checked')?.value || 'WiiM';
+                helpWiim.style.display = val === 'WiiM' ? 'block' : 'none';
+                helpLuxsin.style.display = val === 'Luxsin' ? 'block' : 'none';
+                // Update button label hint
+                if (testIpButton.style.display !== 'none') {
+                  testIpButton.textContent = val === 'WiiM' ? 'Open WiiM Status (HTTPS)' : 'Open Luxsin Sync Data (HTTP)';
+                }
+              });
+            });
+
             // Handle Test IP Button Click
             testIpButton.addEventListener("click", () => {
               const ip = ipInput.value.trim();
               if (!ip) return;
-              const confirmProceed = confirm(`This will open a new tab to https://${ip}.\nIf your browser shows a page with some information you have already accepted the certificate, if is shows a security warning, typically "ERR_CERT_AUTHORITY_INVALID" then you will need to accept this cerificate to continue. \n\n You should examine this certificate, check that it is issued by LinkpLay and then used the "Advanced" button to accept this self-signed certificate to proceed with secure access. If this is successful you should see a page with technical information`);
-              if (confirmProceed) {
-                window.open(`https://${ip}/httpapi.asp?command=getStatusEx`, "_blank", "noopener,noreferrer");
+              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
+              if (selectedDevice === 'WiiM') {
+                const confirmProceed = confirm(`This will open a new tab to https://${ip}.\nIf your browser shows technical info, you've already accepted the certificate. If you see a security warning (e.g., ERR_CERT_AUTHORITY_INVALID), accept the self-signed certificate (issued by Linkplay) via Advanced to proceed.`);
+                if (confirmProceed) {
+                  window.open(`https://${ip}/httpapi.asp?command=getStatusEx`, "_blank", "noopener,noreferrer");
+                }
+              } else if (selectedDevice === 'Luxsin') {
+                const confirmProceed = confirm(`This will open a new tab to http://${ip}/dev/info.cgi?action=syncData.\nIf the IP is correct, you should see encoded text/plain content returned by the device.`);
+                if (confirmProceed) {
+                  window.open(`http://${ip}/dev/info.cgi?action=syncData`, "_blank", "noopener,noreferrer");
+                }
               }
             });
 
@@ -1364,12 +1433,17 @@ async function initializeDeviceEqPlugin(context) {
             }
             const preamp_gain = context.calcEqDevPreamp(filters);
             let disconnect = false;
+            // Optional: pass phoneObj (e.g., contains fileName) down to connectors/handlers
+            const phoneTargetDetails = (typeof context.getCurrentPhoneTargetNormalisation === 'function')
+              ? (await context.getCurrentPhoneTargetNormalisation())
+              : null;
+            const phoneObj = phoneTargetDetails?.phoneObj;
             if (deviceEqUI.connectionType == "network") {
-              disconnect = await NetworkDeviceConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+              disconnect = await NetworkDeviceConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             } else if (deviceEqUI.connectionType == "usb") {
-              disconnect = await UsbHIDConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+              disconnect = await UsbHIDConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             } else if (deviceEqUI.connectionType == "serial") {
-              disconnect = await UsbSerialConnector.pushToDevice(device, selectedSlot, preamp_gain, filters);
+              disconnect = await UsbSerialConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             }
 
             if (disconnect) {

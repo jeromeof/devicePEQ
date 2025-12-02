@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxsin X9 Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .connection-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 26px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .device-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .profiles-section {
+            margin-top: 20px;
+        }
+
+        .profile-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .profile-item {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-item:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .profile-item.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .profile-badge {
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .filters-section {
+            margin-top: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .filter-item {
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .filter-freq {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .filter-gain {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .filter-gain.positive {
+            color: #4caf50;
+        }
+
+        .filter-gain.negative {
+            color: #f44336;
+        }
+
+        .filter-q {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c62828;
+            margin-top: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            flex: 1;
+            min-width: 150px;
+            margin-top: 0;
+        }
+
+        .json-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Luxsin X9 Controller</h1>
+
+        <!-- Connection Card -->
+        <div class="card">
+            <h2>Connection</h2>
+            <div class="connection-section">
+                <div class="input-group">
+                    <label for="ipAddress">Device IP Address:</label>
+                    <input type="text" id="ipAddress" placeholder="192.168.31.176" value="192.168.31.176">
+                </div>
+                <button id="connectBtn" onclick="connectToDevice()">Connect</button>
+                <button id="refreshBtn" onclick="refreshData()" disabled>Refresh</button>
+            </div>
+            <div id="connectionStatus" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Device Info Card -->
+        <div class="card" id="deviceInfoCard" style="display: none;">
+            <h2>Device Information</h2>
+            <div class="device-info">
+                <div class="info-item">
+                    <div class="info-label">Firmware Version</div>
+                    <div class="info-value" id="firmwareVersion">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Message Count</div>
+                    <div class="info-value" id="msgCount">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Input Source</div>
+                    <div class="info-value" id="inputSource">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Output Type</div>
+                    <div class="info-value" id="outputType">-</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="toggle-switch">
+                    <label for="peqToggle" style="margin-bottom: 0;">PEQ Enable:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="peqToggle" onchange="togglePEQ(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- PEQ Profiles Card -->
+        <div class="card" id="profilesCard" style="display: none;">
+            <h2>PEQ Profiles</h2>
+            <div class="profile-list" id="profileList"></div>
+        </div>
+
+        <!-- Current Profile Filters Card -->
+        <div class="card" id="filtersCard" style="display: none;">
+            <h2>Current Profile Filters: <span id="currentProfileName">-</span></h2>
+            <div class="info-item" style="margin-bottom: 15px;">
+                <div class="info-label">Preamp</div>
+                <div class="info-value" id="preampValue">-</div>
+            </div>
+            <div class="filter-grid" id="filterGrid"></div>
+        </div>
+
+        <!-- Edit Filter Card -->
+        <div class="card" id="editFilterCard" style="display: none;">
+            <h2>Edit Filter</h2>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="input-group">
+                        <label for="filterType">Filter Type:</label>
+                        <select id="filterType" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <option value="0">LPF (Low Pass)</option>
+                            <option value="1">HPF (High Pass)</option>
+                            <option value="2">BPF (Band Pass)</option>
+                            <option value="3">Notch</option>
+                            <option value="4">Peak</option>
+                            <option value="5">LowShelf</option>
+                            <option value="6">HighShelf</option>
+                            <option value="7">AllPass</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="filterFreq">Frequency (Hz):</label>
+                        <input type="number" id="filterFreq" min="20" max="20000" step="1" value="1000">
+                    </div>
+                    <div class="input-group">
+                        <label for="filterGain">Gain (dB):</label>
+                        <input type="number" id="filterGain" min="-12" max="12" step="0.1" value="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="filterQ">Q Factor:</label>
+                        <input type="number" id="filterQ" min="0.1" max="10" step="0.1" value="1.0">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="addFilterToProfile()" class="control-btn">Add Filter to Current Profile</button>
+                </div>
+            </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 15px;">
+                <strong>Note:</strong> This adds a new filter to the current profile. Most profiles support up to 10 filters.
+            </div>
+
+            <h3 style="margin-top: 20px; margin-bottom: 10px;">Update Preamp</h3>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div class="input-group" style="flex: 1;">
+                    <label for="preampInput">Preamp (dB):</label>
+                    <input type="number" id="preampInput" min="-12" max="12" step="0.1" value="0">
+                </div>
+                <button onclick="updatePreamp()" class="control-btn">Update Preamp</button>
+            </div>
+        </div>
+
+        <!-- Raw JSON Card -->
+        <div class="card" id="rawDataCard" style="display: none;">
+            <h2>Raw Device Data (JSON)</h2>
+            <button onclick="toggleRawData()">Toggle Raw Data</button>
+            <div id="rawDataContent" class="json-viewer" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Device state
+        let deviceIP = '';
+        let deviceData = null;
+        let isConnected = false;
+
+        // Input/Output mappings
+        const INPUT_SOURCES = ['USB-B', 'USB-C', 'Coaxial', 'Optical', 'Bluetooth', 'HDMI', 'RCA'];
+        const OUTPUT_TYPES = ['XLR', 'RCA', 'Headset', 'XLR/RCA'];
+        const FILTER_TYPES = ['LPF', 'HPF', 'BPF', 'Notch', 'Peak', 'LowShelf', 'HighShelf', 'AllPass'];
+
+        // Custom encoding/decoding for API communication
+        const RC = "KLMPQRSTUVWXYZABCGHdefIJjkNOlmnopqrstuvwxyzabcghiDEF34501289+67/";
+        const PC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+        // Encode function: UTF-8 -> base64 -> custom alphabet substitution
+        function encodeCustom(text) {
+            // 1. Encode to UTF-8 bytes
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(text);
+
+            // 2. Convert bytes to base64
+            let binaryString = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binaryString += String.fromCharCode(bytes[i]);
+            }
+            const base64 = btoa(binaryString);
+
+            // 3. Substitute characters from PC (standard base64) to RC (custom alphabet)
+            let encoded = '';
+            for (let i = 0; i < base64.length; i++) {
+                const char = base64.charAt(i);
+                const index = PC.indexOf(char);
+                if (index !== -1) {
+                    encoded += RC.charAt(index);
+                } else {
+                    encoded += char;
+                }
+            }
+            return encoded;
+        }
+
+        // Decode function: custom alphabet -> base64 -> UTF-8
+        function decodeCustom(encoded) {
+            // 1. Substitute characters from RC (custom) back to PC (standard base64)
+            let base64 = '';
+            for (let i = 0; i < encoded.length; i++) {
+                const char = encoded.charAt(i);
+                const index = RC.indexOf(char);
+                if (index !== -1) {
+                    base64 += PC.charAt(index);
+                } else {
+                    base64 += char;
+                }
+            }
+
+            // 2. Decode base64
+            const binaryString = atob(base64);
+
+            // 3. Convert to UTF-8
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return new TextDecoder('utf-8').decode(bytes);
+        }
+
+        // Connect to device
+        async function connectToDevice() {
+            const ipInput = document.getElementById('ipAddress');
+            deviceIP = ipInput.value.trim();
+
+            if (!deviceIP) {
+                showError('Please enter a device IP address');
+                return;
+            }
+
+            showLoading('Connecting to device...');
+
+            try {
+                await refreshData();
+                isConnected = true;
+                updateConnectionStatus(true);
+                document.getElementById('connectBtn').textContent = 'Reconnect';
+                document.getElementById('refreshBtn').disabled = false;
+
+                // Show all cards
+                document.getElementById('deviceInfoCard').style.display = 'block';
+                document.getElementById('profilesCard').style.display = 'block';
+                document.getElementById('filtersCard').style.display = 'block';
+                document.getElementById('editFilterCard').style.display = 'block';
+                document.getElementById('rawDataCard').style.display = 'block';
+
+            } catch (error) {
+                isConnected = false;
+                updateConnectionStatus(false);
+                showError(`Failed to connect: ${error.message}`);
+            }
+        }
+
+        // Refresh device data
+        async function refreshData() {
+            try {
+                // Fetch both general device data and PEQ data
+                const [deviceResponse, peqResponse] = await Promise.all([
+                    fetch(`http://${deviceIP}/dev/info.cgi?action=syncData`, {
+                        method: 'GET'
+                    }),
+                    fetch(`http://${deviceIP}/dev/info.cgi?action=syncPeq`, {
+                        method: 'GET'
+                    })
+                ]);
+
+                if (!deviceResponse.ok) {
+                    throw new Error(`HTTP ${deviceResponse.status}: ${deviceResponse.statusText}`);
+                }
+
+                // Get the response text and decode it
+                const deviceResponseText = await deviceResponse.text();
+                console.log('Raw device response:', deviceResponseText);
+
+                const decodedDeviceData = decodeCustom(deviceResponseText);
+                console.log('Decoded device data:', decodedDeviceData);
+
+                deviceData = JSON.parse(decodedDeviceData);
+                console.log('Device data:', deviceData);
+
+                // If PEQ endpoint returns data, merge it
+                if (peqResponse.ok) {
+                    const peqResponseText = await peqResponse.text();
+                    console.log('Raw PEQ response:', peqResponseText);
+
+                    const decodedPeqData = decodeCustom(peqResponseText);
+                    console.log('Decoded PEQ data:', decodedPeqData);
+
+                    const peqData = JSON.parse(decodedPeqData);
+                    console.log('PEQ data:', peqData);
+
+                    // Merge PEQ data into device data
+                    if (peqData.peq) {
+                        deviceData.peq = peqData.peq;
+                    }
+                    if (peqData.peqSelect !== undefined) {
+                        deviceData.peqSelect = peqData.peqSelect;
+                    }
+                    if (peqData.peqEnable !== undefined) {
+                        deviceData.peqEnable = peqData.peqEnable;
+                    }
+                }
+
+                updateUI();
+                clearError();
+
+            } catch (error) {
+                console.error('Refresh error:', error);
+                throw error;
+            }
+        }
+
+        // Update UI with device data
+        function updateUI() {
+            if (!deviceData) return;
+
+            // Update device info
+            document.getElementById('firmwareVersion').textContent = deviceData.version || '-';
+            document.getElementById('msgCount').textContent = deviceData.msgCount || '-';
+            document.getElementById('inputSource').textContent = INPUT_SOURCES[deviceData.input] || `Unknown (${deviceData.input})`;
+            document.getElementById('outputType').textContent = OUTPUT_TYPES[deviceData.output] || `Unknown (${deviceData.output})`;
+
+            // Update PEQ toggle
+            document.getElementById('peqToggle').checked = deviceData.peqEnable === 1;
+
+            // Update profiles
+            updateProfiles();
+
+            // Update current profile filters
+            updateCurrentFilters();
+
+            // Update raw data
+            document.getElementById('rawDataContent').textContent = JSON.stringify(deviceData, null, 2);
+        }
+
+        // Update profiles list
+        function updateProfiles() {
+            const profileList = document.getElementById('profileList');
+            profileList.innerHTML = '';
+
+            if (!deviceData.peq || deviceData.peq.length === 0) {
+                profileList.innerHTML = '<div class="info-item">No profiles found</div>';
+                return;
+            }
+
+            deviceData.peq.forEach((profile, index) => {
+                const profileDiv = document.createElement('div');
+                profileDiv.className = 'profile-item' + (index === deviceData.peqSelect ? ' active' : '');
+                profileDiv.onclick = () => selectProfile(index);
+
+                const name = document.createElement('div');
+                name.className = 'profile-name';
+                name.textContent = profile.name || `Profile ${index}`;
+
+                const badge = document.createElement('div');
+                badge.className = 'profile-badge';
+                badge.textContent = profile.canDel === 1 ? 'Custom' : 'System';
+
+                profileDiv.appendChild(name);
+                profileDiv.appendChild(badge);
+                profileList.appendChild(profileDiv);
+            });
+        }
+
+        // Update current profile filters
+        function updateCurrentFilters() {
+            if (!deviceData.peq || deviceData.peq.length === 0) return;
+
+            const currentProfile = deviceData.peq[deviceData.peqSelect];
+            if (!currentProfile) return;
+
+            document.getElementById('currentProfileName').textContent = currentProfile.name || `Profile ${deviceData.peqSelect}`;
+            document.getElementById('preampValue').textContent = `${currentProfile.preamp} dB`;
+
+            // Parse filters (they're stored as a JSON string)
+            let filters = [];
+            try {
+                filters = JSON.parse(currentProfile.filters);
+            } catch (e) {
+                console.error('Failed to parse filters:', e);
+                filters = [];
+            }
+
+            const filterGrid = document.getElementById('filterGrid');
+            filterGrid.innerHTML = '';
+
+            filters.forEach(filter => {
+                const filterDiv = document.createElement('div');
+                filterDiv.className = 'filter-item';
+
+                const freqDiv = document.createElement('div');
+                freqDiv.className = 'filter-freq';
+                freqDiv.textContent = `${filter.fc} Hz`;
+
+                const gainDiv = document.createElement('div');
+                gainDiv.className = 'filter-gain';
+                if (filter.gain > 0) {
+                    gainDiv.classList.add('positive');
+                    gainDiv.textContent = `+${filter.gain} dB`;
+                } else if (filter.gain < 0) {
+                    gainDiv.classList.add('negative');
+                    gainDiv.textContent = `${filter.gain} dB`;
+                } else {
+                    gainDiv.textContent = `${filter.gain} dB`;
+                }
+
+                const qDiv = document.createElement('div');
+                qDiv.className = 'filter-q';
+                qDiv.textContent = `Q: ${filter.q} | ${FILTER_TYPES[filter.type]}`;
+
+                filterDiv.appendChild(freqDiv);
+                filterDiv.appendChild(gainDiv);
+                filterDiv.appendChild(qDiv);
+                filterGrid.appendChild(filterDiv);
+            });
+        }
+
+        // Select profile
+        async function selectProfile(index) {
+            if (!isConnected) return;
+
+            try {
+                // Create JSON and encode it with custom encoding
+                const jsonStr = JSON.stringify({peqSelect: index});
+                const encodedJson = encodeCustom(jsonStr);
+
+                const formData = new URLSearchParams();
+                formData.append('json', encodedJson);
+
+                const response = await fetch(`http://${deviceIP}/dev/info.cgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                // Wait a bit for device to process, then refresh
+                setTimeout(() => refreshData(), 300);
+
+            } catch (error) {
+                showError(`Failed to select profile: ${error.message}`);
+            }
+        }
+
+        // Toggle PEQ
+        async function togglePEQ(enabled) {
+            if (!isConnected) return;
+
+            try {
+                // Create JSON and encode it with custom encoding
+                const jsonStr = JSON.stringify({peqEnable: enabled ? 1 : 0});
+                const encodedJson = encodeCustom(jsonStr);
+
+                const formData = new URLSearchParams();
+                formData.append('json', encodedJson);
+
+                const response = await fetch(`http://${deviceIP}/dev/info.cgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                // Wait a bit for device to process, then refresh
+                setTimeout(() => refreshData(), 300);
+
+            } catch (error) {
+                showError(`Failed to toggle PEQ: ${error.message}`);
+                // Revert toggle
+                document.getElementById('peqToggle').checked = !enabled;
+            }
+        }
+
+        // Toggle raw data display
+        function toggleRawData() {
+            const content = document.getElementById('rawDataContent');
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = `
+                <span class="status ${connected ? 'connected' : 'disconnected'}">
+                    ${connected ? 'Connected' : 'Disconnected'}
+                </span>
+                ${connected ? ` to ${deviceIP}` : ''}
+            `;
+        }
+
+        // Show loading message
+        function showLoading(message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = `<div class="loading">${message}</div>`;
+        }
+
+        // Show error
+        function showError(message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Clear error
+        function clearError() {
+            // Keep connection status
+        }
+
+        // Add filter to current profile
+        async function addFilterToProfile() {
+            if (!isConnected || !deviceData || !deviceData.peq) {
+                showError('Not connected or no profile data available');
+                return;
+            }
+
+            const currentProfile = deviceData.peq[deviceData.peqSelect];
+            if (!currentProfile) {
+                showError('No current profile selected');
+                return;
+            }
+
+            // Get filter parameters from form
+            const filterType = parseInt(document.getElementById('filterType').value);
+            const filterFreq = parseFloat(document.getElementById('filterFreq').value);
+            const filterGain = parseFloat(document.getElementById('filterGain').value);
+            const filterQ = parseFloat(document.getElementById('filterQ').value);
+
+            // Parse existing filters
+            let filters = [];
+            try {
+                filters = JSON.parse(currentProfile.filters);
+            } catch (e) {
+                console.error('Failed to parse existing filters:', e);
+            }
+
+            // Add new filter
+            const newFilter = {
+                type: filterType,
+                fc: filterFreq,
+                gain: filterGain,
+                q: filterQ
+            };
+            filters.push(newFilter);
+
+            // Create update object with the profile index and new filters
+            const updateData = {
+                peq: [{
+                    index: deviceData.peqSelect,
+                    name: currentProfile.name,
+                    canDel: currentProfile.canDel,
+                    preamp: currentProfile.preamp,
+                    filters: JSON.stringify(filters)
+                }]
+            };
+
+            try {
+                // Encode and send
+                const jsonStr = JSON.stringify(updateData);
+                console.log('Sending filter update:', jsonStr);
+
+                const encodedJson = encodeCustom(jsonStr);
+
+                const formData = new URLSearchParams();
+                formData.append('json', encodedJson);
+
+                const response = await fetch(`http://${deviceIP}/dev/info.cgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                showError('Filter added successfully!');
+
+                // Wait a bit for device to process, then refresh
+                setTimeout(() => refreshData(), 500);
+
+            } catch (error) {
+                showError(`Failed to add filter: ${error.message}`);
+            }
+        }
+
+        // Update preamp for current profile
+        async function updatePreamp() {
+            if (!isConnected || !deviceData || !deviceData.peq) {
+                showError('Not connected or no profile data available');
+                return;
+            }
+
+            const currentProfile = deviceData.peq[deviceData.peqSelect];
+            if (!currentProfile) {
+                showError('No current profile selected');
+                return;
+            }
+
+            // Get new preamp value
+            const newPreamp = parseFloat(document.getElementById('preampInput').value);
+
+            // Create update object
+            const updateData = {
+                peq: [{
+                    index: deviceData.peqSelect,
+                    name: currentProfile.name,
+                    canDel: currentProfile.canDel,
+                    preamp: newPreamp,
+                    filters: currentProfile.filters  // Keep existing filters
+                }]
+            };
+
+            try {
+                // Encode and send
+                const jsonStr = JSON.stringify(updateData);
+                console.log('Sending preamp update:', jsonStr);
+
+                const encodedJson = encodeCustom(jsonStr);
+
+                const formData = new URLSearchParams();
+                formData.append('json', encodedJson);
+
+                const response = await fetch(`http://${deviceIP}/dev/info.cgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                showError('Preamp updated successfully!');
+
+                // Wait a bit for device to process, then refresh
+                setTimeout(() => refreshData(), 500);
+
+            } catch (error) {
+                showError(`Failed to update preamp: ${error.message}`);
+            }
+        }
+
+        // Allow Enter key to connect
+        document.getElementById('ipAddress').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                connectToDevice();
+            }
+        });
+
+        // Initial status
+        updateConnectionStatus(false);
+    </script>
+</body>
+</html>
