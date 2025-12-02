@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yamaha Headphone PEQ Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+            border: 2px solid #fcc;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+            border: 2px solid #cfc;
+        }
+
+        .status.connecting {
+            background: #ffeaa7;
+            color: #d63031;
+            border: 2px solid #fdcb6e;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .eq-container {
+            margin-top: 30px;
+        }
+
+        .eq-band {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .eq-band-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .eq-band-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .eq-band-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            min-width: 70px;
+            text-align: right;
+        }
+
+        .eq-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .eq-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .eq-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .log {
+            margin-top: 30px;
+            padding: 15px;
+            background: #1e1e1e;
+            color: #0f0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.success {
+            color: #51cf66;
+        }
+
+        .log-entry.info {
+            color: #74c0fc;
+        }
+
+        .button-group {
+            margin-bottom: 20px;
+        }
+
+        .requirements {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .requirements h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .requirements ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .requirements li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Yamaha Headphone PEQ Control</h1>
+        <div class="subtitle">Web Serial API + GAIA Protocol</div>
+
+        <div class="requirements">
+            <h3>Requirements:</h3>
+            <ul>
+                <li>Chrome 117+ (Desktop or Android)</li>
+                <li>Yamaha headphones must be <strong>paired</strong> with your device via Bluetooth settings first</li>
+                <li>HTTPS or localhost (required for Web Serial API)</li>
+            </ul>
+        </div>
+
+        <div id="status" class="status disconnected">
+            Disconnected - Click "Connect to Headphones" to start
+        </div>
+
+        <div class="button-group">
+            <button id="connectBtn" onclick="connectToHeadphones()">Connect to Headphones</button>
+            <button id="disconnectBtn" onclick="disconnectFromHeadphones()" disabled>Disconnect</button>
+            <button id="readPEQBtn" onclick="readPEQ()" disabled>Read PEQ Settings</button>
+            <button id="writePEQBtn" onclick="writePEQ()" disabled>Write PEQ Settings</button>
+        </div>
+
+        <div class="eq-container" id="eqContainer" style="display: none;">
+            <h2>Parametric EQ (5 Bands)</h2>
+            <div id="eqBands"></div>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry info">Waiting for connection...</div>
+        </div>
+    </div>
+
+    <script>
+        // GAIA Protocol Constants
+        const YAMAHA_VENDOR_ID = 0x001D; // 29 in decimal
+        const SPP_UUID = "00001101-0000-1000-8000-00805f9b34fb";
+
+        // GAIA Packet Types
+        const GAIA_TYPE = {
+            COMMAND: 0,
+            NOTIFICATION: 1,
+            RESPONSE: 2,
+            ERROR: 3
+        };
+
+        // Features
+        const GAIA_FEATURE = {
+            BASIC: 0,
+            EARBUD: 1,
+            ANC: 2,
+            VOICE_UI: 3,
+            DEBUG: 4,
+            MUSIC_PROCESSING: 5,
+            UPGRADE: 6,
+            HANDSET_SERVICE: 7,
+            AUDIO_CURATION: 8,
+            EARBUD_FIT: 9,
+            VOICE_PROCESSING: 10,
+            GESTURE_CONFIGURATION: 11,
+            STATISTICS: 12,
+            BATTERY: 13
+        };
+
+        // EQ Bands (Hz)
+        const EQ_BANDS = [60, 150, 1000, 6000, 12000];
+
+        // Global state
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let readableStreamClosed = null;
+        let writableStreamClosed = null;
+        let eqValues = [0, 0, 0, 0, 0]; // dB values for each band
+
+        // Logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, state) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${state}`;
+        }
+
+        function updateButtons(connected) {
+            document.getElementById('connectBtn').disabled = connected;
+            document.getElementById('disconnectBtn').disabled = !connected;
+            document.getElementById('readPEQBtn').disabled = !connected;
+            document.getElementById('writePEQBtn').disabled = !connected;
+        }
+
+        // GAIA V3 Protocol Functions
+        function buildGAIACommand(feature, commandId, payload = new Uint8Array(0)) {
+            // Command structure (2 bytes):
+            // Bits 9-17: Feature (9 bits)
+            // Bits 7-8: Type (2 bits) - COMMAND = 0
+            // Bits 0-6: Command ID (7 bits)
+            const command = (feature << 9) | (GAIA_TYPE.COMMAND << 7) | commandId;
+
+            // GAIA V3 Packet structure:
+            // Byte 0: SOF (0xFF for V3)
+            // Byte 1: Version (0x03)
+            // Bytes 2-3: Vendor ID (big-endian)
+            // Bytes 4-5: Command (big-endian)
+            // Bytes 6-7: Payload length (big-endian)
+            // Bytes 8+: Payload
+            // Last byte: Checksum
+
+            const payloadLength = payload.length;
+            const packetLength = 8 + payloadLength + 1; // Header + payload + checksum
+            const packet = new Uint8Array(packetLength);
+
+            packet[0] = 0xFF; // SOF
+            packet[1] = 0x03; // Version 3
+            packet[2] = (YAMAHA_VENDOR_ID >> 8) & 0xFF;
+            packet[3] = YAMAHA_VENDOR_ID & 0xFF;
+            packet[4] = (command >> 8) & 0xFF;
+            packet[5] = command & 0xFF;
+            packet[6] = (payloadLength >> 8) & 0xFF;
+            packet[7] = payloadLength & 0xFF;
+
+            // Copy payload
+            for (let i = 0; i < payloadLength; i++) {
+                packet[8 + i] = payload[i];
+            }
+
+            // Calculate checksum (XOR of all bytes except checksum)
+            let checksum = 0;
+            for (let i = 0; i < packetLength - 1; i++) {
+                checksum ^= packet[i];
+            }
+            packet[packetLength - 1] = checksum;
+
+            return packet;
+        }
+
+        function parseGAIAResponse(data) {
+            if (data.length < 9) {
+                log('Response too short', 'error');
+                return null;
+            }
+
+            // Verify SOF and version
+            if (data[0] !== 0xFF || data[1] !== 0x03) {
+                log(`Invalid packet header: ${data[0].toString(16)} ${data[1].toString(16)}`, 'error');
+                return null;
+            }
+
+            // Verify checksum
+            let checksum = 0;
+            for (let i = 0; i < data.length - 1; i++) {
+                checksum ^= data[i];
+            }
+            if (checksum !== data[data.length - 1]) {
+                log('Checksum mismatch', 'error');
+                return null;
+            }
+
+            const vendorId = (data[2] << 8) | data[3];
+            const command = (data[4] << 8) | data[5];
+            const payloadLength = (data[6] << 8) | data[7];
+            const payload = data.slice(8, 8 + payloadLength);
+
+            // Extract command fields
+            const feature = (command >> 9) & 0x1FF;
+            const type = (command >> 7) & 0x03;
+            const commandId = command & 0x7F;
+
+            return {
+                vendorId,
+                feature,
+                type,
+                commandId,
+                payload
+            };
+        }
+
+        // Connection Functions
+        async function connectToHeadphones() {
+
+          try {
+            port = await navigator.serial.requestPort({
+              allowedBluetoothServiceClassIds: [SPP_UUID]
+            });
+
+            log('Port selected', 'info');
+            log(`port.connected: ${port.connected}`, 'info');
+            log(`port.readable: ${port.readable !== null}`, 'info');
+            log(`port.writable: ${port.writable !== null}`, 'info');
+
+            // FOR BLUETOOTH SPP: Streams might be available immediately!
+            if (port.readable !== null && port.writable !== null) {
+              log('Bluetooth port streams are already available!', 'success');
+
+              // Skip port.open() entirely for Bluetooth
+              writer = port.writable.getWriter();
+              reader = port.readable.getReader();
+
+              updateStatus('Connected to Yamaha headphones', 'connected');
+              updateButtons(true);
+              log('Ready to communicate', 'success');
+              readLoop();
+
+            } else {
+              // Streams not available, must call open()
+              log('Streams not available, calling port.open()...', 'info');
+              await port.open({ baudRate: 0 });
+
+              writer = port.writable.getWriter();
+              reader = port.readable.getReader();
+
+              updateStatus('Connected', 'connected');
+              updateButtons(true);
+              readLoop();
+            }
+
+          } catch (error) {
+            log(`Error: ${error.message}`, 'error');
+            console.error('Full error:', error);
+          }
+
+        }
+
+        async function disconnectFromHeadphones() {
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    reader = null;
+                }
+                if (writer) {
+                    await writer.close();
+                    writer = null;
+                }
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+
+                log('Disconnected from headphones', 'info');
+                updateStatus('Disconnected', 'disconnected');
+                updateButtons(false);
+
+            } catch (error) {
+                log(`Disconnect error: ${error.message}`, 'error');
+            }
+        }
+
+        async function readLoop() {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        log('Reader closed', 'info');
+                        break;
+                    }
+
+                    // Process received data
+                    log(`Received ${value.length} bytes: ${Array.from(value).map(b => b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+
+                    const response = parseGAIAResponse(value);
+                    if (response) {
+                        handleResponse(response);
+                    }
+                }
+            } catch (error) {
+                log(`Read error: ${error.message}`, 'error');
+            }
+        }
+
+        function handleResponse(response) {
+            log(`Response: Feature=${response.feature}, Type=${response.type}, CommandId=${response.commandId}`, 'info');
+
+            if (response.feature === GAIA_FEATURE.MUSIC_PROCESSING) {
+                if (response.type === GAIA_TYPE.RESPONSE) {
+                    log('Received PEQ response', 'success');
+                    parsePEQData(response.payload);
+                } else if (response.type === GAIA_TYPE.ERROR) {
+                    log('Received error response from headphones', 'error');
+                }
+            }
+        }
+
+        function parsePEQData(payload) {
+            // Parse PEQ data from payload
+            // Based on C0869a.java structure:
+            // Each band is 7 bytes:
+            // Bytes 0-1: Frequency (uint16, big-endian)
+            // Bytes 2-3: Unknown
+            // Byte 4: Q factor
+            // Bytes 5-6: Gain (int16, big-endian, value/60.0 = dB)
+
+            log('Parsing PEQ data...', 'info');
+
+            // This is a placeholder - actual command IDs need to be determined
+            // from the decompiled code
+            log('PEQ parsing not yet implemented - need to identify correct command IDs', 'error');
+        }
+
+        async function readPEQ() {
+            if (!writer) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            try {
+                log('Sending PEQ read request...', 'info');
+
+                // NOTE: The actual command ID for reading PEQ needs to be determined
+                // from the Android app code. This is a placeholder.
+                // You'll need to identify the correct command from files like:
+                // - sources/a5/g.java
+                // - sources/H4/*.java
+
+                const PLACEHOLDER_COMMAND_ID = 0x10; // This needs to be found in the code
+                const packet = buildGAIACommand(GAIA_FEATURE.MUSIC_PROCESSING, PLACEHOLDER_COMMAND_ID);
+
+                log(`Sending packet: ${Array.from(packet).map(b => b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+
+                await writer.write(packet);
+
+                log('PEQ read request sent', 'success');
+
+            } catch (error) {
+                log(`Read PEQ error: ${error.message}`, 'error');
+            }
+        }
+
+        async function writePEQ() {
+            if (!writer) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            try {
+                log('Sending PEQ write request...', 'info');
+
+                // Build payload with current EQ values
+                // Format: 5 bands × 7 bytes = 35 bytes
+                const payload = new Uint8Array(35);
+
+                for (let i = 0; i < 5; i++) {
+                    const offset = i * 7;
+                    const frequency = EQ_BANDS[i];
+                    const gainValue = Math.round(eqValues[i] * 60.0); // dB to integer
+
+                    // Frequency (big-endian uint16)
+                    payload[offset] = (frequency >> 8) & 0xFF;
+                    payload[offset + 1] = frequency & 0xFF;
+
+                    // Unknown bytes 2-3 (set to 0)
+                    payload[offset + 2] = 0;
+                    payload[offset + 3] = 0;
+
+                    // Q factor (placeholder)
+                    payload[offset + 4] = 0x00;
+
+                    // Gain (big-endian int16)
+                    payload[offset + 5] = (gainValue >> 8) & 0xFF;
+                    payload[offset + 6] = gainValue & 0xFF;
+                }
+
+                // NOTE: Command ID needs to be determined from Android code
+                const PLACEHOLDER_COMMAND_ID = 0x11; // This needs to be found
+                const packet = buildGAIACommand(GAIA_FEATURE.MUSIC_PROCESSING, PLACEHOLDER_COMMAND_ID, payload);
+
+                log(`Sending packet: ${Array.from(packet).map(b => b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+
+                await writer.write(packet);
+
+                log('PEQ write request sent', 'success');
+
+            } catch (error) {
+                log(`Write PEQ error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize EQ UI
+        function initializeEQUI() {
+            const container = document.getElementById('eqBands');
+            container.innerHTML = '';
+
+            for (let i = 0; i < EQ_BANDS.length; i++) {
+                const bandDiv = document.createElement('div');
+                bandDiv.className = 'eq-band';
+
+                bandDiv.innerHTML = `
+                    <div class="eq-band-header">
+                        <span class="eq-band-label">${EQ_BANDS[i]} Hz</span>
+                        <span class="eq-band-value" id="value-${i}">0.0 dB</span>
+                    </div>
+                    <input type="range" class="eq-slider" id="slider-${i}"
+                           min="-10" max="10" step="0.5" value="0"
+                           oninput="updateEQValue(${i}, this.value)">
+                `;
+
+                container.appendChild(bandDiv);
+            }
+
+            document.getElementById('eqContainer').style.display = 'block';
+        }
+
+        function updateEQValue(bandIndex, value) {
+            eqValues[bandIndex] = parseFloat(value);
+            document.getElementById(`value-${bandIndex}`).textContent = `${value >= 0 ? '+' : ''}${value} dB`;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('Yamaha PEQ Control loaded', 'success');
+            log('Initializing EQ interface...', 'info');
+            initializeEQUI();
+
+            // Check for Web Serial API support
+            if ('serial' in navigator) {
+                log('Web Serial API is supported', 'success');
+            } else {
+                log('Web Serial API is NOT supported - please use Chrome 117+', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

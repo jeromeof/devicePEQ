@@ -56,35 +56,159 @@ async function initializeSubjectizePEQPlugin(context) {
     bassExtension:  { min: 'light',    max: 'Thump'   }
   };
 
-  // Mount a button near .extra-eq
-  const anchor = document.querySelector('.extra-eq') || document.body;
-  const btn = document.createElement('button');
-  btn.textContent = 'Subjectize PEQ…';
-  btn.className = 'visualizePEQ-control-btn';
-  btn.addEventListener('click', openOverlay);
-  anchor.appendChild(btn);
+  // Mount button with configurable placement (mirrors VisualizePEQ approach)
+  const cfg = (context && context.config) || {};
+  const subjCfg = cfg.subjectizePEQ || {};
+  const renderCfg = cfg.renderPEQ || {};
 
-  function readFiltersFromPage() {
-    // Compatible with index.html demo layout
-    const items = Array.from(document.querySelectorAll('#filter-list .filter-item'));
-    return items.map((el, idx) => {
-      const typeEl = el.querySelector('.filter-type');
-      const fEl = el.querySelector('.filter-freq');
-      const gEl = el.querySelector('.filter-gain');
-      const qEl = el.querySelector('.filter-q');
-      const disabledAttr = el.getAttribute('data-disabled');
-      const disabled = disabledAttr === 'true' || disabledAttr === '1';
-      return {
-        index: idx,
-        hostEl: el,
-        type: typeEl ? typeEl.value : 'PK',
-        freq: fEl ? Number(fEl.value) : 1000,
-        gain: gEl ? Number(gEl.value) : 0,
-        q: qEl ? Number(qEl.value) : 1.0,
-        disabled
-      };
-    });
+  // Support both legacy "position" and new top-level subjectizePEQAnchorDiv/subjectizePEQPlacement
+  const legacyPosition = subjCfg.position || renderCfg.position || null;
+  let placement = 'afterend';
+  let anchorSelector = '.extra-eq';
+
+  if (cfg && typeof cfg.subjectizePEQPlacement === 'string') {
+    placement = cfg.subjectizePEQPlacement;
   }
+  if (cfg && typeof cfg.subjectizePEQAnchorDiv === 'string') {
+    anchorSelector = cfg.subjectizePEQAnchorDiv;
+  }
+
+  function resolveAnchor() {
+    // Prefer explicit selector from config
+    if (anchorSelector) {
+      const el = document.querySelector(anchorSelector);
+      if (el) return el;
+    }
+    // Fallback to legacy position by id or selector
+    if (legacyPosition && typeof legacyPosition === 'string') {
+      if (/^[#.]/.test(legacyPosition)) {
+        const bySel = document.querySelector(legacyPosition);
+        if (bySel) return bySel;
+      }
+      const byId = document.getElementById(legacyPosition.replace(/^#/, ''));
+      if (byId) return byId;
+    }
+    // Final fallbacks
+    return (
+      document.querySelector('.extra-eq') ||
+      document.getElementById('peq-controls') ||
+      document.body
+    );
+  }
+
+  const anchor = resolveAnchor();
+
+  // Optional container and inline styles, mirroring visualizePEQ behavior
+  const injectStyles = (cfg && cfg.subjectizePEQInjectStyles) !== false; // default true
+  const container = document.createElement('div');
+  container.className = 'subjectize-peq-container';
+  container.id = 'subjectizePEQArea';
+
+  if (injectStyles) {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* SubjectizePEQ button + container styling */
+      .subjectize-peq-container {
+        display: inline-block; /* sit next to visualize button */
+        margin: 8px 0 8px 8px;  /* tighten vertical space; ensure small gap to the left */
+        vertical-align: middle;
+      }
+      .subjectizePEQ-control-btn, .visualizePEQ-control-btn { margin-right: 8px; }
+      .subjectize-peq-container .selected { color: #00ccff; }
+
+      /* Header buttons */
+      #applySubjectizePEQOverlay {
+        background-color: #f8f8f8 !important;
+        color: #333 !important;
+        border: 1px solid #ddd !important;
+        font-weight: 600;
+      }
+
+      /* Match VisualizePEQ slider styling */
+      .hrange {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 44px;
+        background: transparent;
+      }
+      .hrange::-webkit-slider-runnable-track {
+        height: 18px;
+        background: #333;
+        border-radius: 9px;
+        border: 1px solid #444;
+      }
+      .hrange::-moz-range-track {
+        height: 18px;
+        background: #333;
+        border-radius: 9px;
+        border: 1px solid #444;
+      }
+      .hrange::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #ffcc00;
+        border: 1px solid #b38f00;
+        margin-top: -5px;
+      }
+      .hrange::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #ffcc00;
+        border: 1px solid #b38f00;
+      }
+      .hrange:focus { outline: none; }
+      .hrange:focus::-webkit-slider-runnable-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
+      .hrange:focus::-moz-range-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
+      .hrange::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+      /* Subjectize filter list rows to match VisualizePEQ palette */
+      .subjectize-filter-row { 
+        border: 1px solid #333; 
+        border-radius: 6px; 
+        background: #1a1a1a; 
+      }
+      .subjectize-filter-row.locked {
+        border-color: #553;
+        background: #2a1a1a;
+        cursor: not-allowed;
+      }
+      .subjectize-filter-row.selected {
+        outline: 2px solid #00ccff;
+      }
+    `;
+    container.appendChild(style);
+  }
+
+  const btn = document.createElement('button');
+  btn.textContent = subjCfg.buttonText || 'Subjectizer';
+  // Preserve existing default class for backward CSS, also add a subjectize-specific class
+  const defaultBtnClass = subjCfg.buttonClass || 'visualizePEQ-control-btn';
+  btn.className = `${defaultBtnClass} subjectizePEQ-control-btn`;
+  btn.addEventListener('click', openOverlay);
+  container.appendChild(btn);
+
+  if (subjCfg.enabled !== false) {
+    // Insert near the anchor using the configured placement (like visualizePEQ)
+    if (anchor && typeof anchor.insertAdjacentElement === 'function') {
+      try {
+        anchor.insertAdjacentElement(placement, container);
+      } catch (e) {
+        // If placement keyword is invalid for this anchor context, fall back
+        anchor.appendChild(container);
+      }
+    } else if (anchor) {
+      anchor.appendChild(container);
+    } else {
+      document.body.appendChild(container);
+    }
+  }
+
+  // Note: Removed legacy DOM scraping of filters (readFiltersFromPage).
 
   // Create overlay elements once
   let overlayBackdrop = null;
@@ -106,6 +230,35 @@ async function initializeSubjectizePEQPlugin(context) {
     }
   } catch (e) {
     // ignore
+  }
+
+  // Load filters the same way visualizePEQ does: via context.elemToFilters only.
+  function loadFiltersFromContextOrPage() {
+    let filters = [];
+    // Attempt context-based extraction first (like visualizePEQ)
+    try {
+      const src = (context && typeof context.elemToFilters === 'function') ? context.elemToFilters(true) : [];
+      const mapped = (src || []).filter(f => !f.disabled).map(f => ({
+        type: f.type || 'PK',
+        freq: Number(f.freq) || 1000,
+        gain: Number(f.gain) || 0,
+        q: Number(f.q != null ? f.q : f.Q) || 1,
+        disabled: !!f.disabled
+      }));
+      // If we successfully obtained filters, attach index + hostEl to match Subjectize needs
+      if (mapped.length) {
+        const domItems = Array.from(document.querySelectorAll('#filter-list .filter-item'));
+        filters = mapped.map((f, idx) => ({
+          ...f,
+          index: idx,
+          hostEl: domItems[idx] || null
+        }));
+      }
+    } catch (e) {
+      console.warn('elemToFilters failed in SubjectizePEQ:', e);
+      filters = [];
+    }
+    return filters;
   }
 
   function buildOverlay() {
@@ -145,13 +298,14 @@ async function initializeSubjectizePEQPlugin(context) {
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #333;';
     header.innerHTML = `<div style="font-weight:600">Subjectize PEQ</div>`;
     const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', closeOverlay);
-    // Apply button – pushes filters back to parent and closes overlay
+      closeBtn.textContent = 'Close';
+      closeBtn.addEventListener('click', closeOverlay);
+      // Apply button – pushes filters back to parent and closes overlay
     const applyBtn = document.createElement('button');
-    applyBtn.textContent = 'Apply';
-    applyBtn.style.marginLeft = '8px';
-    applyBtn.addEventListener('click', () => {
+    applyBtn.id = 'applySubjectizePEQOverlay';
+      applyBtn.textContent = 'Apply';
+      applyBtn.style.marginLeft = '8px';
+      applyBtn.addEventListener('click', () => {
       try {
         // Build a plain array of filters from current state
         const out = (state.filters || []).map(f => ({
@@ -306,6 +460,7 @@ async function initializeSubjectizePEQPlugin(context) {
 
         const slider = document.createElement('input');
         slider.type = 'range';
+        slider.className = 'hrange';
         slider.min = -100; slider.max = 100; slider.step = 1; slider.value = 0;
         slider.dataset.key = def.key;
         slider.style.cssText = 'flex:1;';
@@ -401,10 +556,9 @@ async function initializeSubjectizePEQPlugin(context) {
   }
 
   function openOverlay() {
-    state.filters = readFiltersFromPage();
-    // Auto-select the first filter that already has a freq value and non-zero gain (if available)
-    const preSelected = state.filters.find(f => Number.isFinite(f.freq) && Math.abs(Number(f.gain)) > 0);
-    state.selectedFilterIndex = preSelected ? preSelected.index : state.selectedFilterIndex;
+    state.filters = loadFiltersFromContextOrPage();
+    // Align selection behavior with visualizePEQ: default to first filter when available
+    state.selectedFilterIndex = state.filters.length ? 0 : null;
     if (!overlayBackdrop) buildOverlay();
     renderFilterList();
     overlayBackdrop.style.display = 'flex';
@@ -432,7 +586,8 @@ async function initializeSubjectizePEQPlugin(context) {
       const editable = isEditableFilter(f);
       // Make rows slightly more compact in basic mode to fit more items
       const rowPad = state.advanced ? 8 : 6;
-      row.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:${rowPad}px;border:1px solid ${editable ? '#2a2a2a' : '#553'};border-radius:6px;margin-bottom:6px;background:${editable ? '#151515' : '#2a1a1a'};cursor:${editable ? 'pointer' : 'not-allowed'};`;
+      row.className = 'subjectize-filter-row' + (editable ? '' : ' locked');
+      row.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:${rowPad}px;margin-bottom:6px;cursor:${editable ? 'pointer' : 'not-allowed'};`;
       const left = document.createElement('div');
       const subj = getSubjectiveForFreq(f.freq);
       left.style.cssText = 'display:flex;flex-direction:column;gap:2px;min-width:0;';
@@ -449,14 +604,14 @@ async function initializeSubjectizePEQPlugin(context) {
       // Line 2: subjective tweak name (if any), always placed underneath
       if (subj) {
         const line2 = document.createElement('div');
-        line2.innerHTML = `<span style="color:#8bc34a; font-size:12px;">${subj.label}</span>`;
+        line2.innerHTML = `<span style="color:#bbb; font-size:12px;">${subj.label}</span>`;
         left.appendChild(line2);
       }
       const right = document.createElement('div');
       right.style.cssText = 'font-size:12px;opacity:0.8;';
       right.textContent = editable ? (state.selectedFilterIndex === f.index ? 'Selected' : 'Editable') : 'Locked';
       if (state.selectedFilterIndex === f.index) {
-        row.style.outline = '2px solid #0af';
+        row.classList.add('selected');
       }
       if (editable) {
         row.addEventListener('click', () => {
@@ -475,20 +630,52 @@ async function initializeSubjectizePEQPlugin(context) {
   // Helper shared writer
   function writeToFilter(filterObj, newVals) {
     const el = filterObj.hostEl;
-    const typeEl = el.querySelector('.filter-type');
-    const freqEl = el.querySelector('.filter-freq');
-    const gainEl = el.querySelector('.filter-gain');
-    const qEl = el.querySelector('.filter-q');
-    if (typeEl) typeEl.value = newVals.type;
-    if (freqEl) freqEl.value = String(newVals.freq);
-    if (gainEl) gainEl.value = String(Number(newVals.gain.toFixed(2)));
-    if (qEl) qEl.value = String(newVals.q);
 
-    // Update local cache
-    filterObj.type = newVals.type;
-    filterObj.freq = newVals.freq;
-    filterObj.gain = Number(newVals.gain.toFixed(2));
-    filterObj.q = newVals.q;
+    // Sanitize incoming values and update local cache/state first
+    const next = {
+      type: newVals.type || filterObj.type || 'PK',
+      freq: Math.floor(Number(newVals.freq != null ? newVals.freq : filterObj.freq) || 1000),
+      gain: Number((Number(newVals.gain != null ? newVals.gain : filterObj.gain) || 0).toFixed(2)),
+      q: Number(newVals.q != null ? newVals.q : filterObj.q || 1)
+    };
+
+    filterObj.type = next.type;
+    filterObj.freq = next.freq;
+    filterObj.gain = next.gain;
+    filterObj.q = next.q;
+
+    // If we have corresponding DOM, update it (legacy pages)
+    if (el) {
+      const typeEl = el.querySelector('.filter-type');
+      const freqEl = el.querySelector('.filter-freq');
+      const gainEl = el.querySelector('.filter-gain');
+      const qEl = el.querySelector('.filter-q');
+      if (typeEl) typeEl.value = next.type;
+      if (freqEl) freqEl.value = String(next.freq);
+      if (gainEl) gainEl.value = String(Number(next.gain.toFixed(2)));
+      if (qEl) qEl.value = String(next.q);
+      return;
+    }
+
+    // No host element: push changes back via context immediately so Apply buttons work
+    try {
+      if (context && typeof context.filtersToElem === 'function') {
+        const out = (state.filters || []).map(f => ({
+          type: f.type || 'PK',
+          freq: Math.floor(Number(f.freq) || 1000),
+          gain: Math.round((Number(f.gain) || 0) * 10) / 10, // align with header Apply formatting
+          q: Math.round((Number(f.q) || 1) * 10) / 10,
+          disabled: !!f.disabled
+        }));
+        context.filtersToElem(out);
+        if (typeof context.applyEQ === 'function') {
+          try { context.applyEQ(); } catch(_) {}
+        }
+        try { document.dispatchEvent(new CustomEvent('UpdateExtensionFilters')); } catch(_) {}
+      }
+    } catch (e) {
+      console.warn('[SubjectizePEQ] Failed to push context filters:', e);
+    }
   }
 
   function applySingleSpecToSelected(spec, gain) {
