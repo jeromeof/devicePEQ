@@ -140,6 +140,9 @@ export const luxsinNetworkHandler = (function () {
         profiles: Array.isArray(deviceData.peq) ? deviceData.peq.map((p, idx) => ({ id: idx, name: p.name || `Profile ${idx}` })) : []
       };
 
+      // Append synthetic "New" preset option at the end
+      deviceDetails.profiles.push({ id: 'new', name: 'New' });
+
       return { filters, globalGain: preamp, currentSlot: currentIndex, deviceDetails };
     } catch (err) {
       console.error('Luxsin: error pulling from device', err);
@@ -155,7 +158,9 @@ export const luxsinNetworkHandler = (function () {
       // Get current data to fetch profile metadata first
       const syncDataText = await httpGet(deviceIp, '/dev/info.cgi?action=syncData');
       const deviceData = JSON.parse(decodeCustom(syncDataText));
-      const currentIndex = (slot !== undefined && slot !== null) ? Number(slot) : (deviceData.peqSelect ?? 0);
+      const slotId = (typeof slot === 'object' && slot !== null) ? (slot.id ?? slot.slot ?? slot.value) : slot;
+      const isNewPreset = String(slotId) === 'new';
+      const currentIndex = (!isNewPreset && slotId !== undefined && slotId !== null) ? Number(slotId) : (deviceData.peqSelect ?? 0);
       const profile = Array.isArray(deviceData.peq) ? deviceData.peq[currentIndex] : null;
 
       const luxFilters = (filters || []).map(f => ({
@@ -165,17 +170,33 @@ export const luxsinNetworkHandler = (function () {
         q: Number(f.q)
       }));
 
-      const update = {
-        peq: [{
-          index: currentIndex,
-          name: profile?.name || phoneObj?.fileName || `Profile ${currentIndex}`,
-          canDel: profile?.canDel ?? 1,
-          preamp: Number(preamp ?? profile?.preamp ?? 0),
-          filters: JSON.stringify(luxFilters)
-        }]
-      };
+      let payload;
+      if (isNewPreset) {
+        // Create a brand new preset/profile using the observed payload shape with `peqChange`
+        // Important: filters must be sent as an array of objects (not stringified)
+        const newName = (phoneObj && phoneObj.fileName) ? String(phoneObj.fileName) : 'New Profile';
+        payload = {
+          peqChange: {
+            name: newName,
+            filters: luxFilters,
+            preamp: Number(preamp ?? 0),
+            autoPre: 0,
+            canDel: 1
+          }
+        };
+      } else {
+        payload = {
+          peq: [{
+            index: currentIndex,
+            name: profile?.name || phoneObj?.fileName || `Profile ${currentIndex}`,
+            canDel: profile?.canDel ?? 1,
+            preamp: Number(preamp ?? profile?.preamp ?? 0),
+            filters: JSON.stringify(luxFilters)
+          }]
+        };
+      }
 
-      await httpPostJsonEncoded(deviceIp, '/dev/info.cgi', update);
+      await httpPostJsonEncoded(deviceIp, '/dev/info.cgi', payload);
       console.log('Luxsin: PEQ updated successfully');
       return false; // no restart required
     } catch (err) {
@@ -212,10 +233,14 @@ export const luxsinNetworkHandler = (function () {
       const text = await httpGet(device.ip, '/dev/info.cgi?action=syncPeq');
       const data = JSON.parse(decodeCustom(text));
       const peq = Array.isArray(data.peq) ? data.peq : [];
-      return peq.map((p, idx) => ({ id: idx, name: p.name || `Profile ${idx}` }));
+      const list = peq.map((p, idx) => ({ id: idx, name: p.name || `Profile ${idx}` }));
+      // Append synthetic "New" preset option at the end
+      list.push({ id: 'new', name: 'New' });
+      return list;
     } catch (err) {
       console.warn('Luxsin: getAvailableSlots failed, returning empty list', err);
-      return [];
+      // Even if failed, still expose the ability to create a new preset
+      return [{ id: 'new', name: 'New' }];
     }
   }
 

@@ -40,12 +40,12 @@ async function initializeVisualizePEQPlugin(context) {
                 border: 1px solid #ddd !important;
                 font-weight: 600;
             }
-            
+
             /* General context */
             .visualize-peq-container { margin: 8px 0; }
             .visualizePEQ-control-btn { margin-right: 8px; }
             .selected { color: #00ccff; }
-            
+
             /* ------------------------------------------------------------------
                OVERLAY BACKDROP (covers entire viewport)
             ------------------------------------------------------------------ */
@@ -58,7 +58,7 @@ async function initializeVisualizePEQPlugin(context) {
                 justify-content: center;
                 z-index: 9998;
             }
-            
+
             /* ------------------------------------------------------------------
                MAIN OVERLAY PANEL
                Anchor it to the viewport using 'position: fixed'.
@@ -69,22 +69,22 @@ async function initializeVisualizePEQPlugin(context) {
                 margin: auto;                       /* center on desktop */
                 background: #111;
                 color: #ddd;
-            
+
                 width: 95vw;
                 max-width: 1200px;
                 height: 90vh;
-            
+
                 border: 1px solid #333;
                 border-radius: 8px;
-            
+
                 display: flex;
                 flex-direction: column;
-            
+
                 overflow: hidden;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.5);
                 z-index: 9999;                      /* above backdrop */
             }
-            
+
             /* Header */
             .peq-overlay-header {
                 display: flex;
@@ -94,7 +94,7 @@ async function initializeVisualizePEQPlugin(context) {
                 border-bottom: 1px solid #333;
                 flex-shrink: 0;
             }
-            
+
             /* Body */
             .peq-overlay-body {
                 flex: 1;
@@ -104,7 +104,7 @@ async function initializeVisualizePEQPlugin(context) {
                 overflow-y: auto;
                 min-height: 0;
             }
-            
+
             /* Chart container */
             .peq-chart {
                 width: 100%;
@@ -113,15 +113,16 @@ async function initializeVisualizePEQPlugin(context) {
                 cursor: crosshair;
                 flex-shrink: 0;
             }
-            
+
             /* Bottom spacing */
             .peq-bottom { margin-top:10px; }
-            
-            /* Sliders */
-            .peq-sliders {
+
+            /* Sliders - scope to Visualizer only (avoid affecting other plugins) */
+            #visualizePEQArea .peq-sliders,
+            .visualize-peq-overlay .peq-sliders {
                 display: none;
-                margin-top: 8px;
             }
+            #visualizePEQArea .peq-sliders { margin-top: 8px; }
             .peq-sliders .slider-panel {
                 display: flex;
                 gap: 24px;
@@ -146,7 +147,7 @@ async function initializeVisualizePEQPlugin(context) {
                 color: #ddd;
                 font-variant-numeric: tabular-nums;
             }
-            
+
             /* Slider styling */
             .hrange {
                 -webkit-appearance: none;
@@ -185,13 +186,13 @@ async function initializeVisualizePEQPlugin(context) {
                 border: 1px solid #b38f00;
             }
             .hrange:focus { outline: none; }
-            
+
             /* Focus glow */
             .hrange:focus::-webkit-slider-runnable-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
             .hrange:focus::-moz-range-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
-            
+
             .hrange::-webkit-slider-thumb:active { transform: scale(1.1); }
-            
+
             /* Footer */
             .peq-overlay-footer {
                 display: flex;
@@ -201,7 +202,7 @@ async function initializeVisualizePEQPlugin(context) {
                 padding: 10px 14px;
                 flex-shrink: 0;
             }
-            
+
             .peq-btn {
                 padding: 6px 12px;
                 cursor: pointer;
@@ -211,13 +212,13 @@ async function initializeVisualizePEQPlugin(context) {
                 border-radius: 4px;
                 min-height: 44px;
             }
-            
+
             .peq-btn.primary {
                 background: #0a84ff;
                 border-color: #086ad1;
                 color: #fff;
             }
-            
+
             /* Filter type radio as centered buttons */
             .peq-type-group {
                 display: flex;
@@ -267,7 +268,7 @@ async function initializeVisualizePEQPlugin(context) {
                 color: #fff;
                 box-shadow: 0 0 0 2px rgba(10,132,255,0.25);
             }
-            
+
             /* ------------------------------------------------------------------
                RESPONSIVE DESIGN (Mobile)
             ------------------------------------------------------------------ */
@@ -277,7 +278,7 @@ async function initializeVisualizePEQPlugin(context) {
                     justify-content: stretch;
                     padding: 0;
                 }
-            
+
                 .peq-overlay {
                     width: 100vw;
                     height: 100vh;
@@ -286,7 +287,7 @@ async function initializeVisualizePEQPlugin(context) {
                     border-radius: 0;
                     margin: 0;                /* ensure full stretch */
                 }
-            
+
                 .peq-overlay-header {
                     padding: 12px;
                 }
@@ -294,16 +295,18 @@ async function initializeVisualizePEQPlugin(context) {
                     font-size: 16px;
                     font-weight: bold;
                 }
-            
+
                 .peq-overlay-body { padding: 8px; }
-            
+
                 .peq-chart {
                     height: 40vh;
                     min-height: 250px;
                 }
-            
+
                 /* Mobile slider stack */
-                .peq-sliders { margin-top: 4px; }
+                /* Secondary style block also scoped to Visualizer */
+                #visualizePEQArea .peq-sliders,
+                .visualize-peq-overlay .peq-sliders { margin-top: 4px; }
                 .peq-sliders .slider-panel {
                     flex-direction: column;
                     gap: 8px;
@@ -316,7 +319,7 @@ async function initializeVisualizePEQPlugin(context) {
                 }
                 .peq-sliders .slider-col label { font-size: 11px; }
                 .peq-sliders .value { min-height: 16px; font-size: 13px; }
-            
+
                 /* Smaller touch targets */
                 .hrange { height: 32px; max-width: 100%; }
                 .hrange::-webkit-slider-runnable-track {
@@ -331,7 +334,7 @@ async function initializeVisualizePEQPlugin(context) {
                 .hrange::-moz-range-thumb {
                     width: 28px; height: 28px;
                 }
-            
+
                 /* Footer buttons */
                 .peq-overlay-footer {
                     padding: 12px;
@@ -344,7 +347,7 @@ async function initializeVisualizePEQPlugin(context) {
                     flex: 1;
                 }
             }
-            
+
             @media (max-width: 480px) {
                 .peq-chart {
                     height: 35vh;
@@ -360,7 +363,7 @@ async function initializeVisualizePEQPlugin(context) {
 
         <!-- Overlay markup -->
         <div id="peqOverlayBackdrop" class="peq-overlay-backdrop">
-          <div class="peq-overlay" role="dialog" aria-modal="true" aria-labelledby="peqOverlayTitle">
+          <div class="peq-overlay visualize-peq-overlay" role="dialog" aria-modal="true" aria-labelledby="peqOverlayTitle">
             <div class="peq-overlay-header">
               <div id="peqOverlayTitle">PEQ Visualizer: Click on 'Dot' on chart to change, press 'Q' or 'W' to alter qValues, 'T' to toggle filter type</div>
             </div>
@@ -725,7 +728,7 @@ async function initializeVisualizePEQPlugin(context) {
       if (freqVal) freqVal.textContent = `${Math.round(filt.freq)} Hz`;
       if (gainVal) gainVal.textContent = `${filt.gain.toFixed(2)} dB`;
       if (qVal) qVal.textContent = `${filt.Q.toFixed(2)}`;
-      
+
       // Display filter type and sync radios
       const filterType = filt.type || 'PK';
       const filterLabel = filterType;

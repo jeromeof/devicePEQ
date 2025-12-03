@@ -457,6 +457,30 @@
             <button onclick="toggleRawData()">Toggle Raw Data</button>
             <div id="rawDataContent" class="json-viewer" style="display: none;"></div>
         </div>
+
+        <!-- RAW JSON Decoder Card -->
+        <div class="card" id="rawDecoderCard">
+            <h2>RAW JSON Decoder</h2>
+            <p style="margin: 8px 0 12px; color:#555;">
+                Paste raw results from the device (custom-encoded, base64, or plain JSON) and decode them.
+            </p>
+            <div class="input-group" style="margin-bottom: 10px;">
+                <label for="rawInput">Raw Input:</label>
+                <textarea id="rawInput" style="width:100%; min-height: 120px; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 13px;"></textarea>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 12px;">
+                <button onclick="decodeRawInput()">Decode</button>
+                <button onclick="clearRawInput()" style="background:#9e9e9e;">Clear</button>
+                <button onclick="copyDecodedJson()" style="background:#2e7d32;">Copy JSON</button>
+            </div>
+            <div style="margin-top: 6px;">
+                <h3 style="margin: 10px 0 6px;">Decoded Text</h3>
+                <pre id="rawDecodedText" style="background:#f8f9fa; padding:12px; border-radius:8px; overflow:auto; white-space:pre-wrap; word-break:break-word; min-height: 60px;"></pre>
+                <h3 style="margin: 12px 0 6px;">Parsed JSON</h3>
+                <pre id="rawDecodedJson" class="json-viewer" style="min-height: 60px;"></pre>
+                <div id="rawDecodeError" class="error" style="display:none; margin-top:8px;"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -793,6 +817,118 @@
         function toggleRawData() {
             const content = document.getElementById('rawDataContent');
             content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // RAW JSON decoder helpers
+        function setRawDecodeError(message) {
+            const el = document.getElementById('rawDecodeError');
+            if (!el) return;
+            if (message) {
+                el.style.display = 'block';
+                el.textContent = message;
+            } else {
+                el.style.display = 'none';
+                el.textContent = '';
+            }
+        }
+
+        function clearRawDecoderOutputs() {
+            const t = document.getElementById('rawDecodedText');
+            const j = document.getElementById('rawDecodedJson');
+            if (t) t.textContent = '';
+            if (j) j.textContent = '';
+            setRawDecodeError('');
+        }
+
+        function clearRawInput() {
+            const i = document.getElementById('rawInput');
+            if (i) i.value = '';
+            clearRawDecoderOutputs();
+        }
+
+        function copyDecodedJson() {
+            const j = document.getElementById('rawDecodedJson');
+            const t = document.getElementById('rawDecodedText');
+            const textToCopy = (j && j.textContent.trim()) ? j.textContent : (t ? t.textContent : '');
+            if (!textToCopy) {
+                setRawDecodeError('Nothing to copy');
+                return;
+            }
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                setRawDecodeError('');
+            }).catch(err => {
+                setRawDecodeError(`Failed to copy: ${err.message || err}`);
+            });
+        }
+
+        function decodeRawInput() {
+            const inputEl = document.getElementById('rawInput');
+            if (!inputEl) return;
+            const raw = (inputEl.value || '').trim();
+            clearRawDecoderOutputs();
+            if (!raw) {
+                setRawDecodeError('Please paste some raw data to decode.');
+                return;
+            }
+
+            const outText = document.getElementById('rawDecodedText');
+            const outJson = document.getElementById('rawDecodedJson');
+
+            // Try paths: custom->JSON, base64->JSON, direct JSON
+            const attempts = [];
+
+            // Attempt 1: custom alphabet decode
+            attempts.push(() => {
+                const txt = decodeCustom(raw);
+                return { kind: 'custom', text: txt };
+            });
+
+            // Attempt 2: standard base64 decode
+            attempts.push(() => {
+                const bin = atob(raw);
+                // Convert binary string to UTF-8
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const txt = new TextDecoder('utf-8').decode(bytes);
+                return { kind: 'base64', text: txt };
+            });
+
+            // Attempt 3: assume plain JSON/text
+            attempts.push(() => ({ kind: 'plain', text: raw }));
+
+            let firstText = null;
+            let parsed = null;
+            let lastErr = null;
+
+            for (const attempt of attempts) {
+                try {
+                    const res = attempt();
+                    if (!firstText) firstText = res.text;
+                    try {
+                        parsed = JSON.parse(res.text);
+                        // On first successful parse, break
+                        break;
+                    } catch (e) {
+                        lastErr = e;
+                        continue;
+                    }
+                } catch (e) {
+                    lastErr = e;
+                    continue;
+                }
+            }
+
+            if (outText && firstText !== null) {
+                outText.textContent = firstText;
+            }
+            if (parsed !== null && outJson) {
+                outJson.textContent = JSON.stringify(parsed, null, 2);
+            }
+            if (parsed === null) {
+                setRawDecodeError(`Failed to parse JSON. Shown is the best-effort decoded text. ${lastErr ? '(' + (lastErr.message || lastErr) + ')' : ''}`);
+            } else {
+                setRawDecodeError('');
+            }
         }
 
         // Update connection status
