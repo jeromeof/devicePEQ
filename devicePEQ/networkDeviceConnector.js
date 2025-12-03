@@ -66,7 +66,7 @@ export const NetworkDeviceConnector = (function () {
         }
         // Pass modelConfig so handlers can respect device-specific limits (e.g., maxFilters)
         return await currentDevice.handler.pushToDevice(
-          currentDevice.ip,
+          currentDevice,
           phoneObj,
           slot,
           preamp,
@@ -80,21 +80,21 @@ export const NetworkDeviceConnector = (function () {
             console.warn("No network device connected.");
             return;
         }
-        return await currentDevice.handler.pullFromDevice(currentDevice.ip, slot);
+        return await currentDevice.handler.pullFromDevice(currentDevice, slot);
     }
     async function getCurrentSlot(device) {
       if (!deviceHandlers[device.type]) {
         console.warn("Unsupported Device Type.");
         return null;
       }
-      return await deviceHandlers[device.type].getCurrentSlot(device.ip);
+      return await deviceHandlers[device.type].getCurrentSlot(device);
     }
   async function getAvailableSlots(device) {
     if (!deviceHandlers[device.type]) {
       console.warn("Unsupported Device Type.");
       return null;
     }
-    return await deviceHandlers[device.type].getAvailableSlots(device.ip);
+    return await deviceHandlers[device.type].getAvailableSlots(device);
   }
 
     async function enablePEQ(device, enabled, slotId) {
@@ -102,7 +102,7 @@ export const NetworkDeviceConnector = (function () {
             console.warn("No network device connected.");
             return;
         }
-        return await currentDevice.handler.enablePEQ(currentDevice.ip, enabled, slotId);
+        return await currentDevice.handler.enablePEQ(currentDevice, enabled, slotId);
     }
 
     return {

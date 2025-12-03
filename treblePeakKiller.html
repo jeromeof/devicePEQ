@@ -184,8 +184,8 @@
 
     <div class="label">Sweep Range: 4 kHz → 16 kHz</div>
 
-    <div class="label">Sweep Speed (seconds): <span id="sweepSpeedLabel">10</span></div>
-    <input type="range" id="sweepSpeed" min="4" max="20" value="10" step="1">
+    <div class="label">Sweep Speed (seconds): <span id="sweepSpeedLabel">40</span></div>
+    <input type="range" id="sweepSpeed" min="2" max="60" value="40" step="1">
 
     <div class="label">Current Sweep Frequency: <b><span id="sweepFreqLabel">—</span></b> Hz</div>
 
@@ -219,22 +219,41 @@
   <!-- ========================= RIGHT PANEL ============================= -->
   <div class="panel" id="rightPanel">
 
-    <h2>2. 3-Tone Comparator</h2>
+    <h2>2. Revisit</h2>
+
+    <div class="label" style="margin-bottom:4px;">Method</div>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+      <label style="font-size:13px; color: var(--text-dim);">
+        <input type="radio" name="revisitMode" id="mode3Tone" value="3tone" checked>
+        3‑Tone
+      </label>
+      <label style="font-size:13px; color: var(--text-dim);">
+        <input type="radio" name="revisitMode" id="modeMicroSweep" value="microSweep">
+        microSweep
+      </label>
+    </div>
 
     <div class="label">Center Frequency (Hz): <span id="toneCenterLabel">8000</span></div>
     <input type="range" id="toneCenter" min="4000" max="16000" value="8000" step="10">
 
-    <div class="label" style="margin-top:8px;">± Range (Hz): <span id="toneStepLabel">10</span></div>
-    <input type="range" id="toneStep" min="5" max="100" value="10" step="5">
-    <div class="label" style="margin-top:2px;color: var(--text-dim);">Use the ± range to hear tones just below and above the center.</div>
+    <div class="label" style="margin-top:8px;">± Range (% of center): <span id="toneStepLabel">2.00</span>% (<span id="toneStepHzLabel">160</span> Hz)</div>
+    <input type="range" id="toneStep" min="0.25" max="5.0" value="2.00" step="0.05">
+    <div class="label" style="margin-top:2px;color: var(--text-dim);">Range auto-scales with center frequency (constant-%). The Hz shown updates with center.</div>
 
-    <div class="label" style="margin-top:10px;">Q-Value: <span id="toneQLabel">0.70</span></div>
-    <input type="range" id="toneQ" min="0" max="10" value="0.7" step="0.01">
+    <div class="label" style="margin-top:10px;">Q-Value: <span id="toneQLabel">4.00</span></div>
+    <input type="range" id="toneQ" min="0" max="10" value="4" step="0.01">
 
     <div class="label">Center Gain (dB): <span id="toneGainLabel">0</span></div>
     <input type="range" id="toneGain" min="-12" max="12" value="0" step="0.5">
 
-    <button id="toneStartBtn">Start 3-Tone Test</button>
+    <!-- microSweep-only: cycle time control -->
+    <div id="microSweepControls" style="display:none; margin-top:8px;">
+      <div class="label">microSweep half‑cycle (sec): <span id="microSweepDurationLabel">12</span></div>
+      <input type="range" id="microSweepDuration" min="6" max="30" value="12" step="1">
+      <div class="label" style="margin-top:2px;color: var(--text-dim);">Slow, short sweep between lower and upper bounds of the chosen range.</div>
+    </div>
+
+    <button id="toneStartBtn">Start</button>
     <button id="toneStopBtn" class="secondary">Stop</button>
 
     <h3 style="margin-top:20px;">Save PEQ Filter</h3>
@@ -275,7 +294,7 @@
   let sweepGain = null;
   let sweepActive = false;
   let sweepStartTime = 0;
-  let sweepDurationSec = 10; // default
+  let sweepDurationSec = 40; // default updated per request
   let sweepMarks = [];       // stores: { freq, time }
   let sweepRAF = null;
   let currentSweepFreq = null;
@@ -293,6 +312,36 @@
   const sweepFreqLabel = document.getElementById("sweepFreqLabel");
   const sweepApplyFilters = document.getElementById("sweepApplyFilters");
   const markTable = document.getElementById("markTable");
+
+  /* ---------------------------------------------------------------
+     Output chain (headroom + safety limiter)
+     Prevent audible clipping when positive gains are used.
+  ---------------------------------------------------------------- */
+  let outPreGain = null;   // provides fixed headroom (e.g., -12 dB)
+  let outLimiter = null;   // soft limiter near 0 dBFS
+
+  function ensureOutputChain() {
+    if (!audioCtx) return;
+    if (!outPreGain) {
+      outPreGain = audioCtx.createGain();
+      // -12 dB headroom by default (0.25 linear)
+      outPreGain.gain.value = 0.25;
+    }
+    if (!outLimiter) {
+      outLimiter = audioCtx.createDynamicsCompressor();
+      try {
+        // Configure as a fast soft limiter around -1 dB
+        outLimiter.threshold.setValueAtTime(-1.0, audioCtx.currentTime);
+        outLimiter.knee.setValueAtTime(0.0, audioCtx.currentTime);
+        outLimiter.ratio.setValueAtTime(20.0, audioCtx.currentTime);
+        outLimiter.attack.setValueAtTime(0.003, audioCtx.currentTime);
+        outLimiter.release.setValueAtTime(0.05, audioCtx.currentTime);
+      } catch(e) { /* older browsers: ignore */ }
+
+      // Connect chain once
+      outPreGain.connect(outLimiter).connect(audioCtx.destination);
+    }
+  }
 
   /* ------------------------------
      Sweep Speed Slider
@@ -335,9 +384,10 @@
   function buildSweepChain() {
     // Build audio routing: sweepOsc -> sweepGain -> [filters?] -> destination
     if (!sweepOsc || !sweepGain) return;
+    ensureOutputChain();
     const apply = sweepApplyFilters && sweepApplyFilters.checked;
     if (!apply || !Array.isArray(peqFilters) || peqFilters.length === 0) {
-      sweepOsc.connect(sweepGain).connect(audioCtx.destination);
+      sweepOsc.connect(sweepGain).connect(outPreGain);
       return;
     }
     // create filters
@@ -353,13 +403,14 @@
       sweepFilterNodes.push(biq);
     });
     sweepOsc.connect(sweepGain);
-    last.connect(audioCtx.destination);
+    last.connect(outPreGain);
   }
 
   function startSweep() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    ensureOutputChain();
 
     stopSweep(); // ensure clean state
 
@@ -688,6 +739,9 @@
     // overlay: the single current editable filter curve and tone sample lines
     drawCurrentFilterOverlay();
 
+    // overlay: microSweep moving dot on the current curve
+    drawMicroSweepDot();
+
     // overlay: draw markers for marked sweep frequencies
     drawSweepMarks();
   }
@@ -739,7 +793,7 @@
     eqCtx.stroke();
 
     // Show the three tone sample positions as vertical ticks at Fc±range and Fc
-    const stepHz = parseFloat(toneStep.value);
+    const stepHz = getStepHz();
     [fc - stepHz, fc, fc + stepHz].forEach((fTick, idx) => {
       if (fTick < 4000 || fTick > 16000) return;
       const x = freqToX(fTick);
@@ -750,6 +804,44 @@
       eqCtx.lineTo(x, 10);
       eqCtx.stroke();
     });
+  }
+
+  // Draw a moving dot representing the current microSweep frequency on the
+  // current editable filter curve. Shows filled when sweeping, hollow during
+  // the silent endpoint hold.
+  function drawMicroSweepDot() {
+    if (!currentMicroSweepFreq) return;
+    const f = Math.max(4000, Math.min(16000, currentMicroSweepFreq));
+    const fc = parseFloat(toneCenter.value);
+    const Qraw  = parseFloat(toneQ.value);
+    const qVal = Math.max(0, Qraw);
+    const g  = parseFloat(toneGain.value);
+
+    const x = freqToX(f);
+    const yDb = biquadMagQ(fc, g, qVal, f);
+    const y = dBToY(yDb);
+
+    // Style: cyan dot; hollow when on silent hold
+    const rOuter = 5;
+    const rInner = 2.5;
+    eqCtx.beginPath();
+    eqCtx.arc(x, y, rOuter, 0, Math.PI * 2);
+    if (currentMicroSweepHold) {
+      eqCtx.strokeStyle = "#3fa9f5";
+      eqCtx.lineWidth = 2;
+      eqCtx.stroke();
+    } else {
+      const grad = eqCtx.createRadialGradient(x, y, 0, x, y, rOuter);
+      grad.addColorStop(0, "rgba(63,169,245,0.95)");
+      grad.addColorStop(1, "rgba(63,169,245,0.25)");
+      eqCtx.fillStyle = grad;
+      eqCtx.fill();
+      // small center dot for crispness
+      eqCtx.beginPath();
+      eqCtx.arc(x, y, rInner, 0, Math.PI * 2);
+      eqCtx.fillStyle = "#c8e7ff";
+      eqCtx.fill();
+    }
   }
 
   function drawSweepMarks() {
@@ -790,12 +882,20 @@
 
   const toneStep = document.getElementById("toneStep");
   const toneStepLabel = document.getElementById("toneStepLabel");
+  const toneStepHzLabel = document.getElementById("toneStepHzLabel");
 
   const toneGain = document.getElementById("toneGain");
   const toneGainLabel = document.getElementById("toneGainLabel");
 
   const toneStartBtn = document.getElementById("toneStartBtn");
   const toneStopBtn  = document.getElementById("toneStopBtn");
+
+  // Revisit mode controls
+  const mode3Tone = document.getElementById("mode3Tone");
+  const modeMicroSweep = document.getElementById("modeMicroSweep");
+  const microSweepControls = document.getElementById("microSweepControls");
+  const microSweepDuration = document.getElementById("microSweepDuration");
+  const microSweepDurationLabel = document.getElementById("microSweepDurationLabel");
 
   const toneHUD = document.getElementById("toneHUD");
 
@@ -813,7 +913,26 @@
   /* ---------------------------------------------------------------
      Update labels on sliders
   ---------------------------------------------------------------- */
-  toneCenter.oninput = () => { toneCenterLabel.textContent = toneCenter.value; drawEQGraph(); };
+  function getStepHz() {
+    const percent = parseFloat(toneStep.value); // percent of center
+    const fc = parseFloat(toneCenter.value);
+    return fc * (percent / 100);
+  }
+
+  function updateStepLabels() {
+    // percent label
+    const pct = parseFloat(toneStep.value);
+    toneStepLabel.textContent = pct.toFixed(2);
+    // Hz equivalent at current center
+    const hz = getStepHz();
+    if (toneStepHzLabel) toneStepHzLabel.textContent = Math.round(hz);
+  }
+
+  toneCenter.oninput = () => {
+    toneCenterLabel.textContent = toneCenter.value;
+    updateStepLabels();
+    drawEQGraph();
+  };
   toneQ.oninput = () => {
     // Clamp to [0,10] to keep UI consistent with requested range
     const qVal = Math.max(0, Math.min(10, parseFloat(toneQ.value)));
@@ -821,8 +940,21 @@
     toneQLabel.textContent = qVal.toFixed(2);
     drawEQGraph();
   };
-  toneStep.oninput = () => { toneStepLabel.textContent = toneStep.value; drawEQGraph(); };
+  toneStep.oninput = () => { updateStepLabels(); drawEQGraph(); };
   toneGain.oninput = () => { toneGainLabel.textContent = toneGain.value; drawEQGraph(); };
+
+  // Revisit mode UI logic
+  function updateRevisitModeUI() {
+    const isMicro = modeMicroSweep.checked;
+    microSweepControls.style.display = isMicro ? 'block' : 'none';
+    toneStartBtn.textContent = isMicro ? 'Start microSweep' : 'Start 3‑Tone Test';
+  }
+  mode3Tone.addEventListener('change', updateRevisitModeUI);
+  modeMicroSweep.addEventListener('change', updateRevisitModeUI);
+  microSweepDuration.oninput = () => { microSweepDurationLabel.textContent = microSweepDuration.value; };
+  // initialize labels
+  updateRevisitModeUI();
+  updateStepLabels();
 
 
   /* ================================================================
@@ -831,6 +963,7 @@
 
   function start3Tone() {
     if (!audioCtx) audioCtx = new AudioContext();
+    ensureOutputChain();
 
     stop3Tone(); // safety
 
@@ -843,7 +976,7 @@
     toneGainC = audioCtx.createGain();
 
     const fc = parseFloat(toneCenter.value);
-    const stepHz = parseFloat(toneStep.value);
+    const stepHz = getStepHz();
     const Q  = parseFloat(toneQ.value);
     const gDB  = parseFloat(toneGain.value);
 
@@ -857,10 +990,10 @@
     toneGainB.gain.value = 0;
     toneGainC.gain.value = 0;
 
-    // route all to destination
-    toneOscA.connect(toneGainA).connect(audioCtx.destination);
-    toneOscB.connect(toneGainB).connect(audioCtx.destination);
-    toneOscC.connect(toneGainC).connect(audioCtx.destination);
+    // route all to output chain with headroom/limiter
+    toneOscA.connect(toneGainA).connect(outPreGain);
+    toneOscB.connect(toneGainB).connect(outPreGain);
+    toneOscC.connect(toneGainC).connect(outPreGain);
 
     toneOscA.start();
     toneOscB.start();
@@ -874,7 +1007,14 @@
     toneStopBtn.disabled  = false;
   }
 
-  toneStartBtn.onclick = start3Tone;
+  // Start based on selected method
+  toneStartBtn.onclick = () => {
+    if (modeMicroSweep.checked) {
+      startMicroSweep();
+    } else {
+      start3Tone();
+    }
+  };
 
 
   /* ================================================================
@@ -894,7 +1034,7 @@
 
       const fc = parseFloat(toneCenter.value);
       const Qraw  = parseFloat(toneQ.value);
-      const stepHz = parseFloat(toneStep.value);
+      const stepHz = getStepHz();
       const gDB  = parseFloat(toneGain.value);
       const Q = Math.max(Qraw, 0.0001);
 
@@ -995,7 +1135,171 @@
     hideToneHUD();
   }
 
-  toneStopBtn.onclick = stop3Tone;
+  // Stop both in case either is active
+  toneStopBtn.onclick = () => { stop3Tone(); stopMicroSweep(); };
+
+  /* ================================================================
+     microSweep — slow, short sweep between (fc−step) and (fc+step)
+     around the troublesome area
+  ================================================================ */
+
+  let msOsc = null;
+  let msGain = null;
+  let msRAF = null;
+  let msActive = false;
+  let msPhase = 0;        // 0..1
+  let msDir = 1;          // 1 forward, -1 backward
+  let msLastTs = 0;       // last animation timestamp
+  let msHold = 0;         // pause timer at endpoints (seconds)
+  const MS_PAUSE_SEC = 1.0; // requested 1 second pause at ends
+  const MS_FADE_SEC = 0.005; // short fade to avoid clicks when muting/unmuting
+  let msLogLastTs = 0;    // throttle console logging
+  // Visualization state for microSweep cursor on the graph
+  let currentMicroSweepFreq = null; // Hz
+  let currentMicroSweepHold = false; // true during silent endpoint hold
+  let msDrawLastTs = 0;   // throttle graph redraws
+
+  function startMicroSweep() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    ensureOutputChain();
+
+    stop3Tone();
+    stopMicroSweep();
+
+    msOsc = audioCtx.createOscillator();
+    msGain = audioCtx.createGain();
+    msOsc.type = 'sine';
+    msGain.gain.value = 0; // will be set by shaping
+    msOsc.connect(msGain).connect(outPreGain);
+    msOsc.start();
+
+    msActive = true;
+    toneActive = true; // enable keyboard nudging
+    msPhase = 0;
+    msDir = 1;
+    msLastTs = 0;
+    msHold = 0;
+
+    const cycleSec = Math.max(1, parseFloat(microSweepDuration.value || '12'));
+
+    const stepFrame = (ts) => {
+      if (!msActive) return;
+      if (!msLastTs) msLastTs = ts;
+      const dt = Math.min(0.1, (ts - msLastTs) / 1000); // clamp
+      msLastTs = ts;
+
+      // advance phase
+      if (msHold > 0) {
+        msHold -= dt;
+        if (msHold < 0) msHold = 0;
+      } else {
+        msPhase += (dt / cycleSec) * msDir;
+        if (msPhase >= 1) {
+          msPhase = 1;
+          msDir = -1;
+          msHold = MS_PAUSE_SEC;
+        } else if (msPhase <= 0) {
+          msPhase = 0;
+          msDir = 1;
+          msHold = MS_PAUSE_SEC;
+        }
+      }
+
+      // ---------------------------
+      // Q-adaptive sweep range
+      // ---------------------------
+      const fc = parseFloat(toneCenter.value);
+
+      // First & only declaration of Qraw/Q
+      const Qraw = parseFloat(toneQ.value);
+      const Q = Math.max(Qraw, 0.0001);
+
+      // half-bandwidth from RBJ definition
+      const bwHalf = fc / (2 * Q);
+
+      // psychoacoustic expansion factor
+      const k = 2.0;
+
+      const sweepHalf = bwHalf * k;
+      const fLo = Math.max(20, fc - sweepHalf);
+      const fHi = fc + sweepHalf;
+
+      const frac = msPhase;
+      const freq = fLo + (fHi - fLo) * frac;
+
+      // ---------------------------
+      // Gain shaping
+      // ---------------------------
+      const gDB = parseFloat(toneGain.value);
+      const gDbAtF = (Qraw <= 0 ? 0 : biquadMagQ(fc, gDB, Q, freq));
+      const gLin = Math.pow(10, gDbAtF / 20);
+
+      // console log throttle
+      try {
+        if (!msLogLastTs) msLogLastTs = ts;
+        if (ts - msLogLastTs >= 100) {
+          const dirStr = msDir > 0 ? 'up' : 'down';
+          if (msHold > 0) {
+            console.log(`[microSweep] freq=${freq.toFixed(1)} Hz — SILENT HOLD, dir=${dirStr}, phase=${msPhase.toFixed(3)}, Q=${Qraw.toFixed(2)}, Gain=${gDB.toFixed(2)} dB`);
+          } else {
+            console.log(`[microSweep] freq=${freq.toFixed(1)} Hz, shaped=${gDbAtF.toFixed(2)} dB (${gLin.toFixed(3)}x), dir=${dirStr}, phase=${msPhase.toFixed(3)}, Q=${Qraw.toFixed(2)}, Gain=${gDB.toFixed(2)} dB`);
+          }
+          msLogLastTs = ts;
+        }
+      } catch(e){}
+
+      // ---------------------------
+      // Apply freq + gain with smoothing
+      // ---------------------------
+      try {
+        const tNow = audioCtx.currentTime;
+        msOsc.frequency.cancelScheduledValues(tNow);
+        msOsc.frequency.setValueAtTime(msOsc.frequency.value, tNow);
+        msOsc.frequency.linearRampToValueAtTime(freq, tNow + dt);
+
+        if (msHold > 0) {
+          msGain.gain.setTargetAtTime(0, audioCtx.currentTime, MS_FADE_SEC);
+        } else {
+          msGain.gain.setTargetAtTime(gLin, audioCtx.currentTime, 0.02);
+        }
+      } catch(e){}
+
+      // Update visualization state and request a throttled redraw (~20 FPS)
+      currentMicroSweepFreq = freq;
+      currentMicroSweepHold = (msHold > 0);
+      if (!msDrawLastTs) msDrawLastTs = ts;
+      if (ts - msDrawLastTs >= 50) {
+        drawEQGraph();
+        msDrawLastTs = ts;
+      }
+
+      showToneHUD('microSweep', freq);
+
+      msRAF = requestAnimationFrame(stepFrame);
+    };
+
+    toneStartBtn.disabled = true;
+    toneStopBtn.disabled = false;
+    msRAF = requestAnimationFrame(stepFrame);
+  }
+
+  function stopMicroSweep() {
+    msActive = false;
+    if (msRAF) cancelAnimationFrame(msRAF);
+    msRAF = null;
+    if (msOsc) { try { msOsc.stop(); } catch(e) {} }
+    msOsc = null;
+    msGain = null;
+    toneActive = false;
+    toneStartBtn.disabled = false;
+    toneStopBtn.disabled = true;
+    hideToneHUD();
+    // Clear microSweep cursor and refresh graph
+    currentMicroSweepFreq = null;
+    currentMicroSweepHold = false;
+    msDrawLastTs = 0;
+    drawEQGraph();
+  }
 
 
   /* ================================================================
@@ -1036,7 +1340,7 @@
 
     if (!toneActive) return;
 
-    const step = parseFloat(toneStep.value);
+    const step = getStepHz();
 
     switch (e.key) {
 
