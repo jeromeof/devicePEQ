@@ -36,14 +36,44 @@ export default async function initializeTreblizerPEQPlugin(context) {
     );
   }
 
-  const anchor = resolveAnchor();
+  // Common plugin controls container
+  function ensureCommonControlsContainer() {
+    let c = document.getElementById('peqPluginControls');
+    if (c) return c;
+    c = document.createElement('div');
+    c.id = 'peqPluginControls';
+    c.className = 'peq-plugin-controls';
+    const cssId = 'peqPluginControlsCSS';
+    if (!document.getElementById(cssId)) {
+      const s = document.createElement('style');
+      s.id = cssId;
+      s.textContent = `
+        #peqPluginControls.peq-plugin-controls { display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; }
+        #peqPluginControls .peq-plugin-btn { margin:0; vertical-align:middle; }
+      `;
+      document.head.appendChild(s);
+    }
+    // Use configurable common container anchor/placement
+    const cfg = (context && context.config) || {};
+    const anchorSel = cfg.peqPluginControlsAnchorDiv || '.extra-eq';
+    const place = cfg.peqPluginControlsPlacement || 'afterend';
+    const anchor = document.querySelector(anchorSel) || document.body;
+    if (anchor && typeof anchor.insertAdjacentElement === 'function') {
+      anchor.insertAdjacentElement(place, c);
+    } else if (anchor && anchor.parentElement) {
+      anchor.parentElement.appendChild(c);
+    } else {
+      document.body.appendChild(c);
+    }
+    return c;
+  }
 
-  // Add a Treblizer button alongside others
+  // Add a Treblizer button alongside others inside the common container
   const trebBtn = document.createElement('button');
   trebBtn.textContent = 'Treblizer';
-  trebBtn.className = 'treblizerPEQ-control-btn';
-  // Place the button inside the anchor to align with other controls
-  try { anchor.appendChild(trebBtn); } catch (_) { /* fallback no-op */ }
+  trebBtn.className = 'treblizerPEQ-control-btn peq-plugin-btn';
+  const controls = ensureCommonControlsContainer();
+  controls.appendChild(trebBtn);
 
   // Overlay elements
   let overlayBackdrop = null;
@@ -209,6 +239,19 @@ export default async function initializeTreblizerPEQPlugin(context) {
       .treb-filters-panel { display:none; }
       /* Inline filters section inside Revisit panel */
       .treb-filter-list { max-height: 220px; overflow: auto; border:1px solid #2c3035; border-radius:6px; padding:4px; background:#101215; }
+
+      /* Ensure Treblizer radios are always visible/enabled regardless of global CSS */
+      .peq-overlay.treblizer input[type="radio"],
+      .treb-panel input[type="radio"] {
+        -webkit-appearance: radio !important;
+        appearance: auto !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        width: auto !important;
+        height: auto !important;
+        position: static !important;
+        visibility: visible !important;
+      }
       .treb-filter-row { display:grid; grid-template-columns: 1fr auto auto; align-items:center; column-gap:8px; padding:6px 8px; margin:2px 0; border-radius:6px; cursor:pointer; border:1px solid #2c3035; background: transparent; position: relative; }
       .treb-filter-row .badge { font-size:11px; color:#9ea2a8; }
       .treb-filter-row.selected { background: rgba(63,169,245,0.12); outline: 2px solid rgba(63,169,245,0.5); }
@@ -287,7 +330,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
     advWrap.style.marginRight = '8px';
     advWrap.style.fontSize = '12px';
     advWrap.style.color = '#9ea2a8';
-    advWrap.innerHTML = `<input type="checkbox" id="advancedModeT" style="vertical-align:middle; margin-right:6px;"> Advanced mode`;
+    advWrap.innerHTML = `<input type="checkbox" id="advancedModeT" style="vertical-align:middle; margin-right:6px; -webkit-appearance: checkbox; appearance: auto; opacity: 1;"> Advanced mode`;
     headerBtns.appendChild(advWrap);
     headerBtns.appendChild(applyBtn);
     headerBtns.appendChild(closeBtn);
@@ -506,6 +549,18 @@ export default async function initializeTreblizerPEQPlugin(context) {
 
     // Advanced mode refs
     advancedModeElem = document.getElementById('advancedModeT');
+    if (advancedModeElem) { advancedModeElem.disabled = false; advancedModeElem.style.pointerEvents = 'auto'; }
+    // Ensure revisit mode radios are enabled and interactive even if globally disabled
+    if (mode3Tone) {
+      mode3Tone.disabled = false;
+      mode3Tone.style.pointerEvents = 'auto';
+      mode3Tone.style.opacity = '1';
+    }
+    if (modeMicroSweep) {
+      modeMicroSweep.disabled = false;
+      modeMicroSweep.style.pointerEvents = 'auto';
+      modeMicroSweep.style.opacity = '1';
+    }
     advancedSweepControls = document.getElementById('advancedSweepControlsT');
     advancedSweepSpeedWrap = document.getElementById('advancedSweepSpeedWrapT');
 

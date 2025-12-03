@@ -61,152 +61,87 @@ async function initializeSubjectizePEQPlugin(context) {
   const subjCfg = cfg.subjectizePEQ || {};
   const renderCfg = cfg.renderPEQ || {};
 
-  // Support both legacy "position" and new top-level subjectizePEQAnchorDiv/subjectizePEQPlacement
-  const legacyPosition = subjCfg.position || renderCfg.position || null;
-  let placement = 'afterend';
-  let anchorSelector = '.extra-eq';
-
-  if (cfg && typeof cfg.subjectizePEQPlacement === 'string') {
-    placement = cfg.subjectizePEQPlacement;
-  }
-  if (cfg && typeof cfg.subjectizePEQAnchorDiv === 'string') {
-    anchorSelector = cfg.subjectizePEQAnchorDiv;
-  }
-
-  function resolveAnchor() {
-    // Prefer explicit selector from config
-    if (anchorSelector) {
-      const el = document.querySelector(anchorSelector);
-      if (el) return el;
+  // Build common plugin controls container and add our button into it
+  function ensureCommonControlsContainer() {
+    let c = document.getElementById('peqPluginControls');
+    if (c) return c;
+    c = document.createElement('div');
+    c.id = 'peqPluginControls';
+    c.className = 'peq-plugin-controls';
+    const cssId = 'peqPluginControlsCSS';
+    if (!document.getElementById(cssId)) {
+      const s = document.createElement('style');
+      s.id = cssId;
+      s.textContent = `
+        #peqPluginControls.peq-plugin-controls { display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; }
+        #peqPluginControls .peq-plugin-btn { margin:0; vertical-align:middle; }
+      `;
+      document.head.appendChild(s);
     }
-    // Fallback to legacy position by id or selector
-    if (legacyPosition && typeof legacyPosition === 'string') {
-      if (/^[#.]/.test(legacyPosition)) {
-        const bySel = document.querySelector(legacyPosition);
-        if (bySel) return bySel;
-      }
-      const byId = document.getElementById(legacyPosition.replace(/^#/, ''));
-      if (byId) return byId;
+    // Use configurable common container anchor/placement
+    const cfg = (context && context.config) || {};
+    const anchorSel = cfg.peqPluginControlsAnchorDiv || '.extra-eq';
+    const place = cfg.peqPluginControlsPlacement || 'afterend';
+    const anchor = document.querySelector(anchorSel) || document.body;
+    if (anchor && typeof anchor.insertAdjacentElement === 'function') {
+      anchor.insertAdjacentElement(place, c);
+    } else if (anchor && anchor.parentElement) {
+      anchor.parentElement.appendChild(c);
+    } else {
+      document.body.appendChild(c);
     }
-    // Final fallbacks
-    return (
-      document.querySelector('.extra-eq') ||
-      document.getElementById('peq-controls') ||
-      document.body
-    );
+    return c;
   }
 
-  const anchor = resolveAnchor();
-
-  // Optional container and inline styles, mirroring visualizePEQ behavior
-  const injectStyles = (cfg && cfg.subjectizePEQInjectStyles) !== false; // default true
-  const container = document.createElement('div');
-  container.className = 'subjectize-peq-container';
-  container.id = 'subjectizePEQArea';
-
-  if (injectStyles) {
+  // Inject ONLY overlay-related styles (no button spacing here)
+  (function injectOverlayStyles(){
+    const cssId = 'subjectizePEQOverlayCSS';
+    if (document.getElementById(cssId)) return;
     const style = document.createElement('style');
+    style.id = cssId;
     style.textContent = `
-      /* SubjectizePEQ button + container styling */
-      .subjectize-peq-container {
-        display: inline-block; /* sit next to visualize button */
-        margin: 8px 0 8px 8px;  /* tighten vertical space; ensure small gap to the left */
-        vertical-align: middle;
-      }
-      .subjectizePEQ-control-btn, .visualizePEQ-control-btn { margin-right: 8px; }
-      .subjectize-peq-container .selected { color: #00ccff; }
+      /* Treblizer-style action buttons (shared look) */
+      .treb-btn { background:#3fa9f5; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:600; }
+      .treb-btn.secondary { background:#555; color:#eee; }
+      .treb-btn.success { background:#3fd96a; }
+      .treb-btn.warn { background:#f5b83f; color:#111; }
+      .treb-btn.danger { background:#d94040; }
 
-      /* Header buttons */
-      #applySubjectizePEQOverlay {
-        background-color: #f8f8f8 !important;
-        color: #333 !important;
-        border: 1px solid #ddd !important;
-        font-weight: 600;
+      /* Ensure advanced mode checkbox is visible and clickable (scoped to Subjectize only) */
+      .peq-overlay.subjectize .peq-overlay-header input[type="checkbox"],
+      #subjectizeAdvancedToggle {
+        -webkit-appearance: checkbox !important;
+        appearance: auto !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        width: auto !important;
+        height: auto !important;
       }
-
       /* Match VisualizePEQ slider styling */
-      .hrange {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 44px;
-        background: transparent;
-      }
-      .hrange::-webkit-slider-runnable-track {
-        height: 18px;
-        background: #333;
-        border-radius: 9px;
-        border: 1px solid #444;
-      }
-      .hrange::-moz-range-track {
-        height: 18px;
-        background: #333;
-        border-radius: 9px;
-        border: 1px solid #444;
-      }
-      .hrange::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #ffcc00;
-        border: 1px solid #b38f00;
-        margin-top: -5px;
-      }
-      .hrange::-moz-range-thumb {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #ffcc00;
-        border: 1px solid #b38f00;
-      }
-      .hrange:focus { outline: none; }
-      .hrange:focus::-webkit-slider-runnable-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
-      .hrange:focus::-moz-range-track { box-shadow: 0 0 0 2px rgba(255,204,0,0.25); }
-      .hrange::-webkit-slider-thumb:active { transform: scale(1.1); }
-
-      /* Subjectize filter list rows to match VisualizePEQ palette */
-      .subjectize-filter-row { 
-        border: 1px solid #333; 
-        border-radius: 6px; 
-        background: #1a1a1a; 
-      }
-      .subjectize-filter-row.locked {
-        border-color: #553;
-        background: #2a1a1a;
-        cursor: not-allowed;
-      }
-      .subjectize-filter-row.selected {
-        outline: 2px solid #00ccff;
-      }
+      .hrange { -webkit-appearance:none; appearance:none; width:100%; height:44px; background:transparent; }
+      .hrange::-webkit-slider-runnable-track { height:18px; background:#333; border-radius:9px; border:1px solid #444; }
+      .hrange::-moz-range-track { height:18px; background:#333; border-radius:9px; border:1px solid #444; }
+      .hrange::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:28px; height:28px; border-radius:50%; background:#ffcc00; border:1px solid #b38f00; margin-top:-5px; }
+      .hrange::-moz-range-thumb { width:28px; height:28px; border-radius:50%; background:#ffcc00; border:1px solid #b38f00; }
+      .hrange:focus { outline:none; }
+      .hrange:focus::-webkit-slider-runnable-track { box-shadow:0 0 0 2px rgba(255,204,0,0.25); }
+      .hrange:focus::-moz-range-track { box-shadow:0 0 0 2px rgba(255,204,0,0.25); }
+      .hrange::-webkit-slider-thumb:active { transform:scale(1.1); }
+      /* Subjectize filter list row palette */
+      .subjectize-filter-row { border:1px solid #333; border-radius:6px; background:#1a1a1a; }
+      .subjectize-filter-row.locked { border-color:#553; background:#2a1a1a; cursor:not-allowed; }
+      .subjectize-filter-row.selected { outline:2px solid #00ccff; }
     `;
-    container.appendChild(style);
-  }
+    document.head.appendChild(style);
+  })();
 
+  // Create our button and add to common container
   const btn = document.createElement('button');
   btn.textContent = subjCfg.buttonText || 'Subjectizer';
-  // Preserve existing default class for backward CSS, also add a subjectize-specific class
-  const defaultBtnClass = subjCfg.buttonClass || 'visualizePEQ-control-btn';
-  btn.className = `${defaultBtnClass} subjectizePEQ-control-btn`;
+  btn.className = `subjectizePEQ-control-btn peq-plugin-btn`;
   btn.addEventListener('click', openOverlay);
-  container.appendChild(btn);
-
-  if (subjCfg.enabled !== false) {
-    // Insert near the anchor using the configured placement (like visualizePEQ)
-    if (anchor && typeof anchor.insertAdjacentElement === 'function') {
-      try {
-        anchor.insertAdjacentElement(placement, container);
-      } catch (e) {
-        // If placement keyword is invalid for this anchor context, fall back
-        anchor.appendChild(container);
-      }
-    } else if (anchor) {
-      anchor.appendChild(container);
-    } else {
-      document.body.appendChild(container);
-    }
-  }
+  const commonCtrls = ensureCommonControlsContainer();
+  commonCtrls.appendChild(btn);
 
   // Note: Removed legacy DOM scraping of filters (readFiltersFromPage).
 
@@ -299,12 +234,13 @@ async function initializeSubjectizePEQPlugin(context) {
     header.innerHTML = `<div style="font-weight:600">Subjectize PEQ</div>`;
     const closeBtn = document.createElement('button');
       closeBtn.textContent = 'Close';
+      closeBtn.className = 'treb-btn secondary';
       closeBtn.addEventListener('click', closeOverlay);
       // Apply button – pushes filters back to parent and closes overlay
     const applyBtn = document.createElement('button');
     applyBtn.id = 'applySubjectizePEQOverlay';
       applyBtn.textContent = 'Apply';
-      applyBtn.style.marginLeft = '8px';
+      applyBtn.className = 'treb-btn';
       applyBtn.addEventListener('click', () => {
       try {
         // Build a plain array of filters from current state
@@ -337,6 +273,8 @@ async function initializeSubjectizePEQPlugin(context) {
     const advToggle = document.createElement('input');
     advToggle.type = 'checkbox';
     advToggle.checked = !!state.advanced;
+    advToggle.id = 'subjectizeAdvancedToggle';
+    advToggle.disabled = false;
     const advText = document.createElement('span');
     advText.textContent = 'Advanced mode';
     advLabel.appendChild(advToggle);

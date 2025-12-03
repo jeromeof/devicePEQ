@@ -33,17 +33,15 @@ async function initializeVisualizePEQPlugin(context) {
     const visualizePEQHTML = `
       <div class="visualize-peq-container" id="visualizePEQArea">
         <style>
-            /* Apply button override */
-            #applyPEQOverlay {
-                background-color: #f8f8f8 !important;
-                color: #333 !important;
-                border: 1px solid #ddd !important;
-                font-weight: 600;
-            }
+            /* Treblizer-style action buttons (shared look) */
+            .treb-btn { background:#3fa9f5; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:600; }
+            .treb-btn.secondary { background:#555; color:#eee; }
+            .treb-btn.success { background:#3fd96a; }
+            .treb-btn.warn { background:#f5b83f; color:#111; }
+            .treb-btn.danger { background:#d94040; }
 
             /* General context */
-            .visualize-peq-container { margin: 8px 0; }
-            .visualizePEQ-control-btn { margin-right: 8px; }
+            /* Button spacing now handled by common #peqPluginControls container */
             .selected { color: #00ccff; }
 
             /* ------------------------------------------------------------------
@@ -359,13 +357,17 @@ async function initializeVisualizePEQPlugin(context) {
             }
         </style>
 
-        <button id="openPEQOverlay" class="visualizePEQ-control-btn">${(context && context.config && context.config.visualizePEQ && context.config.visualizePEQ.buttonText) || 'Visualizer'}</button>
+        <button id="openPEQOverlay" class="visualizePEQ-control-btn peq-plugin-btn">${(context && context.config && context.config.visualizePEQ && context.config.visualizePEQ.buttonText) || 'Visualizer'}</button>
 
         <!-- Overlay markup -->
         <div id="peqOverlayBackdrop" class="peq-overlay-backdrop">
           <div class="peq-overlay visualize-peq-overlay" role="dialog" aria-modal="true" aria-labelledby="peqOverlayTitle">
             <div class="peq-overlay-header">
               <div id="peqOverlayTitle">PEQ Visualizer: Click on 'Dot' on chart to change, press 'Q' or 'W' to alter qValues, 'T' to toggle filter type</div>
+              <div class="peq-header-actions" style="display:flex; gap:8px; align-items:center;">
+                <button id="applyPEQOverlay" class="treb-btn">Apply</button>
+                <button id="cancelPEQOverlay" class="treb-btn secondary">Cancel</button>
+              </div>
             </div>
             <div class="peq-overlay-body">
               <div id="peqChart" class="peq-chart"></div>
@@ -402,10 +404,7 @@ async function initializeVisualizePEQPlugin(context) {
                 </div>
               </div>
             </div>
-            <div class="peq-overlay-footer">
-              <button id="applyPEQOverlay" class="peq-btn primary">Apply</button>
-              <button id="cancelPEQOverlay" class="peq-btn">Cancel</button>
-            </div>
+            <div class="peq-overlay-footer" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -421,6 +420,44 @@ async function initializeVisualizePEQPlugin(context) {
     }
 
     document.body.appendChild(document.getElementById('peqOverlayBackdrop'));
+
+    // Move the Visualizer button into the common plugin controls container
+    try {
+      function ensureCommonControlsContainer() {
+        let c = document.getElementById('peqPluginControls');
+        if (c) return c;
+        c = document.createElement('div');
+        c.id = 'peqPluginControls';
+        c.className = 'peq-plugin-controls';
+        // Inject common CSS once
+        const cssId = 'peqPluginControlsCSS';
+        if (!document.getElementById(cssId)) {
+          const s = document.createElement('style');
+          s.id = cssId;
+          s.textContent = `
+            #peqPluginControls.peq-plugin-controls { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+            #peqPluginControls .peq-plugin-btn { margin: 0; vertical-align: middle; }
+          `;
+          document.head.appendChild(s);
+        }
+        // Place using configurable common container anchor/placement
+        const cfg = (context && context.config) || {};
+        const anchorSel = cfg.peqPluginControlsAnchorDiv || '.extra-eq';
+        const place = cfg.peqPluginControlsPlacement || 'afterend';
+        const anchor = document.querySelector(anchorSel) || anchorElement || document.body;
+        if (anchor && typeof anchor.insertAdjacentElement === 'function') {
+          anchor.insertAdjacentElement(place, c);
+        } else if (anchor && anchor.parentElement) {
+          anchor.parentElement.appendChild(c);
+        } else {
+          document.body.appendChild(c);
+        }
+        return c;
+      }
+      const controls = ensureCommonControlsContainer();
+      const btn = document.getElementById('openPEQOverlay');
+      if (btn && controls) controls.appendChild(btn);
+    } catch (_) {}
   }
 
   function initializeVisualizePEQ() {
