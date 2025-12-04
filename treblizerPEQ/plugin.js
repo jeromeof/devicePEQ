@@ -252,6 +252,18 @@ export default async function initializeTreblizerPEQPlugin(context) {
         position: static !important;
         visibility: visible !important;
       }
+      /* Ensure Treblizer checkboxes are always visible/enabled regardless of global CSS */
+      .peq-overlay.treblizer input[type="checkbox"],
+      .treb-panel input[type="checkbox"] {
+        -webkit-appearance: checkbox !important;
+        appearance: auto !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        width: auto !important;
+        height: auto !important;
+        position: static !important;
+        visibility: visible !important;
+      }
       .treb-filter-row { display:grid; grid-template-columns: 1fr auto auto; align-items:center; column-gap:8px; padding:6px 8px; margin:2px 0; border-radius:6px; cursor:pointer; border:1px solid #2c3035; background: transparent; position: relative; }
       .treb-filter-row .badge { font-size:11px; color:#9ea2a8; }
       .treb-filter-row.selected { background: rgba(63,169,245,0.12); outline: 2px solid rgba(63,169,245,0.5); }
@@ -269,8 +281,10 @@ export default async function initializeTreblizerPEQPlugin(context) {
       /* Ensure Treblizer's own slider groups are visible, without using !important */
       .peq-overlay.treblizer .revisit-panel .peq-sliders { display: block; }
       .peq-overlay.treblizer .peq-sliders { margin-top: 4px; }
-      /* Default: hide Sweep Speed wrapper; JS will show it only in Advanced mode */
-      .peq-overlay.treblizer #advancedSweepSpeedWrapT { display: none; }
+      /* Default: hide Sweep Speed wrapper; JS will show it only in Advanced mode. Ensure full-width layout when shown */
+      .peq-overlay.treblizer #advancedSweepSpeedWrapT { display: none; width: 100%; }
+      .peq-overlay.treblizer #advancedSweepSpeedWrapT .slider-panel { grid-template-columns: 1fr !important; }
+      .peq-overlay.treblizer #advancedSweepSpeedWrapT .slider-col { width: 100%; }
       /* Safety net to counter any external range input hiding */
       .peq-overlay.treblizer input[type=range].hrange { display: block; }
       /* Make each row of sliders an equal-width 2-column grid */
@@ -362,7 +376,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
         </div>
       </div>
       <span class="treb-label">Current Sweep Frequency: <b id="sweepFreqLabelT">—</b> Hz</span>
-      <label class="treb-label" style="margin-top:8px;"><input type="checkbox" id="sweepApplyFiltersT"> Apply Saved Filters during Sweep</label>
+      <div id="sweepApplyWrapT"><label class="treb-label" style="margin-top:8px;"><input type="checkbox" id="sweepApplyFiltersT"> Apply Saved Filters during Sweep</label></div>
       <div>
         <button class="treb-btn" id="sweepStartBtnT">Start Sweep</button>
         <button class="treb-btn secondary" id="sweepStopBtnT">Stop</button>
@@ -493,6 +507,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
   let advancedSweepControls, advancedSweepSpeedWrap;
 
   let sweepMarks = [];
+  let sweepApplyWrap;
 
   // Expose certain UI re-render functions to outer scope so they can be called
   // from handlers defined outside of wireUI (e.g., saveTrebleFilterToSelected)
@@ -517,6 +532,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
     sweepMarkBtn = document.getElementById('sweepMarkBtnT');
     sweepFreqLabel = document.getElementById('sweepFreqLabelT');
     sweepApplyFilters = document.getElementById('sweepApplyFiltersT');
+    sweepApplyWrap = document.getElementById('sweepApplyWrapT');
     markTable = document.getElementById('markTableT');
 
     eqCanvas = document.getElementById('eqCanvasT');
@@ -550,6 +566,14 @@ export default async function initializeTreblizerPEQPlugin(context) {
     // Advanced mode refs
     advancedModeElem = document.getElementById('advancedModeT');
     if (advancedModeElem) { advancedModeElem.disabled = false; advancedModeElem.style.pointerEvents = 'auto'; }
+    // Ensure sweep apply checkbox is visible and enabled locally (always visible per requirement)
+    if (sweepApplyFilters) {
+      sweepApplyFilters.disabled = false;
+      sweepApplyFilters.style.pointerEvents = 'auto';
+      sweepApplyFilters.style.opacity = '1';
+      sweepApplyFilters.style.visibility = 'visible';
+    }
+    if (sweepApplyWrap) { sweepApplyWrap.style.display = 'block'; }
     // Ensure revisit mode radios are enabled and interactive even if globally disabled
     if (mode3Tone) {
       mode3Tone.disabled = false;
