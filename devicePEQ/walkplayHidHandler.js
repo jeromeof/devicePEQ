@@ -38,7 +38,6 @@ export const walkplayUsbHID = (function () {
     if (isNaN(versionNumber)) {
       console.warn("Could not parse firmware version:", versionNumber);
       deviceDetails.version = null;
-      return;
     }
 
     // Save version number to deviceDetails

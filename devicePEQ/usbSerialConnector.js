@@ -162,6 +162,11 @@ export const UsbSerialConnector = (async function () {
       devices.push(currentDevice);
       return currentDevice;
     } catch (error) {
+      // When the user cancels the port chooser, browsers typically throw NotFoundError
+      if (error && (error.name === 'NotFoundError' || error.code === 8)) {
+        console.log('Serial port chooser cancelled by user.');
+        return { cancelled: true };
+      }
       console.error("Failed to connect to Serial device:", error);
       return null;
     }

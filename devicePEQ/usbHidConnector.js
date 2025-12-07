@@ -28,7 +28,7 @@ export const UsbHIDConnector = ( async function () {
 
                 if (!vendorConfig) {
                   console.error("No configuration found for vendor:", rawDevice.vendorId);
-                  return;
+                  return { unsupported: true };
                 }
 
                 const model = rawDevice.productName;
@@ -62,7 +62,7 @@ export const UsbHIDConnector = ( async function () {
                   deviceDetails.modelConfig || {}
                 );
 
-                const manufacturer = deviceDetails.manufacturer | vendorConfig.manufacturer;
+                const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
                 let handler = deviceDetails.handler ||  vendorConfig.handler;
 
                 // Check if already connected
@@ -84,8 +84,9 @@ export const UsbHIDConnector = ( async function () {
 
                 return currentDevice;
             } else {
-                console.log("No device found.");
-                return null;
+                // User cancelled the chooser dialog
+                console.log("USB HID chooser cancelled by user.");
+                return { cancelled: true };
             }
         } catch (error) {
             console.error("Failed to connect to HID device:", error);

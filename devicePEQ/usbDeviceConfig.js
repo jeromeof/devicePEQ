@@ -2,6 +2,7 @@
 const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
 const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
 const {moondropUsbHidHandler} = await import('./moondropUsbHidHandler.js');
+const {moondropOldFashionedUsbHID} = await import('./moondropOldFashionedUsbHidHandler.js');
 const {ktmicroUsbHidHandler} = await import('./ktmicroUsbHidHandler.js');
 const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
 const {toppingUsbHidHandler} = await import('./toppingUsbHidHandler.js');
@@ -551,6 +552,24 @@ export const usbHidDeviceHandlerConfig = ([
       }
     },
     devices: {
+      "Old Fashioned": {
+        manufacturer: "Moondrop",
+        handler: moondropOldFashionedUsbHID,
+        modelConfig: {
+          minGain: -12,
+          maxGain: 3,      // Limited range: -12.8 to +12.7 technically, but app shows -12 to +3
+          maxFilters: 5,
+          firstWritableEQSlot: -1,
+          maxWritableEQSlots: 0,
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: false,
+          supportsLSHSFilters: false,  // Only peaking filters supported
+          supportsPregain: false,
+          defaultResetFiltersValues: [{gain: 0, freq: 100, q: 1, filterType: "PK"}],
+          availableSlots: [{id: 0, name: "Custom"}]
+        }
+      },
       "FIIO FX17": {
         manufacturer: "FiiO",
         handler: fiioUsbHID,
@@ -592,6 +611,22 @@ export const usbHidDeviceHandlerConfig = ([
         }
       },
       "FreeDSP Pro": {
+        manufacturer: "Moondrop",
+        handler: moondropUsbHidHandler,
+        modelConfig: {
+          supportsLSHSFilters: true,
+          supportsPregain: true,
+        }
+      },
+      "MOONRIVER 3": {
+        manufacturer: "Moondrop",
+        handler: moondropUsbHidHandler,
+        modelConfig: {
+          supportsLSHSFilters: true,
+          supportsPregain: false,  // Version dependent - needs firmware check
+        }
+      },
+      "FreeDSP Mini": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {

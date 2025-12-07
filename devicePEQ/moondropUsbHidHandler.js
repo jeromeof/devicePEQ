@@ -6,17 +6,20 @@ export const moondropUsbHidHandler = (function () {
   const COMMAND_UPDATE_EQ = 9;
   const COMMAND_UPDATE_EQ_COEFF_TO_REG = 10;
   const COMMAND_SAVE_EQ_TO_FLASH = 1;
+  const COMMAND_SAVE_OFFSET_TO_FLASH = 4;
   const COMMAND_SET_DAC_OFFSET = 3;
   const COMMAND_CLEAR_FLASH = 0x05;
   const COMMAND_CHANNEL_BALANCE = 0x16;
   const COMMAND_DAC_GAIN = 0x19;
   const COMMAND_DAC_MODE = 0x1D;
+  const COMMAND_PRE_GAIN = 0x23;
   const COMMAND_LED_SWITCH = 0x18;
   const COMMAND_DAC_FILTER = 0x11;
   const COMMAND_VER = 0x0C;
   const COMMAND_RESET_EQ = 0x05;
   const COMMAND_RESET_FLASH = 0x17;
   const COMMAND_UPGRADE = 0xFF;
+  const COMMAND_ACTIVE_EQ = 15;
 
   function buildReadPacket(filterIndex) {
     return new Uint8Array([COMMAND_READ, COMMAND_UPDATE_EQ, 0x18, 0x00, filterIndex, 0x00]);
@@ -28,9 +31,8 @@ export const moondropUsbHidHandler = (function () {
     const rawFreq = (e[27] & 0xff) | ((e[28] & 0xff) << 8);
     const freq = rawFreq;
 
-    const q = (e[30] & 0xff) + (e[29] & 0xff) / 256;
-    const rawGain = e[32] + (e[31] & 0xff) / 256;
-    const gain = Math.floor(rawGain * 10) / 10;
+    const q = (s[30] << 8 | s[29] & 255) / 256;  // 16-bit fixed-point
+    const gain = (s[32] << 8 | s[31] & 255) / 256;
     const filterType = convertToFilterType(e[33]);
     const valid = freq > 10 && freq < 24000 && !isNaN(gain) && !isNaN(q);
 
@@ -122,7 +124,10 @@ export const moondropUsbHidHandler = (function () {
 
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
-        const pregain = data[4];
+
+        const r = new Int8Array(data.buffer);
+        const pregain = (r[4] << 8 | r[3] & 255) / 256;
+
         console.log(`USB Device PEQ: Moondrop pregain value: ${pregain}`);
         resolve(pregain);
       };
@@ -134,7 +139,8 @@ export const moondropUsbHidHandler = (function () {
   }
 
   async function writePregain(device, value) {
-    const request = new Uint8Array([COMMAND_WRITE, COMMAND_SET_DAC_OFFSET, 0x02, 0x00, value]);
+    const val = Math.round(pregain * 256);
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_PRE_GAIN, 0, val & 255, (val >> 8) & 255]);
     console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
     await device.sendReport(REPORT_ID, request);
   }
@@ -210,10 +216,13 @@ export const moondropUsbHidHandler = (function () {
 
     packet[27] = freq & 0xff;
     packet[28] = (freq >> 8) & 0xff;
-    packet[29] = Math.round(q % 1 * 256);
-    packet[30] = Math.floor(q);
-    packet[31] = Math.round(gain % 1 * 256);
-    packet[32] = Math.floor(gain);
+    const qVal = Math.round(q * 256);
+    packet[29] = qVal & 255;
+    packet[30] = (qVal >> 8) & 255;
+
+    const gainVal = Math.round(gain * 256);
+    packet[31] = gainVal & 255;
+    packet[32] = (gainVal >> 8) & 255;
     packet[33] = convertFromFilterType(type); // 2 by default
     packet[34] = 0;
     packet[35] = 7; // peqIndex
