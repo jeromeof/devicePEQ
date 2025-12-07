@@ -139,9 +139,16 @@ export const oldFashionedUsbHidHandler = (function () {
     return false;
   }
 
+  // Old-Fashioned devices do not expose multiple EQ preset slots (single active bank).
+  // Provide a trivial implementation so the UI can treat it as slot 0.
+  async function getCurrentSlot(deviceDetails) {
+    return 0;
+  }
+
   return {
     pullFromDevice,
     pushToDevice,
+    getCurrentSlot,
     enablePEQ: async () => {},
   };
 })();

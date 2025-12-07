@@ -31,8 +31,8 @@ export const moondropUsbHidHandler = (function () {
     const rawFreq = (e[27] & 0xff) | ((e[28] & 0xff) << 8);
     const freq = rawFreq;
 
-    const q = (s[30] << 8 | s[29] & 255) / 256;  // 16-bit fixed-point
-    const gain = (s[32] << 8 | s[31] & 255) / 256;
+    const q = ((e[30] << 8) | (e[29] & 255)) / 256;  // 16-bit fixed-point
+    const gain = ((e[32] << 8) | (e[31] & 255)) / 256;
     const filterType = convertToFilterType(e[33]);
     const valid = freq > 10 && freq < 24000 && !isNaN(gain) && !isNaN(q);
 
@@ -139,7 +139,7 @@ export const moondropUsbHidHandler = (function () {
   }
 
   async function writePregain(device, value) {
-    const val = Math.round(pregain * 256);
+    const val = Math.round(value * 256);
     const request = new Uint8Array([COMMAND_WRITE, COMMAND_PRE_GAIN, 0, val & 255, (val >> 8) & 255]);
     console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
     await device.sendReport(REPORT_ID, request);
@@ -484,19 +484,6 @@ export const moondropUsbHidHandler = (function () {
     getCurrentSlot,
     pullFromDevice,
     pushToDevice,
-    enablePEQ: async () => {}, // not required for Moondrop
-    readVer,
-    readChannelBalance,
-    writeChannelBalance,
-    readDACGain,
-    writeDACGain,
-    readDACMode,
-    writeDACMode,
-    readLEDSwitch,
-    writeLEDSwitch,
-    readDACFilter,
-    writeDACFilter,
-    resetEQ,
-    resetFlash
+    enablePEQ: async () => {}
   };
 })();
