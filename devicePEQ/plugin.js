@@ -112,6 +112,33 @@ async function initializeDeviceEqPlugin(context) {
       this.peqDropdown.hidden = false;
       this.peqSlotArea.hidden = false;
 
+      // Auto-load flat EQ phone measurement if configured
+      if (device.modelConfig && device.modelConfig.flatEQPhoneMeasurement) {
+        console.log(`Device "${device.model}" has flatEQPhoneMeasurement: "${device.modelConfig.flatEQPhoneMeasurement}"`);
+
+        // Check if context and loadPairedPhone method are available
+        if (context && typeof context.loadPairedPhone === 'function') {
+          const result = context.loadPairedPhone(device.modelConfig.flatEQPhoneMeasurement, 'deviceConnection');
+
+          if (result.success) {
+            console.log(`Successfully auto-loaded flat EQ measurement for device "${device.model}"`);
+            // Optional success toast (non-blocking, 3 seconds)
+            if (typeof window.showToast === 'function') {
+              window.showToast(
+                `Auto-loaded measurement: ${result.phone.fullName || result.phone.fileName}`,
+                'success',
+                3000
+              );
+            }
+          } else {
+            console.warn(`Failed to auto-load flat EQ measurement for device "${device.model}":`, result.error);
+            // Don't show error toast - graceful degradation
+          }
+        } else {
+          console.warn('loadPairedPhone method not available in context');
+        }
+      }
+
       // Check if the push button should still be disabled based on lastPushTime
       const currentTime = Math.floor(Date.now() / 1000);
       const cooldownTime = 0.2; // Cooldown time in seconds (200ms)

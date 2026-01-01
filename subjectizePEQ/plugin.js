@@ -18,17 +18,33 @@
 async function initializeSubjectizePEQPlugin(context) {
   console.log("SubjectizePEQ Plugin initialized with context:", context);
 
+  // ERB-based frequency bands for perceptually-motivated treble adjustments
+  // Center frequency calculated as geometric mean: fc = sqrt(fLow * fHigh)
+  // Q value calculated as: Q = fc / bandwidth where bandwidth = fHigh - fLow
+  // Four bands provide granular subjective control over treble character
+  const ERB_BANDS = {
+    lowerPresence: { fLow: 4500, fHigh: 6700 },   // Body of presence: fc ≈ 5.5 kHz, Q ≈ 2.50
+    upperPresence: { fLow: 5800, fHigh: 8000 },   // Sibilance control: fc ≈ 6.8 kHz, Q ≈ 3.10
+    brilliance:    { fLow: 7500, fHigh: 12000 },  // Sharpness/glare: fc ≈ 9.5 kHz, Q ≈ 2.11
+    air:           { fLow: 11000, fHigh: 18000 }  // Openness: HSQ at 14 kHz
+  };
+
   const SUBJECTIVE_DEFS = [
     // Note: Overall temperature is rendered last (bottom) via render logic below
+
+    // Bass and low-mids (kept as-is - semantically meaningful for subjective control)
     { key: 'bassExtension', label: 'Bass extension',      type: 'LSQ', freq: 70,   q: 0.7071 },
     { key: 'bassTexture',   label: 'Bass texture',        type: 'PK',  freq: 100,  q: 0.85   },
     { key: 'noteThickness', label: 'Note thickness',      type: 'PK',  freq: 200,  q: 0.6667 },
     { key: 'voice',         label: 'Vocal',               type: 'PK',  freq: 650,  q: 0.4    },
     { key: 'femaleOver',    label: 'Female overtones',    type: 'PK',  freq: 3000, q: 1.414  },
-    { key: 'sibilLF',       label: 'Sibilance LF',        type: 'PK',  freq: 5800, q: 1.0    },
-    { key: 'sibilHF',       label: 'Sibilance HF',        type: 'PK',  freq: 9200, q: 1.0    },
-    { key: 'impulse',       label: 'Impulse',             type: 'PK',  freq: 7500, q: 0.4    },
-    { key: 'air',           label: 'Air',                 type: 'HSQ', freq: 10000,q: 0.7071 },
+
+    // Treble (ERB-based - 4 bands for granular perceptual control)
+    { key: 'lowerPresence', label: 'Lower presence',      type: 'PK',  freq: 5494, q: 2.50   },  // Body of presence
+    { key: 'upperPresence', label: 'Upper presence',      type: 'PK',  freq: 6812, q: 3.10   },  // Sibilance control
+    { key: 'brilliance',    label: 'Brilliance',          type: 'PK',  freq: 9487, q: 2.11   },  // Sharpness/glare
+    { key: 'air',           label: 'Air',                 type: 'HSQ', freq: 14000,q: 0.7071 },  // Openness
+
     { key: 'overallTemp',  label: 'Overall temperature', type: 'DUAL', freq: 500,  q: 0.1, dual: true,
       low:  { type: 'LSQ', freq: 500, q: 0.1 },
       high: { type: 'HSQ', freq: 500, q: 0.1 }
@@ -44,16 +60,16 @@ async function initializeSubjectizePEQPlugin(context) {
 
   // Min/Max label texts for each subjective slider, per requirements
   const SUBJECTIVE_MIN_MAX = {
-    overallTemp:   { min: 'Cool',     max: 'Warm'    },
-    air:            { min: 'Soft',     max: 'Crisp'   },
-    impulse:        { min: 'slow',     max: 'fast'    },
-    sibilHF:        { min: 'Soft',     max: 'Crisp'   },
-    sibilLF:        { min: 'Soft',     max: 'Crisp'   },
-    femaleOver:     { min: 'Recessed', max: 'Forward' },
-    voice:          { min: 'Recessed', max: 'Forward' }, // labeled "Vocal" in UI
-    noteThickness:  { min: 'Thick',    max: 'Crisp'   },
-    bassTexture:    { min: 'fast',     max: 'Thump'   },
-    bassExtension:  { min: 'light',    max: 'Thump'   }
+    overallTemp:     { min: 'Cool',     max: 'Warm'    },
+    air:             { min: 'Closed',   max: 'Open'    },  // Openness
+    brilliance:      { min: 'Smooth',   max: 'Sharp'   },  // Sharpness/glare
+    upperPresence:   { min: 'Soft',     max: 'Crisp'   },  // Sibilance control
+    lowerPresence:   { min: 'Recessed', max: 'Forward' },  // Body of presence
+    femaleOver:      { min: 'Recessed', max: 'Forward' },
+    voice:           { min: 'Recessed', max: 'Forward' }, // labeled "Vocal" in UI
+    noteThickness:   { min: 'Thick',    max: 'Crisp'   },
+    bassTexture:     { min: 'fast',     max: 'Thump'   },
+    bassExtension:   { min: 'light',    max: 'Thump'   }
   };
 
   // Mount button with configurable placement (mirrors VisualizePEQ approach)
@@ -316,7 +332,7 @@ async function initializeSubjectizePEQPlugin(context) {
 
     const subjHeader = document.createElement('div');
     subjHeader.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
-    subjHeader.innerHTML = '<div style="font-weight:600">Subjectivity Control — inspired by MSEB by Hiby</div>';
+    subjHeader.innerHTML = '<div style="font-weight:600">Subjectivity Control — inspired by MSEB by Hiby but closer to ERB Filters</div>';
 
     // Introductory explanation
     const intro = document.createElement('div');

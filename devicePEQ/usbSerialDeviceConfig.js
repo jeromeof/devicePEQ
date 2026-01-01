@@ -50,6 +50,7 @@ export const usbSerialDeviceHandlerConfig = [
           disabledPresetId: -1,
           experimental: false,
           readOnly: false, // Enable writing for Custom profile
+          flatEQPhoneMeasurement: "Nothing HP1 Balanced", // Auto-load this flat EQ measurement on connection
           availableSlots: [
             { id: 0, name: "Balanced" },
             { id: 1, name: "Voice" },

@@ -283,6 +283,68 @@
     };
   }
 
+  /**
+   * Load and display a flat EQ phone measurement by fileName
+   * @param {string} fileName - The fileName identifier (e.g., "Nothing HP1 Balanced")
+   * @param {string} source - Source identifier for logging (default: 'deviceConnection')
+   * @returns {Object} { success: boolean, phone: phoneObj|null, error: string|null }
+   */
+  function loadPairedPhone(fileName, source = 'deviceConnection') {
+    console.log(`loadPairedPhone: Attempting to load flat EQ measurement with fileName="${fileName}"`);
+
+    // Validation: Check if fileName provided
+    if (!fileName || typeof fileName !== 'string' || fileName.trim() === '') {
+      const error = 'loadPairedPhone: Invalid or empty fileName provided';
+      console.warn(error);
+      return { success: false, phone: null, error };
+    }
+
+    // Safety check: Verify graphTool.js is loaded
+    if (typeof window.allPhones === 'undefined') {
+      const error = 'loadPairedPhone: window.allPhones not available';
+      console.warn(error);
+      return { success: false, phone: null, error };
+    }
+
+    if (typeof window.showPhone !== 'function') {
+      const error = 'loadPairedPhone: window.showPhone function not available';
+      console.warn(error);
+      return { success: false, phone: null, error };
+    }
+
+    // Search for the phone by fileName (exact match)
+    const phoneObj = window.allPhones.find(p => p.fileName === fileName);
+
+    if (!phoneObj) {
+      const error = `loadPairedPhone: Flat EQ measurement with fileName="${fileName}" not found`;
+      console.warn(error);
+      console.log('Available fileNames (sample):', window.allPhones.slice(0, 10).map(p => p.fileName));
+      return { success: false, phone: null, error };
+    }
+
+    console.log(`loadPairedPhone: Found flat EQ measurement:`, {
+      fileName: phoneObj.fileName,
+      fullName: phoneObj.fullName,
+      brand: phoneObj.brand
+    });
+
+    try {
+      // Call window.showPhone:
+      // - exclusive: false (add to display, don't remove existing)
+      // - suppressVariant: true (no popup for auto-loaded phones)
+      // - trigger: source identifier
+      window.showPhone(phoneObj, false, true, source);
+
+      console.log(`loadPairedPhone: Successfully loaded flat EQ measurement "${phoneObj.fileName}"`);
+      return { success: true, phone: phoneObj, error: null };
+
+    } catch (err) {
+      const error = `loadPairedPhone: Error calling window.showPhone: ${err.message}`;
+      console.error(error, err);
+      return { success: false, phone: phoneObj, error };
+    }
+  }
+
     // Utility function to add a new filter entry
   function addFilter() {
     const filterList = document.getElementById("filter-list");
@@ -370,7 +432,8 @@
       calcEqDevPreamp,// Reuse existing gain calculations
       applyEQ,        // Apply EQ
       config,
-      getCurrentPhoneTargetNormalisation
+      getCurrentPhoneTargetNormalisation,
+      loadPairedPhone // Load phone model by fileName
     });
   }
 

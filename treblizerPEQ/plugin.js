@@ -8,13 +8,122 @@
  *
  * Features:
  * - Sweep Analyzer (4–16 kHz, 2–60 s, marks)
- * - Revisit: 3‑Tone and microSweep (with silent endpoint pause)
+ * - Revisit / Fine Tune: ERB-based (recommended) and PEQ Sweep-based methods
  * - Graph with current filter curve and moving microSweep dot
  * - Loads current PEQ filters from host; lets user select a target filter to revisit
  * - Save current treble peak killer settings back to the selected PEQ filter
  * - Apply button to push back to host (mirrors SubjectizePEQ Apply)
  * - Standalone responsive CSS; fullscreen on mobile
  */
+
+// Import tuning controllers
+import {
+  ERBTuningController,
+  ERB_BANDS,
+  ERB_INFO,
+  calculateERB
+} from './erbTuning.js';
+
+import {
+  SweepFineTuningController,
+  TwoToneReferenceController,
+  SWEEP_INFO,
+  calculateStepHz,
+  calculatePercentBounds,
+  WARBLE_RATE_HZ,
+  WARBLE_DEPTH,
+  REF_LEVEL
+} from './sweepFineTuning.js';
+
+// Context-specific info for each fine-tuning method
+const ERB_TUNING_INFO = {
+  title: "ERB Volume Levelling",
+  summary: "Match the loudness of ERB frequency bands to a neutral midrange reference.",
+  details: `**How it works:**
+• Sound alternates every 2 seconds between reference (neutral midrange) and the selected ERB band
+• The reference is typically 900 Hz (neutral midrange), but can be changed in Advanced Mode
+• Each ERB band represents a perceptual frequency region
+
+**What to listen for:**
+🎧 **Ask yourself:** Does this ERB region feel **stronger** or **weaker** than the neutral midrange?
+→ Adjust the slider until both feel equally loud
+
+**The four ERB bands:**
+• **Lower Presence** (4.5-7 kHz): Vocal warmth and body
+• **Upper Presence** (6-8.5 kHz): Sibilance control
+• **Brilliance** (8-12 kHz): Sharpness and glare
+• **Air** (12-20 kHz): Openness and extension
+
+**Why ERB?** These bands match your ear's natural frequency integration, avoiding over-compensation for individual ear resonances.`
+};
+
+const TONE_3_INFO = {
+  title: "3-Tone Method",
+  summary: "Cycles between lower, center, and upper frequency bounds to help you identify the exact frequency peak.",
+  details: `**How it works:**
+• Plays three tones in sequence: Lower → Center → Upper
+• Each tone is affected by your current PEQ filter settings
+• Use the Center Frequency and ±Range sliders to narrow down the problem area
+
+**What to listen for:**
+1. Which tone sounds most prominent or harsh?
+2. Adjust Center Frequency to focus on the loudest tone
+3. Reduce ±Range to narrow down the exact frequency
+4. Adjust Q and Gain to smooth out the peak
+
+**Best for:** Identifying and targeting specific treble peaks with precision.`
+};
+
+const TONE_MICROSWEEP_INFO = {
+  title: "MicroSweep Method",
+  summary: "Smooth frequency sweep within the filter bandwidth to reveal peaks naturally.",
+  details: `**How it works:**
+• Sweeps smoothly through the frequency range around your center frequency
+• The sweep range is determined by your ±Range setting
+• The tone "glides" through the frequencies continuously
+
+**What to listen for:**
+1. Does the tone get louder at certain frequencies as it sweeps?
+2. Listen for moments where the tone becomes harsh or piercing
+3. Those moments indicate frequency peaks that need reduction
+
+**Best for:** Getting a natural feel for how the frequency region responds, without discrete steps.`
+};
+
+const TONE_NARROWBAND_INFO = {
+  title: "Narrow Band (2-Tone) Method",
+  summary: "Compares a reference tone with your center frequency to detect if it's too prominent.",
+  details: `**How it works:**
+• Alternates between a reference frequency (default: 500 Hz midrange) and your center frequency
+• Both tones are narrow-band pink noise, not pure sine waves
+• Bandwidth can be adjusted (default: 0.33 octaves)
+
+**What to listen for:**
+1. Does the center frequency sound louder than the reference?
+2. If yes, it's a peak that needs reduction (negative gain)
+3. If no, it may need boosting or is already level
+
+**Best for:** Comparing specific frequency regions to a neutral reference, similar to ERB method but more surgical.
+
+**Advanced:** You can change the reference frequency and noise bandwidth in Advanced Mode.`
+};
+
+const TONE_WARBLE_INFO = {
+  title: "Warble Method",
+  summary: "FM-modulated tone that makes peaks easier to detect by ear.",
+  details: `**How it works:**
+• Creates a tone that frequency-modulates (warbles) around your center frequency
+• The warble rate is ${WARBLE_RATE_HZ} Hz with depth of ${WARBLE_DEPTH}%
+• This modulation makes harsh peaks more obvious to human hearing
+
+**What to listen for:**
+1. Does the warbling tone sound harsh, buzzy, or unpleasant?
+2. Harshness indicates a peak at or near the center frequency
+3. The warble makes it easier to detect subtle peaks
+
+**Best for:** Making subtle treble peaks more obvious through frequency modulation. Some users find this more revealing than static tones.`
+};
+
 export default async function initializeTreblizerPEQPlugin(context) {
   console.log('TreblizerPEQ Plugin initialized with context:', context);
 
@@ -168,6 +277,11 @@ export default async function initializeTreblizerPEQPlugin(context) {
     return 20 * Math.log10(Math.max(1e-6, Math.sqrt(H2)));
   }
 
+  // Convert octave bandwidth to Q for bandpass filter
+  function octaveBWToQ(oct) {
+    return 1 / (2 * Math.sinh(Math.log(2) * oct / 2));
+  }
+
   function totalEQGainAtFreq(f) {
     if (!Array.isArray(peqFilters) || peqFilters.length === 0) return 0;
     let sum = 0;
@@ -305,6 +419,77 @@ export default async function initializeTreblizerPEQPlugin(context) {
       /* Ensure the two rows in Revisit have consistent spacing */
       .peq-overlay.treblizer .peq-sliders .slider-panel + .slider-panel { margin-top: 10px; }
 
+      /* Method section styling */
+      .treb-method-section { transition: all 0.2s ease; }
+      .treb-method-section:has(input[type="radio"]:checked) {
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+
+      /* Info button styling */
+      .treb-btn-icon {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 4px;
+        color: #9ea2a8;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 8px;
+        transition: all 0.2s;
+      }
+      .treb-btn-icon:hover {
+        background: rgba(255,255,255,0.05);
+        color: #e3e3e3;
+      }
+
+      /* Info popup modal */
+      .treb-info-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 100001;
+      }
+      .treb-info-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #1f2226;
+        border: 1px solid #2c3035;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 20px;
+        z-index: 100002;
+        color: #9ea2a8;
+      }
+      .treb-info-modal h3 {
+        margin: 0 0 12px 0;
+        color: #e3e3e3;
+      }
+      .treb-info-modal p {
+        margin: 8px 0;
+        color: #9ea2a8;
+        line-height: 1.5;
+      }
+      .treb-info-modal div {
+        color: #9ea2a8;
+      }
+      .treb-info-modal-close {
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+        color: #9ea2a8;
+        line-height: 1;
+      }
+      .treb-info-modal-close:hover {
+        color: #e3e3e3;
+      }
+
       @media (max-width: 820px) {
         .peq-overlay.treblizer { width:100vw !important; height:100vh !important; max-width:none !important; border-radius:0 !important; }
         /* Single column layout; remove excessive bottom padding so buttons aren't cut */
@@ -393,50 +578,138 @@ export default async function initializeTreblizerPEQPlugin(context) {
     center.style.position = 'relative';
     center.innerHTML = `<canvas id="eqCanvasT" class="treb-canvas"></canvas><div id="toneHUDT" class="treb-hud">Tone A — 7500 Hz</div>`;
 
-    // Right panel (Revisit + inline PEQ list)
+    // Right panel (Revisit / Fine Tune + inline PEQ list)
     const right = document.createElement('div');
     right.className = 'treb-panel revisit-panel';
     right.innerHTML = `
-      <h2>2. Revisit</h2>
-      <div style="display:flex; gap:10px; align-items:center; margin:8px 0;">
-        <label class="treb-label" style="margin:0;"><input type="radio" name="revisitModeT" id="mode3ToneT" value="3tone" checked> 3‑Tone</label>
-        <label class="treb-label" style="margin:0;"><input type="radio" name="revisitModeT" id="modeMicroSweepT" value="microSweep"> microSweep</label>
+      <h2>2. Revisit / Fine Tune</h2>
+
+      <!-- Tuning Method Radio Buttons (Horizontal) -->
+      <div style="display:flex; gap:12px; align-items:center; margin:12px 0 16px 0; flex-wrap:wrap;">
+        <label class="treb-label" style="margin:0; font-weight:600; cursor:pointer;">
+          <input type="radio" name="revisitModeT" id="modeERBBandsT" value="erbBands" checked style="margin-right:6px;">
+          ERB Based
+        </label>
+        <button class="treb-btn-icon" id="erbInfoBtnT" title="Learn about ERB tuning" style="margin-left:-6px;">ℹ️</button>
+
+        <label class="treb-label" style="margin:0 0 0 12px; font-weight:600; cursor:pointer;">
+          <input type="radio" name="revisitModeT" id="modePEQSweepT" value="peqSweep" style="margin-right:6px;">
+          PEQ Sweep Based
+        </label>
+        <button class="treb-btn-icon" id="sweepInfoBtnT" title="Learn about PEQ sweep tuning" style="margin-left:-6px;">ℹ️</button>
       </div>
-      <!-- 2x2 slider grid to mirror Visualizer/Subjectizer styles -->
-      <div class="peq-sliders">
-        <div class="slider-panel" style="margin-bottom:10px;">
-          <!-- Row 1: Frequency and ±Range -->
-          <div class="slider-col">
-            <div class="head"><span class="label">Center Frequency (Hz)</span><span class="value" id="toneCenterLabelT">8000</span></div>
-            <input type="range" id="toneCenterTT" class="hrange" min="4000" max="16000" value="8000" step="10">
+
+      <!-- ERB Band Controls -->
+      <div id="erbBandControlsT" style="display:block;">
+        <div style="font-size:11px; color:#888; margin-bottom:8px;">Click ERB Band and adjust SPL to be level with reference 'midrange' ERB band</div>
+        <div id="erbAdvancedControlsT" style="display:none; margin-bottom:8px;">
+          <label class="treb-label" style="font-size:11px; color:#888;">
+            Reference:
+            <select id="erbReferenceSelectT" class="treb-select" style="width:auto; display:inline-block; margin-left:6px; padding:4px 8px; font-size:11px;">
+              <option value="-1">900 Hz (midrange)</option>
+              <option value="0">Lower Presence</option>
+              <option value="1">Upper Presence</option>
+              <option value="2">Brilliance</option>
+              <option value="3">Air</option>
+            </select>
+          </label>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div id="erbBandCard0T" class="erb-band-card" style="background:rgba(255,107,107,0.1); padding:8px; border-radius:4px; border:2px solid rgba(255,107,107,0.3); cursor:pointer;">
+            <div class="head" style="margin-bottom:4px;"><span class="label" style="color:#FF6B6B; font-size:11px;">⬤ Lower Presence</span><span class="value"><b id="erbBand0LabelT">0.0</b> dB</span></div>
+            <input type="range" id="erbBand0T" class="hrange" min="-12" max="12" value="0" step="0.5">
+            <div style="font-size:10px; color:#999; margin-top:2px;">4.5-7 kHz</div>
           </div>
-          <div class="slider-col">
-            <div class="head"><span class="label">+- Range</span><span class="value"><span id="toneStepLabelT">10.00</span>% (<span id="toneStepHzLabelT">600</span> Hz)</span></div>
-            <input type="range" id="toneStepTT" class="hrange" min="1" max="25" value="10.00" step="0.5">
+          <div id="erbBandCard1T" class="erb-band-card" style="background:rgba(255,165,0,0.1); padding:8px; border-radius:4px; border:2px solid transparent; cursor:pointer;">
+            <div class="head" style="margin-bottom:4px;"><span class="label" style="color:#FFA500; font-size:11px;">⬤ Upper Presence</span><span class="value"><b id="erbBand1LabelT">0.0</b> dB</span></div>
+            <input type="range" id="erbBand1T" class="hrange" min="-12" max="12" value="0" step="0.5">
+            <div style="font-size:10px; color:#999; margin-top:2px;">6-8.5 kHz (sibilance)</div>
+          </div>
+          <div id="erbBandCard2T" class="erb-band-card" style="background:rgba(78,205,196,0.1); padding:8px; border-radius:4px; border:2px solid transparent; cursor:pointer;">
+            <div class="head" style="margin-bottom:4px;"><span class="label" style="color:#4ECDC4; font-size:11px;">⬤ Brilliance</span><span class="value"><b id="erbBand2LabelT">0.0</b> dB</span></div>
+            <input type="range" id="erbBand2T" class="hrange" min="-12" max="12" value="0" step="0.5">
+            <div style="font-size:10px; color:#999; margin-top:2px;">8-12 kHz (sharpness)</div>
+          </div>
+          <div id="erbBandCard3T" class="erb-band-card" style="background:rgba(149,225,211,0.1); padding:8px; border-radius:4px; border:2px solid transparent; cursor:pointer;">
+            <div class="head" style="margin-bottom:4px;"><span class="label" style="color:#95E1D3; font-size:11px;">⬤ Air</span><span class="value"><b id="erbBand3LabelT">0.0</b> dB</span></div>
+            <input type="range" id="erbBand3T" class="hrange" min="-12" max="12" value="0" step="0.5">
+            <div style="font-size:10px; color:#999; margin-top:2px;">12-20 kHz (openness)</div>
           </div>
         </div>
-        <div class="slider-panel">
-          <!-- Row 2: Q and Gain -->
-          <div class="slider-col">
-            <div class="head"><span class="label">Q-Value</span><span class="value" id="toneQLabelT">4.00</span></div>
-            <input type="range" id="toneQTT" class="hrange" min="0" max="10" value="4" step="0.01">
+      </div>
+
+      <!-- PEQ Sweep Controls -->
+      <div id="peqSweepControlsT" style="display:none;">
+          <!-- Sub-mode selection -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <label class="treb-label" style="margin:0; font-size:0.9em;">
+              <input type="radio" name="peqSweepSubModeT" id="mode3TonePEQT" value="3tonePEQ" checked> 3‑Tone
+            </label>
+            <label class="treb-label" style="margin:0; font-size:0.9em;">
+              <input type="radio" name="peqSweepSubModeT" id="modeMicroSweepT" value="microSweep"> microSweep
+            </label>
+            <label class="treb-label" style="margin:0; font-size:0.9em;">
+              <input type="radio" name="peqSweepSubModeT" id="modeToneNarrowBandT" value="toneNarrowBand"> Narrow Band
+            </label>
+            <label class="treb-label" style="margin:0; font-size:0.9em;">
+              <input type="radio" name="peqSweepSubModeT" id="modeToneWarbleT" value="toneWarble"> Warble
+            </label>
           </div>
-          <div class="slider-col">
-            <div class="head"><span class="label">Center Gain (dB)</span><span class="value" id="toneGainLabelT">0</span></div>
-            <input type="range" id="toneGainTT" class="hrange" min="-12" max="12" value="0" step="0.5">
+          <!-- 2x2 slider grid to mirror Visualizer/Subjectizer styles -->
+          <div id="standardSlidersT" class="peq-sliders">
+            <div class="slider-panel" style="margin-bottom:10px;">
+              <!-- Row 1: Frequency and ±Range -->
+              <div class="slider-col">
+                <div class="head"><span class="label">Center Frequency (Hz)</span><span class="value" id="toneCenterLabelT">8000</span></div>
+                <input type="range" id="toneCenterTT" class="hrange" min="4000" max="16000" value="8000" step="10">
+              </div>
+              <div class="slider-col">
+                <div class="head"><span class="label">+- Range</span><span class="value"><span id="toneStepLabelT">10.00</span>% (<span id="toneStepHzLabelT">600</span> Hz)</span></div>
+                <input type="range" id="toneStepTT" class="hrange" min="1" max="25" value="10.00" step="0.5">
+              </div>
+            </div>
+            <div class="slider-panel">
+              <!-- Row 2: Q and Gain -->
+              <div class="slider-col">
+                <div class="head"><span class="label">Q-Value</span><span class="value" id="toneQLabelT">4.00</span></div>
+                <input type="range" id="toneQTT" class="hrange" min="0" max="10" value="4" step="0.01">
+              </div>
+              <div class="slider-col">
+                <div class="head"><span class="label">Center Gain (dB)</span><span class="value" id="toneGainLabelT">0</span></div>
+                <input type="range" id="toneGainTT" class="hrange" min="-12" max="12" value="0" step="0.5">
+              </div>
+            </div>
+          </div>
+          <div id="advancedToneControlsT" style="display:none; margin-top:4px;">
+            <span class="treb-label">Reference Frequency (Hz): <b id="refFreqLabelT">500</b></span>
+            <input type="range" id="refFreqT" class="hrange" min="100" max="2000" value="500" step="10">
+            <span class="treb-label">Noise Bandwidth (Oct): <b id="noiseBWLabelT">0.33</b></span>
+            <input type="range" id="noiseBWT" class="hrange" min="0.1" max="1.0" value="0.33" step="0.01">
+          </div>
+          <div id="microSweepControlsT" style="display:none; margin-top:4px;">
+            <span class="treb-label">microSweep half‑cycle (sec): <b id="microSweepDurationLabelT">12</b></span>
+            <input type="range" id="microSweepDurationT" class="hrange" min="6" max="30" value="12" step="1">
           </div>
         </div>
       </div>
-      <!-- Actions directly under sliders -->
+
+      <!-- Actions row -->
       <div class="treb-action-row">
-        <button class="treb-btn" id="toneStartBtnT">Start</button>
-        <button class="treb-btn secondary" id="toneStopBtnT">Stop</button>
-        <button id="saveFilterBtnT" class="treb-btn success">Save to selected filter</button>
+        <button class="treb-btn" id="toneStartBtnT">Start ERB Volume Levelling</button>
+        <button class="treb-btn-icon" id="erbTuningInfoBtnT" title="What to listen for during tuning">ℹ️</button>
+        <button id="saveFilterBtnT" class="treb-btn success" disabled>Save to Filter</button>
       </div>
-      <div id="microSweepControlsT" style="display:none; margin-top:4px;">
-        <span class="treb-label">microSweep half‑cycle (sec): <b id="microSweepDurationLabelT">12</b></span>
-        <input type="range" id="microSweepDurationT" class="hrange" min="6" max="30" value="12" step="1">
+
+      <!-- ERB Tuning Instructions (toggleable) -->
+      <div id="erbTuningInstructionsT" style="display:none; background:rgba(63,169,245,0.08); border:1px solid rgba(63,169,245,0.2); border-radius:6px; padding:10px; margin:8px 0 12px 0;">
+        <div style="font-size:11px; font-weight:600; color:#3fa9f5; margin-bottom:4px;">🎧 What to Listen For:</div>
+        <div style="font-size:11px; color:#9ea2a8; line-height:1.4;">
+          The sound will alternate between <b style="color:#e3e3e3;">reference</b> (neutral midrange) and the <b style="color:#e3e3e3;">selected ERB band</b>.<br>
+          <b style="color:#FFD700;">Ask yourself:</b> Does this ERB region feel <b style="color:#FF6B6B;">stronger</b> or <b style="color:#4ECDC4;">weaker</b> than the neutral midrange?<br>
+          → Adjust the slider until both feel equally loud.
+        </div>
       </div>
+
       <h3 style="margin-top:12px;">Filters</h3>
       <div class="treb-label" style="margin:0 0 6px 0;">Click to select, or use Revisit</div>
       <div id="filterListT" class="treb-filter-list"></div>
@@ -471,8 +744,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
 
   function closeOverlay() {
     try { stopSweep(); } catch (_) {}
-    try { stop3Tone(); } catch (_) {}
-    try { stopMicroSweep(); } catch (_) {}
+    try { if (twoToneController) twoToneController.stop(); } catch (_) {}
     if (overlay) overlay.remove();
     if (overlayBackdrop) overlayBackdrop.remove();
     overlay = null; overlayBackdrop = null;
@@ -488,11 +760,16 @@ export default async function initializeTreblizerPEQPlugin(context) {
   const SWEEP_F_START = 4000, SWEEP_F_END = 16000;
 
   // Revisit and tones
-  let toneOscA=null,toneOscB=null,toneOscC=null; let toneGainA=null,toneGainB=null,toneGainC=null;
-  let toneActive = false; let toneInterval = null;
-  let msOsc=null, msGain=null, msActive=false, msRAF=null, msPhase=0, msDir=1, msLastTs=0, msHold=0;
-  const MS_PAUSE_SEC = 1.0, MS_FADE_SEC = 0.005; let msLogLastTs=0;
-  let currentMicroSweepFreq = null, currentMicroSweepHold = false, msDrawLastTs = 0;
+  let toneActive = false;
+
+
+  // Controller instances - initialized after audio context is ready
+  let erbController = null;
+  let sweepController = null;
+  let twoToneController = null;
+
+  // Track currently selected ERB band
+  let selectedERBBand = 0;
 
   // Canvas
   let eqCanvas, eqCtx;
@@ -500,7 +777,9 @@ export default async function initializeTreblizerPEQPlugin(context) {
   // UI elements
   let sweepSpeed, sweepSpeedLabel, sweepStartBtn, sweepStopBtn, sweepMarkBtn, sweepFreqLabel, sweepApplyFilters, markTable;
   let toneCenter, toneCenterLabel, toneQ, toneQLabel, toneStep, toneStepLabel, toneStepHzLabel, toneGain, toneGainLabel;
-  let toneStartBtn, toneStopBtn, mode3Tone, modeMicroSweep, microSweepControls, microSweepDuration, microSweepDurationLabel;
+  let toneStartBtn, toneStopBtn, modeToneNarrowBand, modeToneWarble, mode3TonePEQ, modeMicroSweep, modeERBBands, microSweepControls, microSweepDuration, microSweepDurationLabel;
+  let advancedToneControls, erbBandControls, standardSliders;
+  let erbBandSliders = []; // Will store slider elements for each ERB band
   let toneHUD, filterListElem, lockedWrapElem, lockedListElem, saveFilterBtn, peqTable;
   // Advanced mode
   let advancedModeElem, advancedMode = false;
@@ -551,11 +830,25 @@ export default async function initializeTreblizerPEQPlugin(context) {
     toneGainLabel = document.getElementById('toneGainLabelT');
     toneStartBtn = document.getElementById('toneStartBtnT');
     toneStopBtn = document.getElementById('toneStopBtnT');
-    mode3Tone = document.getElementById('mode3ToneT');
+    modeERBBands = document.getElementById('modeERBBandsT');
+    modeToneNarrowBand = document.getElementById('modeToneNarrowBandT');
+    modeToneWarble = document.getElementById('modeToneWarbleT');
+    mode3TonePEQ = document.getElementById('mode3TonePEQT');
     modeMicroSweep = document.getElementById('modeMicroSweepT');
     microSweepControls = document.getElementById('microSweepControlsT');
     microSweepDuration = document.getElementById('microSweepDurationT');
     microSweepDurationLabel = document.getElementById('microSweepDurationLabelT');
+    advancedToneControls = document.getElementById('advancedToneControlsT');
+    erbBandControls = document.getElementById('erbBandControlsT');
+    standardSliders = document.getElementById('standardSlidersT');
+
+    // Get ERB band slider references
+    for (let i = 0; i < 4; i++) {
+      erbBandSliders[i] = {
+        slider: document.getElementById(`erbBand${i}T`),
+        label: document.getElementById(`erbBand${i}LabelT`)
+      };
+    }
     toneHUD = document.getElementById('toneHUDT');
     filterListElem = document.getElementById('filterListT');
     lockedWrapElem = document.getElementById('lockedWrapT');
@@ -575,16 +868,13 @@ export default async function initializeTreblizerPEQPlugin(context) {
     }
     if (sweepApplyWrap) { sweepApplyWrap.style.display = 'block'; }
     // Ensure revisit mode radios are enabled and interactive even if globally disabled
-    if (mode3Tone) {
-      mode3Tone.disabled = false;
-      mode3Tone.style.pointerEvents = 'auto';
-      mode3Tone.style.opacity = '1';
-    }
-    if (modeMicroSweep) {
-      modeMicroSweep.disabled = false;
-      modeMicroSweep.style.pointerEvents = 'auto';
-      modeMicroSweep.style.opacity = '1';
-    }
+    [modeERBBands, modeToneNarrowBand, modeToneWarble, mode3TonePEQ, modeMicroSweep].forEach(elem => {
+      if (elem) {
+        elem.disabled = false;
+        elem.style.pointerEvents = 'auto';
+        elem.style.opacity = '1';
+      }
+    });
     advancedSweepControls = document.getElementById('advancedSweepControlsT');
     advancedSweepSpeedWrap = document.getElementById('advancedSweepSpeedWrapT');
 
@@ -619,6 +909,15 @@ export default async function initializeTreblizerPEQPlugin(context) {
       e = Math.max(2000, Math.min(24000, Math.round(e)));
       if (e <= s+500) e = s + 500; // ensure some span
       sweepFStart = s; sweepFEnd = e;
+      // Update controller configurations
+      if (sweepController) {
+        sweepController.config.sweepFStart = s;
+        sweepController.config.sweepFEnd = e;
+      }
+      if (twoToneController) {
+        twoToneController.config.sweepFStart = s;
+        twoToneController.config.sweepFEnd = e;
+      }
       updateSweepRangeUI();
     };
     sweepStartInput.addEventListener('change', applySweepRangeInputs);
@@ -639,6 +938,19 @@ export default async function initializeTreblizerPEQPlugin(context) {
       if (notPK) reason = 'Not PK';
       else if (activeOutOfRange) reason = 'Locked (out of range & gain≠0)';
       return { locked, reason, outOfRange, gainZero: outOfRange && !activeOutOfRange };
+    }
+
+    // Update Save to Filter button state based on selection
+    function updateSaveButtonState() {
+      if (saveFilterBtn) {
+        const hasSelection = selectedFilterIndex >= 0;
+        saveFilterBtn.disabled = !hasSelection;
+        if (!hasSelection) {
+          saveFilterBtn.title = 'Select a filter first';
+        } else {
+          saveFilterBtn.title = 'Save current adjustments to selected filter';
+        }
+      }
     }
 
     function renderFilterList(){
@@ -719,11 +1031,21 @@ export default async function initializeTreblizerPEQPlugin(context) {
       if (selectedFilterIndex < 0 || isFilterLocked(peqFilters[selectedFilterIndex]||{}).locked){
         selectedFilterIndex = selectableIdx.length ? selectableIdx[0] : -1;
       }
+
+      // Update save button state based on selection
+      updateSaveButtonState();
     }
     // initial render
     renderFilterList();
     // expose to outer scope for external callers
     renderFilterListFn = renderFilterList;
+
+    // Check if no filters are available and warn user
+    if (selectedFilterIndex === -1 && peqFilters.length > 0) {
+      setTimeout(() => {
+        alert('⚠️ No Available PEQ Filters\n\nAll your PEQ filters are currently in use (locked).\n\nTo use Treblizer:\n1. Clear or disable some existing PEQ filters\n2. Make sure at least one filter is:\n   - Type: Peaking/Bell\n   - Frequency: 4-16 kHz range\n   - Gain: non-zero\n\nThen reopen Treblizer.');
+      }, 100);
+    }
 
     // Initialize sweep speed from cookie if available
     try {
@@ -749,7 +1071,8 @@ export default async function initializeTreblizerPEQPlugin(context) {
     const applyAdvancedModeUI = () => {
       if (advancedSweepControls) advancedSweepControls.style.display = advancedMode ? 'flex' : 'none';
       if (advancedSweepSpeedWrap) advancedSweepSpeedWrap.style.display = advancedMode ? 'block' : 'none';
-      // microSweepControls visibility is handled together with mode in updateRevisitModeUI
+      // Update revisit mode UI to show/hide advanced controls
+      updateRevisitModeUI();
       // Locked chips visibility handled inside renderFilterList using advancedMode flag
       renderFilterList();
       drawEQGraph();
@@ -779,18 +1102,267 @@ export default async function initializeTreblizerPEQPlugin(context) {
     if (sweepApplyFilters) sweepApplyFilters.addEventListener('change', () => { if (sweepActive) { disconnectSweepChain(); buildSweepChain(); } });
 
     // Revisit handlers
-    mode3Tone.addEventListener('change', updateRevisitModeUI);
+    modeERBBands.addEventListener('change', updateRevisitModeUI);
+    modeToneNarrowBand.addEventListener('change', updateRevisitModeUI);
+    modeToneWarble.addEventListener('change', updateRevisitModeUI);
+    mode3TonePEQ.addEventListener('change', updateRevisitModeUI);
     modeMicroSweep.addEventListener('change', updateRevisitModeUI);
     microSweepDuration.addEventListener('input', () => microSweepDurationLabel.textContent = microSweepDuration.value);
+    document.getElementById('refFreqT').addEventListener('input', () => document.getElementById('refFreqLabelT').textContent = document.getElementById('refFreqT').value);
+    document.getElementById('noiseBWT').addEventListener('input', () => document.getElementById('noiseBWLabelT').textContent = Number(document.getElementById('noiseBWT').value).toFixed(2));
+
+    // ERB band card click handlers
+    for (let i = 0; i < 4; i++) {
+      const card = document.getElementById(`erbBandCard${i}T`);
+
+      if (card) {
+        card.addEventListener('click', (e) => {
+          // Don't trigger if clicking the slider
+          if (e.target.type !== 'range') {
+            updateERBBandSelection(i);
+          }
+        });
+      }
+    }
+
+    // ERB band slider handlers
+    for (let i = 0; i < 4; i++) {
+      erbBandSliders[i].slider.addEventListener('input', () => {
+        const val = Number(erbBandSliders[i].slider.value);
+        erbBandSliders[i].label.textContent = val.toFixed(1);
+
+        ensureControllers();
+
+        // Update controller levels
+        if (erbController) {
+          const levels = erbController.getLevels();
+          levels[i] = val;
+          erbController.setLevels(levels);
+
+          // Auto-start playback if not already playing
+          if (!erbController.isActive() && modeERBBands && modeERBBands.checked) {
+            erbController.start();
+          }
+        }
+        // Also select this band when slider is moved
+        updateERBBandSelection(i);
+      });
+    }
+
+    // Initialize the first band as selected
+    updateERBBandSelection(0);
+
+    // ERB reference selector (advanced mode)
+    const erbReferenceSelect = document.getElementById('erbReferenceSelectT');
+    if (erbReferenceSelect) {
+      erbReferenceSelect.addEventListener('change', () => {
+        const refIndex = parseInt(erbReferenceSelect.value);
+        if (erbController) {
+          erbController.setReferenceBand(refIndex);
+        }
+      });
+    }
+
     toneCenter.addEventListener('input', () => { toneCenterLabel.textContent = toneCenter.value; updateStepLabels(); drawEQGraph(); });
     toneQ.addEventListener('input', () => { const qVal = Math.max(0, Math.min(10, Number(toneQ.value))); toneQ.value = String(qVal); toneQLabel.textContent = qVal.toFixed(2); drawEQGraph(); });
     toneStep.addEventListener('input', () => { updateStepLabels(); drawEQGraph(); });
     toneGain.addEventListener('input', () => { toneGainLabel.textContent = toneGain.value; drawEQGraph(); });
-    toneStartBtn.addEventListener('click', () => { if (modeMicroSweep.checked) startMicroSweep(); else start3Tone(); });
-    toneStopBtn.addEventListener('click', () => { stop3Tone(); stopMicroSweep(); });
+    toneStartBtn.addEventListener('click', () => {
+      ensureControllers();
+
+      // Check if anything is currently playing
+      const isPlaying = (erbController && erbController.isActive()) ||
+                        (sweepController && sweepController.isActive()) ||
+                        (twoToneController && twoToneController.isActive());
+
+      if (isPlaying) {
+        // Stop all playback
+        if (erbController) erbController.stop();
+        if (sweepController) sweepController.stopAll();
+        if (twoToneController) twoToneController.stop();
+      } else {
+        // Start playback
+        // Stop sweep analyzer if running to avoid confusion
+        if (sweepActive) stopSweep();
+
+        if (modeERBBands.checked) {
+          // Sync slider values to controller before starting
+          const levels = [
+            Number(document.getElementById('erbBand0T').value),
+            Number(document.getElementById('erbBand1T').value),
+            Number(document.getElementById('erbBand2T').value),
+            Number(document.getElementById('erbBand3T').value)
+          ];
+          erbController.setLevels(levels);
+          erbController.start();
+        } else if (document.getElementById('modePEQSweepT')?.checked || !modeERBBands.checked) {
+          // PEQ Sweep modes - check which sub-mode is selected
+          if (modeMicroSweep.checked) {
+            sweepController.startMicroSweep();
+          } else if (modeToneNarrowBand.checked) {
+            twoToneController.start('noise');
+          } else if (modeToneWarble.checked) {
+            twoToneController.start('warble');
+          } else {
+            sweepController.start3Tone();
+          }
+        }
+      }
+    });
 
     // Save current settings back to selected filter
     saveFilterBtn.addEventListener('click', saveTrebleFilterToSelected);
+
+    // Info button handlers
+    const erbInfoBtn = document.getElementById('erbInfoBtnT');
+    const sweepInfoBtn = document.getElementById('sweepInfoBtnT');
+
+    // Simple markdown to HTML converter
+    function markdownToHTML(text) {
+      // First, handle bold text: **text** -> <strong>text</strong>
+      let html = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // Split into lines for better processing
+      const lines = html.split('\n');
+      const processed = [];
+      let inList = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        if (line.startsWith('•')) {
+          // Bullet point
+          if (!inList) {
+            processed.push('<ul style="margin:8px 0; padding-left:20px;">');
+            inList = true;
+          }
+          processed.push('<li>' + line.substring(1).trim() + '</li>');
+        } else if (line.startsWith('→')) {
+          // Arrow point (special formatting)
+          if (inList) {
+            processed.push('</ul>');
+            inList = false;
+          }
+          processed.push('<div style="margin:8px 0; padding-left:10px;">' + line + '</div>');
+        } else if (line === '') {
+          // Empty line
+          if (inList) {
+            processed.push('</ul>');
+            inList = false;
+          }
+          processed.push('<br>');
+        } else {
+          // Regular line
+          if (inList) {
+            processed.push('</ul>');
+            inList = false;
+          }
+          processed.push('<div style="margin:4px 0;">' + line + '</div>');
+        }
+      }
+
+      // Close any open list
+      if (inList) {
+        processed.push('</ul>');
+      }
+
+      return processed.join('\n');
+    }
+
+    function showInfoModal(info) {
+      // Create backdrop
+      const backdrop = document.createElement('div');
+      backdrop.className = 'treb-info-modal-backdrop';
+
+      // Convert markdown to HTML
+      const detailsHTML = markdownToHTML(info.details);
+
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'treb-info-modal';
+      modal.innerHTML = `
+        <span class="treb-info-modal-close">&times;</span>
+        <h3>${info.title}</h3>
+        <p style="font-weight:600;">${info.summary}</p>
+        <div style="margin-top:12px; line-height:1.6;">${detailsHTML}</div>
+      `;
+
+      // Close handlers
+      const close = () => {
+        backdrop.remove();
+        modal.remove();
+      };
+      modal.querySelector('.treb-info-modal-close').addEventListener('click', close);
+      backdrop.addEventListener('click', close);
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(modal);
+    }
+
+    if (erbInfoBtn) {
+      erbInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showInfoModal(ERB_INFO);
+      });
+    }
+
+    if (sweepInfoBtn) {
+      sweepInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // Show context-specific info based on selected sub-mode
+        let infoToShow = SWEEP_INFO; // Default
+
+        if (mode3TonePEQ && mode3TonePEQ.checked) {
+          infoToShow = TONE_3_INFO;
+        } else if (modeMicroSweep && modeMicroSweep.checked) {
+          infoToShow = TONE_MICROSWEEP_INFO;
+        } else if (modeToneNarrowBand && modeToneNarrowBand.checked) {
+          infoToShow = TONE_NARROWBAND_INFO;
+        } else if (modeToneWarble && modeToneWarble.checked) {
+          infoToShow = TONE_WARBLE_INFO;
+        }
+
+        showInfoModal(infoToShow);
+      });
+    }
+
+    // Make the tuning info button context-aware - always show modal popup
+    const erbTuningInfoBtn = document.getElementById('erbTuningInfoBtnT');
+    if (erbTuningInfoBtn) {
+      erbTuningInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // Check if we're in ERB mode or PEQ Sweep mode
+        const isERBMode = modeERBBands && modeERBBands.checked;
+
+        let infoToShow;
+
+        if (isERBMode) {
+          // Show ERB tuning info modal
+          infoToShow = ERB_TUNING_INFO;
+        } else {
+          // Show context-specific PEQ Sweep info modal
+          if (mode3TonePEQ && mode3TonePEQ.checked) {
+            infoToShow = TONE_3_INFO;
+          } else if (modeMicroSweep && modeMicroSweep.checked) {
+            infoToShow = TONE_MICROSWEEP_INFO;
+          } else if (modeToneNarrowBand && modeToneNarrowBand.checked) {
+            infoToShow = TONE_NARROWBAND_INFO;
+          } else if (modeToneWarble && modeToneWarble.checked) {
+            infoToShow = TONE_WARBLE_INFO;
+          } else {
+            infoToShow = SWEEP_INFO; // Default
+          }
+        }
+
+        showInfoModal(infoToShow);
+      });
+    }
+
+    // PEQ Sweep method section radio handler
+    const modePEQSweep = document.getElementById('modePEQSweepT');
+    if (modePEQSweep) modePEQSweep.addEventListener('change', updateRevisitModeUI);
 
     // Apply header button
     document.getElementById('applyTreblizerPEQOverlay').addEventListener('click', () => {
@@ -822,10 +1394,47 @@ export default async function initializeTreblizerPEQPlugin(context) {
   }
 
   function updateRevisitModeUI() {
-    const isMicro = document.getElementById('modeMicroSweepT').checked;
-    const showMicroControls = isMicro && advancedMode; // only when in micro mode AND advanced
-    document.getElementById('microSweepControlsT').style.display = showMicroControls ? 'block' : 'none';
-    document.getElementById('toneStartBtnT').textContent = isMicro ? 'Start microSweep' : 'Start 3‑Tone Test';
+    const isERBBands = modeERBBands.checked;
+    const isPEQSweep = document.getElementById('modePEQSweepT')?.checked;
+    const isMicro = modeMicroSweep.checked;
+    const isToneNarrowBand = modeToneNarrowBand.checked;
+    const isToneWarble = modeToneWarble.checked;
+    const is3TonePEQ = mode3TonePEQ.checked;
+
+    // Show/hide method sections
+    const peqControls = document.getElementById('peqSweepControlsT');
+
+    if (isERBBands) {
+      erbBandControls.style.display = 'block';
+      if (peqControls) peqControls.style.display = 'none';
+      if (standardSliders) standardSliders.style.display = 'none';
+    } else if (isPEQSweep || !isERBBands) {
+      erbBandControls.style.display = 'none';
+      if (peqControls) peqControls.style.display = 'block';
+      if (standardSliders) standardSliders.style.display = 'block';
+    }
+
+    // Show ERB advanced controls when in ERB mode AND advanced
+    const erbAdvancedControls = document.getElementById('erbAdvancedControlsT');
+    const showERBAdvanced = isERBBands && advancedMode;
+    if (erbAdvancedControls) erbAdvancedControls.style.display = showERBAdvanced ? 'block' : 'none';
+
+    // Show micro controls only when in micro mode AND advanced
+    const showMicroControls = isMicro && advancedMode;
+    if (microSweepControls) microSweepControls.style.display = showMicroControls ? 'block' : 'none';
+
+    // Show advanced tone controls (ref frequency, noise BW) only when in tone mode (narrow-band or warble) AND advanced
+    const showAdvancedToneControls = (isToneNarrowBand || isToneWarble) && advancedMode;
+    if (advancedToneControls) advancedToneControls.style.display = showAdvancedToneControls ? 'block' : 'none';
+
+    // Update button text
+    let btnText = 'Start';
+    if (isERBBands) btnText = 'Start ERB Volume Levelling';
+    else if (isMicro) btnText = 'Start microSweep';
+    else if (isToneNarrowBand) btnText = 'Start Narrow Band';
+    else if (isToneWarble) btnText = 'Start Warble';
+    else if (is3TonePEQ) btnText = 'Start 3‑Tone';
+    toneStartBtn.textContent = btnText;
   }
 
   // Returns HALF of the span used for microSweep/3‑Tone bounds, based on percentage of the active sweep band (not of fc)
@@ -859,6 +1468,7 @@ export default async function initializeTreblizerPEQPlugin(context) {
     drawEQGraph();
   }
   function freqToX(f) { const f0=sweepFStart,f1=sweepFEnd; const ratio = Math.log(f/f0)/Math.log(f1/f0); return ratio * (eqCanvas?.width||1); }
+  function xToFreq(x) { const f0=sweepFStart,f1=sweepFEnd; const ratio = x / (eqCanvas?.width||1); return f0 * Math.pow(f1/f0, ratio); }
   function dBToY(db) { const maxDB=12,minDB=-12; const frac=(db-maxDB)/(minDB-maxDB); return frac*(eqCanvas?.height||1); }
 
   function drawGrid() {
@@ -956,6 +1566,11 @@ export default async function initializeTreblizerPEQPlugin(context) {
   function drawCurrentFilterOverlay() {
     // Guard against early calls before inputs are wired
     if (!toneCenter || !toneQ || !toneGain) return;
+
+    // Only draw PEQ overlay when in PEQ Sweep mode
+    const isPEQSweepMode = document.getElementById('modePEQSweepT')?.checked;
+    if (!isPEQSweepMode) return;
+
     const fc=Number(toneCenter.value); const Qraw=Number(toneQ.value); const qVal=Math.max(0,Qraw); const g=Number(toneGain.value); const W=eqCanvas.width; const ctx=eqCtx;
     ctx.strokeStyle='rgba(63,169,245,0.9)'; ctx.lineWidth=1.7; ctx.beginPath();
     for(let i=0;i<W;i++){ const frac=i/W; const f=sweepFStart*Math.pow(sweepFEnd/sweepFStart,frac); const y=dBToY(biquadMagQ(fc,g,qVal,f)); if(i===0) ctx.moveTo(i,y); else ctx.lineTo(i,y); }
@@ -963,17 +1578,101 @@ export default async function initializeTreblizerPEQPlugin(context) {
     const stepHz=getStepHz(); [fc-stepHz, fc, fc+stepHz].forEach((f,idx)=>{ if(f<sweepFStart||f>sweepFEnd) return; const x=freqToX(f); ctx.strokeStyle= idx===1? '#3fa9f5':'#888'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,10); ctx.stroke(); });
   }
 
-  function drawMicroSweepDot() {
-    if (!currentMicroSweepFreq) return; const f=Math.max(sweepFStart, Math.min(sweepFEnd, currentMicroSweepFreq));
-    const fc=Number(toneCenter.value); const Qraw=Number(toneQ.value); const qVal=Math.max(0,Qraw); const g=Number(toneGain.value);
-    const x=freqToX(f); const y=dBToY(biquadMagQ(fc,g,qVal,f)); const ctx=eqCtx; const rOuter=5, rInner=2.5;
-    ctx.beginPath(); ctx.arc(x,y,rOuter,0,Math.PI*2);
-    if (currentMicroSweepHold) { ctx.strokeStyle='#3fa9f5'; ctx.lineWidth=2; ctx.stroke(); }
-    else { const grad=ctx.createRadialGradient(x,y,0,x,y,rOuter); grad.addColorStop(0,'rgba(63,169,245,0.95)'); grad.addColorStop(1,'rgba(63,169,245,0.25)'); ctx.fillStyle=grad; ctx.fill(); ctx.beginPath(); ctx.arc(x,y,rInner,0,Math.PI*2); ctx.fillStyle='#c8e7ff'; ctx.fill(); }
+
+  function draw2ToneRefDot() {
+    if (!twoToneController) return;
+    const currentRefFreq = twoToneController.getCurrentRefFreq();
+    if (!currentRefFreq) return;
+    const f = Math.max(sweepFStart, Math.min(sweepFEnd, currentRefFreq));
+    const fc = Number(toneCenter.value);
+    const Qraw = Number(toneQ.value);
+    const qVal = Math.max(0, Qraw);
+    const g = Number(toneGain.value);
+    const x = freqToX(f);
+    const y = dBToY(biquadMagQ(fc, g, qVal, f));
+    const ctx = eqCtx;
+    const rOuter = 5, rInner = 2.5;
+
+    ctx.beginPath();
+    ctx.arc(x, y, rOuter, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, rOuter);
+    grad.addColorStop(0, 'rgba(63,245,169,0.95)'); // Green tint for 2-tone ref
+    grad.addColorStop(1, 'rgba(63,245,169,0.25)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, rInner, 0, Math.PI * 2);
+    ctx.fillStyle = '#c6ffe7';
+    ctx.fill();
+  }
+
+  function draw3ToneDot() {
+    if (!sweepController) return;
+    const current3ToneFreq = sweepController.get3ToneFreq();
+    if (!current3ToneFreq) return;
+    const f = Math.max(sweepFStart, Math.min(sweepFEnd, current3ToneFreq));
+    const fc = Number(toneCenter.value);
+    const Qraw = Number(toneQ.value);
+    const qVal = Math.max(0, Qraw);
+    const g = Number(toneGain.value);
+    const x = freqToX(f);
+    const y = dBToY(biquadMagQ(fc, g, qVal, f));
+    const ctx = eqCtx;
+    const rOuter = 6, rInner = 3;
+
+    ctx.beginPath();
+    ctx.arc(x, y, rOuter, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, rOuter);
+    grad.addColorStop(0, 'rgba(63,169,245,0.95)'); // Blue tint for 3-tone
+    grad.addColorStop(1, 'rgba(63,169,245,0.25)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, rInner, 0, Math.PI * 2);
+    ctx.fillStyle = '#c6e6ff';
+    ctx.fill();
   }
 
   function drawSweepMarks() {
     if (!sweepMarks.length) return; const y0=dBToY(0); const ctx=eqCtx; ctx.fillStyle='#f53fad'; sweepMarks.forEach(m=>{ const x=freqToX(m.freq); ctx.beginPath(); ctx.arc(x,y0,3,0,Math.PI*2); ctx.fill(); });
+  }
+
+  function drawERBPreview() {
+    // Show preview of ERB band adjustment as a filter curve
+    if (!erbController || !modeERBBands || !modeERBBands.checked) return;
+
+    const levels = erbController.getLevels();
+    const adjustedBands = erbController.getAdjustedBands();
+
+    if (adjustedBands.length === 0) return;
+
+    // Draw the selected band's filter curve
+    const bandIdx = selectedERBBand;
+    if (Math.abs(levels[bandIdx]) < 0.1) return; // No adjustment
+
+    // Find the adjusted band data for the selected band
+    const adjusted = adjustedBands.find(b => b.bandIndex === bandIdx);
+    if (!adjusted) return;
+
+    const { centerFreq, Q, gain } = adjusted;
+    const W = eqCanvas.width;
+    const ctx = eqCtx;
+
+    // Draw the filter response curve
+    ctx.strokeStyle = ERB_BANDS[bandIdx].color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]); // Dashed line for preview
+    ctx.beginPath();
+
+    for (let px = 0; px < W; px++) {
+      const freq = xToFreq(px);
+      const filterGain = biquadMagQ(centerFreq, gain, Q, freq);
+      const y = dBToY(filterGain);
+      if (px === 0) ctx.moveTo(px, y);
+      else ctx.lineTo(px, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
   }
 
   function drawEQCurve() {
@@ -1000,7 +1699,81 @@ export default async function initializeTreblizerPEQPlugin(context) {
   function drawEQGraph() {
     if (!eqCanvas?.width) return; drawGrid(); drawSavedFilterCurves(); drawEQCurve();
     if (currentSweepFreq) { const x=freqToX(currentSweepFreq); eqCtx.strokeStyle='#f5b83f'; eqCtx.lineWidth=1.0; eqCtx.beginPath(); eqCtx.moveTo(x,0); eqCtx.lineTo(x,eqCanvas.height); eqCtx.stroke(); drawSweepDot(); }
-    drawCurrentFilterOverlay(); drawMicroSweepDot(); drawSweepMarks();
+    drawCurrentFilterOverlay(); draw2ToneRefDot(); draw3ToneDot(); drawSweepMarks(); drawERBPreview();
+
+    // Draw ERB bands if active
+    if (erbController && erbController.isActive()) {
+      const currentBandIdx = erbController.getCurrentBandIndex();
+      const referenceBandIdx = erbController.getReferenceBand();
+
+      ERB_BANDS.forEach((band, idx) => {
+        const levels = erbController.getLevels();
+        const xStart = freqToX(band.fLow);
+        const xEnd = freqToX(band.fHigh);
+
+        // Show adjusted bands with subtle fill
+        if (Math.abs(levels[idx]) > 0.1) {
+          eqCtx.fillStyle = band.color + '33'; // 20% opacity
+          eqCtx.fillRect(xStart, 0, xEnd - xStart, eqCanvas.height);
+        }
+
+        // Flash/highlight the currently playing band
+        if (currentBandIdx === idx) {
+          // Currently playing this band - bright flash
+          eqCtx.fillStyle = band.color + 'AA'; // 67% opacity
+          eqCtx.fillRect(xStart, 0, xEnd - xStart, eqCanvas.height);
+
+          // Add a bright border
+          eqCtx.strokeStyle = band.color;
+          eqCtx.lineWidth = 3;
+          eqCtx.strokeRect(xStart, 0, xEnd - xStart, eqCanvas.height);
+        }
+      });
+
+      // Highlight reference band if playing reference
+      if (currentBandIdx === -1) {
+        if (referenceBandIdx >= 0 && referenceBandIdx <= 3) {
+          // Reference is an ERB band
+          const refBand = ERB_BANDS[referenceBandIdx];
+          const xStart = freqToX(refBand.fLow);
+          const xEnd = freqToX(refBand.fHigh);
+          eqCtx.fillStyle = refBand.color + '88'; // 53% opacity
+          eqCtx.fillRect(xStart, 0, xEnd - xStart, eqCanvas.height);
+
+          eqCtx.strokeStyle = refBand.color;
+          eqCtx.lineWidth = 2;
+          eqCtx.strokeRect(xStart, 0, xEnd - xStart, eqCanvas.height);
+        } else {
+          // Reference is 900 Hz - draw a vertical line
+          const x900 = freqToX(900);
+          eqCtx.strokeStyle = '#FFD700'; // Gold color for reference
+          eqCtx.lineWidth = 3;
+          eqCtx.beginPath();
+          eqCtx.moveTo(x900, 0);
+          eqCtx.lineTo(x900, eqCanvas.height);
+          eqCtx.stroke();
+        }
+      }
+    }
+
+    // Draw microsweep indicator if active
+    if (sweepController && sweepController.isActive()) {
+      const freq = sweepController.getMicroSweepFreq();
+      if (freq) {
+        const fc = Number(toneCenter.value);
+        const Qraw = Number(toneQ.value);
+        const qVal = Math.max(0, Qraw);
+        const g = Number(toneGain.value);
+        const f = Math.max(sweepFStart, Math.min(sweepFEnd, freq));
+        const x = freqToX(f);
+        const y = dBToY(biquadMagQ(fc, g, qVal, f));
+        const isHolding = sweepController.isMicroSweepHolding();
+        eqCtx.fillStyle = isHolding ? '#ff6b6b' : '#4ECDC4';
+        eqCtx.beginPath();
+        eqCtx.arc(x, y, 6, 0, 2 * Math.PI);
+        eqCtx.fill();
+      }
+    }
   }
 
   function sweepFrequencyAtTime(t,totalTime){ const ratio=sweepFEnd/sweepFStart; const frac=t/totalTime; return sweepFStart*Math.pow(ratio, frac); }
@@ -1016,48 +1789,320 @@ export default async function initializeTreblizerPEQPlugin(context) {
   function stopSweep(){ sweepActive=false; if(sweepOsc){ try{sweepOsc.stop();}catch(_){ } sweepOsc=null;} if(sweepRAF) cancelAnimationFrame(sweepRAF); sweepFreqLabel.textContent='—'; currentSweepFreq=null; sweepStartBtn.disabled=false; sweepStopBtn.disabled=true; }
   function addSweepMark(freq){ const f = Math.max(sweepFStart, Math.min(sweepFEnd, freq)); sweepMarks.push({freq:Math.round(f)}); renderMarkTable(); }
   function renderMarkTable(){ markTable.innerHTML=''; sweepMarks.forEach((m,i)=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${m.freq}</td><td><button class="treb-btn success" data-f="${m.freq}">Revisit</button> <button class="treb-btn danger" data-i="${i}">Remove</button></td>`; markTable.appendChild(tr); });
-    markTable.querySelectorAll('button.treb-btn.success').forEach(btn=>btn.addEventListener('click',(e)=>{ const f=Number(e.target.getAttribute('data-f')); const fc = Math.max(sweepFStart, Math.min(sweepFEnd, f)); toneCenter.value=String(fc); toneCenterLabel.textContent=String(fc); drawEQGraph(); }));
+    markTable.querySelectorAll('button.treb-btn.success').forEach(btn=>btn.addEventListener('click',(e)=>{
+      const f = Number(e.target.getAttribute('data-f'));
+
+      // Check which mode is currently active
+      const isERBMode = modeERBBands && modeERBBands.checked;
+
+      if (isERBMode) {
+        // ERB mode: Find and select the best ERB band for this frequency
+        const bandIdx = findBestERBBand(f);
+        updateERBBandSelection(bandIdx);
+      } else {
+        // PEQ Sweep mode: Update the center frequency to the marked frequency
+        toneCenter.value = String(Math.round(f));
+        toneCenterLabel.textContent = toneCenter.value;
+
+        // Update the graph to show the new center frequency
+        drawEQGraph();
+
+        // If sweep controller exists, update its config
+        ensureControllers();
+        if (sweepController) {
+          sweepController.config.toneCenter = Math.round(f);
+        }
+      }
+    }));
     markTable.querySelectorAll('button.treb-btn.danger').forEach(btn=>btn.addEventListener('click',(e)=>{ const i=Number(e.target.getAttribute('data-i')); sweepMarks.splice(i,1); renderMarkTable(); }));
     drawEQGraph(); }
 
-  function runThreeToneCycle(){ let phase=0; const dur=600, fade=40, silent=200; toneInterval=setInterval(()=>{ if(!toneActive) return; const fc=Number(toneCenter.value); const {fLo, fHi} = getPercentBounds(fc); const Qraw=Number(toneQ.value); const gDB=Number(toneGain.value); const Q=Math.max(Qraw,0.0001);
-      toneOscA.frequency.setValueAtTime(fLo, audioCtx.currentTime);
-      toneOscB.frequency.setValueAtTime(fc, audioCtx.currentTime);
-      toneOscC.frequency.setValueAtTime(fHi, audioCtx.currentTime);
-      const gDbA = (Qraw<=0?0:biquadMagQ(fc,gDB,Q,fLo)); const gDbB = (Qraw<=0?0:biquadMagQ(fc,gDB,Q,fc)); const gDbC = (Qraw<=0?0:biquadMagQ(fc,gDB,Q,fHi));
-      const gLinA = Math.pow(10, gDbA/20), gLinB=Math.pow(10,gDbB/20), gLinC=Math.pow(10,gDbC/20);
-      if (phase===0){ toneGainA.gain.cancelScheduledValues(audioCtx.currentTime); toneGainA.gain.setValueAtTime(toneGainA.gain.value, audioCtx.currentTime); toneGainA.gain.linearRampToValueAtTime(gLinA, audioCtx.currentTime + fade/1000); toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); showToneHUD('A', fLo); }
-      else if (phase===1){ toneGainB.gain.cancelScheduledValues(audioCtx.currentTime); toneGainB.gain.setValueAtTime(toneGainB.gain.value, audioCtx.currentTime); toneGainB.gain.linearRampToValueAtTime(gLinB, audioCtx.currentTime + fade/1000); toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); showToneHUD('B', fc); }
-      else if (phase===2){ toneGainC.gain.cancelScheduledValues(audioCtx.currentTime); toneGainC.gain.setValueAtTime(toneGainC.gain.value, audioCtx.currentTime); toneGainC.gain.linearRampToValueAtTime(gLinC, audioCtx.currentTime + fade/1000); toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); showToneHUD('C', fHi); }
-      else { toneGainA.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); toneGainB.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); toneGainC.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fade/1000); showToneHUD('-', null); }
-      phase = (phase + 1) % 4; drawEQGraph(); }, dur + silent);
-  }
-
+  // HUD display functions (used by controllers)
   function showToneHUD(label, f){ const hud=document.getElementById('toneHUDT'); if (!hud) return; if (f){ hud.textContent = `Tone ${label} — ${Math.round(f)} Hz`; hud.style.opacity='1'; } else { hud.textContent='—'; hud.style.opacity='0.6'; } }
   function hideToneHUD(){ const hud=document.getElementById('toneHUDT'); if (hud) hud.style.opacity='0'; }
 
-  function start3Tone(){ ensureAudio(); stop3Tone(); const fc=Math.max(sweepFStart, Math.min(sweepFEnd, Number(toneCenter.value))); const stepHz=getStepHz(); toneOscA=audioCtx.createOscillator(); toneOscB=audioCtx.createOscillator(); toneOscC=audioCtx.createOscillator(); toneGainA=audioCtx.createGain(); toneGainB=audioCtx.createGain(); toneGainC=audioCtx.createGain();
-    toneOscA.type=toneOscB.type=toneOscC.type='sine'; toneGainA.gain.value=0; toneGainB.gain.value=0; toneGainC.gain.value=0; toneOscA.connect(toneGainA).connect(outPreGain); toneOscB.connect(toneGainB).connect(outPreGain); toneOscC.connect(toneGainC).connect(outPreGain); toneOscA.start(); toneOscB.start(); toneOscC.start(); toneActive=true; runThreeToneCycle(); toneStartBtn.disabled=true; toneStopBtn.disabled=false; drawEQGraph(); }
-  function stop3Tone(){ toneActive=false; if (toneInterval) clearInterval(toneInterval); if (toneOscA){ try{toneOscA.stop();}catch(_){}} if (toneOscB){ try{toneOscB.stop();}catch(_){}} if (toneOscC){ try{toneOscC.stop();}catch(_){}} toneOscA=toneOscB=toneOscC=null; toneGainA=toneGainB=toneGainC=null; toneStartBtn.disabled=false; toneStopBtn.disabled=true; hideToneHUD(); drawEQGraph(); }
+  /**
+   * Find the best ERB band for a given frequency
+   * @param {number} freq - Frequency in Hz
+   * @returns {number} Band index (0-3)
+   */
+  function findBestERBBand(freq) {
+    // Find all bands that contain this frequency
+    const containingBands = ERB_BANDS.map((band, idx) => {
+      if (freq >= band.fLow && freq <= band.fHigh) {
+        const center = Math.sqrt(band.fLow * band.fHigh);
+        const distance = Math.abs(freq - center);
+        return { idx, distance };
+      }
+      return null;
+    }).filter(b => b !== null);
 
-  function startMicroSweep(){ ensureAudio(); stop3Tone(); stopMicroSweep(); msOsc=audioCtx.createOscillator(); msGain=audioCtx.createGain(); msOsc.type='sine'; msGain.gain.value=0; msOsc.connect(msGain).connect(outPreGain); msOsc.start(); msActive=true; toneActive=true; msPhase=0; msDir=1; msLastTs=0; msHold=0; const cycleSec = Math.max(1, Number(microSweepDuration.value || '12'));
-    const step = (ts)=>{ if (!msActive) return; if (!msLastTs) msLastTs = ts; const dt = Math.min(0.1, (ts-msLastTs)/1000); msLastTs = ts; if (msHold>0){ msHold -= dt; if (msHold<0) msHold=0; } else { msPhase += (dt/cycleSec)*msDir; if(msPhase>=1){ msPhase=1; msDir=-1; msHold=MS_PAUSE_SEC; } else if (msPhase<=0){ msPhase=0; msDir=1; msHold=MS_PAUSE_SEC; } }
-      const fc=Math.max(sweepFStart, Math.min(sweepFEnd, Number(toneCenter.value))); const {fLo,fHi} = getPercentBounds(fc); const Qraw=Number(toneQ.value); const Q=Math.max(Qraw,0.0001); const freq = fLo + (fHi-fLo)*msPhase;
-      const gDB=Number(toneGain.value); const gDbAtF = (Qraw<=0?0:biquadMagQ(fc,gDB,Q,freq)); const gLin = Math.pow(10, gDbAtF/20);
-      try{ const tNow=audioCtx.currentTime; msOsc.frequency.cancelScheduledValues(tNow); msOsc.frequency.setValueAtTime(msOsc.frequency.value, tNow); msOsc.frequency.linearRampToValueAtTime(freq, tNow + dt); if (msHold>0) msGain.gain.setTargetAtTime(0, tNow, MS_FADE_SEC); else msGain.gain.setTargetAtTime(gLin, tNow, 0.02);}catch(_){ }
-      currentMicroSweepFreq = freq; currentMicroSweepHold = (msHold>0); if (!msDrawLastTs) msDrawLastTs = ts; if (ts - msDrawLastTs >= 50){ drawEQGraph(); msDrawLastTs = ts; }
-      showToneHUD('microSweep', freq); msRAF = requestAnimationFrame(step);
-    };
-    toneStartBtn.disabled=true; toneStopBtn.disabled=false; msRAF=requestAnimationFrame(step);
+    // If we found bands that contain the frequency, pick the closest to center
+    if (containingBands.length > 0) {
+      containingBands.sort((a, b) => a.distance - b.distance);
+      return containingBands[0].idx;
+    }
+
+    // If no bands contain it, find the nearest band
+    let nearestIdx = 0;
+    let minDistance = Infinity;
+    ERB_BANDS.forEach((band, idx) => {
+      const center = Math.sqrt(band.fLow * band.fHigh);
+      const distance = Math.abs(freq - center);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIdx = idx;
+      }
+    });
+    return nearestIdx;
   }
-  function stopMicroSweep(){ msActive=false; if (msRAF) cancelAnimationFrame(msRAF); msRAF=null; if (msOsc){ try{msOsc.stop();}catch(_){}} msOsc=null; msGain=null; currentMicroSweepFreq=null; currentMicroSweepHold=false; msDrawLastTs=0; toneStartBtn.disabled=false; toneStopBtn.disabled=true; hideToneHUD(); drawEQGraph(); }
+
+  /**
+   * Update ERB band card highlighting and selection
+   * @param {number} selectedIndex - Band index (0-3) to select
+   */
+  function updateERBBandSelection(selectedIndex) {
+    selectedERBBand = selectedIndex;
+    const colors = [
+      'rgba(255,107,107,0.3)',
+      'rgba(255,165,0,0.3)',
+      'rgba(78,205,196,0.3)',
+      'rgba(149,225,211,0.3)'
+    ];
+
+    for (let i = 0; i < 4; i++) {
+      const card = document.getElementById(`erbBandCard${i}T`);
+      if (card) {
+        if (i === selectedIndex) {
+          card.style.border = `2px solid ${colors[i]}`;
+          card.style.boxShadow = `0 0 8px ${colors[i]}`;
+        } else {
+          card.style.border = '2px solid transparent';
+          card.style.boxShadow = 'none';
+        }
+      }
+    }
+
+    // Update controller
+    if (erbController) {
+      erbController.setSelectedBand(selectedIndex);
+    }
+  }
+
+  /**
+   * Initialize audio controllers (ERB, Sweep, TwoTone)
+   * Called lazily when needed
+   */
+  function ensureControllers() {
+    if (!audioCtx) ensureAudio();
+
+    if (!erbController) {
+      erbController = new ERBTuningController(audioCtx, outPreGain, {
+        showHUD: showToneHUD,
+        hideHUD: hideToneHUD,
+        drawGraph: drawEQGraph,
+        updateButtons: (isActive) => {
+          if (modeERBBands && modeERBBands.checked) {
+            toneStartBtn.textContent = isActive ? 'Stop' : 'Start ERB Volume Levelling';
+            toneStartBtn.className = isActive ? 'treb-btn secondary' : 'treb-btn';
+          }
+        }
+      });
+    }
+
+    if (!sweepController) {
+      sweepController = new SweepFineTuningController(audioCtx, outPreGain, {
+        biquadMagQ,
+        sweepFStart,
+        sweepFEnd,
+        toneCenter,
+        toneQ,
+        toneGain,
+        getPercentBounds,
+        microSweepDuration,
+        showHUD: showToneHUD,
+        hideHUD: hideToneHUD,
+        drawGraph: drawEQGraph,
+        updateButtons: (isActive) => {
+          if (!modeERBBands || !modeERBBands.checked) {
+            if (isActive) {
+              toneStartBtn.textContent = 'Stop';
+              toneStartBtn.className = 'treb-btn secondary';
+            } else {
+              // Determine correct start text based on mode
+              const isMicro = modeMicroSweep && modeMicroSweep.checked;
+              const isToneNarrowBand = modeToneNarrowBand && modeToneNarrowBand.checked;
+              const isToneWarble = modeToneWarble && modeToneWarble.checked;
+              const is3TonePEQ = mode3TonePEQ && mode3TonePEQ.checked;
+
+              let startText = 'Start';
+              if (isMicro) startText = 'Start microSweep';
+              else if (isToneNarrowBand) startText = 'Start Narrow Band';
+              else if (isToneWarble) startText = 'Start Warble';
+              else if (is3TonePEQ) startText = 'Start 3‑Tone';
+
+              toneStartBtn.textContent = startText;
+              toneStartBtn.className = 'treb-btn';
+            }
+          }
+        },
+        getParameters: () => ({
+          fc: Number(toneCenter.value),
+          Q: Number(toneQ.value),
+          gain: Number(toneGain.value),
+          stepPercent: Number(toneStep.value),
+          duration: Number(microSweepDuration.value)
+        })
+      });
+    } else {
+      // Update config with current DOM element references
+      sweepController.config.toneCenter = toneCenter;
+      sweepController.config.toneQ = toneQ;
+      sweepController.config.toneGain = toneGain;
+      sweepController.config.sweepFStart = sweepFStart;
+      sweepController.config.sweepFEnd = sweepFEnd;
+    }
+
+    if (!twoToneController) {
+      twoToneController = new TwoToneReferenceController(audioCtx, outPreGain, {
+        toneCenter,
+        toneQ,
+        toneGain,
+        refFreq: document.getElementById('refFreqT'),
+        noiseBW: document.getElementById('noiseBWT'),
+        showHUD: showToneHUD,
+        hideHUD: hideToneHUD,
+        drawGraph: drawEQGraph,
+        updateButtons: (isActive) => {
+          if (!modeERBBands || !modeERBBands.checked) {
+            if (isActive) {
+              toneStartBtn.textContent = 'Stop';
+              toneStartBtn.className = 'treb-btn secondary';
+            } else {
+              // Determine correct start text based on mode
+              const isMicro = modeMicroSweep && modeMicroSweep.checked;
+              const isToneNarrowBand = modeToneNarrowBand && modeToneNarrowBand.checked;
+              const isToneWarble = modeToneWarble && modeToneWarble.checked;
+              const is3TonePEQ = mode3TonePEQ && mode3TonePEQ.checked;
+
+              let startText = 'Start';
+              if (isMicro) startText = 'Start microSweep';
+              else if (isToneNarrowBand) startText = 'Start Narrow Band';
+              else if (isToneWarble) startText = 'Start Warble';
+              else if (is3TonePEQ) startText = 'Start 3‑Tone';
+
+              toneStartBtn.textContent = startText;
+              toneStartBtn.className = 'treb-btn';
+            }
+          }
+        },
+        getPercentBounds,
+        octaveBWToQ,
+        biquadMagQ,
+        sweepFStart,
+        sweepFEnd
+      });
+    } else {
+      // Update config with current DOM element references
+      twoToneController.config.toneCenter = toneCenter;
+      twoToneController.config.toneQ = toneQ;
+      twoToneController.config.toneGain = toneGain;
+      twoToneController.config.sweepFStart = sweepFStart;
+      twoToneController.config.sweepFEnd = sweepFEnd;
+    }
+  }
+
+
 
   function redrawFiltersTable(){ if (!peqTable) return; peqTable.innerHTML = peqFilters.map((f,i)=>{
       const sel = (i===selectedFilterIndex)? ' style="background:rgba(63,169,245,0.08);"':'';
       return `<tr${sel}><td>${Math.round(f.fc)}</td><td>${Math.round(f.gain*10)/10}</td><td>${Math.round(f.q*10)/10}</td></tr>`;
     }).join(''); }
 
-  function saveTrebleFilterToSelected(){ if (selectedFilterIndex<0 || !peqFilters[selectedFilterIndex]){ alert('Please select a PEQ filter to save into.'); return; }
+  function saveTrebleFilterToSelected(){
+    // Special handling for ERB Bands mode - save currently selected band to a filter
+    if (modeERBBands && modeERBBands.checked) {
+      ensureControllers();
+      if (!erbController) {
+        console.warn('ERB controller not initialized.');
+        return;
+      }
+
+      // Get the currently selected band
+      const bandIndex = selectedERBBand;
+      const bandLevel = erbController.getLevels()[bandIndex];
+
+      // Only save if the band has been adjusted
+      if (Math.abs(bandLevel) < 0.1) {
+        console.warn('Selected ERB band has not been adjusted (gain is 0 dB).');
+        return;
+      }
+
+      // Get adjusted bands and find the one matching our selection
+      const adjustedBands = erbController.getAdjustedBands();
+      const levels = erbController.getLevels();
+
+      // Find which adjusted band corresponds to our selected band index
+      let adjustedBandIndex = -1;
+      let count = 0;
+      for (let i = 0; i <= bandIndex; i++) {
+        if (Math.abs(levels[i]) >= 0.1) {
+          if (i === bandIndex) {
+            adjustedBandIndex = count;
+            break;
+          }
+          count++;
+        }
+      }
+
+      if (adjustedBandIndex === -1 || !adjustedBands[adjustedBandIndex]) {
+        console.warn('Could not retrieve band parameters.');
+        return;
+      }
+
+      const { centerFreq, Q, gain } = adjustedBands[adjustedBandIndex];
+
+      // Find an available filter or use the selected one
+      let filterIdx = selectedFilterIndex >= 0 ? selectedFilterIndex : 0;
+      let saved = false;
+
+      while (filterIdx < peqFilters.length && !saved) {
+        const f = peqFilters[filterIdx];
+        const type = (f.type||'PK').toUpperCase();
+        const isPK = (type==='PK'||type==='PEAK'||type==='PEAKING');
+        const outOfRange = !(f.fc>=sweepFStart && f.fc<=sweepFEnd);
+        const currentGain = Number(f.gain||f.G||0);
+        const activeOutOfRange = outOfRange && Math.abs(currentGain) > 0.001;
+
+        if (isPK && !activeOutOfRange) {
+          f.type = 'PK';
+          f.fc = centerFreq;
+          f.q = Math.round(Q * 100) / 100;
+          f.gain = Math.round(gain * 10) / 10;
+          saved = true;
+          selectedFilterIndex = filterIdx;
+          break;
+        }
+        filterIdx++;
+      }
+
+      if (saved) {
+        redrawFiltersTable();
+        if (typeof renderFilterListFn === 'function') {
+          requestAnimationFrame(()=>{ renderFilterListFn(); drawEQGraph(); });
+        } else {
+          drawEQGraph();
+        }
+        // Silently saved - no popup
+        console.log(`Saved ERB band ${bandIndex} adjustment to filter ${filterIdx + 1}.`);
+      } else {
+        console.warn('No available PEQ filters found.');
+      }
+      return;
+    }
+
+    // Original logic for other modes
+    if (selectedFilterIndex<0 || !peqFilters[selectedFilterIndex]){ alert('Please select a PEQ filter to save into.'); return; }
     // prevent saving into locked filters using the same rule as list rendering
     const fSel = peqFilters[selectedFilterIndex];
     const type = (fSel.type||'PK').toUpperCase();
