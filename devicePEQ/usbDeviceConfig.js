@@ -650,6 +650,19 @@ export const usbHidDeviceHandlerConfig = ([
           supportsPregain: true
         }
       },
+      "CS43198 HiFi DSP Audio": {
+        manufacturer: "Walkplay",
+        handler: walkplayUsbHID,
+        modelConfig: {
+          schemeNo: 11,
+          maxFilters: 8,
+          minGain: -10,
+          maxGain: 10,
+          autoGlobalGain: true,
+          supportsLSHSFilters: true,
+          supportsPregain: true
+        }
+      },
       "Truthear KEYX": {
         manufacturer: "Truthear",
         handler: walkplayUsbHID,

@@ -129,20 +129,19 @@
   function parseFRTextIntoPhone(text) {
     try {
       const lines = text.trim().split(/\r?\n/);
-      const rawChannels = [];
+      const channel = []
       for (let line of lines.slice(1)) {
         const parts = line.trim().split(/\s+/).map(Number);
         if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
-          rawChannels.push({
-            freq: parts[0],
-            spl: parts[1],
-            phase: (parts.length >= 3 && !Number.isNaN(parts[2])) ? parts[2] : 0
-          });
+          // Use array format [freq, spl] to match visualizer expectations
+          channel.push([parts[0], parts[1]]);
         }
       }
-      if (rawChannels.length) {
+      if (channel.length) {
+        const rawChannels = [];
+        rawChannels.push(channel);
         phoneObj.rawChannels = rawChannels;
-        console.log('FR loaded into phoneObj:', { points: rawChannels.length });
+        console.log('FR loaded into phoneObj:', { points: channel.length });
         document.dispatchEvent(new CustomEvent('PhoneFRLoaded'));
       } else {
         console.warn('FR file parsed but no usable rows found');
