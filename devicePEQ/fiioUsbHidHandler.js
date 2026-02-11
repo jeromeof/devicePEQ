@@ -354,7 +354,8 @@ function handlePeqParams(data, device, filters) {
   const frequency = combineBytes(data[9], data[10]);
   const filterType = convertToFilterType(data[13]);
   let qFactor = ((combineBytes(data[11], data[12])) / 100 || 1);
-  if (filterType == "LSQ" || filterType == "HSQ") qFactor /= Math.SQRT2; // Divide by √2 due to bug of shelf filters
+  // Divide by √2 due to bug of shelf filters, then round to 2 decimal places
+  if (filterType == "LSQ" || filterType == "HSQ") qFactor = Math.round((qFactor / Math.SQRT2) * 100)/100;
 
   console.log(`Filter ${filter}: Gain=${gain}, Frequency=${frequency}, Q=${qFactor}, Type=${filterType}`);
 
