@@ -8,4 +8,5 @@ dist
 /DevicePEQ.iml
 /.gitattributes
 /.editorconfig
-.claude/
+/.claude/
+/.java-version
