@@ -13,7 +13,7 @@
  *  - USB Serial / Bluetooth SPP – JDS Labs Element IV, Nothing Headphone (1),
  *                    Tanchjim Rita, Moondrop Edge / Edge ANC, EarFun Tune Pro,
  *                    Edifier ConnectX headphones, Audeze Maxwell (SPP fallback)
- *  - Bluetooth BLE – Audeze Maxwell (Airoha GATT), FiiO EH11 / EH13
+ *  - Bluetooth BLE – Audeze Maxwell (Airoha GATT)
  *  - Network       – WiiM (HTTP push), Luxsin X9 (HTTP read+write)
  *
  * @param {object} context - Host page context object.
@@ -510,7 +510,7 @@ async function initializeDeviceEqPlugin(context) {
                   <li><strong>Audeze:</strong> Maxwell via Bluetooth BLE or SPP — 10-band PEQ, 4 presets</li>
                   <li><strong>Tanchjim:</strong> Rita via Bluetooth SPP — 12-band parametric EQ, read + write</li>
                   <li><strong>Moondrop:</strong> Edge / Edge ANC via Bluetooth SPP — 5-band parametric EQ, read + write</li>
-                  <li><strong>FiiO:</strong> EH11 / EH13 via Bluetooth BLE — 10-band parametric EQ, read + write</li>
+                  <li><strong>FiiO:</strong> EH11 / EH13 via Bluetooth SPP — 10-band parametric EQ, read + write</li>
                   <li><strong>EarFun:</strong> Tune Pro via Bluetooth SPP — 10-band graphic EQ (write only)</li>
                   <li><strong>Edifier:</strong> W830NB and ConnectX headphones via Bluetooth SPP — 4-band PEQ (write only)</li>
                   <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
@@ -627,9 +627,9 @@ async function initializeDeviceEqPlugin(context) {
                   Connect via "Serial USB or Bluetooth Device".
                 </li>
                 <li>
-                  <strong>FiiO EH11 / EH13</strong> (Bluetooth BLE) — FiiO proprietary BLE GATT.
+                  <strong>FiiO EH11 / EH13</strong> (Bluetooth SPP) — FiiO F1 10 serial protocol.
                   10-band parametric EQ, gain ±20 dB. Read + write supported.
-                  Connect via "Bluetooth (BLE) Device".
+                  Connect via "Serial USB or Bluetooth Device".
                 </li>
                 <li>
                   <strong>EarFun Tune Pro</strong> (Bluetooth SPP) — 10-band graphic EQ.

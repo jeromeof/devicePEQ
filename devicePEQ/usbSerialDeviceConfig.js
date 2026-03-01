@@ -4,6 +4,7 @@
 const { jdsLabsUsbSerial }       = await import('./jdsLabsUsbSerialHandler.js');
 const { nothingUsbSerial }       = await import('./nothingUsbSerialHandler.js');
 const { fiioUsbSerial }          = await import('./fiioUsbSerialHandler.js');
+const { fiioSppSerial }          = await import('./fiioSppSerialHandler.js');
 const { airohaUsbSerial }        = await import('./airohaUsbSerialHandler.js');
 const { ritaUsbSerial }          = await import('./ritaUsbSerialHandler.js');
 const { moondropEdgeUsbSerial }  = await import('./moondropEdgeUsbSerialHandler.js');
@@ -115,6 +116,51 @@ export const usbSerialDeviceHandlerConfig = [
             { id: 168, name: "USER9"      },
             { id: 169, name: "USER10"     }
           ]
+        }
+      }
+    }
+  },
+
+  // ── FiiO EH11 / EH13 (Bluetooth SPP) ─────────────────────────────────────
+  // Classic Bluetooth SPP (standard UUID), 115200 baud.
+  // Same F1 10 packet framing used on the BLE GATT path.
+  // 10-band parametric EQ with read + write support.
+  {
+    manufacturer: "FiiO",
+    handler:      fiioSppSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "FiiO EH11": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:            -20,
+          maxGain:             20,
+          maxFilters:          10,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH11 NeutralEQ",
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      },
+      "FiiO EH13": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:            -20,
+          maxGain:             20,
+          maxFilters:          10,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH13 NeutralEQ",
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
     }
