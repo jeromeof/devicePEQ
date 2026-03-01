@@ -8,3 +8,4 @@ dist
 /DevicePEQ.iml
 /.gitattributes
 /.editorconfig
+.claude/
