@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sony WH-1000XM5 Web EQ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .status {
+      padding: 12px 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status.disconnected {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #fcc;
+    }
+
+    .status.connected {
+      background: #efe;
+      color: #3c3;
+      border: 1px solid #cfc;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .preset-btn {
+      padding: 12px;
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+
+    .preset-btn.active {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+    }
+
+    .eq-display {
+      margin: 25px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 10px;
+    }
+
+    .eq-bands {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      height: 180px;
+      margin-top: 15px;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .eq-band {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .eq-bar {
+      width: 35px;
+      background: linear-gradient(to top, #667eea, #764ba2);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s;
+    }
+
+    .eq-value {
+      font-size: 11px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .eq-label {
+      font-size: 10px;
+      color: #666;
+      margin-top: 5px;
+      text-align: center;
+    }
+
+    .log {
+      margin-top: 25px;
+      padding: 15px;
+      background: #1e1e1e;
+      color: #00ff00;
+      border-radius: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+    }
+
+    .log-entry.error {
+      color: #ff4444;
+    }
+
+    .log-entry.success {
+      color: #00ff00;
+    }
+
+    .log-entry.info {
+      color: #00d4ff;
+    }
+
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f0f7ff;
+      border-left: 4px solid #667eea;
+      border-radius: 5px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .info-box strong {
+      color: #667eea;
+    }
+
+    .info-box code {
+      background: #e0e0e0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .presets {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .eq-bands {
+        height: 150px;
+      }
+
+      .eq-bar {
+        width: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎧 Sony Headphones Web EQ</h1>
+  <p class="subtitle">WH-1000XM5 / WH-1000XM6 / WF-1000XM5 / LinkBuds</p>
+
+  <div id="status" class="status disconnected">
+    ⚫ Disconnected
+  </div>
+
+  <button id="connectBtn" class="btn-primary">Connect to Sony Headphones</button>
+  <button id="disconnectBtn" class="btn-secondary" disabled>Disconnect</button>
+
+  <div class="eq-section">
+    <h3 style="font-size: 18px; color: #333; margin: 20px 0 15px 0;">EQ Presets</h3>
+    <div class="presets" id="presetsGrid"></div>
+  </div>
+
+  <div class="eq-display">
+    <div style="text-align: center; margin-bottom: 10px;">
+      <strong id="currentPresetName">No preset loaded</strong>
+    </div>
+    <div class="eq-bands" id="eqBands"></div>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <div class="info-box">
+    <strong>ℹ️ How to use:</strong><br>
+    1. Make sure your Sony headphones are powered on and paired<br>
+    2. Click <strong>"Connect to Sony Headphones"</strong><br>
+    3. Select your Sony device from the browser picker<br>
+    4. Click any preset button to change EQ<br>
+    <br>
+    <strong>⚠️ Note:</strong> This uses Web Bluetooth (BLE GATT). Sony headphones primarily use Classic Bluetooth SPP for control, so this demo attempts to discover BLE services if available.<br>
+    <br>
+    <strong>Device Names:</strong> <code>WH-1000XM5, WH-1000XM6, WF-1000XM5, LinkBuds</code><br>
+    <strong>EQ Bands:</strong> 6 bands (Clear Bass/40Hz, 400Hz, 1kHz, 2.5kHz, 6.3kHz, 16kHz)<br>
+    <strong>Known Service UUIDs:</strong><br>
+    • Sony Tandem: <code>45c93e07-d90d-4b93-a9db-91e5dd734e35</code><br>
+    • Airoha (some models): <code>5052494d-2dab-0341-6972-6f6861424c45</code>
+  </div>
+</div>
+
+<script>
+  // Sony Protocol Implementation
+  const SONY_SERVICE_UUID = '45c93e07-d90d-4b93-a9db-91e5dd734e35';
+  const AIROHA_SERVICE_UUID = '5052494d-2dab-0341-6972-6f6861424c45';
+
+  const EQ_BANDS = ['Clear Bass\n40Hz', '400Hz', '1kHz', '2.5kHz', '6.3kHz', '16kHz'];
+
+  // Real captured presets from WH-1000XM5!
+  const PRESETS = {
+    0x00: { name: 'Off', bands: [10, 10, 10, 10, 10, 10] },
+    0x10: { name: 'Treble Boost', bands: [9, 10, 15, 17, 17, 19] },
+    0x11: { name: 'Bass Boost', bands: [18, 9, 11, 10, 13, 15] },
+    0x12: { name: 'Relaxed', bands: [7, 9, 8, 7, 6, 4] },
+    0x13: { name: 'Mellow', bands: [1, 7, 9, 7, 5, 2] },
+    0x14: { name: 'Vocal', bands: [10, 16, 14, 12, 13, 9] },
+    0x15: { name: 'Bright', bands: [10, 10, 10, 12, 16, 20] },
+    0x16: { name: 'Clear Bass', bands: [17, 10, 10, 10, 10, 10] },
+    0x17: { name: 'Speech', bands: [0, 14, 13, 11, 12, 0] },
+    0xA0: { name: 'Manual', bands: [10, 10, 10, 10, 10, 10] },
+    0xA1: { name: 'Excited', bands: [10, 5, 10, 17, 12, 13] },
+    0xA2: { name: 'Custom 1', bands: [10, 7, 13, 11, 10, 10] }
+  };
+
+  class SonyHeadphonesController {
+    constructor() {
+      this.device = null;
+      this.server = null;
+      this.service = null;
+      this.writeCharacteristic = null;
+      this.notifyCharacteristic = null;
+      this.currentPreset = 0x00;
+    }
+
+    async connect() {
+      try {
+        log('🔍 Searching for Sony headphones...');
+
+        // Try multiple approaches
+        const options = {
+          filters: [
+            { namePrefix: 'WH-1000XM5' },
+            { namePrefix: 'WH-1000XM6' },
+            { namePrefix: 'WF-1000XM5' },
+            { namePrefix: 'LinkBuds' },
+            { namePrefix: 'Sony' }
+          ],
+          optionalServices: [
+            SONY_SERVICE_UUID,
+            AIROHA_SERVICE_UUID,
+            'battery_service',
+            'device_information'
+          ]
+        };
+
+        this.device = await navigator.bluetooth.requestDevice(options);
+        const deviceName = this.device.name || 'Unknown';
+        log(`✅ Selected: "${deviceName}"`, 'success');
+
+        log('📡 Connecting to GATT server...');
+        this.server = await this.device.gatt.connect();
+        log('✅ Connected to GATT', 'success');
+
+        // Try to find Sony service
+        log('🔍 Searching for Sony service...');
+        try {
+          this.service = await this.server.getPrimaryService(SONY_SERVICE_UUID);
+          log('✅ Found Sony Tandem service!', 'success');
+
+          // Discover characteristics
+          const characteristics = await this.service.getCharacteristics();
+          log(`📋 Found ${characteristics.length} characteristics:`, 'info');
+          characteristics.forEach(char => {
+            log(`   • ${char.uuid}`, 'info');
+          });
+
+          // Look for write/notify characteristics
+          // Note: We need to discover the correct UUIDs from the app
+          log('⚠️ Need to discover correct characteristic UUIDs', 'error');
+          log('   Sony uses Classic Bluetooth SPP primarily', 'error');
+          log('   BLE GATT may be limited or unavailable', 'error');
+
+        } catch (e) {
+          log(`❌ Sony service not found: ${e.message}`, 'error');
+
+          // Try Airoha service
+          try {
+            log('🔍 Trying Airoha service...');
+            this.service = await this.server.getPrimaryService(AIROHA_SERVICE_UUID);
+            log('✅ Found Airoha service!', 'success');
+          } catch (e2) {
+            log(`❌ Airoha service not found either`, 'error');
+            log('📋 Listing all available services...', 'info');
+
+            const services = await this.server.getPrimaryServices();
+            log(`   Found ${services.length} services:`, 'info');
+            for (const svc of services) {
+              log(`   • ${svc.uuid}`, 'info');
+              try {
+                const chars = await svc.getCharacteristics();
+                chars.forEach(char => {
+                  log(`      └─ ${char.uuid}`, 'info');
+                });
+              } catch (e) {}
+            }
+          }
+        }
+
+        return true;
+      } catch (error) {
+        log(`❌ Connection error: ${error.message}`, 'error');
+        if (error.message.includes('User cancelled')) {
+          log('Device selection cancelled', 'error');
+        }
+        return false;
+      }
+    }
+
+    encodeSetPreset(presetId) {
+      // Sony protocol: 3E 0C [flags] [len] 0x58 [data] [checksum] 3C
+      const seqFlags = [0x01, 0x00, 0x00, 0x00];
+      const command = 0x58; // EQEBB_SET_PARAM
+      const payload = [command, 0x00, presetId, 0x00];
+      const length = payload.length;
+
+      // Simple checksum (XOR)
+      let checksum = 0;
+      for (let byte of payload) {
+        checksum ^= byte;
+      }
+
+      return new Uint8Array([
+        0x3E, 0x0C,
+        ...seqFlags,
+        length,
+        ...payload,
+        checksum,
+        0x3C
+      ]);
+    }
+
+    async setPreset(presetId) {
+      if (!this.writeCharacteristic) {
+        log('❌ Not connected or write characteristic not found', 'error');
+        log('ℹ️ Sony headphones use Classic Bluetooth SPP', 'info');
+        log('   Web Bluetooth (BLE GATT) may not support EQ control', 'info');
+        return false;
+      }
+
+      try {
+        const preset = PRESETS[presetId];
+        log(`📤 Setting preset: ${preset.name} (0x${presetId.toString(16)})`, 'info');
+
+        const packet = this.encodeSetPreset(presetId);
+        const hex = Array.from(packet).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        log(`   TX: ${hex}`, 'info');
+
+        await this.writeCharacteristic.writeValue(packet);
+        log('✅ Command sent', 'success');
+
+        this.updateUI(presetId);
+        return true;
+      } catch (error) {
+        log(`❌ Write failed: ${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    updateUI(presetId) {
+      const preset = PRESETS[presetId];
+      this.currentPreset = presetId;
+
+      // Update preset name
+      document.getElementById('currentPresetName').textContent = preset.name;
+
+      // Update active button
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.presetId) === presetId);
+      });
+
+      // Update EQ bars
+      for (let i = 0; i < 6; i++) {
+        const value = preset.bands[i];
+        const gainDb = value - 10;
+        const height = 90 + (gainDb * 7); // 90px baseline
+
+        document.getElementById(`bandBar${i}`).style.height = `${Math.max(10, height)}px`;
+        document.getElementById(`bandValue${i}`).textContent = `${gainDb >= 0 ? '+' : ''}${gainDb}`;
+      }
+    }
+
+    async disconnect() {
+      if (this.device && this.device.gatt.connected) {
+        await this.device.gatt.disconnect();
+        log('Disconnected', 'success');
+      }
+    }
+
+    isConnected() {
+      return this.device && this.device.gatt.connected;
+    }
+  }
+
+  // Global instance
+  const controller = new SonyHeadphonesController();
+
+  // Logging
+  function log(message, type = '') {
+    const logDiv = document.getElementById('log');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    const timestamp = new Date().toLocaleTimeString();
+    entry.textContent = `[${timestamp}] ${message}`;
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  // Update UI
+  function updateUIState(connected) {
+    const status = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+
+    if (connected) {
+      status.className = 'status connected';
+      status.textContent = '🟢 Connected';
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.disabled = false;
+      });
+    } else {
+      status.className = 'status disconnected';
+      status.textContent = '⚫ Disconnected';
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.disabled = true;
+      });
+    }
+  }
+
+  // Initialize
+  function init() {
+    // Create EQ display
+    const eqBands = document.getElementById('eqBands');
+    for (let i = 0; i < 6; i++) {
+      const band = document.createElement('div');
+      band.className = 'eq-band';
+      band.innerHTML = `
+        <div class="eq-value" id="bandValue${i}">0</div>
+        <div class="eq-bar" id="bandBar${i}" style="height: 90px;"></div>
+        <div class="eq-label">${EQ_BANDS[i]}</div>
+      `;
+      eqBands.appendChild(band);
+    }
+
+    // Create preset buttons
+    const presetsGrid = document.getElementById('presetsGrid');
+    for (const [id, preset] of Object.entries(PRESETS)) {
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn btn-secondary';
+      btn.textContent = preset.name;
+      btn.dataset.presetId = id;
+      btn.disabled = true;
+      btn.onclick = () => controller.setPreset(parseInt(id));
+      presetsGrid.appendChild(btn);
+    }
+
+    // Event handlers
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      const success = await controller.connect();
+      updateUIState(success);
+    });
+
+    document.getElementById('disconnectBtn').addEventListener('click', async () => {
+      await controller.disconnect();
+      updateUIState(false);
+    });
+
+    // Check Web Bluetooth support
+    if (!navigator.bluetooth) {
+      log('❌ Web Bluetooth API not supported', 'error');
+      log('Please use Chrome, Edge, or Opera', 'error');
+      document.getElementById('connectBtn').disabled = true;
+    } else {
+      log('✅ Web Bluetooth API available', 'success');
+      log('🎧 Ready to connect!', 'success');
+      log('');
+      log('⚠️ NOTE: Sony headphones primarily use Classic Bluetooth SPP', 'info');
+      log('   BLE GATT support may be limited or unavailable', 'info');
+      log('   This demo will attempt to discover available services', 'info');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

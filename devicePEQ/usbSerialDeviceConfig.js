@@ -1,56 +1,67 @@
-// Dynamically import the USB Serial handlers
-const { jdsLabsUsbSerial } = await import('./jdsLabsUsbSerialHandler.js');
-const { nothingUsbSerial } = await import('./nothingUsbSerialHandler.js');
-const { fiioUsbSerial } = await import('./fiioUsbSerialHandler.js');
+// usbSerialDeviceConfig.js
+// Dynamically import all USB Serial / Bluetooth SPP handlers
+
+const { jdsLabsUsbSerial }       = await import('./jdsLabsUsbSerialHandler.js');
+const { nothingUsbSerial }       = await import('./nothingUsbSerialHandler.js');
+const { fiioUsbSerial }          = await import('./fiioUsbSerialHandler.js');
+const { airohaUsbSerial }        = await import('./airohaUsbSerialHandler.js');
+const { ritaUsbSerial }          = await import('./ritaUsbSerialHandler.js');
+const { moondropEdgeUsbSerial }  = await import('./moondropEdgeUsbSerialHandler.js');
+const { earfunUsbSerial }        = await import('./earfunUsbSerialHandler.js');
+const { edifierUsbSerial }       = await import('./edifierUsbSerialHandler.js');
 
 export const usbSerialDeviceHandlerConfig = [
+
+  // ── JDS Labs Element IV ───────────────────────────────────────────────────
   {
-    vendorId: 0x152a, // JDS Labs USB Vendor ID (common for JDS Labs / Teensy based boards)
+    vendorId:     0x152a,
     manufacturer: "JDS Labs",
-    handler: jdsLabsUsbSerial,
+    handler:      jdsLabsUsbSerial,
     devices: {
       "Element IV": {
         usbProductId: 35066,
         modelConfig: {
-          minGain: -12,
-          maxGain: 12,
-          maxFilters: 10,
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:          10,
           firstWritableEQSlot: 0,
-          maxWritableEQSlots: 1,
-          disconnectOnSave: false,
-          disabledPresetId: -1,
-          experimental: false,
-          availableSlots: [{ id: 0, name: "Headphones" },{ id: 1, name: "RCA" }]
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          availableSlots: [
+            { id: 0, name: "Headphones" },
+            { id: 1, name: "RCA" }
+          ]
         }
       }
     }
   },
+
+  // ── Nothing Headphone (1) ─────────────────────────────────────────────────
+  // Classic Bluetooth SPP with a Nothing-specific service class UUID.
+  // Slot 5 ("Custom") is the only writable slot; slots 0-3 are read-only presets.
   {
-    // Nothing headphones support both USB Serial and Bluetooth SPP
     manufacturer: "Nothing",
-    handler: nothingUsbSerial,
-    // Enhanced filtering - support both USB vendor ID and Bluetooth SPP UUID
+    handler:      nothingUsbSerial,
     filters: {
-      // USB Serial filtering (if connected via USB)
-      usbVendorId: null, // Nothing doesn't have a specific USB vendor ID for headphones
-      // Bluetooth SPP filtering (primary connection method)
-      allowedBluetoothServiceClassIds: ["aeac4a03-dff5-498f-843a-34487cf133eb"],
-      bluetoothServiceClassId: "aeac4a03-dff5-498f-843a-34487cf133eb"
+      usbVendorId:                       null,
+      allowedBluetoothServiceClassIds:   ["aeac4a03-dff5-498f-843a-34487cf133eb"],
+      bluetoothServiceClassId:           "aeac4a03-dff5-498f-843a-34487cf133eb"
     },
     devices: {
       "Nothing Headphones": {
-        // No specific USB product ID since these are primarily Bluetooth devices
         modelConfig: {
-          minGain: -12,
-          maxGain: 12,
-          maxFilters: 8, // Based on the EQ values parsing in the HTML
-          firstWritableEQSlot: 5,
-          maxWritableEQSlots: 1, // Only the Custom profile is writable
-          disconnectOnSave: false,
-          disabledPresetId: -1,
-          experimental: false,
-          readOnly: false, // Enable writing for Custom profile
-          flatEQPhoneMeasurement: "Nothing HP1 Balanced", // Auto-load this flat EQ measurement on connection
+          minGain:                  -12,
+          maxGain:                   12,
+          maxFilters:                 8,
+          firstWritableEQSlot:        5,
+          maxWritableEQSlots:         1,
+          disconnectOnSave:           false,
+          disabledPresetId:          -1,
+          experimental:               false,
+          readOnly:                   false,
+          flatEQPhoneMeasurement:    "Nothing HP1 Balanced",
           availableSlots: [
             { id: 0, name: "Balanced" },
             { id: 1, name: "Voice" },
@@ -62,49 +73,227 @@ export const usbSerialDeviceHandlerConfig = [
       }
     }
   },
+
+  // ── FiiO USB Serial (DSP dongle) ──────────────────────────────────────────
   {
-    vendorId: 6790, // FiiO USB Vendor ID
+    vendorId:     6790,
     manufacturer: "FiiO",
-    handler: fiioUsbSerial,
+    handler:      fiioUsbSerial,
     devices: {
       "FiiO Audio DSP": {
         usbProductId: 21971,
         modelConfig: {
-          // Serial configuration
-          baudRate: 57600,
-
-          // Model capabilities
-          minGain: -12,
-          maxGain: 12,
-          maxFilters: 10, // Typical FiiO EQ band count
+          baudRate:            57600,
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:          10,
           firstWritableEQSlot: 0,
-          maxWritableEQSlots: 21, // Support for all FiiO presets
-          disconnectOnSave: false,
-          disabledPresetId: 11, // Based on FiiO code showing preset 11 for disabled EQ
-          experimental: false,
+          maxWritableEQSlots:  21,
+          disconnectOnSave:    false,
+          disabledPresetId:    11,
+          experimental:        false,
           availableSlots: [
-            { id: 240, name: "BYPASS" },
-            { id: 0, name: "Jazz" },
-            { id: 1, name: "Pop" },
-            { id: 2, name: "Rock" },
-            { id: 3, name: "Dance" },
-            { id: 4, name: "R&B" },
-            { id: 5, name: "Classic" },
-            { id: 6, name: "Hip Hop" },
-            { id: 8, name: "Retro" },
-            { id: 9, name: "De-essing-1" },
-            { id: 10, name: "De-essing-2" },
-            { id: 160, name: "USER1" },
-            { id: 161, name: "USER2" },
-            { id: 162, name: "USER3" },
-            { id: 163, name: "USER4" },
-            { id: 164, name: "USER5" },
-            { id: 165, name: "USER6" },
-            { id: 166, name: "USER7" },
-            { id: 167, name: "USER8" },
-            { id: 168, name: "USER9" },
-            { id: 169, name: "USER10" }
+            { id: 240, name: "BYPASS"     },
+            { id: 0,   name: "Jazz"       },
+            { id: 1,   name: "Pop"        },
+            { id: 2,   name: "Rock"       },
+            { id: 3,   name: "Dance"      },
+            { id: 4,   name: "R&B"        },
+            { id: 5,   name: "Classic"    },
+            { id: 6,   name: "Hip Hop"    },
+            { id: 8,   name: "Retro"      },
+            { id: 9,   name: "De-essing-1"},
+            { id: 10,  name: "De-essing-2"},
+            { id: 160, name: "USER1"      },
+            { id: 161, name: "USER2"      },
+            { id: 162, name: "USER3"      },
+            { id: 163, name: "USER4"      },
+            { id: 164, name: "USER5"      },
+            { id: 165, name: "USER6"      },
+            { id: 166, name: "USER7"      },
+            { id: 167, name: "USER8"      },
+            { id: 168, name: "USER9"      },
+            { id: 169, name: "USER10"     }
           ]
+        }
+      }
+    }
+  },
+
+  // ── Audeze Maxwell (Airoha SPP fallback) ──────────────────────────────────
+  // The Maxwell also exposes an Airoha USB Serial / SPP path.
+  // Prefer the BLE handler (bluetoothBleDeviceConfig) when possible.
+  {
+    manufacturer: "Audeze",
+    handler:      airohaUsbSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "Audeze Maxwell": {
+        modelConfig: {
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:          10,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  4,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        true,
+          availableSlots: [
+            { id: 0, name: "Preset 1" },
+            { id: 1, name: "Preset 2" },
+            { id: 2, name: "Preset 3" },
+            { id: 3, name: "Preset 4" }
+          ]
+        }
+      }
+    }
+  },
+
+  // ── Tanchjim Rita ─────────────────────────────────────────────────────────
+  // Classic Bluetooth SPP (standard UUID), 9600 baud.
+  // 12-band parametric EQ with read + write support.
+  // Protocol: FF A1/A2 frame with 7-byte band encoding (gain×100, q×100, freq Hz).
+  {
+    manufacturer: "Tanchjim",
+    handler:      ritaUsbSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "Tanchjim Rita": {
+        modelConfig: {
+          baudRate:            9600,
+          minGain:            -15,
+          maxGain:             15,
+          maxFilters:          12,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      }
+    }
+  },
+
+  // ── Moondrop Edge ANC ─────────────────────────────────────────────────────
+  // Classic Bluetooth SPP (standard UUID), 115200 baud.
+  // 5-band parametric EQ with read + write support.
+  // Quirky shifted-gain encoding: gain for band N lives in band N+1's header slot.
+  {
+    manufacturer: "Moondrop",
+    handler:      moondropEdgeUsbSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "Moondrop Edge": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:           5,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      },
+      "Moondrop Edge ANC": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:           5,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      }
+    }
+  },
+
+  // ── EarFun Tune Pro ───────────────────────────────────────────────────────
+  // Classic Bluetooth SPP (standard UUID), 115200 baud.
+  // 10-band graphic EQ — WRITE ONLY (device does not return EQ data).
+  // Fixed Q factor; frequency and gain per band.
+  {
+    manufacturer: "EarFun",
+    handler:      earfunUsbSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "EarFun Tune Pro": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:            -12,
+          maxGain:             12,
+          maxFilters:          10,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          writeOnly:           true,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      }
+    }
+  },
+
+  // ── Edifier (ConnectX headphones) ─────────────────────────────────────────
+  // Classic Bluetooth SPP (standard UUID), 115200 baud.
+  // 4-band parametric EQ — WRITE ONLY.
+  // Gain range: ±6 dB.  Frequency limited to ~21 verified lookup-table entries.
+  {
+    manufacturer: "Edifier",
+    handler:      edifierUsbSerial,
+    filters: {
+      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
+      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
+    },
+    devices: {
+      "Edifier W830NB": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:             -6,
+          maxGain:              6,
+          maxFilters:           4,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          writeOnly:           true,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
+        }
+      },
+      "Edifier Headphones": {
+        modelConfig: {
+          baudRate:            115200,
+          minGain:             -6,
+          maxGain:              6,
+          maxFilters:           4,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots:  1,
+          disconnectOnSave:    false,
+          disabledPresetId:   -1,
+          experimental:        false,
+          writeOnly:           true,
+          availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
     }

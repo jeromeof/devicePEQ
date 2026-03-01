@@ -805,6 +805,10 @@ async function initializeDeviceEqPlugin(context) {
     const UsbSerialConnector = await UsbSerialConnectorAsync;
     console.log('UsbSerialConnector loaded');
 
+    const BluetoothBleConnectorAsync = await import('./bluetoothBleConnector.js').then((module) => module.BluetoothBleConnector);
+    const BluetoothBleConnector = await BluetoothBleConnectorAsync;
+    console.log('BluetoothBleConnector loaded');
+
     const NetworkDeviceConnectorAsync = await import('./networkDeviceConnector.js').then((module) => module.NetworkDeviceConnector);
     const NetworkDeviceConnector = await NetworkDeviceConnectorAsync;
     console.log('NetworkDeviceConnector loaded');
@@ -967,6 +971,50 @@ async function initializeDeviceEqPlugin(context) {
 
                 device.rawDevice.addEventListener('disconnect', () => {
                   console.log(`Device ${device.rawDevice.productName} disconnected.`);
+                  deviceEqUI.showDisconnectedState();
+                });
+              }
+            } else if (selection.connectionType == "ble") {
+              const device = await BluetoothBleConnector.getDeviceConnected();
+              if (device?.cancelled) {
+                return;
+              }
+              if (device?.unsupported || device?.handler == null) {
+                showToast("Sorry, this Bluetooth device is not currently supported.", "error");
+                await BluetoothBleConnector.disconnectDevice();
+                return;
+              }
+              if (device) {
+                const isExperimental = device.modelConfig?.experimental === true;
+
+                if (isExperimental) {
+                  window.showDeviceLogs = true;
+                  console.log(`Enabling detailed logs for experimental BLE device: ${device.model}`);
+
+                  const proceedWithConnection = await showExperimentalDeviceWarning(device.model);
+                  if (!proceedWithConnection) {
+                    await BluetoothBleConnector.disconnectDevice();
+                    return;
+                  }
+                }
+
+                deviceEqUI.showConnectedState(
+                  device,
+                  selection.connectionType,
+                  await BluetoothBleConnector.getAvailableSlots(device),
+                  await BluetoothBleConnector.getCurrentSlot(device)
+                );
+
+                const currentFilters = context.elemToFilters(true);
+                if (currentFilters.length > device.modelConfig.maxFilters) {
+                  console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
+                  if (window.showToast) {
+                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                  }
+                }
+
+                device.rawDevice.addEventListener('gattserverdisconnected', () => {
+                  console.log(`Device ${device.model} disconnected.`);
                   deviceEqUI.showDisconnectedState();
                 });
               }
@@ -1220,6 +1268,7 @@ async function initializeDeviceEqPlugin(context) {
         <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
           <button id="usb-hid-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">USB Device</button>
           <button id="usb-serial-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #6f42c1; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Serial USB or Bluetooth Device</button>
+          <button id="bluetooth-ble-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Bluetooth (BLE) Device</button>
           <button id="network-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Network</button>
         </div>
 
@@ -1290,6 +1339,12 @@ async function initializeDeviceEqPlugin(context) {
             document.getElementById("usb-serial-button").addEventListener("click", () => {
               document.body.removeChild(dialogContainer);
               resolve({ connectionType: "serial" });
+            });
+
+            // Event: Bluetooth BLE
+            document.getElementById("bluetooth-ble-button").addEventListener("click", () => {
+              document.body.removeChild(dialogContainer);
+              resolve({ connectionType: "ble" });
             });
 
             // Event: Network
@@ -1382,6 +1437,8 @@ async function initializeDeviceEqPlugin(context) {
               await UsbHIDConnector.disconnectDevice();
             } else if (deviceEqUI.connectionType == "serial")  {
               await UsbSerialConnector.disconnectDevice();
+            } else if (deviceEqUI.connectionType == "ble")  {
+              await BluetoothBleConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
           } catch (error) {
@@ -1406,6 +1463,8 @@ async function initializeDeviceEqPlugin(context) {
               result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
             } else if (deviceEqUI.connectionType == "serial") {
               result = await UsbSerialConnector.pullFromDevice(device, selectedSlot);
+            } else if (deviceEqUI.connectionType == "ble") {
+              result = await BluetoothBleConnector.pullFromDevice(device, selectedSlot);
             }
 
             // Check if we have a timeout but still received some filters
@@ -1427,6 +1486,8 @@ async function initializeDeviceEqPlugin(context) {
               await UsbHIDConnector.disconnectDevice();
             } else if (deviceEqUI.connectionType == "serial") {
               await UsbSerialConnector.disconnectDevice();
+            } else if (deviceEqUI.connectionType == "ble") {
+              await BluetoothBleConnector.disconnectDevice();
             }
             deviceEqUI.showDisconnectedState();
           }
@@ -1480,6 +1541,8 @@ async function initializeDeviceEqPlugin(context) {
               disconnect = await UsbHIDConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             } else if (deviceEqUI.connectionType == "serial") {
               disconnect = await UsbSerialConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
+            } else if (deviceEqUI.connectionType == "ble") {
+              disconnect = await BluetoothBleConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             }
 
             if (disconnect) {

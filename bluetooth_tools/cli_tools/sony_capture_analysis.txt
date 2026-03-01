@@ -1,0 +1,118 @@
+================================================================================
+SONY WH-1000XM5 EQ PROTOCOL CAPTURE ANALYSIS
+================================================================================
+Date: 2026-02-08
+Device: Sony WH-1000XM5
+Protocol: Classic Bluetooth (SPP/RFCOMM), not BLE GATT
+App: Sony Sound Connect (com.sony.songpal.mdr)
+
+================================================================================
+PROTOCOL STRUCTURE
+================================================================================
+
+Transport Layer Format:
+  3E 0C [seq_flags] [length] [command] [payload] [checksum] 3C
+
+  - 3E 0C = header
+  - seq_flags = 4 bytes (varies: 00 00 00 00 or 01 00 00 00)
+  - length = 1 byte (payload length including command)
+  - command = 1 byte (command code)
+  - payload = variable
+  - checksum = 1 byte
+  - 3C = footer
+
+ACK Format:
+  3E 01 [flags] 00 00 00 00 [code] 3C
+
+================================================================================
+CAPTURED EQ COMMANDS
+================================================================================
+
+1. EQ OFF Command:
+   TX: 3E 0C 00 00 00 00 04 58 00 00 00 68 3C
+       Command: 0x58 (EQEBB_SET_PARAM)
+       Preset: 0x00 (EQ OFF)
+
+   RX: 3E 01 01 00 00 00 00 02 3C
+       (ACK)
+
+   RX: 3E 0C 01 00 00 00 0A 59 00 00 06 0A 0A 0A 0A 0A 0A B2 3C
+       Command: 0x59 (EQEBB_NTFY_PARAM)
+       Preset: 0x00 (EQ OFF)
+       Bands: 6
+       Values: 0A 0A 0A 0A 0A 0A (all at 10 = 0dB baseline)
+
+2. EQ PROFILE 0x10 Command (Most Recent):
+   TX: 3E 0C 01 00 00 00 04 58 00 10 00 79 3C
+       Command: 0x58 (EQEBB_SET_PARAM)
+       Preset: 0x10 (Profile 16)
+
+   RX: 3E 01 00 00 00 00 00 01 3C
+       (ACK)
+
+   RX: 3E 0C 01 00 00 00 0A 59 00 10 06 09 0A 0F 11 11 13 DD 3C
+       Command: 0x59 (EQEBB_NTFY_PARAM)
+       Preset: 0x10 (Profile 16)
+       Bands: 6
+       Values: 09 0A 0F 11 11 13
+
+       Band Analysis (assuming 10 = 0dB baseline):
+       - Band 1: 0x09 = 9  = -1 dB
+       - Band 2: 0x0A = 10 =  0 dB
+       - Band 3: 0x0F = 15 = +5 dB
+       - Band 4: 0x11 = 17 = +7 dB
+       - Band 5: 0x11 = 17 = +7 dB
+       - Band 6: 0x13 = 19 = +9 dB
+
+3. GET_PARAM Command:
+   TX: 3E 0C 00 00 00 00 02 5A 00 68 3C
+       Command: 0x5A (GET_PARAM)
+
+   RX: 3E 01 01 00 00 00 00 02 3C
+       (ACK)
+
+   RX: 3E 0C 00 00 00 00 15 5B 00 06 10 00 01 01 01 90 01 03 E8 01 09 C4 01 18 9C 01 3D 2E 80 53 3C
+       Command: 0x5B (RET_EXTENDED_INFO)
+       Bands: 0x06 (6 bands)
+       Frequency data: 10 00 01 01 01 90 01 03 E8 01 09 C4 01 18 9C 01 3D 2E
+
+       This appears to contain frequency information for each band.
+       Need further analysis to decode the frequency encoding.
+
+4. Battery/Status Command:
+   TX: 3E 0C 00 00 00 00 03 94 04 00 A7 3C
+       Command: 0x94 (unknown - possibly battery or status)
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. Sony uses 6-band EQ, not 5-band as initially documented
+2. Baseline value appears to be 0x0A (10) = 0 dB
+3. Each increment/decrement appears to be 1 dB
+4. Preset IDs:
+   - 0x00 = EQ OFF
+   - 0x10 = Custom Profile 16 (bass boost profile?)
+5. Transport protocol uses 3E 0C...3C wrapping
+6. Commands are acknowledged with 3E 01...3C format
+7. All communication happens over Classic Bluetooth SPP, not BLE GATT
+
+================================================================================
+COMMAND CODES CONFIRMED
+================================================================================
+
+0x58 - EQEBB_SET_PARAM (Set EQ preset/parameters)
+0x59 - EQEBB_NTFY_PARAM (Notify EQ parameters - response with band values)
+0x5A - GET_PARAM (Query EQ parameters)
+0x5B - RET_EXTENDED_INFO (Return extended info including frequencies)
+0x94 - Unknown (possibly battery or status query)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Decode the frequency encoding in 0x5B response
+2. Test more EQ profiles to understand preset IDs
+3. Implement encoder/decoder for band values
+4. Add Sony protocol support to bluetooth_device_tester.html
+5. Create Python tool to send custom EQ values

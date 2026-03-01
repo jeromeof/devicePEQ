@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoseLink Controller</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+
+    /* ── Header ── */
+    .header { margin-bottom: 24px; }
+    .header h1 { font-size: 26px; color: #111; letter-spacing: -0.5px; }
+    .header p  { font-size: 13px; color: #777; margin-top: 4px; }
+
+    /* ── Connection mode tabs ── */
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #888;
+      transition: all 0.2s;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-bottom: 0;
+      width: auto;
+    }
+    .mode-tab.active {
+      background: #fff;
+      color: #111;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .mode-tab:hover:not(:disabled):not(.active) { color: #444; }
+    .mode-panel { display: none; }
+    .mode-panel.active { display: block; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-bar.disconnected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .status-bar.connected    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .disconnected .status-dot { background: #ef4444; }
+    .connected    .status-dot { background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:0.4; }
+    }
+    .status-name { margin-left: auto; font-weight: 600; color: inherit; opacity: 0.75; }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: auto;
+      margin-bottom: 0;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; flex: 1; }
+    .btn-secondary { background: #f3f4f6; color: #374151; }
+
+    /* ── Device info cards ── */
+    .device-info {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .device-info.visible { opacity: 1; }
+    .info-card {
+      background: #f8f9ff;
+      border: 1px solid #e5e7ef;
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .info-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .info-card .value { font-size: 22px; font-weight: 700; color: #111; }
+    .info-card .unit  { font-size: 11px; color: #888; }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 12px;
+    }
+
+    /* ── EQ Presets ── */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .preset-btn {
+      padding: 18px 10px;
+      background: #f3f4f6;
+      color: #374151;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border: 2px solid transparent;
+    }
+    .preset-btn .icon { font-size: 26px; }
+    .preset-btn .name { font-size: 14px; font-weight: 700; }
+    .preset-btn .desc { font-size: 11px; opacity: 0.6; font-weight: 400; }
+    .preset-btn.active {
+      background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+      border-color: #6366f1;
+      color: #4338ca;
+    }
+    .preset-btn:hover:not(:disabled):not(.active) { background: #e9eaec; }
+
+    /* ── EQ Bands ── */
+    .bands-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .band-card {
+      background: #f8f9ff;
+      border: 1px solid #e5e7ef;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .band-card .band-label { font-size: 11px; color: #888; margin-bottom: 8px; }
+    .band-bar-track {
+      background: #e5e7eb;
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .band-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+    .band-value { font-size: 16px; font-weight: 700; color: #111; }
+
+    /* ── Serial port hint ── */
+    .hint-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #92400e;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .hint-box strong { color: #78350f; }
+
+    /* ── Log ── */
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 8px 0;
+      user-select: none;
+    }
+    .log-header .toggle-icon { font-size: 12px; color: #9ca3af; transition: transform 0.2s; }
+    .log-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+    .log {
+      background: #1e1e2e;
+      border-radius: 10px;
+      padding: 12px;
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+    .log.hidden { display: none; }
+    .log-entry { color: #94a3b8; }
+    .log-entry .ts { color: #475569; margin-right: 6px; }
+    .log-entry.success .msg { color: #4ade80; }
+    .log-entry.error   .msg { color: #f87171; }
+    .log-entry.warning .msg { color: #fbbf24; }
+    .log-entry.rx      .msg { color: #60a5fa; }
+
+    /* ── Footer note ── */
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 520px) {
+      .container { padding: 20px 16px; }
+      .bands-grid { grid-template-columns: repeat(2, 1fr); }
+      .device-info { grid-template-columns: repeat(3, 1fr); }
+      .btn-row { flex-direction: column; }
+      .btn-primary { flex: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🎧 RoseLink Controller</h1>
+    <p>ROSE CAMBRIAN · EQ Presets & Device Info</p>
+  </div>
+
+  <!-- Connection mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-ble"    onclick="switchMode('ble')">📶 Bluetooth LE</button>
+    <button class="mode-tab"        id="tab-serial" onclick="switchMode('serial')">🔌 Serial (SPP)</button>
+  </div>
+
+  <!-- BLE panel -->
+  <div class="mode-panel active" id="panel-ble">
+    <div class="hint-box" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">
+      📌 The picker shows <strong>all</strong> nearby Bluetooth devices — select <strong>ROSE CAMBRIAN</strong>.
+      The device must be BLE-visible (powered on, not already exclusively connected elsewhere).
+    </div>
+    <div id="ble-status" class="status-bar disconnected">
+      <span class="status-dot"></span>
+      <span id="ble-status-text">Disconnected</span>
+      <span class="status-name" id="ble-device-name"></span>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="ble-connect-btn" onclick="bleConnect()">Connect via Bluetooth</button>
+      <button class="btn-secondary" id="ble-query-btn" disabled onclick="bleQuery()">Query</button>
+      <button class="btn-secondary" id="ble-disconnect-btn" disabled onclick="bleDisconnect()">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- Serial panel -->
+  <div class="mode-panel" id="panel-serial">
+    <div class="hint-box">
+      📌 On macOS select <strong>cu.ROSECAMBRIAN</strong> (not <code>tty.*</code>).
+      The <code>tty.*</code> port is held by the OS and will fail to open.
+      Note: the device sends responses via BLE — Serial mode transmits commands
+      but responses come back on BLE if connected there simultaneously.
+    </div>
+    <div id="serial-status" class="status-bar disconnected">
+      <span class="status-dot"></span>
+      <span id="serial-status-text">Disconnected</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="serial-connect-btn" onclick="serialConnect()">Connect Serial Port</button>
+      <button class="btn-secondary" id="serial-query-btn" disabled onclick="serialQuery()">Query</button>
+      <button class="btn-secondary" id="serial-disconnect-btn" disabled onclick="serialDisconnect()">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- Device info cards (shared, populated by either transport) -->
+  <div class="device-info" id="device-info">
+    <div class="info-card">
+      <div class="label">Battery</div>
+      <div class="value" id="info-battery">—</div>
+      <div class="unit">%</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Firmware</div>
+      <div class="value" id="info-firmware" style="font-size:18px">—</div>
+    </div>
+    <div class="info-card">
+      <div class="label">EQ Preset</div>
+      <div class="value" id="info-eq-preset" style="font-size:16px">—</div>
+    </div>
+  </div>
+
+  <!-- EQ Presets -->
+  <div class="section-title">EQ Presets</div>
+  <div class="presets-grid">
+    <button class="preset-btn" id="preset-hifi" disabled onclick="setPreset(0x00,'HiFi')">
+      <span class="icon">🎼</span>
+      <span class="name">HiFi</span>
+      <span class="desc">High Fidelity</span>
+    </button>
+    <button class="preset-btn" id="preset-pop" disabled onclick="setPreset(0x01,'Pop')">
+      <span class="icon">🎵</span>
+      <span class="name">Pop</span>
+      <span class="desc">Pop Music</span>
+    </button>
+    <button class="preset-btn" id="preset-rock" disabled onclick="setPreset(0x02,'Rock')">
+      <span class="icon">🎸</span>
+      <span class="name">Rock</span>
+      <span class="desc">Rock Music</span>
+    </button>
+  </div>
+
+  <!-- Extra params 0x2B–0x2E (purpose unknown, not confirmed as EQ bands) -->
+  <div class="section-title">Other Settings <span style="font-weight:400;color:#9ca3af;font-size:11px;text-transform:none;letter-spacing:0">(params 0x2B–0x2E · to investigate)</span></div>
+  <div class="bands-grid">
+    <div class="band-card">
+      <div class="band-label">0x2B</div>
+      <div class="band-bar-track"><div class="band-bar-fill" id="band1-bar"></div></div>
+      <div class="band-value" id="band1-val">—</div>
+    </div>
+    <div class="band-card">
+      <div class="band-label">0x2C</div>
+      <div class="band-bar-track"><div class="band-bar-fill" id="band2-bar"></div></div>
+      <div class="band-value" id="band2-val">—</div>
+    </div>
+    <div class="band-card">
+      <div class="band-label">0x2D</div>
+      <div class="band-bar-track"><div class="band-bar-fill" id="band3-bar"></div></div>
+      <div class="band-value" id="band3-val">—</div>
+    </div>
+    <div class="band-card">
+      <div class="band-label">0x2E</div>
+      <div class="band-bar-track"><div class="band-bar-fill" id="band4-bar"></div></div>
+      <div class="band-value" id="band4-val">—</div>
+    </div>
+  </div>
+
+  <!-- Activity Log -->
+  <div class="log-header" id="log-header" onclick="toggleLog()">
+    <span class="section-title" style="margin-bottom:0">Activity Log</span>
+    <span class="toggle-icon">▼</span>
+  </div>
+  <div class="log" id="log"></div>
+
+  <div class="footer-note">
+    Requires Chrome 89+ or Edge 89+ &nbsp;·&nbsp; Web Bluetooth &amp; Web Serial<br>
+    Protocol: <code>TX[FF 00 len data… AA]</code> &nbsp; RX: <code>DD 00 len data… AA</code>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Protocol constants
+// ============================================================
+const TX_START = 0xFF, RX_START = 0xDD, FRAME_END = 0xAA, FRAME_RESERVED = 0x00;
+const CMD_QUERY = 0xFA;
+const PARAM_BATTERY = 0x0C, PARAM_FIRMWARE = 0x0D, PARAM_EQ = 0x2A, PARAM_ACK = 0xFE;
+
+// ✅ Confirmed via BLE enumeration on ROSE CAMBRIAN
+const BLE_SERVICE   = '000000fe-0000-1000-8000-00805f9b34fb';
+const BLE_WRITE     = '000000f1-0000-1000-8000-00805f9b34fb'; // write-without-response + write + read
+const BLE_NOTIFY    = '000000f2-0000-1000-8000-00805f9b34fb'; // notify + read
+// (0000ff12 service also present on device but responses don't come back on ff14)
+
+const QUERY_PAYLOAD = new Uint8Array([
+  CMD_QUERY, 0x01, 0x07, 0x08, 0x09,
+  PARAM_BATTERY, PARAM_FIRMWARE, 0x0E, 0x12,
+  PARAM_EQ, 0x2B, 0x2C, 0x2D, 0x2E, 0x33
+]);
+
+const PRESET_NAMES = { 0x00: 'HiFi', 0x01: 'Pop', 0x02: 'Rock' };
+const BAND_MAX = 4; // observed max band value
+
+// ============================================================
+// Frame helpers
+// ============================================================
+function buildFrame(data) {
+  const f = new Uint8Array(3 + data.length + 1);
+  f[0] = TX_START; f[1] = FRAME_RESERVED; f[2] = data.length;
+  f.set(data, 3); f[f.length - 1] = FRAME_END;
+  return f;
+}
+
+function toHex(data) {
+  return Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+}
+
+// ============================================================
+// UI updates
+// ============================================================
+let currentMode = 'ble';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('tab-ble').classList.toggle('active', mode === 'ble');
+  document.getElementById('tab-serial').classList.toggle('active', mode === 'serial');
+  document.getElementById('panel-ble').classList.toggle('active', mode === 'ble');
+  document.getElementById('panel-serial').classList.toggle('active', mode === 'serial');
+}
+
+function setConnectedState(mode, connected, deviceName) {
+  const statusEl = document.getElementById(`${mode}-status`);
+  const textEl   = document.getElementById(`${mode}-status-text`);
+  const nameEl   = document.getElementById(`${mode}-device-name`);
+  const connectBtn    = document.getElementById(`${mode}-connect-btn`);
+  const queryBtn      = document.getElementById(`${mode}-query-btn`);
+  const disconnectBtn = document.getElementById(`${mode}-disconnect-btn`);
+
+  statusEl.className = `status-bar ${connected ? 'connected' : 'disconnected'}`;
+  textEl.textContent = connected ? 'Connected' : 'Disconnected';
+  if (nameEl) nameEl.textContent = connected ? (deviceName || '') : '';
+  connectBtn.disabled    = connected;
+  queryBtn.disabled      = !connected;
+  disconnectBtn.disabled = !connected;
+
+  // Preset buttons disabled unless some transport is connected
+  const anyConnected = bleConnected || serialConnected;
+  ['preset-hifi','preset-pop','preset-rock'].forEach(id => {
+    document.getElementById(id).disabled = !anyConnected;
+  });
+
+  document.getElementById('device-info').classList.toggle('visible', anyConnected);
+}
+
+function updateBattery(pct) {
+  document.getElementById('info-battery').textContent = pct;
+}
+function updateFirmware(fw) {
+  document.getElementById('info-firmware').textContent = fw;
+}
+function updateActivePreset(presetId) {
+  const map = { 0x00: 'hifi', 0x01: 'pop', 0x02: 'rock' };
+  ['hifi','pop','rock'].forEach(p => {
+    document.getElementById(`preset-${p}`).classList.toggle('active', map[presetId] === p);
+  });
+  document.getElementById('info-eq-preset').textContent = PRESET_NAMES[presetId] || `0x${presetId.toString(16)}`;
+}
+function updateBand(bandNum, value) {
+  document.getElementById(`band${bandNum}-val`).textContent = value;
+  document.getElementById(`band${bandNum}-bar`).style.width = `${Math.min(100, (value / BAND_MAX) * 100)}%`;
+}
+
+// ============================================================
+// Response parser (shared by BLE + Serial)
+// ============================================================
+function parsePayload(payload) {
+  if (payload.length === 1 && payload[0] === PARAM_ACK) {
+    log('   ✓ ACK', 'success'); return;
+  }
+  if (payload.length < 2) {
+    log(`   Unknown: [${toHex(payload)}]`, 'warning'); return;
+  }
+  const id = payload[0], val = payload.slice(1);
+
+  if (id === PARAM_BATTERY && val.length === 3) {
+    const pct = (val[1] << 8) | val[2];
+    updateBattery(pct);
+    log(`   🔋 Battery: ${pct}%`, 'success');
+  } else if (id === PARAM_FIRMWARE && val.length === 3) {
+    const fw = String.fromCharCode(...val);
+    updateFirmware(fw);
+    log(`   📟 Firmware: ${fw}`, 'success');
+  } else if (id === PARAM_EQ) {
+    updateActivePreset(val[0]);
+    log(`   🎵 EQ Preset: ${PRESET_NAMES[val[0]] || val[0]}`, 'success');
+  } else if (id >= 0x2B && id <= 0x2E) {
+    const band = id - 0x2A; // 0x2B→1, 0x2C→2, 0x2D→3, 0x2E→4
+    updateBand(band, val[0]);
+    log(`   0x${id.toString(16).toUpperCase()}: ${val[0]} (unknown setting)`, 'success');
+  } else if (id === 0x01 && val.length >= 2) {
+    // Packed (param,value) pairs
+    const pairs = [];
+    for (let i = 0; i + 1 < val.length; i += 2) pairs.push(`0x${val[i].toString(16)}=${val[i+1]}`);
+    log(`   Params: ${pairs.join(' ')}`, 'success');
+  } else {
+    log(`   Param 0x${id.toString(16).padStart(2,'0').toUpperCase()}: [${toHex(val)}]`);
+  }
+}
+
+function processFrameBuffer(buffer) {
+  while (buffer.length >= 5) {
+    if (buffer[0] !== RX_START) { buffer = buffer.slice(1); continue; }
+    if (buffer.length < 3) break;
+    const frameLen = 3 + buffer[2] + 1;
+    if (buffer.length < frameLen) break;
+    const frame = buffer.slice(0, frameLen);
+    buffer = buffer.slice(frameLen);
+    log(`← [${toHex(frame)}]`, 'rx');
+    if (frame[1] === FRAME_RESERVED && frame[frame.length-1] === FRAME_END) {
+      parsePayload(frame.slice(3, 3 + frame[2]));
+    }
+  }
+  return buffer;
+}
+
+// ============================================================
+// BLE Controller
+// ============================================================
+let bleDevice = null, bleWriteChar = null, bleConnected = false;
+
+async function bleConnect() {
+  try {
+    // NOTE: ROSE CAMBRIAN advertises NO service UUIDs in BLE — only manufacturer data.
+    // Chrome's name-based filter would find it but then reject with "Unsupported device"
+    // because it can't verify service access without advertised service UUIDs.
+    // acceptAllDevices:true is the only reliable option; user picks "ROSE CAMBRIAN" from list.
+    log('Opening device picker — select "ROSE CAMBRIAN" from the list…', 'warning');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [BLE_SERVICE, '0000ff12-0000-1000-8000-00805f9b34fb']
+    });
+
+    const name = bleDevice.name || '(unnamed)';
+    log(`Selected: ${name}`, 'success');
+
+    if (!name.toLowerCase().includes('rose') && !name.toLowerCase().includes('cambrian')) {
+      log(`Warning: expected a ROSE/Cambrian device, got "${name}"`, 'warning');
+    }
+
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      bleConnected = false;
+      bleWriteChar = null;
+      setConnectedState('ble', false);
+      log('BLE disconnected', 'warning');
+    });
+
+    log('Connecting to GATT…');
+    const server  = await bleDevice.gatt.connect();
+    log('GATT connected', 'success');
+
+    const service = await server.getPrimaryService(BLE_SERVICE);
+    log('Service 000000fe found', 'success');
+
+    bleWriteChar = await service.getCharacteristic(BLE_WRITE);
+    log('Write char f1 ready', 'success');
+
+    const notifyChar = await service.getCharacteristic(BLE_NOTIFY);
+    await notifyChar.startNotifications();
+    notifyChar.addEventListener('characteristicvaluechanged', e => {
+      const data = new Uint8Array(e.target.value.buffer);
+      log(`← [${toHex(data)}]`, 'rx');
+      if (data[0] === RX_START && data[1] === FRAME_RESERVED && data[data.length-1] === FRAME_END) {
+        parsePayload(data.slice(3, 3 + data[2]));
+      }
+    });
+    log('Notifications on f2 enabled', 'success');
+
+    bleConnected = true;
+    setConnectedState('ble', true, name);
+    log('Ready! Querying device…', 'success');
+    await bleQuery();
+
+  } catch (err) {
+    log(`BLE error: ${err.message}`, 'error');
+    if (err.message.includes('cancelled') || err.message.includes('chosen')) {
+      log('Picker cancelled.', 'warning');
+    }
+    bleConnected = false;
+    setConnectedState('ble', false);
+  }
+}
+
+async function bleQuery() {
+  if (!bleWriteChar) return;
+  log('→ Query all parameters');
+  const cmd = buildFrame(QUERY_PAYLOAD);
+  log(`→ TX: [${toHex(cmd)}]`);
+  try {
+    await bleWriteChar.writeValueWithoutResponse(cmd);
+  } catch {
+    // Older Chrome fallback
+    await bleWriteChar.writeValue(cmd);
+  }
+}
+
+async function setPreset(presetId, presetName) {
+  const cmd = buildFrame(new Uint8Array([PARAM_EQ, presetId]));
+  log(`→ Set preset: ${presetName} [${toHex(cmd)}]`);
+  if (bleConnected && bleWriteChar) {
+    try {
+      await bleWriteChar.writeValueWithoutResponse(cmd);
+    } catch {
+      await bleWriteChar.writeValue(cmd);
+    }
+  } else if (serialConnected && serialWriter) {
+    await serialSendRaw(cmd);
+  } else {
+    log('Not connected', 'error');
+  }
+}
+
+async function bleDisconnect() {
+  if (bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+  }
+  bleConnected = false; bleWriteChar = null;
+  setConnectedState('ble', false);
+}
+
+// ============================================================
+// Serial Controller
+// ============================================================
+let serialPort = null, serialReader = null, serialWriter = null, serialConnected = false;
+
+async function serialConnect() {
+  try {
+    log('Requesting serial port… (select cu.ROSECAMBRIAN on macOS)');
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 115200 });
+    log('Port opened', 'success');
+    serialConnected = true;
+    setConnectedState('serial', true);
+    startSerialRead();
+    log('Ready! Sending query…', 'success');
+    await serialQuery();
+  } catch (err) {
+    log(`Serial error: ${err.message}`, 'error');
+    serialConnected = false;
+    setConnectedState('serial', false);
+  }
+}
+
+async function startSerialRead() {
+  let buf = new Uint8Array(0);
+  try {
+    while (serialPort && serialPort.readable) {
+      serialReader = serialPort.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await serialReader.read();
+          if (done) break;
+          const merged = new Uint8Array(buf.length + value.length);
+          merged.set(buf); merged.set(value, buf.length);
+          buf = processFrameBuffer(merged);
+        }
+      } catch (e) {
+        if (serialConnected) log(`Read error: ${e}`, 'error');
+      } finally {
+        serialReader.releaseLock();
+      }
+    }
+  } catch (e) { /* port closed */ }
+}
+
+async function serialSendRaw(data) {
+  if (!serialPort || !serialPort.writable) { log('Port not writable', 'error'); return; }
+  log(`→ TX: [${toHex(data)}]`);
+  const writer = serialPort.writable.getWriter();
+  try { await writer.write(data); }
+  finally { writer.releaseLock(); }
+  log('   ✓ Sent', 'success');
+}
+
+async function serialQuery() {
+  await serialSendRaw(buildFrame(QUERY_PAYLOAD));
+}
+
+async function serialDisconnect() {
+  serialConnected = false;
+  if (serialReader) { try { await serialReader.cancel(); } catch {} }
+  if (serialPort)   { try { await serialPort.close(); log('Serial port closed', 'success'); } catch {} }
+  serialPort = null; serialReader = null; serialWriter = null;
+  setConnectedState('serial', false);
+}
+
+// ============================================================
+// Log
+// ============================================================
+let logCollapsed = false;
+
+function toggleLog() {
+  logCollapsed = !logCollapsed;
+  document.getElementById('log-header').classList.toggle('collapsed', logCollapsed);
+  document.getElementById('log').classList.toggle('hidden', logCollapsed);
+}
+
+function log(msg, type = '') {
+  const el = document.getElementById('log');
+  const ts = new Date().toLocaleTimeString('en', { hour12: false });
+  const row = document.createElement('div');
+  row.className = `log-entry ${type}`;
+  row.innerHTML = `<span class="ts">${ts}</span><span class="msg">${msg}</span>`;
+  el.appendChild(row);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ============================================================
+// Init
+// ============================================================
+(function init() {
+  if (!navigator.bluetooth) {
+    log('⚠ Web Bluetooth not available — use Chrome/Edge on desktop', 'warning');
+    document.getElementById('ble-connect-btn').disabled = true;
+  }
+  if (!('serial' in navigator)) {
+    log('⚠ Web Serial not available — use Chrome 89+ / Edge 89+', 'warning');
+    document.getElementById('serial-connect-btn').disabled = true;
+  }
+  log('RoseLink Controller ready', 'success');
+  log('BLE uses acceptAllDevices (device advertises no service UUIDs)', '');
+  log('service=000000fe  write=f1  notify=f2', '');
+})();
+</script>
+</body>
+</html>

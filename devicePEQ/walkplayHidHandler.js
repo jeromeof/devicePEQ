@@ -12,12 +12,13 @@ export const walkplayUsbHID = (function () {
   const WRITE = 0x01;
   const END = 0x00;
   const CMD = {
-    PEQ_VALUES: 0x09,
-    VERSION: 0x0C,
-    TEMP_WRITE: 0x0A,
     FLASH_EQ: 0x01,
-    GET_SLOT: 0x0F,
+    MIC_GAIN: 0x02,
     GLOBAL_GAIN: 0x03,
+    PEQ_VALUES: 0x09,
+    TEMP_WRITE: 0x0A,
+    VERSION: 0x0C,
+    GET_SLOT: 0x0F,
   };
 
   const DEFAULT_FILTER_COUNT = 8;
@@ -80,7 +81,11 @@ export const walkplayUsbHID = (function () {
       ];
 
       await sendReport(device, useAltReport ? ALT_REPORT_ID : REPORT_ID, packet);
+      await delay(20); // Add delay between filter writes to prevent overwhelming the device
     }
+
+    // Wait for device to process all filter writes
+    await delay(100);
 
     if (deviceDetails.modelConfig && typeof deviceDetails.modelConfig.autoGlobalGain !== 'undefined') {
       // If the walkplay device auto calculates global gain we can leave the global gain as it was
@@ -88,13 +93,54 @@ export const walkplayUsbHID = (function () {
         // Write the global gain
         await writeGlobalGain(device, globalGain);
         console.log(`USB Device PEQ: Walkplay set global gain to ${globalGain}`);
+        await delay(50); // Wait after global gain write
       }
     }
 
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
-    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, END]);
+    await delay(50); // Wait after TEMP_WRITE
+    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, slot, END]); // Add slot parameter
 
     console.log("PEQ filters successfully pushed to Walkplay device.");
+  };
+
+  const setMicGain = async (deviceDetails, value) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    const gainValue = Math.round(value);
+    const request = [WRITE, CMD.MIC_GAIN, 0x02, 0x00, gainValue, END];
+    console.log(`USB Device PEQ: Walkplay set mic gain to ${gainValue}`);
+    await sendReport(device, REPORT_ID, request);
+  };
+
+  const readMicGain = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+
+    return new Promise(async (resolve, reject) => {
+      const request = [READ, CMD.MIC_GAIN, 0x00, END];
+
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading mic gain");
+      }, 1000);
+
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.MIC_GAIN) return;
+
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+
+        const micGain = new Int8Array([data[2]])[0];
+        console.log(`USB Device PEQ: Walkplay mic gain value: ${micGain}`);
+        resolve(micGain);
+      };
+
+      device.addEventListener("inputreport", onReport);
+      console.log(`USB Device PEQ: Walkplay sending readMicGain command:`, request);
+      await sendReport(device, REPORT_ID, request);
+    });
   };
 
   function convertFromFilterType(filterType) {
@@ -279,7 +325,9 @@ export const walkplayUsbHID = (function () {
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,
-    enablePEQ
+    enablePEQ,
+    setMicGain,
+    readMicGain
   };
 })();
 

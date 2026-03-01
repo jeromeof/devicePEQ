@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moondrop Edge - PEQ Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .status.connecting {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-connect { background: #667eea; color: white; }
+        .btn-read { background: #48dbfb; color: white; }
+        .btn-write { background: #1dd1a1; color: white; }
+        .btn-preset { background: #ff6b6b; color: white; font-size: 12px; padding: 8px 16px; }
+
+        .info-banner {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-banner h3 {
+            color: #155724;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-banner p {
+            color: #155724;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+
+        .eq-bands {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .band {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .band-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .band-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .log {
+            margin-top: 30px;
+            padding: 15px;
+            background: #2d3436;
+            color: #dfe6e9;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-entry.error {
+            color: #ff7675;
+        }
+
+        .log-entry.success {
+            color: #00b894;
+        }
+
+        .log-entry.warning {
+            color: #fdcb6e;
+        }
+
+        .presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎧 Moondrop Edge - PEQ Controller</h1>
+        <p class="subtitle">Web Serial API - Paired Device Support</p>
+
+        <div class="info-banner">
+            <h3>✅ Works with Already-Paired Devices!</h3>
+            <p><strong>Using proven DevicePEQ connection pattern</strong></p>
+            <p>Your paired Moondrop Edge will appear in the device picker.</p>
+            <p><strong>Requirements:</strong> Chrome/Edge browser, device powered on</p>
+        </div>
+
+        <div id="status" class="status disconnected">
+            Disconnected - Click "Connect" to see your paired devices
+        </div>
+
+        <div class="controls">
+            <button id="btnConnect" class="btn-connect" onclick="toggleConnection()">🔌 Connect</button>
+            <button id="btnRead" class="btn-read" onclick="readEQ()" disabled>Read EQ</button>
+            <button id="btnWrite" class="btn-write" onclick="writeEQ()" disabled>Write EQ</button>
+        </div>
+
+        <div class="presets">
+            <button class="btn-preset" onclick="loadPreset('flat')">Flat</button>
+            <button class="btn-preset" onclick="loadPreset('vshape')">V-Shaped</button>
+            <button class="btn-preset" onclick="loadPreset('bass')">Bass Boost</button>
+            <button class="btn-preset" onclick="loadPreset('treble')">Treble Boost</button>
+            <button class="btn-preset" onclick="loadPreset('vocal')">Vocal Focus</button>
+        </div>
+
+        <div id="eqBands" class="eq-bands">
+            <!-- Bands will be generated by JavaScript -->
+        </div>
+
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Moondrop/Airoha Bluetooth SPP UUIDs
+        const AIROHA_SPP_UUID = "00000100-0000-1000-8000-00805f9ba111";
+        const STANDARD_SPP_UUID = "00001101-0000-1000-8000-00805f9b34fb";
+
+        // CORRECT GAIA UUIDs (from working testMoondropGAIA.py)
+        const GAIA_TX_UUID = "00001101-d102-11e1-9b23-00025b00a5a5";  // Write
+        const GAIA_RX_UUID = "00001102-d102-11e1-9b23-00025b00a5a5";  // Notify
+
+        // Connection state
+        let port = null;
+        let readable = null;
+        let writable = null;
+        let readLoopActive = false;
+
+        // EQ bands
+        let eqBands = [
+            { freq: 100, q: 1.5, gain: 0, type: 0 },
+            { freq: 500, q: 1.0, gain: 0, type: 0 },
+            { freq: 1000, q: 1.0, gain: 0, type: 0 },
+            { freq: 3000, q: 1.2, gain: 0, type: 0 },
+            { freq: 8000, q: 1.5, gain: 0, type: 0 }
+        ];
+
+        // Check browser support
+        if (!navigator.serial) {
+            document.body.innerHTML = `
+                <div class="container">
+                    <h1>❌ Browser Not Supported</h1>
+                    <p>Web Serial API is not supported in this browser.</p>
+                    <p><strong>Please use Chrome 89+ or Edge 89+</strong></p>
+                </div>
+            `;
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        function updateStatus(status, type = 'disconnected') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = status;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // Connection management (DevicePEQ pattern)
+        async function connect() {
+            try {
+                log('Requesting Moondrop Edge via Bluetooth SPP...');
+
+                // Build request options following DevicePEQ pattern
+                const requestOptions = {
+                    // Use filters array with bluetoothServiceClassId
+                    filters: [
+                        { bluetoothServiceClassId: AIROHA_SPP_UUID },
+                        { bluetoothServiceClassId: STANDARD_SPP_UUID }
+                    ],
+                    // Also include allowedBluetoothServiceClassIds
+                    allowedBluetoothServiceClassIds: [
+                        AIROHA_SPP_UUID,
+                        STANDARD_SPP_UUID
+                    ]
+                };
+
+                port = await navigator.serial.requestPort(requestOptions);
+
+                const info = port.getInfo();
+                log(`Device info: ${JSON.stringify(info)}`);
+
+                // Open with Bluetooth SPP baud rate (9600 for Bluetooth, per DevicePEQ pattern)
+                const baudRate = info.bluetoothServiceClassId ? 9600 : 115200;
+                log(`Opening port with baud rate: ${baudRate}`);
+
+                await port.open({
+                    baudRate,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                // Set up read/write shims that acquire and release locks (DevicePEQ pattern)
+                readable = {
+                    async read() {
+                        const reader = port.readable.getReader();
+                        try {
+                            return await reader.read();
+                        } finally {
+                            try { reader.releaseLock(); } catch (_) {}
+                        }
+                    }
+                };
+
+                writable = {
+                    async write(data) {
+                        const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                        log(`<<< TX (${data.length} bytes): ${hex}`, 'warning');
+
+                        const writer = port.writable.getWriter();
+                        try {
+                            await writer.write(data);
+                            log('TX write completed', 'success');
+                        } finally {
+                            try { writer.releaseLock(); } catch (_) {}
+                        }
+                    }
+                };
+
+                log('Connected successfully!', 'success');
+                if (info.bluetoothServiceClassId) {
+                    log(`Bluetooth Service Class ID: ${info.bluetoothServiceClassId}`, 'success');
+                }
+
+                return { success: true, info, baudRate };
+
+            } catch (error) {
+                if (error.name === 'NotFoundError' || error.code === 8) {
+                    log('Device picker cancelled by user', 'warning');
+                    return { cancelled: true };
+                }
+                log(`Connection error: ${error.message}`, 'error');
+                console.error(error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function disconnect() {
+            if (port) {
+                try {
+                    readLoopActive = false;
+                    await port.close();
+                    port = null;
+                    readable = null;
+                    writable = null;
+                    log('Disconnected', 'success');
+                } catch (error) {
+                    log(`Disconnect error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function startReadLoop() {
+            readLoopActive = true;
+            log('=== Starting read loop ===', 'success');
+            log('Listening for incoming data from device...');
+
+            try {
+                while (readLoopActive && port && readable) {
+                    const { value, done } = await readable.read();
+
+                    if (done) {
+                        log('Read stream closed', 'warning');
+                        break;
+                    }
+
+                    if (value && value.length > 0) {
+                        const hex = Array.from(value)
+                            .map(b => b.toString(16).padStart(2, '0'))
+                            .join(' ');
+                        log(`>>> RX (${value.length} bytes): ${hex}`, 'success');
+                        handleReceivedData(value);
+                    }
+                }
+            } catch (error) {
+                if (readLoopActive) {
+                    log(`Read loop error: ${error.message}`, 'error');
+                    console.error('Read loop error:', error);
+                }
+            } finally {
+                log('=== Read loop stopped ===', 'warning');
+            }
+        }
+
+        function handleReceivedData(data) {
+            log('=== Handling received data ===', 'success');
+
+            const response = parseGaiaResponse(data);
+            if (!response) {
+                log('Failed to parse GAIA response', 'error');
+                return;
+            }
+
+            // Check if this is a response packet (0x0B) vs command echo (0x0A)
+            if (response.packetType !== 0x0B) {
+                log('Received command echo, not a response - ignoring', 'warning');
+                return;
+            }
+
+            // Check if this is a read EQ response (command 0x05)
+            if (response.commandId === 0x05) {
+                log('Processing EQ read response', 'success');
+
+                const payload = response.payload;
+                if (payload.length < 7) {
+                    log(`Payload too short for EQ data: ${payload.length} bytes`, 'error');
+                    return;
+                }
+
+                // According to testMoondropGAIA.py, bands start at offset 5
+                // Offset 0-1: Preset ID
+                // Offset 2-4: Unknown (possibly padding or additional data)
+                // Offset 5+: Band data
+                const presetId = payload[0] | (payload[1] << 8);
+                log(`Preset ID: ${presetId}`);
+
+                // Parse each band (7 bytes per band) starting at offset 5
+                let offset = 5;
+                let bandIndex = 0;
+
+                while (offset + 7 <= payload.length && bandIndex < eqBands.length) {
+                    const band = decodeEQBand(payload, offset, bandIndex);
+
+                    if (band) {
+                        log(`Updating UI band ${bandIndex}`, 'success');
+                        eqBands[bandIndex] = band;
+                    }
+
+                    offset += 7;
+                    bandIndex++;
+                }
+
+                log(`Parsed ${bandIndex} bands from device`, 'success');
+
+                // Update UI
+                renderEQBands();
+                log('EQ data loaded from device!', 'success');
+
+            } else if (response.commandId === 0x06) {
+                log('Processing EQ write response', 'success');
+                log('Write acknowledged by device', 'success');
+            } else if (response.commandId === 0x03) {
+                log('Init command acknowledged', 'success');
+            } else {
+                log(`Unknown command response: 0x${response.commandId.toString(16).padStart(2, '0')}`, 'warning');
+            }
+
+            log('=== End handling received data ===', 'success');
+        }
+
+        async function toggleConnection() {
+            if (port) {
+                // Disconnect
+                await disconnect();
+                updateStatus('Disconnected', 'disconnected');
+                document.getElementById('btnConnect').textContent = '🔌 Connect';
+                document.getElementById('btnRead').disabled = true;
+                document.getElementById('btnWrite').disabled = true;
+            } else {
+                // Connect
+                updateStatus('Connecting...', 'connecting');
+                log('Opening device picker...');
+
+                const result = await connect();
+
+                if (result.cancelled) {
+                    updateStatus('Connection cancelled', 'disconnected');
+                } else if (result.success) {
+                    updateStatus('✅ Connected to Moondrop Edge', 'connected');
+                    document.getElementById('btnConnect').textContent = '🔌 Disconnect';
+                    document.getElementById('btnRead').disabled = false;
+                    document.getElementById('btnWrite').disabled = false;
+
+                    // Start reading responses
+                    startReadLoop();
+                } else {
+                    updateStatus(`Connection failed: ${result.error}`, 'disconnected');
+                }
+            }
+        }
+
+        // GAIA Protocol Functions
+        function buildGaiaPacket(commandId, data = []) {
+            log(`Building GAIA packet: commandId=0x${commandId.toString(16).padStart(2, '0')}, dataLen=${data.length}`);
+
+            const packet = new Uint8Array([
+                0x1D, 0x00,  // Vendor ID (little endian)
+                0x0A,        // Command packet type
+                commandId    // Command ID
+            ].concat(data));
+
+            const hex = Array.from(packet).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            log(`Built packet (${packet.length} bytes): ${hex}`);
+
+            return packet;
+        }
+
+        function encodeEQBand(band, bandIndex) {
+            log(`Encoding band ${bandIndex}: freq=${band.freq}Hz, q=${band.q}, gain=${band.gain}dB, type=${band.type}`);
+
+            const freq = Math.round(band.freq);
+            const q = Math.round(band.q * 4096);
+            const gainFloat = Math.round(band.gain * 60);
+
+            // Handle signed int16 for gain (two's complement)
+            const gain = gainFloat < 0 ? (65536 + gainFloat) : gainFloat;
+
+            log(`  Encoded values: freq=${freq} (0x${freq.toString(16)}), q=${q} (0x${q.toString(16)}), gain=${gainFloat} -> ${gain} (0x${gain.toString(16)})`);
+
+            const encoded = [
+                freq & 0xFF, (freq >> 8) & 0xFF,
+                q & 0xFF, (q >> 8) & 0xFF,
+                band.type,
+                gain & 0xFF, (gain >> 8) & 0xFF
+            ];
+
+            const hex = encoded.map(b => b.toString(16).padStart(2, '0')).join(' ');
+            log(`  Encoded bytes: ${hex}`);
+
+            return encoded;
+        }
+
+        function decodeEQBand(data, offset, bandIndex) {
+            log(`Decoding band ${bandIndex} from offset ${offset}:`);
+
+            if (offset + 7 > data.length) {
+                log(`  ERROR: Not enough data. Need ${offset + 7} bytes, have ${data.length}`, 'error');
+                return null;
+            }
+
+            const bytes = Array.from(data.slice(offset, offset + 7));
+            const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+            log(`  Raw bytes: ${hex}`);
+
+            // CRITICAL: READ format uses INTERLEAVED bytes!
+            // Freq = [byte0, byte3]
+            // Q = [byte2, byte1]
+            // This is different from WRITE format which uses normal uint16 LE pairs
+            const freqRaw = data[offset] | (data[offset + 3] << 8);  // bytes[0,3]
+            const qRaw = data[offset + 2] | (data[offset + 1] << 8);  // bytes[2,1]
+            const type = data[offset + 4];
+            const gainRaw = data[offset + 5] | (data[offset + 6] << 8);
+
+            // Convert signed gain (if needed)
+            const gainSigned = gainRaw > 32767 ? gainRaw - 65536 : gainRaw;
+
+            log(`  Raw values (interleaved format): freq=${freqRaw}, q=${qRaw}, type=${type}, gain=${gainRaw} (signed: ${gainSigned})`);
+
+            // Decode
+            const freq = freqRaw;
+            const q = qRaw / 4096.0;
+            const gain = gainSigned / 60.0;
+
+            log(`  Decoded: freq=${freq}Hz, q=${q.toFixed(2)}, gain=${gain.toFixed(1)}dB, type=${type}`);
+
+            return {
+                freq: freq,
+                q: q,
+                gain: gain,
+                type: type
+            };
+        }
+
+        function parseGaiaResponse(data) {
+            log(`Parsing GAIA response (${data.length} bytes)`);
+
+            if (data.length < 4) {
+                log('  ERROR: Packet too short (need at least 4 bytes)', 'error');
+                return null;
+            }
+
+            const vendorId = data[0] | (data[1] << 8);
+            const packetType = data[2];
+            const commandId = data[3];
+            const payload = data.slice(4);
+
+            log(`  Vendor ID: 0x${vendorId.toString(16).padStart(4, '0')}`);
+            log(`  Packet Type: 0x${packetType.toString(16).padStart(2, '0')}`);
+            log(`  Command ID: 0x${commandId.toString(16).padStart(2, '0')}`);
+            log(`  Payload: ${payload.length} bytes`);
+
+            if (payload.length > 0) {
+                const payloadHex = Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                log(`  Payload bytes: ${payloadHex}`);
+            }
+
+            return {
+                vendorId: vendorId,
+                packetType: packetType,
+                commandId: commandId,
+                payload: payload
+            };
+        }
+
+        async function sendInitCommand() {
+            if (!writable) {
+                log('Not connected!', 'error');
+                return false;
+            }
+
+            try {
+                log('Sending init command 3 (0x3F)...');
+                const initPacket = buildGaiaPacket(0x03, [0x3F]);
+                await writable.write(initPacket);
+                log('Init command sent!', 'success');
+                // Wait a bit for device to process
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return true;
+            } catch (error) {
+                log(`Init command failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function readEQ() {
+            if (!writable) {
+                log('Not connected!', 'error');
+                return;
+            }
+
+            try {
+                log('=== Reading EQ from device ===');
+
+                // Step 1: Send init command (as per working testMoondropGAIA.py)
+                const initOk = await sendInitCommand();
+                if (!initOk) {
+                    log('Init failed, aborting read', 'error');
+                    return;
+                }
+
+                // Step 2: Send read EQ command
+                log('Building read EQ command (0x05)');
+                const packet = buildGaiaPacket(0x05, [0x00, 0x04]);
+                log('Sending read command to device...');
+                await writable.write(packet);
+                log('Read command sent successfully!', 'success');
+                log('Waiting for device response...', 'warning');
+            } catch (error) {
+                log(`Read failed: ${error.message}`, 'error');
+                console.error('Read error:', error);
+            }
+        }
+
+        async function writeEQ() {
+            if (!writable) {
+                log('Not connected!', 'error');
+                return;
+            }
+
+            try {
+                log('=== Writing EQ to device ===');
+                updateEQFromUI();
+
+                // Step 1: Send init command (as per working testMoondropGAIA.py)
+                const initOk = await sendInitCommand();
+                if (!initOk) {
+                    log('Init failed, aborting write', 'error');
+                    return;
+                }
+
+                // Step 2: Build and send write command
+                log(`Building EQ write packet for ${eqBands.length} bands`);
+                let payload = [0, eqBands.length - 1];
+                log(`Payload header: startBand=0, endBand=${eqBands.length - 1}`);
+
+                for (let i = 0; i < eqBands.length; i++) {
+                    payload = payload.concat(encodeEQBand(eqBands[i], i));
+                }
+
+                log(`Total payload: ${payload.length} bytes`);
+                const payloadHex = payload.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                log(`Payload hex: ${payloadHex}`);
+
+                const packet = buildGaiaPacket(0x06, payload);
+                await writable.write(packet);
+
+                log('EQ packet sent successfully!', 'success');
+                log('Waiting 500ms before reading back...', 'warning');
+                setTimeout(() => readEQ(), 500);
+            } catch (error) {
+                log(`Write failed: ${error.message}`, 'error');
+                console.error('Write error:', error);
+            }
+        }
+
+        // UI Functions
+        function renderEQBands() {
+            const container = document.getElementById('eqBands');
+            container.innerHTML = '';
+
+            eqBands.forEach((band, index) => {
+                const bandDiv = document.createElement('div');
+                bandDiv.className = 'band';
+                bandDiv.innerHTML = `
+                    <div class="band-header">Band ${index + 1}</div>
+                    <div class="band-controls">
+                        <div class="control-group">
+                            <label>Frequency (Hz)</label>
+                            <input type="number" id="freq${index}" value="${band.freq}" min="20" max="20000" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label>Q Factor</label>
+                            <input type="number" id="q${index}" value="${band.q.toFixed(2)}" min="0.1" max="10" step="0.1">
+                        </div>
+                        <div class="control-group">
+                            <label>Gain (dB)</label>
+                            <input type="number" id="gain${index}" value="${band.gain.toFixed(1)}" min="-12" max="12" step="0.1">
+                        </div>
+                        <div class="control-group">
+                            <label>Filter Type</label>
+                            <select id="type${index}">
+                                <option value="0" ${band.type === 0 ? 'selected' : ''}>Peaking</option>
+                                <option value="1" ${band.type === 1 ? 'selected' : ''}>Low Shelf</option>
+                                <option value="2" ${band.type === 2 ? 'selected' : ''}>High Shelf</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(bandDiv);
+            });
+        }
+
+        function updateEQFromUI() {
+            eqBands.forEach((band, index) => {
+                band.freq = parseFloat(document.getElementById(`freq${index}`).value);
+                band.q = parseFloat(document.getElementById(`q${index}`).value);
+                band.gain = parseFloat(document.getElementById(`gain${index}`).value);
+                band.type = parseInt(document.getElementById(`type${index}`).value);
+            });
+        }
+
+        function loadPreset(preset) {
+            const presets = {
+                'flat': [
+                    { freq: 100, q: 1.0, gain: 0, type: 0 },
+                    { freq: 500, q: 1.0, gain: 0, type: 0 },
+                    { freq: 1000, q: 1.0, gain: 0, type: 0 },
+                    { freq: 3000, q: 1.0, gain: 0, type: 0 },
+                    { freq: 8000, q: 1.0, gain: 0, type: 0 }
+                ],
+                'vshape': [
+                    { freq: 100, q: 1.5, gain: 3, type: 0 },
+                    { freq: 500, q: 1.0, gain: -1, type: 0 },
+                    { freq: 1000, q: 1.0, gain: -2, type: 0 },
+                    { freq: 3000, q: 1.2, gain: 1, type: 0 },
+                    { freq: 8000, q: 1.5, gain: 3, type: 0 }
+                ],
+                'bass': [
+                    { freq: 60, q: 1.2, gain: 4, type: 0 },
+                    { freq: 150, q: 1.0, gain: 3, type: 0 },
+                    { freq: 400, q: 1.0, gain: 1, type: 0 },
+                    { freq: 1000, q: 1.0, gain: 0, type: 0 },
+                    { freq: 5000, q: 1.0, gain: 0, type: 0 }
+                ],
+                'treble': [
+                    { freq: 100, q: 1.0, gain: 0, type: 0 },
+                    { freq: 500, q: 1.0, gain: 0, type: 0 },
+                    { freq: 2000, q: 1.2, gain: 2, type: 0 },
+                    { freq: 6000, q: 1.5, gain: 4, type: 0 },
+                    { freq: 12000, q: 1.5, gain: 3, type: 0 }
+                ],
+                'vocal': [
+                    { freq: 100, q: 1.0, gain: -1, type: 0 },
+                    { freq: 500, q: 1.0, gain: 1, type: 0 },
+                    { freq: 1500, q: 1.2, gain: 3, type: 0 },
+                    { freq: 3000, q: 1.5, gain: 2, type: 0 },
+                    { freq: 8000, q: 1.0, gain: -1, type: 0 }
+                ]
+            };
+            eqBands = presets[preset];
+            renderEQBands();
+            log(`Loaded preset: ${preset}`, 'success');
+        }
+
+        // Initialize
+        renderEQBands();
+        log('Ready! Click "Connect" to see your paired Bluetooth devices.');
+        log('Using proven DevicePEQ connection pattern', 'success');
+    </script>
+</body>
+</html>

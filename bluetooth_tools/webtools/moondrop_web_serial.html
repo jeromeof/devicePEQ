@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moondrop Edge ANC - Web Serial Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { color: #333; margin-bottom: 8px; }
+        h2 { color: #333; margin-bottom: 16px; }
+        .subtitle { color: #666; margin-bottom: 24px; }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        button.danger:hover {
+            background: #c82333;
+        }
+
+        button.success {
+            background: #28a745;
+        }
+
+        button.success:hover {
+            background: #218838;
+        }
+
+        .success-banner {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .success-banner h3 {
+            color: #155724;
+            margin-bottom: 8px;
+        }
+
+        .success-banner p {
+            color: #155724;
+            line-height: 1.6;
+        }
+
+        .eq-display {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .eq-band {
+            background: white;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .band-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .band-header h3 {
+            color: #667eea;
+            margin: 0;
+        }
+
+        .band-values {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .value-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .value-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .value-data {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .value-data.match {
+            color: #28a745;
+        }
+
+        .raw-data {
+            background: #e9ecef;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .log {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry { margin-bottom: 4px; }
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.success { color: #51cf66; }
+        .log-entry.info { color: #74c0fc; }
+        .log-entry.data { color: #ffd43b; font-weight: bold; }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .decoded-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🎧 Moondrop Edge ANC</h1>
+            <p class="subtitle">Direct Browser Control via Web Serial API <span class="decoded-badge">✓ FULLY DECODED</span></p>
+
+            <div class="success-banner">
+                <h3>🎉 Protocol Fully Decoded!</h3>
+                <p>
+                    All EQ parameters (frequency, gain, Q factor) are now fully decoded and displayed!
+                    Gain encoding solved thanks to user insight about shifted byte positions.
+                </p>
+            </div>
+
+            <div id="status" class="status disconnected">Disconnected</div>
+
+            <div style="margin-bottom: 16px;">
+                <button id="connectBtn" onclick="connectSerial()">🔗 Connect to Serial Port</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled class="danger">Disconnect</button>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <button id="enableEqBtn" onclick="sendEnableEQ(true)" disabled class="success">✅ Enable EQ</button>
+                <button id="disableEqBtn" onclick="sendEnableEQ(false)" disabled class="danger">❌ Disable EQ</button>
+                <button id="queryBtn" onclick="sendQueryEQ()" disabled>📊 Query EQ Settings</button>
+            </div>
+        </div>
+
+        <div class="card" id="eqCard" style="display: none;">
+            <h2>📊 Current EQ Settings</h2>
+            <div id="eqDisplay" class="eq-display"></div>
+            <button onclick="sendQueryEQ()" disabled id="refreshBtn">🔄 Refresh</button>
+        </div>
+
+        <div class="card">
+            <h2>Communication Log</h2>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()" style="margin-top: 12px;">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        // Protocol constants
+        const PACKET_START = 0xFF;
+        const PROTOCOL_VERSION = 0x04;
+        const DEVICE_ID = [0x00, 0x1D];
+        const DIRECTION_TO_DEVICE = 0x0A;
+        const DIRECTION_FROM_DEVICE = 0x0B;
+
+        const CMD_ENABLE_EQ = 0x03;
+        const CMD_QUERY_EQ = 0x05;
+        const CMD_SET_EQ = 0x06;
+
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let currentEQData = null;
+
+        function createPacket(command, payload) {
+            const length = payload.length;
+            const packet = new Uint8Array(8 + length);
+
+            packet[0] = PACKET_START;
+            packet[1] = PROTOCOL_VERSION;
+            packet[2] = (length >> 8) & 0xFF;
+            packet[3] = length & 0xFF;
+            packet[4] = DEVICE_ID[0];
+            packet[5] = DEVICE_ID[1];
+            packet[6] = DIRECTION_TO_DEVICE;
+            packet[7] = command;
+            packet.set(payload, 8);
+
+            return packet;
+        }
+
+        async function connectSerial() {
+            try {
+                if (!('serial' in navigator)) {
+                    log('❌ Web Serial API not supported', 'error');
+                    log('   This requires Chrome/Edge 89+ on desktop', 'error');
+                    return;
+                }
+
+                log('🔍 Requesting serial port...', 'info');
+
+                port = await navigator.serial.requestPort();
+                log('✅ Port selected', 'success');
+
+                await port.open({ baudRate: 115200 });
+                log('✅ Port opened at 115200 baud', 'success');
+
+                reader = port.readable.getReader();
+                writer = port.writable.getWriter();
+
+                readLoop();
+
+                setConnected(true);
+
+                log('🎉 Connected! Ready to send commands', 'success');
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function readLoop() {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const hex = Array.from(value).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                    log(`📥 RX: ${hex}`, 'data');
+
+                    parseResponse(value);
+                }
+            } catch (error) {
+                log(`❌ Read error: ${error.message}`, 'error');
+            }
+        }
+
+        function parseResponse(data) {
+            if (data.length < 8) {
+                log('   ⚠️  Packet too short', 'info');
+                return;
+            }
+
+            const command = data[7];
+            log(`   📋 Command: 0x${command.toString(16).padStart(2, '0').toUpperCase()}`, 'info');
+
+            if (command === CMD_QUERY_EQ && data.length > 8) {
+                parseEQData(data.slice(8));
+            } else if (command === CMD_ENABLE_EQ) {
+                const enabled = data.length > 8 ? data[8] : null;
+                if (enabled !== null) {
+                    log(`   ✅ EQ ${enabled ? 'ENABLED' : 'DISABLED'}`, 'success');
+                }
+            }
+        }
+
+        function parseEQData(payload) {
+            log('   📊 Parsing EQ data with decoded formula...', 'info');
+
+            if (payload.length < 2) {
+                log('   ⚠️  Payload too short', 'info');
+                return;
+            }
+
+            const bandCount = (payload[0] << 8) | payload[1];
+            const bandData = payload.slice(2);
+
+            // Parse 5 bands (band 5 is only 6 bytes)
+            const bands = [];
+            const bandOffsets = [0, 7, 14, 21, 28];
+
+            for (let i = 0; i < 5; i++) {
+                const offset = bandOffsets[i];
+                const length = (i === 4) ? 6 : 7;
+                if (offset + length <= bandData.length) {
+                    const bandBytes = bandData.slice(offset, offset + length);
+                    bands.push(parseBandStructure(bandBytes, i));
+                }
+            }
+
+            // Extract gains with shifted encoding
+            for (let i = 0; i < bands.length; i++) {
+                if (i === 0) {
+                    // Band 1 gain from band 2's first 2 bytes
+                    if (bands.length > 1) {
+                        const gainRaw = (bands[1].rawBytes[0] << 8) | bands[1].rawBytes[1];
+                        const gainSigned = gainRaw > 32767 ? gainRaw - 65536 : gainRaw;
+                        bands[0].gain = gainSigned / 60.0;
+                        bands[0].gainRaw = gainSigned;
+                    }
+                } else if (i < 4) {
+                    // Bands 2-4 gain from next band
+                    if (bands.length > i + 1) {
+                        const gainRaw = (bands[i + 1].rawBytes[0] << 8) | bands[i + 1].rawBytes[1];
+                        const gainSigned = gainRaw > 32767 ? gainRaw - 65536 : gainRaw;
+                        bands[i].gain = gainSigned / 60.0;
+                        bands[i].gainRaw = gainSigned;
+                    }
+                } else {
+                    // Band 5 gain from padding
+                    const paddingOffset = 34;
+                    if (bandData.length >= paddingOffset + 2) {
+                        const gainRaw = (bandData[paddingOffset] << 8) | bandData[paddingOffset + 1];
+                        const gainSigned = gainRaw > 32767 ? gainRaw - 65536 : gainRaw;
+                        bands[4].gain = gainSigned / 60.0;
+                        bands[4].gainRaw = gainSigned;
+                    }
+                }
+            }
+
+            currentEQData = { bandCount, bands, raw: Array.from(payload) };
+            displayEQData();
+
+            log(`   ✅ Decoded ${bands.length} bands successfully!`, 'success');
+        }
+
+        function parseBandStructure(bytes, bandIndex) {
+            const frequency = ((bytes[2] << 8) | bytes[3]);
+            const qRaw = ((bytes[4] << 8) | bytes[5]);
+            const qFactor = qRaw / 4096.0;
+
+            return {
+                rawBytes: Array.from(bytes),
+                rawHex: Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' '),
+                frequency: frequency,
+                qFactor: qFactor,
+                qRaw: qRaw,
+                typeByte: bytes.length >= 7 ? bytes[6] : null,
+                gain: null,
+                gainRaw: null
+            };
+        }
+
+        function displayEQData() {
+            if (!currentEQData) return;
+
+            const display = document.getElementById('eqDisplay');
+            display.innerHTML = '';
+
+            currentEQData.bands.forEach((band, index) => {
+                const bandDiv = document.createElement('div');
+                bandDiv.className = 'eq-band';
+
+                const freqHz = band.frequency;
+                const gainDb = band.gain !== null ? band.gain.toFixed(1) : '?';
+                const qVal = band.qFactor.toFixed(2);
+
+                bandDiv.innerHTML = `
+                    <div class="band-header">
+                        <h3>Band ${index + 1}</h3>
+                        <span style="color: #28a745; font-weight: 600;">✓ DECODED</span>
+                    </div>
+                    <div class="band-values">
+                        <div class="value-box">
+                            <div class="value-label">Frequency</div>
+                            <div class="value-data match">${freqHz} Hz</div>
+                        </div>
+                        <div class="value-box">
+                            <div class="value-label">Gain</div>
+                            <div class="value-data match">${gainDb} dB</div>
+                        </div>
+                        <div class="value-box">
+                            <div class="value-label">Q Factor</div>
+                            <div class="value-data match">${qVal}</div>
+                        </div>
+                    </div>
+                    <div class="raw-data">
+                        Raw: ${band.rawHex} | Gain raw: ${band.gainRaw} (÷60 = ${gainDb} dB)
+                    </div>
+                `;
+
+                display.appendChild(bandDiv);
+            });
+
+            document.getElementById('eqCard').style.display = 'block';
+        }
+
+        async function sendPacket(packet) {
+            if (!writer) {
+                log('❌ Not connected', 'error');
+                return;
+            }
+
+            try {
+                const hex = Array.from(packet).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                log(`📤 TX: ${hex}`, 'data');
+
+                await writer.write(packet);
+                log('✅ Packet sent', 'success');
+
+            } catch (error) {
+                log(`❌ Write error: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendEnableEQ(enable) {
+            const payload = new Uint8Array([enable ? 0x01 : 0x00]);
+            const packet = createPacket(CMD_ENABLE_EQ, payload);
+            await sendPacket(packet);
+        }
+
+        async function sendQueryEQ() {
+            const payload = new Uint8Array([0x00, 0x04]);
+            const packet = createPacket(CMD_QUERY_EQ, payload);
+            await sendPacket(packet);
+        }
+
+        async function disconnect() {
+            if (reader) {
+                await reader.cancel();
+                reader = null;
+            }
+            if (writer) {
+                await writer.releaseLock();
+                writer = null;
+            }
+            if (port) {
+                await port.close();
+                port = null;
+            }
+
+            setConnected(false);
+            log('🔌 Disconnected', 'info');
+        }
+
+        function setConnected(connected) {
+            document.getElementById('status').className = `status ${connected ? 'connected' : 'disconnected'}`;
+            document.getElementById('status').textContent = connected ? 'Connected' : 'Disconnected';
+
+            document.getElementById('connectBtn').disabled = connected;
+            document.getElementById('disconnectBtn').disabled = !connected;
+            document.getElementById('enableEqBtn').disabled = !connected;
+            document.getElementById('disableEqBtn').disabled = !connected;
+            document.getElementById('queryBtn').disabled = !connected;
+            document.getElementById('refreshBtn').disabled = !connected;
+        }
+
+        function log(message, type = 'info') {
+            const logElem = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElem.appendChild(entry);
+            logElem.scrollTop = logElem.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        if ('serial' in navigator) {
+            log('✅ Web Serial API supported', 'success');
+            log('   Click "Connect to Serial Port" to begin', 'info');
+        } else {
+            log('❌ Web Serial API not supported', 'error');
+            log('   Please use Chrome/Edge 89+ on desktop', 'error');
+        }
+    </script>
+</body>
+</html>

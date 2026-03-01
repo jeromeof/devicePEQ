@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ecoute TH1 Web EQ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .status {
+      padding: 12px 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status.disconnected {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #fcc;
+    }
+
+    .status.connected {
+      background: #efe;
+      color: #3c3;
+      border: 1px solid #cfc;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .eq-section {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .eq-section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .eq-controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .eq-band {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .eq-band label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .eq-band input[type="range"] {
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      width: 30px;
+      height: 120px;
+      margin: 10px 0;
+    }
+
+    .eq-band .value {
+      font-size: 12px;
+      color: #667eea;
+      font-weight: bold;
+      min-width: 45px;
+      text-align: center;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .preset-btn {
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+
+    .log {
+      margin-top: 25px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    .log-entry.error {
+      color: #c33;
+    }
+
+    .log-entry.success {
+      color: #3c3;
+    }
+
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f0f7ff;
+      border-left: 4px solid #667eea;
+      border-radius: 5px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .info-box strong {
+      color: #667eea;
+    }
+
+    .info-box code {
+      background: #e0e0e0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .eq-controls {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .eq-band input[type="range"] {
+        height: 80px;
+        width: 20px;
+      }
+
+      .presets {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎧 Ecoute TH1 Web EQ</h1>
+  <p class="subtitle">Simple Bluetooth 8-Band EQ Control</p>
+
+  <div id="status" class="status disconnected">
+    ⚫ Disconnected
+  </div>
+
+  <button id="connectBtn" class="btn-primary">Connect to Ecoute</button>
+  <button id="queryBtn" class="btn-secondary" disabled>Query Current EQ</button>
+  <button id="disconnectBtn" class="btn-secondary" disabled>Disconnect</button>
+
+  <div class="eq-section">
+    <h2>8-Band Equalizer</h2>
+
+    <div class="eq-controls" id="eqControls"></div>
+
+    <h3 style="font-size: 16px; color: #333; margin-bottom: 15px;">Example Presets - check Ecoute App for better presets</h3>
+    <div class="presets">
+      <button class="preset-btn btn-secondary" onclick="applyPreset('flat')">Flat</button>
+      <button class="preset-btn btn-secondary" onclick="applyPreset('bassBoost')">Bass Boost</button>
+      <button class="preset-btn btn-secondary" onclick="applyPreset('vShape')">V-Shape</button>
+      <button class="preset-btn btn-secondary" onclick="applyPreset('vocal')">Vocal</button>
+      <button class="preset-btn btn-secondary" onclick="applyPreset('acoustic')">Acoustic</button>
+      <button class="preset-btn btn-secondary" onclick="applyPreset('rock')">Rock</button>
+    </div>
+
+    <button id="applyEQBtn" class="btn-primary" disabled>Apply EQ Profile</button>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <div class="info-box">
+    <strong>ℹ️ How to use:</strong><br>
+    1. Make sure your Ecoute TH1 headphones are powered on<br>
+    2. Click <strong>"Connect to Ecoute"</strong> to filter<br>
+    3. Select "écoute" from the browser's device picker - make sure to pick the one that is paired<br>
+    4. Use <strong>"Query Current EQ"</strong> to read current EQ settings from device<br>
+    5. Adjust sliders manually or use a preset<br>
+    6. Click <strong>"Apply EQ Profile"</strong> to write changes to device<br>
+    <br>
+    <strong>⚠️ IMPORTANT:</strong> While the EQ is saved to the Ecoute device, if you open the Ecoute app and view or change anything (even just viewing the Frequency page), the app will restore the EQ to what it had stored previously. Keep this in mind when testing!<br>
+    <br>
+    <strong>Device Name:</strong> <code>écoute</code><br>
+    <strong>EQ Bands:</strong> 8 bands (30Hz, 100Hz, 200Hz, 500Hz, 900Hz, 5kHz, 10kHz, 15kHz)<br>
+    <strong>Service UUID:</strong> <code>0000ff77-0000-1000-8000-00805f9b34fb</code>
+  </div>
+</div>
+
+<script>
+  // EQ Frequencies (Hz) - 8 bands as per Ecoute app
+  const EQ_FREQUENCIES = [30, 100, 200, 500, 900, 5000, 10000, 15000];
+
+  // Controller class
+  class EcouteTH1Controller {
+    constructor() {
+      this.device = null;
+      this.server = null;
+      this.service = null;
+      this.writeCharacteristic = null;
+      this.notifyCharacteristic = null;
+    }
+
+    async connect() {
+      try {
+        log('Requesting device...');
+
+
+        // Filter by device name (device doesn't advertise service UUID)
+        log('Filtering by device name...');
+        let options = {
+          filters: [
+            { namePrefix: 'écoute' },
+            { namePrefix: 'Écoute' },
+            { namePrefix: 'ecoute' },
+            { namePrefix: 'Ecoute' },
+            { namePrefix: 'TH1' }
+          ],
+          optionalServices: ['0000ff77-0000-1000-8000-00805f9b34fb']
+        };
+
+        this.device = await navigator.bluetooth.requestDevice(options);
+
+        const deviceName = this.device.name || 'Unknown';
+        const deviceId = this.device.id;
+        log(`✅ Selected device: "${deviceName}"`, 'success');
+        log(`   Device ID: ${deviceId}`, 'success');
+        log(`   (Please note the name above for reference)`);
+
+        log('Connecting to GATT server...');
+        this.server = await this.device.gatt.connect();
+        log('Connected to GATT server', 'success');
+
+        log('Searching for service 0000ff77...');
+        this.service = await this.server.getPrimaryService(
+          '0000ff77-0000-1000-8000-00805f9b34fb'
+        );
+        log('Found service', 'success');
+
+        log('Getting write characteristic 0000ff88...');
+        this.writeCharacteristic = await this.service.getCharacteristic(
+          '0000ff88-0000-1000-8000-00805f9b34fb'
+        );
+        log('Found write characteristic', 'success');
+
+        log('Getting notify characteristic 0000ff99...');
+        this.notifyCharacteristic = await this.service.getCharacteristic(
+          '0000ff99-0000-1000-8000-00805f9b34fb'
+        );
+        log('Found notify characteristic', 'success');
+
+        log('Enabling notifications...');
+        await this.notifyCharacteristic.startNotifications();
+        this.notifyCharacteristic.addEventListener(
+          'characteristicvaluechanged',
+          this.handleNotification.bind(this)
+        );
+
+        log('Notifications enabled', 'success');
+        log('Ready to control headphones! 🎉', 'success');
+
+        return true;
+      } catch (error) {
+        log(`Connection error: ${error.message}`, 'error');
+        if (error.message.includes('User cancelled')) {
+          log('Device selection was cancelled', 'error');
+        } else if (error.message.includes('Service not found')) {
+          log('This device does not have the Ecoute service', 'error');
+          log('Make sure you selected the correct device', 'error');
+        }
+        return false;
+      }
+    }
+
+    handleNotification(event) {
+      const value = event.target.value;
+      const data = new Uint8Array(value.buffer);
+
+      // Log raw data
+      const hexStr = Array.from(data).map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase()).join(', ');
+      log(`← Received (${data.length} bytes): [${hexStr}]`);
+
+      // Check what type of response this is
+      if (data.length >= 6 && data[0] === 0xFE) {
+        const commandByte = data.length > 5 ? data[5] : 0;
+
+        if (commandByte === 0x65) {
+          // EQ data response (from query)
+          if (data.length >= 24) {
+            log('📥 Received EQ data response', 'success');
+            try {
+              const gains = this.parseEQResponse(data);
+              if (gains && gains.length === 8) {
+                // Update sliders with received values
+                setEQValues(gains);
+                log('✅ EQ values updated on sliders', 'success');
+
+                // Display in log
+                log('📊 Current EQ Profile (8 Bands):', 'success');
+                gains.forEach((gain, i) => {
+                  const freq = EQ_FREQUENCIES[i];
+                  const freqStr = freq >= 1000 ? `${freq/1000}kHz` : `${freq}Hz`;
+                  const bar = gain > 0 ? '+'.repeat(Math.floor(gain)) : '-'.repeat(Math.floor(Math.abs(gain)));
+                  log(`  Band ${i+1}: ${freqStr.padEnd(6)} = ${gain >= 0 ? '+' : ''}${gain.toFixed(1)} dB ${bar}`);
+                });
+              } else {
+                log('⚠️ Could not parse all 8 EQ bands', 'error');
+              }
+            } catch (error) {
+              log(`❌ Error parsing EQ: ${error.message}`, 'error');
+              console.error('Parse error:', error);
+            }
+          } else {
+            // Short response - probably acknowledgment
+            log('✅ Device acknowledged EQ write', 'success');
+          }
+        } else if (data.length === 7 && data[2] === 0x02 && commandByte === 0x0A) {
+          // Standard acknowledgment response: FE 08 02 00 00 0A 51
+          log('✅ Device acknowledged - EQ profile written successfully', 'success');
+          log('   Use "Query Current EQ" to verify the changes');
+        } else {
+          log(`ℹ️ Received response with command byte 0x${commandByte.toString(16).toUpperCase()}`);
+        }
+      } else {
+        log('ℹ️ Received unknown response format');
+      }
+    }
+
+    parseEQResponse(data) {
+      const gains = [];
+      let offset = 6; // Skip header: FE 08 00 00 11 65
+
+      log(`   Parsing ${data.length} bytes, starting at offset ${offset}...`);
+
+      // Calculate how many bands are in the response
+      const availableBytes = data.length - offset - 2; // Subtract CRC
+      const numBands = availableBytes / 2;
+
+      log(`   Available data: ${availableBytes} bytes = ${numBands} bands`);
+
+      // Read 8 bands (device sends exactly 8 bands)
+      for (let i = 0; i < Math.min(numBands, 8); i++) {
+        if (offset + 1 >= data.length - 2) {
+          break;
+        }
+
+        const highByte = data[offset];
+        const lowByte = data[offset + 1];
+
+        // Combine bytes (big-endian)
+        let value = (highByte << 8) | lowByte;
+
+        // Convert to signed
+        if (value > 32767) {
+          value -= 65536;
+        }
+
+        // Convert to dB (value is in hundredths)
+        const gainDB = value / 100.0;
+        gains.push(gainDB);
+
+        offset += 2;
+      }
+
+      log(`   Parsed ${gains.length} bands`);
+      return gains.length === 8 ? gains : null;
+    }
+
+    calculateCRC(data, length) {
+      let crc = 0xFFFF;
+
+      for (let i = 0; i < length; i++) {
+        crc = ((crc << 8) | (crc >> 8)) & 0xFFFF;
+        crc ^= (data[i] & 0xFF);
+        crc ^= ((crc & 0xFF) >> 4) & 0xFFFF;
+        crc ^= (crc << 12) & 0xFFFF;
+        crc ^= ((crc & 0xFF) << 5) & 0xFFFF;
+      }
+
+      return new Uint8Array([
+        (crc >> 8) & 0xFF,
+        crc & 0xFF
+      ]);
+    }
+
+    async queryDevice() {
+      const command = new Uint8Array([0xFE, 0x08, 0x00, 0x00, 0x00]);
+      const crc = this.calculateCRC(command, 5);
+      const fullCommand = new Uint8Array([...command, ...crc]);
+
+      log(`→ Sending query: [${Array.from(fullCommand).map(b => '0x' + b.toString(16).padStart(2, '0')).join(', ')}]`);
+      await this.writeCharacteristic.writeValue(fullCommand);
+      log('Query sent', 'success');
+    }
+
+    async writeEQProfile(gainValues) {
+      try {
+        if (gainValues.length !== 8) {
+          throw new Error('Must provide exactly 8 gain values');
+        }
+
+        log(`→ Writing EQ: [${gainValues.map(v => v.toFixed(1) + 'dB').join(', ')}]`);
+
+        const header = new Uint8Array([0xFE, 0x08, 0x00, 0x00, 0x11, 0x65]);
+        const encodedData = new Uint8Array(16);  // Only 16 bytes for 8 bands!
+
+        // Encode 8 bands (2 bytes each = 16 bytes total)
+        for (let i = 0; i < 8; i++) {
+          const gainDB = gainValues[i];
+          let value = Math.round(gainDB * 100);
+
+          // Clamp to safe range
+          value = Math.max(-1200, Math.min(1200, value));
+
+          // Pack as signed 16-bit big-endian (matching Python implementation)
+          // JavaScript's bitwise operations treat numbers as 32-bit signed integers
+          // So we need to ensure proper conversion for negative values
+          if (value < 0) {
+            value = 0x10000 + value; // Convert to unsigned representation
+          }
+
+          encodedData[i * 2] = (value >> 8) & 0xFF;     // High byte
+          encodedData[i * 2 + 1] = value & 0xFF;        // Low byte
+        }
+
+        const packet = new Uint8Array([...header, ...encodedData]);
+        const crc = this.calculateCRC(packet, packet.length);
+        const fullCommand = new Uint8Array([...packet, ...crc]);
+
+        // Log full command in hex
+        const hexCmd = Array.from(fullCommand).map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase()).join(', ');
+        log(`   Full command (${fullCommand.length} bytes):`);
+        log(`   [${hexCmd}]`);
+
+        await this.writeCharacteristic.writeValue(fullCommand);
+        log('✅ EQ command sent to device', 'success');
+        log('⏳ Waiting for device response...');
+      } catch (error) {
+        log(`❌ Write failed: ${error.message}`, 'error');
+        console.error('Write error:', error);
+        throw error;
+      }
+    }
+
+    async disconnect() {
+      if (this.device && this.device.gatt.connected) {
+        await this.device.gatt.disconnect();
+        log('Disconnected', 'success');
+      }
+    }
+
+    isConnected() {
+      return this.device && this.device.gatt.connected;
+    }
+  }
+
+  // Global controller instance
+  const controller = new EcouteTH1Controller();
+
+  // Logging
+  function log(message, type = '') {
+    const logDiv = document.getElementById('log');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    const timestamp = new Date().toLocaleTimeString();
+    entry.textContent = `[${timestamp}] ${message}`;
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  // Update UI state
+  function updateUIState(connected) {
+    const status = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const queryBtn = document.getElementById('queryBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const applyEQBtn = document.getElementById('applyEQBtn');
+
+    if (connected) {
+      status.className = 'status connected';
+      status.textContent = '🟢 Connected';
+      connectBtn.disabled = true;
+      queryBtn.disabled = false;
+      disconnectBtn.disabled = false;
+      applyEQBtn.disabled = false;
+    } else {
+      status.className = 'status disconnected';
+      status.textContent = '⚫ Disconnected';
+      connectBtn.disabled = false;
+      queryBtn.disabled = true;
+      disconnectBtn.disabled = true;
+      applyEQBtn.disabled = true;
+    }
+  }
+
+  // Initialize EQ sliders
+  function initEQControls() {
+    const container = document.getElementById('eqControls');
+
+    EQ_FREQUENCIES.forEach((freq, index) => {
+      const band = document.createElement('div');
+      band.className = 'eq-band';
+
+      const label = document.createElement('label');
+      label.textContent = freq >= 1000 ? `${freq/1000}k` : freq;
+      label.setAttribute('for', `eq-${index}`);
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.id = `eq-${index}`;
+      slider.min = '-12';
+      slider.max = '12';
+      slider.step = '0.5';
+      slider.value = '0';
+
+      const valueDisplay = document.createElement('div');
+      valueDisplay.className = 'value';
+      valueDisplay.textContent = '0.0dB';
+
+      slider.addEventListener('input', (e) => {
+        valueDisplay.textContent = `${parseFloat(e.target.value).toFixed(1)}dB`;
+      });
+
+      band.appendChild(label);
+      band.appendChild(slider);
+      band.appendChild(valueDisplay);
+      container.appendChild(band);
+    });
+  }
+
+  // Get current EQ values from sliders
+  function getCurrentEQ() {
+    const values = [];
+    for (let i = 0; i < 8; i++) {
+      const slider = document.getElementById(`eq-${i}`);
+      values.push(parseFloat(slider.value));
+    }
+    return values;
+  }
+
+  // Set EQ slider values
+  function setEQValues(values) {
+    values.forEach((value, index) => {
+      const slider = document.getElementById(`eq-${index}`);
+      const display = slider.nextElementSibling;
+      slider.value = value;
+      display.textContent = `${value.toFixed(1)}dB`;
+    });
+  }
+
+  // Preset profiles (8 bands: 30Hz, 100Hz, 200Hz, 500Hz, 900Hz, 5kHz, 10kHz, 15kHz)
+  const PRESETS = {
+    flat: [0, 0, 0, 0, 0, 0, 0, 0],
+    bassBoost: [6, 5, 4, 2, 0, 0, 0, 0],
+    vShape: [6, 4, 2, -2, -2, 0, 2, 4],
+    vocal: [0, -2, -3, 4, 4, 3, 0, 0],
+    acoustic: [3.8, 3.6, 2.8, -0.48, 2.88, -2.15, -6.0, 0],
+    rock: [4.5, 3.0, 0.0, 0.0, 1.0, 3.0, 4.0, 4.0]
+  };
+
+  function applyPreset(presetName) {
+    if (PRESETS[presetName]) {
+      setEQValues(PRESETS[presetName]);
+      log(`Applied preset: ${presetName}`);
+    }
+  }
+
+  // Event handlers
+  document.getElementById('connectBtn').addEventListener('click', async () => {
+    const success = await controller.connect(false);
+    updateUIState(success);
+  });
+
+  document.getElementById('queryBtn').addEventListener('click', async () => {
+    await controller.queryDevice();
+  });
+
+  document.getElementById('disconnectBtn').addEventListener('click', async () => {
+    await controller.disconnect();
+    updateUIState(false);
+  });
+
+  document.getElementById('applyEQBtn').addEventListener('click', async () => {
+    const eqValues = getCurrentEQ();
+    await controller.writeEQProfile(eqValues);
+  });
+
+  // Initialize
+  initEQControls();
+
+  // Check Web Bluetooth support
+  if (!navigator.bluetooth) {
+    log('❌ Web Bluetooth API not supported in this browser', 'error');
+    log('Please use Chrome, Edge, or Opera on desktop/Android', 'error');
+    log('iOS requires Bluefy browser', 'error');
+    document.getElementById('connectBtn').disabled = true;
+  } else {
+    log('✅ Web Bluetooth API is available', 'success');
+    log('Ready! Click a Connect button to begin.');
+    log('');
+    log('Tip: If your device doesn\'t appear with the first button,');
+    log('try "Connect to Any Device" and manually select it.');
+  }
+</script>
+</body>
+</html>

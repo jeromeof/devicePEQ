@@ -837,12 +837,11 @@ export const usbHidDeviceHandlerConfig = ([
         {id: 2, name: "Custom 3"}
       ]
     },
-    devices: {
-      "DX5 II": {
-        productId: 0x8740, // 34640 in decimal = 0x8740 in hex
+    deviceGroups: {
+      "ToppingTuneDevices": {
+        productId: [0x8740, 0x8750],
         modelConfig: {
-          maxFilters: 10,
-          experimental: true
+          maxFilters: 10
         }
       }
     }
