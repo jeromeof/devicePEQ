@@ -120,38 +120,6 @@ export const usbSerialDeviceHandlerConfig = [
     }
   },
 
-  // ── Audeze Maxwell (Airoha SPP fallback) ──────────────────────────────────
-  // The Maxwell also exposes an Airoha USB Serial / SPP path.
-  // Prefer the BLE handler (bluetoothBleDeviceConfig) when possible.
-  {
-    manufacturer: "Audeze",
-    handler:      airohaUsbSerial,
-    filters: {
-      allowedBluetoothServiceClassIds: ["00001101-0000-1000-8000-00805f9b34fb"],
-      bluetoothServiceClassId:         "00001101-0000-1000-8000-00805f9b34fb"
-    },
-    devices: {
-      "Audeze Maxwell": {
-        modelConfig: {
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:          10,
-          firstWritableEQSlot: 0,
-          maxWritableEQSlots:  4,
-          disconnectOnSave:    false,
-          disabledPresetId:   -1,
-          experimental:        true,
-          availableSlots: [
-            { id: 0, name: "Preset 1" },
-            { id: 1, name: "Preset 2" },
-            { id: 2, name: "Preset 3" },
-            { id: 3, name: "Preset 4" }
-          ]
-        }
-      }
-    }
-  },
-
   // ── Tanchjim Rita ─────────────────────────────────────────────────────────
   // Classic Bluetooth SPP (standard UUID), 9600 baud.
   // 12-band parametric EQ with read + write support.
@@ -175,6 +143,7 @@ export const usbSerialDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
+          flatEQPhoneMeasurement: "Tanchjim Rita Default ANC",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
@@ -204,20 +173,7 @@ export const usbSerialDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
-          availableSlots: [{ id: 0, name: "Custom EQ" }]
-        }
-      },
-      "Moondrop Edge ANC": {
-        modelConfig: {
-          baudRate:            115200,
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:           5,
-          firstWritableEQSlot: 0,
-          maxWritableEQSlots:  1,
-          disconnectOnSave:    false,
-          disabledPresetId:   -1,
-          experimental:        false,
+          flatEQPhoneMeasurement: "Moondrop Edge Default",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
@@ -248,6 +204,7 @@ export const usbSerialDeviceHandlerConfig = [
           disabledPresetId:   -1,
           experimental:        false,
           writeOnly:           true,
+          flatEQPhoneMeasurement: "EarfunTunePro-ANC-Default",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
@@ -278,21 +235,7 @@ export const usbSerialDeviceHandlerConfig = [
           disabledPresetId:   -1,
           experimental:        false,
           writeOnly:           true,
-          availableSlots: [{ id: 0, name: "Custom EQ" }]
-        }
-      },
-      "Edifier Headphones": {
-        modelConfig: {
-          baudRate:            115200,
-          minGain:             -6,
-          maxGain:              6,
-          maxFilters:           4,
-          firstWritableEQSlot: 0,
-          maxWritableEQSlots:  1,
-          disconnectOnSave:    false,
-          disabledPresetId:   -1,
-          experimental:        false,
-          writeOnly:           true,
+          flatEQPhoneMeasurement: "Edifier 830NB Custom EQ 0db",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }

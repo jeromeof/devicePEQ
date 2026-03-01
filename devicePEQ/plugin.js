@@ -1,10 +1,26 @@
 // Copyright 2024 : Pragmatic Audio
 
 /**
- * Initialise the plugin - passing the content from the extraEQ section so we can both query
- * and update that area and add our UI elements.
+ * Initialise the Device PEQ plugin.
  *
- * @param context
+ * Injects the plugin UI into the page, sets up connection logic for all supported
+ * transport types (USB HID, USB Serial / Bluetooth SPP, BLE, and Network), and
+ * wires up Pull / Push operations that translate between the host EQ graph and the
+ * device-specific wire protocol.
+ *
+ * Supported connection types (resolved at runtime):
+ *  - USB HID       – FiiO dongles, KTMicro, Walkplay-based devices, etc.
+ *  - USB Serial / Bluetooth SPP – JDS Labs Element IV, Nothing Headphone (1),
+ *                    Tanchjim Rita, Moondrop Edge / Edge ANC, EarFun Tune Pro,
+ *                    Edifier ConnectX headphones, Audeze Maxwell (SPP fallback)
+ *  - Bluetooth BLE – Audeze Maxwell (Airoha GATT), FiiO EH11 / EH13
+ *  - Network       – WiiM (HTTP push), Luxsin X9 (HTTP read+write)
+ *
+ * @param {object} context - Host page context object.
+ * @param {Function} context.elemToFilters - Returns current PEQ filter array from the UI.
+ * @param {object}  [context.config]         - Optional plugin configuration flags.
+ * @param {boolean} [context.config.advanced] - When true, exposes Serial / BLE / Network
+ *                                              connection options in the device picker.
  * @returns {Promise<void>}
  */
 async function initializeDeviceEqPlugin(context) {
@@ -460,7 +476,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.17</h3>
+            <h3>About Device PEQ - v0.18</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -470,7 +486,7 @@ async function initializeDeviceEqPlugin(context) {
             </div>
 
             <div id="tab-overview" class="tab-content active">
-              <p>This section lets you connect to a compatible USB or network-connected audio device (such as Moondrop, Tanchjim, JDS Labs, WiiM, or other Walkplay-based products) and interact with its Parametric EQ (PEQ) settings.</p>
+              <p>This section lets you connect to a compatible audio device and interact with its Parametric EQ (PEQ) settings. Supported connection types include USB HID, USB Serial, Bluetooth SPP, Bluetooth BLE, and Network. Compatible devices include USB DAC dongles (FiiO, Moondrop, Tanchjim, JDS Labs, WiiM, Walkplay-based), and Bluetooth headphones (Audeze Maxwell, Tanchjim Rita, Moondrop Edge, FiiO EH11/EH13, EarFun Tune Pro, Edifier ConnectX, Nothing Headphone 1).</p>
 
               <details>
                 <summary style="cursor: pointer; font-weight: bold;">Supported Brands & Manufacturers <span style="font-weight: normal; color: #666; font-size: 90%;">(click to expand)</span></summary>
@@ -491,6 +507,12 @@ async function initializeDeviceEqPlugin(context) {
                   <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
                   <li><strong>WiiM:</strong> Supports limited pushing of parametric EQ over the home network</li>
                   <li><strong>Luxsin:</strong> X9 supports reading and writing PEQ over your home network (HTTP)</li>
+                  <li><strong>Audeze:</strong> Maxwell via Bluetooth BLE or SPP — 10-band PEQ, 4 presets</li>
+                  <li><strong>Tanchjim:</strong> Rita via Bluetooth SPP — 12-band parametric EQ, read + write</li>
+                  <li><strong>Moondrop:</strong> Edge / Edge ANC via Bluetooth SPP — 5-band parametric EQ, read + write</li>
+                  <li><strong>FiiO:</strong> EH11 / EH13 via Bluetooth BLE — 10-band parametric EQ, read + write</li>
+                  <li><strong>EarFun:</strong> Tune Pro via Bluetooth SPP — 10-band graphic EQ (write only)</li>
+                  <li><strong>Edifier:</strong> W830NB and ConnectX headphones via Bluetooth SPP — 4-band PEQ (write only)</li>
                   <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
                 </ul>
               </details>
@@ -505,6 +527,7 @@ async function initializeDeviceEqPlugin(context) {
                 <button class="sub-tab-button" data-subtab="sub-nothing">Nothing</button>
                 <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
                 <button class="sub-tab-button" data-subtab="sub-luxsin">Luxsin</button>
+                <button class="sub-tab-button" data-subtab="sub-bt-headphones">BT Headphones</button>
               </div>
 
               <div id="sub-fiio" class="sub-tab-content active">
@@ -582,6 +605,44 @@ async function initializeDeviceEqPlugin(context) {
                 <li>After connecting, choose the PEQ slot, then Pull or Push filters as needed.</li>
               </ul>
               <p>Tip: No HTTPS certificate steps are needed; Luxsin uses plain HTTP on the local network.</p>
+            </div>
+
+            <div id="sub-bt-headphones" class="sub-tab-content">
+              <h5>Bluetooth Headphones</h5>
+              <p>The following Bluetooth headphones are supported via Bluetooth SPP (Serial) or BLE. Use "Connect to Device" → "Serial USB or Bluetooth Device" for SPP, or "Bluetooth (BLE) Device" for BLE.</p>
+              <ul>
+                <li>
+                  <strong>Audeze Maxwell</strong> (BLE preferred, SPP fallback) — Airoha-chipset headset.
+                  10-band parametric EQ, 4 presets. Read + write supported.
+                  Connect via "Bluetooth (BLE) Device".
+                </li>
+                <li>
+                  <strong>Tanchjim Rita</strong> (Bluetooth SPP) — 12-band parametric EQ.
+                  Gain ±15 dB. Read + write supported.
+                  Connect via "Serial USB or Bluetooth Device".
+                </li>
+                <li>
+                  <strong>Moondrop Edge / Edge ANC</strong> (Bluetooth SPP) — 5-band parametric EQ.
+                  Gain ±12 dB. Read + write supported.
+                  Connect via "Serial USB or Bluetooth Device".
+                </li>
+                <li>
+                  <strong>FiiO EH11 / EH13</strong> (Bluetooth BLE) — FiiO proprietary BLE GATT.
+                  10-band parametric EQ, gain ±20 dB. Read + write supported.
+                  Connect via "Bluetooth (BLE) Device".
+                </li>
+                <li>
+                  <strong>EarFun Tune Pro</strong> (Bluetooth SPP) — 10-band graphic EQ.
+                  Fixed Q factor; gain ±12 dB. <em>Write only</em> — device does not return EQ data.
+                  Connect via "Serial USB or Bluetooth Device".
+                </li>
+                <li>
+                  <strong>Edifier W830NB / ConnectX headphones</strong> (Bluetooth SPP) — 4-band parametric EQ.
+                  Gain ±6 dB; frequency snapped to 21 verified lookup-table entries. <em>Write only.</em>
+                  Connect via "Serial USB or Bluetooth Device".
+                </li>
+              </ul>
+              <p>Note: Bluetooth connections require a Chromium-based browser (Chrome, Edge, Opera) with Web Serial or Web Bluetooth API support. Pair your headphones with your computer before connecting.</p>
             </div>
           </div>
 

@@ -31,7 +31,8 @@ export const bluetoothBleDeviceHandlerConfig = [
           maxWritableEQSlots:  4,
           disconnectOnSave:    false,
           disabledPresetId:   -1,
-          experimental:        true,
+          experimental:        false,
+          flatEQPhoneMeasurement: "Audeze Maxwell Flat EQ",
           availableSlots: [
             { id: 0, name: "Preset 1" },
             { id: 1, name: "Preset 2" },
@@ -73,6 +74,7 @@ export const bluetoothBleDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH11 NoEQ",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       },
@@ -86,6 +88,7 @@ export const bluetoothBleDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH13 NoEQ",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       },
@@ -100,6 +103,7 @@ export const bluetoothBleDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH11 NoEQ",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       },
@@ -113,6 +117,7 @@ export const bluetoothBleDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
+          flatEQPhoneMeasurement: "FiiO EH13 NoEQ",
           availableSlots: [{ id: 0, name: "Custom EQ" }]
         }
       }
