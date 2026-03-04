@@ -120,10 +120,13 @@ export const fiioBle = (function () {
   /** Send a BLE write and wait for one complete response packet */
   async function sendAndReceive(device, packet, timeoutMs = 4000) {
     const txChar = device.txChar;
-    if (txChar.writeValueWithoutResponse) {
-      await txChar.writeValueWithoutResponse(packet);
+    // EH13 (and some FiiO devices) require write-with-response; EH11 uses write-without-response.
+    // Check characteristic properties rather than method existence (all chars have both methods).
+    const useWriteWithResponse = !!txChar.properties.write && !txChar.properties.writeWithoutResponse;
+    if (useWriteWithResponse) {
+      await txChar.writeValueWithResponse(packet);
     } else {
-      await txChar.writeValue(packet);
+      await txChar.writeValueWithoutResponse(packet);
     }
     return await readFiioPacket(device, timeoutMs);
   }

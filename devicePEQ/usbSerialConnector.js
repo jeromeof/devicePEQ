@@ -12,8 +12,27 @@ export const UsbSerialConnector = (async function () {
    * modal so the user can pick which device they actually connected.
    * Returns the chosen config object, or null if the user cancelled.
    */
-  function pickDeviceFromList(configs) {
+  function pickDeviceFromList(configs, disambigKey) {
     return new Promise(resolve => {
+      // Cookie helpers — remember the user's choice per Bluetooth UUID
+      const cookieName = 'dpq_bt_pick_' + String(disambigKey || '').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+      function readPickCookie() {
+        try {
+          const match = document.cookie.split(';').map(c => c.trim())
+            .find(c => c.startsWith(cookieName + '='));
+          return match ? decodeURIComponent(match.slice(cookieName.length + 1)) : null;
+        } catch (_) { return null; }
+      }
+
+      function writePickCookie(value) {
+        try {
+          const expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
+          document.cookie = cookieName + '=' + encodeURIComponent(value)
+            + ';path=/;expires=' + expires;
+        } catch (_) {}
+      }
+
       // Build overlay + dialog
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
@@ -26,13 +45,24 @@ export const UsbSerialConnector = (async function () {
       title.textContent = 'Multiple devices share this Bluetooth profile. Which device did you connect?';
 
       const select = document.createElement('select');
-      select.style.cssText = 'width:100%;padding:8px;margin-bottom:16px;border:1px solid #ccc;border-radius:4px;font-size:.95rem';
+      select.style.cssText = 'width:100%;padding:8px;margin-bottom:4px;border:1px solid #ccc;border-radius:4px;font-size:.95rem';
+
+      // Build options and check for a saved choice in one pass
+      const savedChoice = readPickCookie();
+      let preselectedIdx = -1;
       configs.forEach((cfg, i) => {
         const opt = document.createElement('option');
         opt.value = i;
         opt.textContent = `${cfg.entry.manufacturer} – ${cfg.name}`;
         select.appendChild(opt);
+        if (savedChoice && opt.textContent === savedChoice) preselectedIdx = i;
       });
+      if (preselectedIdx >= 0) select.value = preselectedIdx;
+
+      // Subtle hint shown only when a previous pick was found and pre-selected
+      const hint = document.createElement('p');
+      hint.style.cssText = 'margin:2px 0 14px;font-size:0.78rem;color:#888;min-height:1em';
+      hint.textContent = preselectedIdx >= 0 ? '↩ Pre-selected from your last connection' : '';
 
       const btnRow = document.createElement('div');
       btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
@@ -46,14 +76,19 @@ export const UsbSerialConnector = (async function () {
       okBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:4px;cursor:pointer;background:#1a73e8;color:#fff;font-weight:bold';
 
       btnRow.append(cancelBtn, okBtn);
-      box.append(title, select, btnRow);
+      box.append(title, select, hint, btnRow);
       overlay.appendChild(box);
       document.body.appendChild(overlay);
 
       const cleanup = () => document.body.removeChild(overlay);
 
       cancelBtn.addEventListener('click', () => { cleanup(); resolve(null); });
-      okBtn.addEventListener('click', () => { cleanup(); resolve(configs[parseInt(select.value, 10)]); });
+      okBtn.addEventListener('click', () => {
+        const chosen = configs[parseInt(select.value, 10)];
+        writePickCookie(`${chosen.entry.manufacturer} – ${chosen.name}`);
+        cleanup();
+        resolve(chosen);
+      });
     });
   }
 
@@ -130,7 +165,7 @@ export const UsbSerialConnector = (async function () {
       if (matchingConfigs.length === 1) {
         chosen = matchingConfigs[0];
       } else if (matchingConfigs.length > 1) {
-        chosen = await pickDeviceFromList(matchingConfigs);
+        chosen = await pickDeviceFromList(matchingConfigs, bluetoothServiceClassId);
         if (!chosen) return { cancelled: true };
       }
 
