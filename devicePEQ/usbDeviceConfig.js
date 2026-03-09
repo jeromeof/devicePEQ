@@ -6,6 +6,7 @@ const {moondropOldFashionedUsbHID} = await import('./moondropOldFashionedUsbHidH
 const {ktmicroUsbHidHandler} = await import('./ktmicroUsbHidHandler.js');
 const {qudelixUsbHidHandler} = await import('./qudelixUsbHidHandler.js');
 const {toppingUsbHidHandler} = await import('./toppingUsbHidHandler.js');
+const {fosiAudioUsbHID} = await import('./fosiAudioUsbHidHandler.js');
 
 // Main list of HID devices - each vendor has one or more vendorId, and a list of devices associated,
 // each device has a model of how the slots are configured and a handler to handle reading / writing
@@ -816,32 +817,47 @@ export const usbHidDeviceHandlerConfig = ([
     }
   },
   {
-    vendorIds: [0x152A], // 5418 in decimal = 0x152A in hex
-    manufacturer: "Topping",
-    handler: toppingUsbHidHandler,
+    vendorIds: [0x152A], // 5418 in decimal = 0x152A in hex (shared with Topping)
+    manufacturer: "Fosi Audio",
+    handler: fosiAudioUsbHID,
     defaultModelConfig: {
       minGain: -12,
       maxGain: 12,
       maxFilters: 10,
-      firstWritableEQSlot: 0,
-      maxWritableEQSlots: 3,
+      firstWritableEQSlot: 7,
+      maxWritableEQSlots: 5,
       disconnectOnSave: false,
-      disabledPresetId: -1,
+      disabledPresetId: 0,
       experimental: true,
       supportsPregain: true,
       supportsLSHSFilters: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
+      reportId: 1,
       availableSlots: [
-        {id: 0, name: "Custom 1"},
-        {id: 1, name: "Custom 2"},
-        {id: 2, name: "Custom 3"}
+        {id: 0, name: "Bypass"},
+        {id: 7, name: "Custom 1"},
+        {id: 8, name: "Custom 2"},
+        {id: 9, name: "Custom 3"},
+        {id: 10, name: "Custom 4"},
+        {id: 11, name: "Custom 5"}
       ]
     },
-    deviceGroups: {
-      "ToppingTuneDevices": {
-        productId: [0x8740, 0x8750],
+    devices: {
+      "Fosi Audio DS3": {
         modelConfig: {
-          maxFilters: 10
+          maxFilters: 10,
+          disconnectOnSave: false,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 5,
+          experimental: false,
+          availableSlots: [
+            {id: 0, name: "Bypass"},
+            {id: 7, name: "Custom 1"},
+            {id: 8, name: "Custom 2"},
+            {id: 9, name: "Custom 3"},
+            {id: 10, name: "Custom 4"},
+            {id: 11, name: "Custom 5"}
+          ]
         }
       }
     }
