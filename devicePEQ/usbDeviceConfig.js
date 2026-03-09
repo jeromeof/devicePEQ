@@ -829,7 +829,7 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: false,
       disabledPresetId: 0,
       experimental: true,
-      supportsPregain: true,
+      supportsPregain: false,
       supportsLSHSFilters: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       reportId: 1,
