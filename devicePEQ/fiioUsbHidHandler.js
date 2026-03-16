@@ -198,6 +198,7 @@ function getFiioReportId(deviceDetails) {
 async function setPeqParams(device, filterIndex, fc, gain, q, filterType, reportId) {
   const [frequencyLow, frequencyHigh] = splitUnsignedValue(fc);
   const [gainLow, gainHigh] = fiioGainBytesFromValue(gain);
+  if (filterType == 1 || filterType == 2) q *= Math.SQRT2; // Multiply by √2 due to bug with shelf filters
   const qFactorValue = Math.round(q * 100);
   const [qFactorLow, qFactorHigh] = splitUnsignedValue(qFactorValue);
 
@@ -351,8 +352,10 @@ function handlePeqParams(data, device, filters) {
   const filter = data[6];
   const gain = handleGain(data[7], data[8]);
   const frequency = combineBytes(data[9], data[10]);
-  const qFactor = (combineBytes(data[11], data[12])) / 100 || 1;
   const filterType = convertToFilterType(data[13]);
+  let qFactor = ((combineBytes(data[11], data[12])) / 100 || 1);
+  // Divide by √2 due to bug of shelf filters, then round to 2 decimal places
+  if (filterType == "LSQ" || filterType == "HSQ") qFactor = Math.round((qFactor / Math.SQRT2) * 100)/100;
 
   console.log(`Filter ${filter}: Gain=${gain}, Frequency=${frequency}, Q=${qFactor}, Type=${filterType}`);
 
