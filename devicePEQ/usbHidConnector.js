@@ -152,44 +152,61 @@ export const UsbHIDConnector = ( async function () {
             }
           }
 
-          // Next, determine if we have LS/HS filters with non-zero gain
-          const hasLSHSFilters = filtersToWrite.some(filter =>
-            (filter.type === "LSQ" || filter.type === "HSQ") && filter.gain !== 0);
+          // Determine per-type support from granular flags
+          const supportsLS = device.modelConfig.supportsLSFilter === true;
+          const supportsHS = device.modelConfig.supportsHSFilter === true;
+          const supportsLPHP = device.modelConfig.supportsLPHPFilters === true;
+
+          const hasUnsupportedLS = filtersToWrite.some(f => f.type === "LSQ" && f.gain !== 0) && !supportsLS;
+          const hasUnsupportedHS = filtersToWrite.some(f => f.type === "HSQ" && f.gain !== 0) && !supportsHS;
+          const hasUnsupportedLPHP = filtersToWrite.some(f => (f.type === "LP" || f.type === "HP")) && !supportsLPHP;
 
           // Second, determine if we need pregain (only if globalGain is positive)
           const needsPreGain = preamp < 0;
 
-          // Handle LS/HS filters if device doesn't support them
-          if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false) {
-            // Convert LS/HS filters with non-zero gain to PK with gain=0
-            for (let i = 0; i < filtersToWrite.length; i++) {
-              if ((filtersToWrite[i].type === "LSQ" || filtersToWrite[i].type === "HSQ") && filtersToWrite[i].gain !== 0) {
-                console.log(`USB Device PEQ: converting ${filtersToWrite[i].type} filter to PK with gain=0`);
-                filtersToWrite[i].type = "PK";
-                filtersToWrite[i].gain = 0;
-              }
+          // Convert unsupported filter types to PK with gain=0
+          for (let i = 0; i < filtersToWrite.length; i++) {
+            const f = filtersToWrite[i];
+            if ((f.type === "LSQ" && !supportsLS) ||
+                (f.type === "HSQ" && !supportsHS) ||
+                ((f.type === "LP" || f.type === "HP") && !supportsLPHP)) {
+              console.log(`USB Device PEQ: converting unsupported ${f.type} filter to PK with gain=0`);
+              filtersToWrite[i] = {...f, type: "PK", gain: 0};
             }
           }
 
-          // Handle warnings based on device capabilities and filter requirements
-          if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false &&
-            needsPreGain && device.modelConfig.supportsPregain === false) {
-            // Case 1: Device doesn't support both LSHS filters and pregain
-            console.warn("Device doesn't support LS/HS filters and auto pregain - both will be ignored");
+          // Warn about unsupported filter types
+          const hasUnsupportedShelfFilters = hasUnsupportedLS || hasUnsupportedHS;
+          if (hasUnsupportedShelfFilters && needsPreGain && device.modelConfig.supportsPregain === false) {
+            console.warn("Device doesn't support shelf filters and auto pregain - both will be ignored");
             if (window.showToast) {
-              window.showToast("Device doesn't support LS/HS filters and auto pregain - both will be ignored", "warning");
+              window.showToast("Device doesn't support shelf filters and auto pregain - both will be ignored", "warning");
             }
-          } else if (hasLSHSFilters && device.modelConfig.supportsLSHSFilters === false) {
-            // Case 2: Device only doesn't support LSHS filters
-            console.warn("Device only supports Peak filters - ignoring LS/HS filters");
+          } else if (hasUnsupportedLS && hasUnsupportedHS) {
+            console.warn("Device does not support LS or HS filters - ignoring");
             if (window.showToast) {
-              window.showToast("Device only supports Peak filters - ignoring LS/HS filters", "warning");
+              window.showToast("Device does not support Low Shelf or High Shelf filters - ignoring", "warning");
+            }
+          } else if (hasUnsupportedLS) {
+            console.warn("Device does not support Low Shelf filters - ignoring");
+            if (window.showToast) {
+              window.showToast("Device does not support Low Shelf filters - ignoring", "warning");
+            }
+          } else if (hasUnsupportedHS) {
+            console.warn("Device does not support High Shelf filters - ignoring");
+            if (window.showToast) {
+              window.showToast("Device does not support High Shelf filters - ignoring", "warning");
             }
           } else if (needsPreGain && device.modelConfig.supportsPregain === false) {
-            // Case 3: Device only doesn't support pregain
             console.warn("Device does not support auto calculated pregain");
             if (window.showToast) {
               window.showToast("Device does not support auto calculated pregain", "warning");
+            }
+          }
+          if (hasUnsupportedLPHP) {
+            console.warn("Device does not support LP/HP filters - ignoring");
+            if (window.showToast) {
+              window.showToast("Device does not support Low Pass / High Pass filters - ignoring", "warning");
             }
           }
 

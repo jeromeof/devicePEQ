@@ -142,7 +142,11 @@ export const moondropUsbHidHandler = (function () {
     const val = Math.round(value * 256);
     const request = new Uint8Array([COMMAND_WRITE, COMMAND_PRE_GAIN, 0, val & 255, (val >> 8) & 255]);
     console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
-    await device.sendReport(REPORT_ID, request);
+    try {
+      await device.sendReport(REPORT_ID, request);
+    } catch (e) {
+      console.warn("USB Device PEQ: Moondrop failed to write pregain:", e);
+    }
   }
 
   async function pullFromDevice(deviceDetails) {
@@ -154,7 +158,12 @@ export const moondropUsbHidHandler = (function () {
       filters.push(filter);
     }
 
-    const globalGain = await readPregain(device);
+    let globalGain = 0;
+    try {
+      globalGain = await readPregain(device);
+    } catch (e) {
+      console.warn("USB Device PEQ: Moondrop failed to read pregain, defaulting to 0:", e);
+    }
 
     return {
       filters,
@@ -480,8 +489,15 @@ export const moondropUsbHidHandler = (function () {
     await device.sendReport(REPORT_ID, request);
   }
 
+  async function setEQIndex(device, index) {
+    const request = new Uint8Array([COMMAND_WRITE, COMMAND_ACTIVE_EQ, index]);
+    console.log(`USB Device PEQ: Moondrop sending setEQIndex command for slot ${index}:`, request);
+    await device.sendReport(REPORT_ID, request);
+  }
+
   return {
     getCurrentSlot,
+    setEQIndex,
     pullFromDevice,
     pushToDevice,
     enablePEQ: async () => {}

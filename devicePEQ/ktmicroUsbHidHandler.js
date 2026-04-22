@@ -6,22 +6,62 @@ export const ktmicroUsbHidHandler = (function () {
   const COMMAND_COMMIT = 0x53;
   const COMMAND_CLEAR = 0x43;
 
+  let pendingCommands = [];
+
+  function registerReportHandler(device) {
+    if (device._reportHandlerRegistered) return;
+    device.addEventListener("inputreport", (event) => {
+      const data = new Uint8Array(event.data.buffer);
+      const reg = data[0];
+      const cmd = data[4];
+
+      const index = pendingCommands.findIndex(p => p.reg === reg && p.cmd === cmd && p.device === device);
+      if (index !== -1) {
+        const p = pendingCommands.splice(index, 1)[0];
+        clearTimeout(p.timeout);
+        p.resolve(data);
+      }
+    });
+    device._reportHandlerRegistered = true;
+  }
+
+  function waitForResponse(device, reg, cmd, timeoutMs = 1000) {
+    registerReportHandler(device);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        const index = pendingCommands.findIndex(p => p.resolve === resolve);
+        if (index !== -1) pendingCommands.splice(index, 1);
+        reject(new Error(`Timeout waiting for response (Reg: 0x${reg.toString(16)}, Cmd: 0x${cmd.toString(16)})`));
+      }, timeoutMs);
+      pendingCommands.push({ device, reg, cmd, resolve, reject, timeout });
+    });
+  }
+
+  async function sendCommandWithResponse(device, packet, timeoutMs = 1000) {
+    const reg = packet[0];
+    const cmd = packet[4];
+    const responsePromise = waitForResponse(device, reg, cmd, timeoutMs);
+    await device.sendReport(REPORT_ID, packet);
+    return responsePromise;
+  }
+
   function buildReadPacket(filterFieldToRequest) {
-    return new Uint8Array([filterFieldToRequest, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x00, 0x00, 0x00]);
+    return new Uint8Array([filterFieldToRequest, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x00, 0x00, 0x00, 0x00]);
   }
 
   function buildReadGlobalPacket() {
-    return new Uint8Array([0x66, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x00, 0x00, 0x00]);
+    return new Uint8Array([0x66, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x00, 0x00, 0x00, 0x00]);
   }
 
   function buildWriteGlobalPacket() {
-    return new Uint8Array([0x66, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, 0x00, 0x00, 0x00]);
+    return new Uint8Array([0x66, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, 0x00, 0x00, 0x00, 0x00]);
   }
 
   function buildEnableEQPacket(slotId) {
     return new Uint8Array([0x24, 0x00, 0x00, 0x00, COMMAND_WRITE, 0x00, slotId, 0x00, 0x00, 0x00]);
   }
-  function buildReadEQPacket(enable) {
+
+  function buildReadEQPacket() {
     return new Uint8Array([0x24, 0x00, 0x00, 0x00, COMMAND_READ, 0x00, 0x03, 0x00, 0x00, 0x00]);
   }
 
@@ -55,114 +95,41 @@ export const ktmicroUsbHidHandler = (function () {
 
   async function getCurrentSlot (deviceDetails){
     var device = deviceDetails.rawDevice;
-    return new Promise(async (resolve, reject) => {
-      const request = buildReadEQPacket();
-
-      const timeout = setTimeout(() => {
-        device.removeEventListener("inputreport", onReport);
-        reject("Timeout reading slot");
-      }, 1000);
-
-      const onReport = (event) => {
-        const data = new Uint8Array(event.data.buffer);
-        console.log(`USB Device PEQ: KTMicro onInputReport received slot data:`, data);
-
-        clearTimeout(timeout);
-        device.removeEventListener("inputreport", onReport);
-
-        const slotId = data[6];  //
-
-        console.log(`USB Device PEQ: KTMicro read slot value: ${slotId}`);
-        resolve(slotId);
-      };
-
-      device.addEventListener("inputreport", onReport);
-      console.log(`USB Device PEQ: Moondrop sending readPregain command:`, request);
-      await device.sendReport(REPORT_ID, request);
-    });
+    const request = buildReadEQPacket();
+    console.log(`USB Device PEQ: KTMicro sending readCurrentSlot command:`, request);
+    const data = await sendCommandWithResponse(device, request);
+    const slotId = data[6];
+    console.log(`USB Device PEQ: KTMicro read slot value: ${slotId}`);
+    return slotId;
   }
 
-  async function readFullFilter(device, filterIndex, compensate2X) {
-    const gainFreqId = 0x26 + filterIndex * 2;
+  async function readFullFilter(device, filterIndex, compensate2X, baseRegisterOffset = 0x26) {
+    const gainFreqId = baseRegisterOffset + filterIndex * 2;
     const qId = gainFreqId + 1;
 
-    const requestGainFreq = buildReadPacket(gainFreqId);
-    const requestQ = buildReadPacket(qId);
+    console.log(`USB Device PEQ: KTMicro reading filter ${filterIndex} (Regs: 0x${gainFreqId.toString(16)}, 0x${qId.toString(16)})`);
 
-    return new Promise(async (resolve, reject) => {
-      const result = {};
-      const timeout = setTimeout(() => {
-        device.removeEventListener('inputreport', onReport);
-        reject("Timeout reading filter");
-      }, 1000);
+    const dataGainFreq = await sendCommandWithResponse(device, buildReadPacket(gainFreqId));
+    const gainFreqResult = decodeGainFreqResponse(dataGainFreq, compensate2X);
 
-      const onReport = (event) => {
-        const data = new Uint8Array(event.data.buffer);
-        console.log(`USB Device PEQ: KTMicro onInputReport received data:`, data);
-        if (data[4] !== COMMAND_READ) return;
+    const dataQ = await sendCommandWithResponse(device, buildReadPacket(qId));
+    const qResult = decodeQResponse(dataQ);
 
-        if (data[0] === gainFreqId) {
-          const gainFreqData = decodeGainFreqResponse(data, compensate2X);
-          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} gain/freq decoded:`, gainFreqData);
-          Object.assign(result, gainFreqData);
-        } else if (data[0] === qId) {
-          const qData = decodeQResponse(data);
-          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} Q decoded:`, qData);
-          Object.assign(result, qData);
-        }
-
-        if ('gain' in result && 'freq' in result && 'q' in result && 'type' in result) {
-          clearTimeout(timeout);
-          device.removeEventListener('inputreport', onReport);
-          console.log(`USB Device PEQ: KTMicro filter ${filterIndex} complete:`, result);
-          resolve(result);
-        }
-      };
-
-      device.addEventListener('inputreport', onReport);
-      console.log(`USB Device PEQ: KTMicro sending gain/freq request for filter ${filterIndex}:`, requestGainFreq);
-      await device.sendReport(REPORT_ID, requestGainFreq);
-      console.log(`USB Device PEQ: KTMicro sendReport gain/freq for filter ${filterIndex} sent`);
-
-      console.log(`USB Device PEQ: KTMicro sending Q request for filter ${filterIndex}:`, requestQ);
-      await device.sendReport(REPORT_ID, requestQ);
-
-      console.log(`USB Device PEQ: KTMicro sendReport Q for filter ${filterIndex} sent`);
-    });
+    const result = { ...gainFreqResult, ...qResult };
+    console.log(`USB Device PEQ: KTMicro filter ${filterIndex} complete:`, result);
+    return result;
   }
 
   async function readPregain(device) {
-    return new Promise(async (resolve, reject) => {
-      const request = buildReadGlobalPacket();
+    const request = buildReadGlobalPacket();
+    console.log(`USB Device PEQ: KTMicro sending readPregain command:`, request);
+    const data = await sendCommandWithResponse(device, request);
 
-      const timeout = setTimeout(() => {
-        device.removeEventListener("inputreport", onReport);
-        reject("Timeout reading pregain");
-      }, 1000);
+    const rawPregain = data[6];
+    let pregain = rawPregain > 127 ? rawPregain - 256 : rawPregain;
 
-      const onReport = (event) => {
-        const data = new Uint8Array(event.data.buffer);
-        console.log(`USB Device PEQ: KTMicro onInputReport received pregain data:`, data);
-
-        clearTimeout(timeout);
-        device.removeEventListener("inputreport", onReport);
-
-        const rawPregain = data[6];  //
-        var pregain = 0;
-        if (rawPregain > 127) {
-          pregain = rawPregain - 256;
-        } else {
-          pregain = rawPregain;
-        }
-
-        console.log(`USB Device PEQ: KTMicro pregain value: ${pregain}`);
-        resolve(pregain);
-      };
-
-      device.addEventListener("inputreport", onReport);
-      console.log(`USB Device PEQ: Moondrop sending readPregain command:`, request);
-      await device.sendReport(REPORT_ID, request);
-    });
+    console.log(`USB Device PEQ: KTMicro pregain value: ${pregain}`);
+    return pregain;
   }
 
   async function writePregain(device, value) {
@@ -175,16 +142,17 @@ export const ktmicroUsbHidHandler = (function () {
 
     request[6] = processedGlobalGain;
 
-    console.log(`USB Device PEQ: Moondrop sending writePregain command:`, request);
-    await device.sendReport(REPORT_ID, request);
+    console.log(`USB Device PEQ: KTMicro sending writePregain command:`, request);
+    await sendCommandWithResponse(device, request);
   }
 
   async function pullFromDevice(deviceDetails) {
     const device = deviceDetails.rawDevice;
     const compensate2X = deviceDetails.modelConfig.compensate2X;
+    const baseRegisterOffset = deviceDetails.modelConfig.baseRegisterOffset || 0x26;
     const filters = [];
     for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
-      const filter = await readFullFilter(device, i, compensate2X);
+      const filter = await readFullFilter(device, i, compensate2X, baseRegisterOffset);
       filters.push(filter);
     }
 
@@ -236,10 +204,10 @@ export const ktmicroUsbHidHandler = (function () {
     // Send a clear first ( sort of like a reset )
     const clear = buildCommand(COMMAND_CLEAR);
     console.log(`USB Device PEQ: KTMicro sending clear command:`, clear);
-    await device.sendReport(REPORT_ID, clear);
-    console.log(`USB Devic  e PEQ: KTMicro sendReport clear sent`);
+    await sendCommandWithResponse(device, clear);
+    console.log(`USB Device PEQ: KTMicro clear sent and confirmed`);
 
-    await new Promise(resolve => setTimeout(resolve, 200)); // Added 100ms delay
+    await new Promise(resolve => setTimeout(resolve, 200)); // Added 200ms delay
   }
 
   async function pushToDevice(deviceDetails, phoneObj, slot, globalGain, filters) {
@@ -255,12 +223,12 @@ export const ktmicroUsbHidHandler = (function () {
     }
 
     try {
-
       // Now write the filters
+      const baseRegisterOffset = deviceDetails.modelConfig.baseRegisterOffset || 0x26;
       for (let i = 0; i < filters.length; i++) {
         if (i >= deviceDetails.modelConfig.maxFilters) break;
 
-        const filterId = 0x26 + i * 2;
+        const filterId = baseRegisterOffset + i * 2;
         var freqToWrite = filters[i].freq;
         if (deviceDetails.modelConfig.compensate2X) { // Most older KTMicro devices set the wrong frequency
           freqToWrite = filters[i].freq / 2;  // 100Hz seems to end up as 200Hz
@@ -272,30 +240,29 @@ export const ktmicroUsbHidHandler = (function () {
         const writeGainFreq = buildWritePacket(filterId, freqToWrite, gain);
         const writeQ = buildQPacket(filterId + 1, filters[i].q, filters[i].type);
 
-        // We should verify it is saved correctly but for now lets assume once command is accepted it has worked
         console.log(`USB Device PEQ: KTMicro sending gain/freq for filter ${i}:`, filters[i], writeGainFreq);
-        await device.sendReport(REPORT_ID, writeGainFreq);
-        console.log(`USB Device PEQ: KTMicro sendReport gain/freq for filter ${i} sent`);
+        await sendCommandWithResponse(device, writeGainFreq);
+        console.log(`USB Device PEQ: KTMicro gain/freq for filter ${i} sent and confirmed`);
 
         console.log(`USB Device PEQ: KTMicro sending Q for filter ${i}:`, filters[i].q, writeQ);
-        await device.sendReport(REPORT_ID, writeQ);
-        console.log(`USB Device PEQ: KTMicro sendReport Q for filter ${i} sent`);
+        await sendCommandWithResponse(device, writeQ);
+        console.log(`USB Device PEQ: KTMicro Q for filter ${i} sent and confirmed`);
       }
     } catch (e) {
-      console.log(`USB Device PEQ: KTMicro Error`, e);
+      console.log(`USB Device PEQ: KTMicro Error during push:`, e);
       throw e;
     }
 
     if (deviceDetails.modelConfig.supportsPregain) {
-      writePregain(device, globalGain);
+      await writePregain(device, globalGain);
     }
 
     const commit = buildCommand (COMMAND_COMMIT);
     console.log(`USB Device PEQ: KTMicro sending commit command:`, commit);
-    await device.sendReport(REPORT_ID, commit);
-    console.log(`USB Device PEQ: KTMicro sendReport commit sent`);
+    await sendCommandWithResponse(device, commit);
+    console.log(`USB Device PEQ: KTMicro commit sent and confirmed`);
 
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Added 100ms delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log(`USB Device PEQ: KTMicro successfully pushed ${filters.length} filters to device`);
     if (deviceDetails.modelConfig.disconnectOnSave) {
@@ -305,20 +272,17 @@ export const ktmicroUsbHidHandler = (function () {
   }
 
   const enablePEQ = async (deviceDetails, enable, slotId) => {
-
     // KT micro - has issue if device is PEQ was disabled we try to enable it
-    var device = deviceDetails.rawDevice
+    var device = deviceDetails.rawDevice;
 
     if (slotId === deviceDetails.modelConfig.disabledPresetId || enable === false) {
       slotId = deviceDetails.modelConfig.disabledPresetId; // Disable
-      //await pushClearToDevice(device);
     }
 
     const enableEQPacket = buildEnableEQPacket(slotId);
 
-    console.log(`USB Device PEQ: KTMicro enable PEQ request`, enableEQPacket);
-    await device.sendReport(REPORT_ID, enableEQPacket);
-
+    console.log(`USB Device PEQ: KTMicro enable PEQ request (Slot: ${slotId})`, enableEQPacket);
+    await sendCommandWithResponse(device, enableEQPacket);
   }
 
   return {

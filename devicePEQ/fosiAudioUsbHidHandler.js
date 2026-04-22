@@ -367,13 +367,17 @@ export const fosiAudioUsbHID = (function () {
     // Send initial handshake
     await sendCommand(device, reportId, CMD.GET_EQ_MODE_COUNT, 0, 30);
 
-    // Use SET_EQ_ENABLE command if just toggling, or SET_EQ_MODE to switch presets
-    if (enable) {
+    // Use SET_EQ_ENABLE command
+    const enablePacket = new Uint8Array(PACKET_SIZE);
+    enablePacket[0] = HEADER;
+    enablePacket[1] = CMD.SET_EQ_ENABLE;
+    enablePacket[2] = enable ? 1 : 0;
+    await device.sendReport(reportId, enablePacket);
+    await waitMs(30);
+
+    if (enable && slotId !== undefined) {
       // Switch to the specified preset
       await sendCommand(device, reportId, CMD.SET_EQ_MODE, slotId, 30);
-    } else {
-      // Disable or switch to bypass (preset 0)
-      await sendCommand(device, reportId, CMD.SET_EQ_MODE, 0, 30);
     }
 
     console.log(`USB Device PEQ: Fosi Audio switched to preset ${enable ? slotId : 0} (${PRESET_MAP[enable ? slotId : 0] || 'Unknown'})`);

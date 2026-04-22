@@ -25,7 +25,8 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: true,
       disabledPresetId: -1,
       experimental: false,
-      supportsLSHSFilters: true,
+      supportsLSFilter: true,
+      supportsHSFilter: true,
       supportsPregain: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       reportId: 7,
@@ -288,6 +289,42 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
           disabledPresetId: 11,
+          saveCommandId: 0x21, // PEQ_SAVE_V2
+        }
+      },
+      "FIIO K19": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 31,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          saveCommandId: 0x21, // PEQ_SAVE_V2
+        }
+      },
+      "FIIO K17": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 31,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
+          saveCommandId: 0x21, // PEQ_SAVE_V2
+        }
+      },
+      "FIIO K15": {
+        modelConfig: {
+          minGain: -12,
+          maxGain: 12,
+          maxFilters: 10,
+          firstWritableEQSlot: 7,
+          maxWritableEQSlots: 3,
+          disconnectOnSave: false,
+          disabledPresetId: 11,
         }
       },
       "FIIO KA15": {
@@ -512,7 +549,7 @@ export const usbHidDeviceHandlerConfig = ([
     }
   },
   {
-    vendorIds: [0x3302, 0x0762, 0x35D8, 0x2FC6, 0x0104, 0xB445, 0x0661, 0x0666, 0x0D8C], // multiple Walkplay vendorIds
+    vendorIds: [0x0104, 0x011B, 0x011D, 0x0661, 0x0663, 0x0666, 0x0762, 0x0D8C, 0x2FC6, 0x31B2, 0x3302, 0x34BE, 0x35D8, 0x36A7, 0x373B, 0x60C1, 0x60E1, 0xB445, 0xB44D], // multiple Walkplay vendorIds
     manufacturer: "WalkPlay",
     handler: walkplayUsbHID,
     defaultModelConfig: {
@@ -526,28 +563,115 @@ export const usbHidDeviceHandlerConfig = ([
       disabledPresetId: -1,
       supportsPregain: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
-      supportsLSHSFilters: false,
+      supportsLSFilter: false,
+      supportsHSFilter: false,
+      supportsLPHPFilters: false,
       autoGlobalGain: false,
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}]
     },
     deviceGroups: {
       "SchemeNo11": {
-        productIds: [0x13D4,0x98C0,0x98C0,0x93D1,0x13D7,0x12C0,0x1264,0x43D1,0x1266,0x51C0,0x13C1,0x13D3,0x1251,0x1262,0x1261,0x12C1,0x98D5],
+        productIds: [0x0004, 0x00C0, 0x0104, 0x0880, 0x1230, 0x1231, 0x1233, 0x1237, 0x123F, 0x1240, 0x1241, 0x1243, 0x1244, 0x1245, 0x1248, 0x1249, 0x124A, 0x124B, 0x124C, 0x124D, 0x124E, 0x1251, 0x1261, 0x1262, 0x1264, 0x1266, 0x1269, 0x126A, 0x126B, 0x126C, 0x126D, 0x126E, 0x126F, 0x1272, 0x1278, 0x127A, 0x127D, 0x127E, 0x1281, 0x1282, 0x1283, 0x1284, 0x1285, 0x1286, 0x1287, 0x1288, 0x1289, 0x128A, 0x128B, 0x128C, 0x128D, 0x128E, 0x128F, 0x1292, 0x1293, 0x1294, 0x1295, 0x1296, 0x1297, 0x1298, 0x1299, 0x129A, 0x129B, 0x129C, 0x129D, 0x129F, 0x12B3, 0x12C0, 0x12C1, 0x12C3, 0x12C4, 0x12C5, 0x12C6, 0x12C8, 0x12C9, 0x12CA, 0x12CB, 0x12CC, 0x12CD, 0x12CE, 0x12DB, 0x12E9, 0x132B, 0x13A3, 0x13A4, 0x13A5, 0x13AB, 0x13C0, 0x13C1, 0x13D3, 0x13D4, 0x13D7, 0x13D9, 0x13DC, 0x3302, 0x4302, 0x43C1, 0x43C3, 0x43D1, 0x43D5, 0x43DC, 0x43E7, 0x51C0, 0x60D2, 0x9121, 0x9123, 0x9124, 0x9125, 0x93C0, 0x93C1, 0x93D1, 0x98C0, 0x98C1, 0x98C2, 0x98D1, 0x98D2, 0x98D5, 0xA862, 0xC204, 0xC207, 0xC208, 0xC209, 0xC20A, 0xC20E, 0xC20F, 0xC211, 0xC212, 0xC213, 0xC214, 0xC215, 0xC217, 0xF806, 0xF807, 0xFF01],
         modelConfig: {
-          supportsLSHSFilters: false,
+          supportsLSFilter: true,
+          supportsHSFilter: false,
+          supportsLPHPFilters: true,
           supportsPregain: true
         }
       },
       "SchemeNo16": {
-        productIds: [0x4380, 0x43B6,0x43E1,0x43D7,0x43D8,0x43E4,0x98D4,0x43C0,0x43E8,0xF808,0xEE10,0x4352,0xEE20,0x43C5,0x43E6,0x4351,0x43DE,0x4358,0x4359,0x43DB,0x435A,0x4355,0x435C,0x435D,0x435E,0x43EF,0x43EC,0x4361,0x4363,0x4366,0x4364,0x4360,0x4382,0x4383,0x4386,0x43C6,0x43C7,0x011D,0x43C8,0x43DA,0x43C9,0x43CA,0x43CC,0x43CD,0x43CF,0x43B1,0x43C2,0x43B7,0x43B8,0x39C3],
+        productIds: [0x011D, 0x4301, 0x4302, 0x4304, 0x4305, 0x4306, 0x430D, 0x430E, 0x430F, 0x4312, 0x4313, 0x4316, 0x4319, 0x4351, 0x4352, 0x4355, 0x4358, 0x4359, 0x435A, 0x435C, 0x435D, 0x435E, 0x4360, 0x4361, 0x4363, 0x4364, 0x4366, 0x4367, 0x4380, 0x4381, 0x4382, 0x4383, 0x4386, 0x43B1, 0x43B6, 0x43B7, 0x43B8, 0x43BC, 0x43BE, 0x43BF, 0x43C0, 0x43C2, 0x43C5, 0x43C6, 0x43C7, 0x43C8, 0x43C9, 0x43CA, 0x43CC, 0x43CD, 0x43CF, 0x43D7, 0x43D8, 0x43DA, 0x43DB, 0x43DE, 0x43E1, 0x43E4, 0x43E6, 0x43E8, 0x43EC, 0x43EF, 0x98D4, 0xEE10, 0xEE20, 0xF808],
         modelConfig: {
           schemeNo: 16,
           maxFilters: 10,
           minGain: -10,
           maxGain: 10,
           autoGlobalGain: false,
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo15": {
+        productIds: [0x012A, 0x35D8, 0x39C1, 0x4353, 0x4357, 0x4362, 0x4370, 0x43CB, 0x43D6, 0x43D9, 0x43DF, 0x43E2, 0x43E3, 0x43EA, 0x43EB],
+        modelConfig: {
+          schemeNo: 15,
+          maxFilters: 8,
+          minGain: -12,
+          maxGain: 12,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo13": {
+        productIds: [0x011B, 0x0123, 0x120C, 0x1320, 0x1321, 0x1326, 0x1327, 0x1328, 0x1329, 0x132A, 0x1333, 0x13A9, 0x13AC, 0x13AE, 0x13AF, 0x13B0, 0x13B1, 0x13B2, 0x13B4, 0x13B6, 0x13B9, 0x13BA, 0x13BB, 0x13BE, 0x13BF, 0x13DF, 0x23C0, 0x23C1, 0x60C0, 0x60C1, 0x60C3, 0x60D1, 0x60E1],
+        modelConfig: {
+          schemeNo: 13,
+          maxFilters: 10,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo17": {
+        productIds: [0x2010, 0x201D, 0x201E, 0x2030, 0x2036, 0x2038, 0x203A, 0x20E1, 0x20E2, 0x20E3, 0x20E5, 0x20E7, 0x20E8, 0x20EA, 0x20EC, 0x20EE, 0x20EF, 0x20FF, 0x2DC1],
+        modelConfig: {
+          schemeNo: 17,
+          maxFilters: 5, // Per scratch 116
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo18": {
+        productIds: [0x39C2, 0x39C4, 0x39C6, 0x39C7, 0x39C9, 0x39CD, 0x44D1, 0x44D2, 0x44D3, 0x44D6],
+        modelConfig: {
+          schemeNo: 18,
+          maxFilters: 10,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo10": {
+        productIds: [0x0881, 0x0888],
+        modelConfig: {
+          schemeNo: 10,
+          maxFilters: 8,
+          supportsLSFilter: false,
+          supportsHSFilter: false,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo19": {
+        productIds: [0x231E, 0x231F, 0x2320, 0x2323, 0x23E2, 0x23EE],
+        modelConfig: {
+          schemeNo: 19,
+          maxFilters: 6,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo20": {
+        productIds: [0x0883, 0x1323, 0x13B7],
+        modelConfig: {
+          schemeNo: 20,
+          maxFilters: 10,
+          supportsLSFilter: false,
+          supportsHSFilter: false,
+          supportsPregain: true
+        }
+      },
+      "SchemeNo21": {
+        productIds: [0x0880, 0x08F2, 0x13F2, 0x3DC1, 0x3DC4, 0x3DC5, 0x3DC6, 0x3DC7],
+        modelConfig: {
+          schemeNo: 21,
+          maxFilters: 8,
+          supportsLSFilter: false,
+          supportsHSFilter: false,
           supportsPregain: true
         }
       }
@@ -565,7 +689,8 @@ export const usbHidDeviceHandlerConfig = ([
           disconnectOnSave: false,
           disabledPresetId: -1,
           experimental: false,
-          supportsLSHSFilters: false,  // Only peaking filters supported
+          supportsLSFilter: false,
+          supportsHSFilter: false,  // Only peaking filters supported
           supportsPregain: false,
           defaultResetFiltersValues: [{gain: 0, freq: 100, q: 1, filterType: "PK"}],
           availableSlots: [{id: 0, name: "Custom"}]
@@ -599,7 +724,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: true,
         }
       },
@@ -607,7 +733,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {
-          supportsLSHSFilters: false,
+          supportsLSFilter: false,
+          supportsHSFilter: false,
           supportsPregain: true,
         }
       },
@@ -615,7 +742,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: true,
         }
       },
@@ -623,7 +751,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: false,  // Version dependent - needs firmware check
         }
       },
@@ -631,7 +760,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,
         modelConfig: {
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: true,
         }
       },
@@ -647,7 +777,8 @@ export const usbHidDeviceHandlerConfig = ([
           minGain: -10,
           maxGain: 10,
           autoGlobalGain: true,
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: true
         }
       },
@@ -660,26 +791,9 @@ export const usbHidDeviceHandlerConfig = ([
           minGain: -10,
           maxGain: 10,
           autoGlobalGain: true,
-          supportsLSHSFilters: true,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           supportsPregain: true
-        }
-      },
-      "Truthear KEYX": {
-        manufacturer: "Truthear",
-        handler: walkplayUsbHID,
-        modelConfig: {
-          minGain: -12,
-          maxGain: 6,
-          maxFilters: 8,
-          firstWritableEQSlot: -1,
-          maxWritableEQSlots: 0,
-          disconnectOnSave: false,
-          disabledPresetId: -1,
-          supportsPregain: true,
-          supportsLSHSFilters: false,
-          experimental: false,
-          defaultIndex: 0x17,
-          availableSlots: [{id: 101, name: "Custom"}]
         }
       },
       "BGVP MX1": {
@@ -732,7 +846,8 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "Tanchim",
         modelConfig: {
           schemeNo: 15,
-          supportsLSHSFilters: false
+          supportsLSFilter: false,
+          supportsHSFilter: false
         }
       },
       "didiHiFi DSP Cable - Memory": {
@@ -770,7 +885,8 @@ export const usbHidDeviceHandlerConfig = ([
       disabledPresetId: 0x02,
       experimental: false,
       supportsPregain: false,
-      supportsLSHSFilters: true,
+      supportsLSFilter: true,
+      supportsHSFilter: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       availableSlots: [{id: 0x03, name: "Custom"}]
     },
@@ -778,14 +894,26 @@ export const usbHidDeviceHandlerConfig = ([
       "Kiwi Ears-Allegro PRO": {
         manufacturer: "Kiwi Ears",
         modelConfig: {
-          supportsLSHSFilters: false,
+          supportsLSFilter: true,
+          supportsHSFilter: true,
           disconnectOnSave: true,
+          baseRegisterOffset: 0x26
+        }
+      },
+      "Kiwi Ears Allegro Mini": {
+        manufacturer: "Kiwi Ears",
+        modelConfig: {
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          disconnectOnSave: true,
+          baseRegisterOffset: 0x35
         }
       },
       "KT02H20 HIFI Audio": {
         manufacturer: "JCally",
         modelConfig: {
-          supportsLSHSFilters: false,
+          supportsLSFilter: false,
+          supportsHSFilter: false,
         }
       },
       "TANCHJIM BUNNY DSP": {
@@ -830,7 +958,8 @@ export const usbHidDeviceHandlerConfig = ([
       disabledPresetId: 0,
       experimental: true,
       supportsPregain: false,
-      supportsLSHSFilters: true,
+      supportsLSFilter: true,
+      supportsHSFilter: true,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       reportId: 1,
       availableSlots: [

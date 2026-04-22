@@ -120,6 +120,8 @@ async function initializeDeviceEqPlugin(context) {
       this.connectButton.hidden = true;
       this.currentDevice = device;
       this.connectionType = connectionType;
+      window.peqDeviceModelConfig = device.modelConfig || null;
+      document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: window.peqDeviceModelConfig }));
       this.disconnectButton.hidden = false;
       this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
@@ -179,6 +181,8 @@ async function initializeDeviceEqPlugin(context) {
     showDisconnectedState() {
       this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
+      window.peqDeviceModelConfig = null;
+      document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: null }));
       this.connectButton.hidden = false;
       this.disconnectButton.hidden = true;
       this.deviceNameElem.textContent = 'None';

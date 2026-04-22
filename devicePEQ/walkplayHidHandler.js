@@ -29,7 +29,7 @@ export const walkplayUsbHID = (function () {
 
     // Get the version number first
     await sendReport(device, REPORT_ID, [READ, CMD.VERSION, END]);
-    var response = await waitForResponse(device);
+    var response = await waitForResponse(device, CMD.VERSION);
     const versionBytes = response.slice(3, 6);
     const version = String.fromCharCode(...versionBytes);
 
@@ -47,7 +47,9 @@ export const walkplayUsbHID = (function () {
     console.log("Fetching current EQ slot...");
 
     await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, END]);
-    response = await waitForResponse(device);
+    response = await waitForResponse(device, CMD.PEQ_VALUES);
+    // Slot is at byte 36 in the full HID packet (including report ID).
+    // Web HID strips the report ID, so it's at index 35 here.
     const slot = response ? response[35] : -1;
 
     console.log("Walkplay current EQ slot:", slot);
@@ -97,9 +99,17 @@ export const walkplayUsbHID = (function () {
       }
     }
 
+    // Commit sequence matching Walkplay app order:
+    // [1, 5, 0] and [1, 23, 0] before TEMP_WRITE, then plain [1, 1, 0] for flash.
+    // The slot is already embedded at byte [35] of each filter packet — FLASH_EQ
+    // just says "persist registers to flash" and takes no slot argument.
+    await sendReport(device, REPORT_ID, [WRITE, 0x05, END]);
+    await delay(20);
+    await sendReport(device, REPORT_ID, [WRITE, 0x17, END]);
+    await delay(20);
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
-    await delay(50); // Wait after TEMP_WRITE
-    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, slot, END]); // Add slot parameter
+    await delay(50);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, END]);
 
     console.log("PEQ filters successfully pushed to Walkplay device.");
   };
@@ -144,7 +154,7 @@ export const walkplayUsbHID = (function () {
   };
 
   function convertFromFilterType(filterType) {
-    const mapping = {"PK": 2, "LSQ": 1, "HSQ": 3};
+    const mapping = {"PK": 2, "LSQ": 1, "HSQ": 3, "LP": 4, "HP": 5};
     return mapping[filterType] !== undefined ? mapping[filterType] : 2;
   }
 
@@ -153,21 +163,20 @@ export const walkplayUsbHID = (function () {
     if (!device) throw new Error("Device not connected.");
 
     const filters = [];
-    let currentSlot = -1;
+    // Use the slot passed in from getCurrentSlot — per-filter responses don't
+    // reliably carry the slot at offset 35 (that offset is from the bulk ReadEQ
+    // response format, not the per-filter variant).
+    const currentSlot = slot;
 
     device.oninputreport = async (event) => {
       const data = new Uint8Array(event.data.buffer);
       console.log(`USB Device PEQ: Walkplay pullFromDevice onInputReport received data:`, data);
 
+      if (data[1] !== CMD.PEQ_VALUES) return; // ignore unrelated reports
       if (data.length >= 32) {
         const filter = parseFilterPacket(data);
         console.log(`USB Device PEQ: Walkplay parsed filter ${filter.filterIndex}:`, filter);
         filters[filter.filterIndex] = filter;
-      }
-
-      if (data.length >= 37) {
-        currentSlot = data[35];
-        console.log(`USB Device PEQ: Walkplay parsed current slot: ${currentSlot}`);
       }
     };
 
@@ -242,9 +251,11 @@ export const walkplayUsbHID = (function () {
 
   function convertToFilterType(byte) {
     switch (byte) {
-      case 1: return "LSQ"; // Low Shelf (if seen in future captures)
-      case 2: return "PK"; // Peaking
-      case 3: return "HSQ"; // High Shelf (future-proof)
+      case 1: return "LSQ";
+      case 2: return "PK";
+      case 3: return "HSQ";
+      case 4: return "LP";
+      case 5: return "HP";
       default: return "PK";
     }
   }
@@ -266,21 +277,25 @@ export const walkplayUsbHID = (function () {
     await device.sendReport(reportId, data);
   }
 
-// Wait for response
-  async function waitForResponse(device, timeout = 2000) {
+// Wait for response matching a specific command byte (data[1] without report ID)
+  async function waitForResponse(device, expectedCmd = null, timeout = 2000) {
     return new Promise((resolve, reject) => {
-      let response = null;
       const timer = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
         console.log(`USB Device PEQ: Walkplay timeout waiting for response after ${timeout}ms`);
         reject("Timeout waiting for HID response");
       }, timeout);
 
-      device.oninputreport = (event) => {
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (expectedCmd !== null && data[1] !== expectedCmd) return; // skip unrelated reports
         clearTimeout(timer);
-        response = new Uint8Array(event.data.buffer);
-        console.log(`USB Device PEQ: Walkplay received response:`, response);
-        resolve(response);
+        device.removeEventListener("inputreport", onReport);
+        console.log(`USB Device PEQ: Walkplay received response:`, data);
+        resolve(data);
       };
+
+      device.addEventListener("inputreport", onReport);
     });
   }
 

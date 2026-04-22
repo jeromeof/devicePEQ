@@ -9,8 +9,11 @@ const PEQ_GLOBAL_GAIN = 0x17; // 23 in hex
 const PEQ_FILTER_PARAMS = 0x15; // 21 in hex
 const PEQ_PRESET_SWITCH = 0x16; // 22 in hex
 const PEQ_SAVE_TO_DEVICE = 0x19; // 25 in hex
+const PEQ_SAVE_V2 = 0x21; // 33 in hex
 const PEQ_RESET_DEVICE = 0x1B; // 27 in hex
 const PEQ_RESET_ALL = 0x1C; // 28 in hex
+const PEQ_CHANNEL_BALANCE = 0x1E; // 30 in hex
+const PEQ_GLOBAL_GAIN_LR = 0x07; // 7 in hex
 
 // Note these have different headers
 const PEQ_FIRMWARE_VERSION = 0x0B; // 11 in hex
@@ -85,7 +88,7 @@ export const fiioUsbHID = (function () {
       }
       await new Promise(resolve => setTimeout(resolve, 100)); // Added 100ms delay
 
-      saveToDevice(device, slot, reportId);
+      saveToDevice(device, slot, reportId, deviceDetails.modelConfig.saveCommandId);
 
       console.log("PEQ filters pushed successfully.");
 
@@ -322,10 +325,11 @@ function getPresetPeq(device, reportId) {
   device.sendReport(reportId, data);
 }
 
-function saveToDevice(device, slotId, reportId) {
-  const packet = [SET_HEADER1, SET_HEADER2, 0, 0, PEQ_SAVE_TO_DEVICE, 1, slotId, 0, END_HEADERS];
+function saveToDevice(device, slotId, reportId, customSaveCommandId) {
+  const saveCmd = customSaveCommandId || PEQ_SAVE_TO_DEVICE;
+  const packet = [SET_HEADER1, SET_HEADER2, 0, 0, saveCmd, 1, slotId, 0, END_HEADERS];
   const data = new Uint8Array(packet);
-  console.log(`USB Device PEQ: saveToDevice() using reportId ${reportId} for slot ${slotId}`, data);
+  console.log(`USB Device PEQ: saveToDevice() using command ${saveCmd}, reportId ${reportId} for slot ${slotId}`, data);
   device.sendReport(reportId, data);
 }
 

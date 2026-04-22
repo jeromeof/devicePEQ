@@ -17,7 +17,8 @@ export const networkDeviceHandlerConfig = {
     disconnectOnSave: false,
     disabledPresetId: -1,
     experimental: false,
-    supportsLSHSFilters: true, // LHS/HSQ supported
+    supportsLSFilter: true,
+    supportsHSFilter: true,
     supportsPregain: true,
     supportedFilterTypes: ["PK", "LSQ", "HSQ"], // Requirement: PK, LSQ, HSQ
   },

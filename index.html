@@ -56,33 +56,21 @@
   <div id="filter-list" class="filter-list">
     <div class="filter-item">
       <label>Type:</label>
-      <select class="filter-type">
-        <option value="PK">Peak</option>
-        <option value="LSQ">Low Shelf</option>
-        <option value="HSQ">High Shelf</option>
-      </select>
+      <select class="filter-type"></select>
       <label>Freq:</label> <input type="number" class="filter-freq" value="100">
       <label>Gain:</label> <input type="number" class="filter-gain" value="-3">
       <label>Q:</label> <input type="number" class="filter-q" value="0.707">
     </div>
     <div class="filter-item">
       <label>Type:</label>
-      <select class="filter-type">
-        <option value="PK">Peak</option>
-        <option value="LSQ">Low Shelf</option>
-        <option value="HSQ">High Shelf</option>
-      </select>
+      <select class="filter-type"></select>
       <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
       <label>Gain:</label> <input type="number" class="filter-gain" value="1">
       <label>Q:</label> <input type="number" class="filter-q" value="1.0">
     </div>
     <div class="filter-item">
       <label>Type:</label>
-      <select class="filter-type">
-        <option value="PK">Peak</option>
-        <option value="LSQ">Low Shelf</option>
-        <option value="HSQ">High Shelf</option>
-      </select>
+      <select class="filter-type"></select>
       <label>Freq:</label> <input type="number" class="filter-freq" value="2000">
       <label>Gain:</label> <input type="number" class="filter-gain" value="3">
       <label>Q:</label> <input type="number" class="filter-q" value="0.707">
@@ -220,6 +208,41 @@
       document.dispatchEvent(new CustomEvent('NormalizeFRChanged'));
     });
   }
+  // All known filter types in display order
+  const ALL_FILTER_TYPES = [
+    { value: 'PK',  label: 'Peak',       flag: null },
+    { value: 'LSQ', label: 'Low Shelf',  flag: 'supportsLSFilter' },
+    { value: 'HSQ', label: 'High Shelf', flag: 'supportsHSFilter' },
+    { value: 'LP',  label: 'Low Pass',   flag: 'supportsLPHPFilters' },
+    { value: 'HP',  label: 'High Pass',  flag: 'supportsLPHPFilters' },
+  ];
+
+  // Build <option> elements for a filter-type <select>, greying out unsupported types
+  function buildFilterTypeOptions(selectedType) {
+    const cfg = window.peqDeviceModelConfig || null;
+    return ALL_FILTER_TYPES.map(({ value, label, flag }) => {
+      const supported = !flag || !cfg || cfg[flag] === true;
+      const sel = value === selectedType ? ' selected' : '';
+      const dis = supported ? '' : ' disabled';
+      const style = supported ? '' : ' style="color:#aaa"';
+      return `<option value="${value}"${sel}${dis}${style}>${label}</option>`;
+    }).join('');
+  }
+
+  // Re-stamp every existing filter-type dropdown (preserving current selection)
+  function updateAllFilterTypeDropdowns() {
+    document.querySelectorAll('select.filter-type').forEach(sel => {
+      sel.innerHTML = buildFilterTypeOptions(sel.value);
+    });
+  }
+
+  // Keep dropdowns in sync when device connects or disconnects
+  document.addEventListener('PeqDeviceModelConfigChanged', updateAllFilterTypeDropdowns);
+
+  // Populate the initial static filter rows on load
+  window.peqDeviceModelConfig = null;
+  updateAllFilterTypeDropdowns();
+
   // Mock function to populate PEQ fields from device settings
   function filtersToElem(filters) {
     console.log("Applying filters from device:", filters);
@@ -232,11 +255,7 @@
       const filterType = filter.type || "PK";
       filterItem.innerHTML = `
                     <label>Type:</label>
-                    <select class="filter-type">
-                      <option value="PK" ${filterType === "PK" ? "selected" : ""}>Peak</option>
-                      <option value="LSQ" ${filterType === "LSQ" ? "selected" : ""}>Low Shelf</option>
-                      <option value="HSQ" ${filterType === "HSQ" ? "selected" : ""}>High Shelf</option>
-                    </select>
+                    <select class="filter-type">${buildFilterTypeOptions(filterType)}</select>
                     <label>Freq:</label> <input type="number" class="filter-freq" value="${filter.freq}">
                     <label>Gain:</label> <input type="number" class="filter-gain" value="${filter.gain}">
                     <label>Q:</label> <input type="number" class="filter-q" value="${filter.q}">
@@ -351,11 +370,7 @@
     filterItem.className = "filter-item";
     filterItem.innerHTML = `
                 <label>Type:</label>
-                <select class="filter-type">
-                  <option value="PK" selected>Peak</option>
-                  <option value="LSQ">Low Shelf</option>
-                  <option value="HSQ">High Shelf</option>
-                </select>
+                <select class="filter-type">${buildFilterTypeOptions('PK')}</select>
                 <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
                 <label>Gain:</label> <input type="number" class="filter-gain" value="0">
                 <label>Q:</label> <input type="number" class="filter-q" value="0.707">

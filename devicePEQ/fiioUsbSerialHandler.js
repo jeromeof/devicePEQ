@@ -14,8 +14,11 @@ const PEQ_GLOBAL_GAIN = 0x17; // 23 in hex
 const PEQ_FILTER_PARAMS = 0x15; // 21 in hex
 const PEQ_PRESET_SWITCH = 0x16; // 22 in hex
 const PEQ_SAVE_TO_DEVICE = 0x19; // 25 in hex
+const PEQ_SAVE_V2 = 0x21; // 33 in hex
 const PEQ_RESET_DEVICE = 0x1B; // 27 in hex
 const PEQ_RESET_ALL = 0x1C; // 28 in hex
+const PEQ_CHANNEL_BALANCE = 0x1E; // 30 in hex
+const PEQ_GLOBAL_GAIN_LR = 0x07; // 7 in hex
 
 // Note these have different headers
 const PEQ_FIRMWARE_VERSION = 0x0B; // 11 in hex
@@ -306,6 +309,11 @@ export const fiioUsbSerial = (function () {
       }
 
       console.log("FiiO settings applied successfully");
+
+      // Save to device if needed
+      const saveCmd = (deviceDetails && deviceDetails.modelConfig && deviceDetails.modelConfig.saveCommandId) || PEQ_SAVE_TO_DEVICE;
+      await sendReportAndListen(deviceDetails, new Uint8Array([SET_HEADER1, SET_HEADER2, 0, 0, saveCmd, 1, slot, 0, END_HEADERS]));
+
       // Return whether we should disconnect after saving, mirroring HID handler behavior
       return !!(deviceDetails && deviceDetails.modelConfig && deviceDetails.modelConfig.disconnectOnSave);
 
