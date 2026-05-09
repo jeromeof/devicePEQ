@@ -1,0 +1,25 @@
+{
+  "_comment": "WalkPlay mic gain test capture — EPZ TP13 AI ENC audio (vendorId=0x3302 productId=0x13D4). Mic gain uses 16-bit signed encoding scaled by 32767/15 per dB (range -15..+15). readMicGain sends [0x80,0x02,0x00], response data[2]=LSB data[3]=MSB. setMicGain sends [0x01,0x02,0x02,LSB,MSB] fire-and-forget.",
+  "device": {"vendorId": 13058, "productId": 5076, "productName": "EPZ TP13 AI ENC audio"},
+  "capturedAt": "2026-05-09T00:00:00.000Z",
+  "exchanges": [
+    {
+      "send": {"reportId": 75, "data": [128, 2, 0]},
+      "responses": [{"reportId": 75, "data": [128, 2, 170, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}],
+      "_seq": 0,
+      "description": "readMicGain: LSB=170=0xAA MSB=42=0x2A → raw=10922 → +5.0 dB"
+    },
+    {
+      "send": {"reportId": 75, "data": [1, 2, 2, 170, 42]},
+      "responses": [],
+      "_seq": 1,
+      "description": "setMicGain(+5 dB): r=10922=0x2AAA → LSB=0xAA=170, MSB=0x2A=42"
+    },
+    {
+      "send": {"reportId": 75, "data": [1, 2, 2, 171, 170]},
+      "responses": [],
+      "_seq": 2,
+      "description": "setMicGain(-10 dB): r=-21845 → t=43691=0xAAAB → LSB=0xAB=171, MSB=0xAA=170"
+    }
+  ]
+}

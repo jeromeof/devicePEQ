@@ -1,0 +1,839 @@
+{
+  "_comment": "Capture from Chu2 DSP (KT Micro, vendorId=0x31B2, productId=0x0113) \u2014 2026-05-03. 5 bands \u00b112dB LS+HS, compensate2X=false. addEventListener response path.",
+  "device": {
+    "vendorId": 12722,
+    "productId": 275,
+    "productName": "Chu2 DSP"
+  },
+  "capturedAt": "2026-05-03",
+  "exchanges": [
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          36,
+          0,
+          0,
+          0,
+          82,
+          0,
+          3,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            36,
+            0,
+            0,
+            0,
+            82,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 0,
+      "description": "getCurrentSlot (EQ state)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          38,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            38,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            0,
+            25,
+            0
+          ]
+        }
+      ],
+      "_seq": 1,
+      "description": "Read reg 0x26 (gain/freq band 0)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          39,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            39,
+            0,
+            0,
+            0,
+            82,
+            0,
+            44,
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 2,
+      "description": "Read reg 0x27 (Q/type band 0)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          40,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            40,
+            0,
+            0,
+            0,
+            82,
+            0,
+            226,
+            255,
+            200,
+            0
+          ]
+        }
+      ],
+      "_seq": 3,
+      "description": "Read reg 0x28 (gain/freq band 1)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          41,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            41,
+            0,
+            0,
+            0,
+            82,
+            0,
+            208,
+            7,
+            3,
+            0
+          ]
+        }
+      ],
+      "_seq": 4,
+      "description": "Read reg 0x29 (Q/type band 1)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          42,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            42,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            0,
+            120,
+            5
+          ]
+        }
+      ],
+      "_seq": 5,
+      "description": "Read reg 0x2A (gain/freq band 2)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          43,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            43,
+            0,
+            0,
+            0,
+            82,
+            0,
+            88,
+            27,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 6,
+      "description": "Read reg 0x2B (Q/type band 2)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          44,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            44,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            0,
+            172,
+            13
+          ]
+        }
+      ],
+      "_seq": 7,
+      "description": "Read reg 0x2C (gain/freq band 3)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          45,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            45,
+            0,
+            0,
+            0,
+            82,
+            0,
+            232,
+            3,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 8,
+      "description": "Read reg 0x2D (Q/type band 3)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          46,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            46,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            0,
+            40,
+            35
+          ]
+        }
+      ],
+      "_seq": 9,
+      "description": "Read reg 0x2E (gain/freq band 4)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          47,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            47,
+            0,
+            0,
+            0,
+            82,
+            0,
+            220,
+            5,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 10,
+      "description": "Read reg 0x2F (Q/type band 4)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          102,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            102,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            2,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 11,
+      "description": "read pregain"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          38,
+          0,
+          0,
+          0,
+          87,
+          0,
+          0,
+          0,
+          25,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            38,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 24,
+      "description": "Write reg 0x26 (gain/freq band 0) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          39,
+          0,
+          0,
+          0,
+          87,
+          0,
+          44,
+          1,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            39,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 25,
+      "description": "Write reg 0x27 (Q/type band 0) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          40,
+          0,
+          0,
+          0,
+          87,
+          0,
+          226,
+          255,
+          200,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            40,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 26,
+      "description": "Write reg 0x28 (gain/freq band 1) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          41,
+          0,
+          0,
+          0,
+          87,
+          0,
+          208,
+          7,
+          3,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            41,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 27,
+      "description": "Write reg 0x29 (Q/type band 1) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          42,
+          0,
+          0,
+          0,
+          87,
+          0,
+          0,
+          0,
+          120,
+          5
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            42,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 28,
+      "description": "Write reg 0x2A (gain/freq band 2) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          43,
+          0,
+          0,
+          0,
+          87,
+          0,
+          88,
+          27,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            43,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 29,
+      "description": "Write reg 0x2B (Q/type band 2) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          44,
+          0,
+          0,
+          0,
+          87,
+          0,
+          0,
+          0,
+          172,
+          13
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            44,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 30,
+      "description": "Write reg 0x2C (gain/freq band 3) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          45,
+          0,
+          0,
+          0,
+          87,
+          0,
+          232,
+          3,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            45,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 31,
+      "description": "Write reg 0x2D (Q/type band 3) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          46,
+          0,
+          0,
+          0,
+          87,
+          0,
+          0,
+          0,
+          40,
+          35
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            46,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 32,
+      "description": "Write reg 0x2E (gain/freq band 4) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          47,
+          0,
+          0,
+          0,
+          87,
+          0,
+          220,
+          5,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            47,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 33,
+      "description": "Write reg 0x2F (Q/type band 4) \u2014 fire-and-forget"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          83,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            0,
+            0,
+            0,
+            0,
+            83,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "_seq": 34,
+      "description": "Commit (COMMAND_COMMIT 0x53)"
+    }
+  ]
+}

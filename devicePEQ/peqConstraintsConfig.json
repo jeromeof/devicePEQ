@@ -1,0 +1,1137 @@
+{
+  "version": "1.1.0",
+  "constraints": {
+    "peq5Band12dBFullShelves": {
+      "description": "5-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 5,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "JadeAudio JA11",
+        "FIIO LS-TC2",
+        "Moondrop Edge"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBFullShelves": {
+      "description": "10-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Element IV",
+        "WiiM"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq31Band12dBFullShelves": {
+      "description": "31-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 31,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq10Band20dBFullShelves": {
+      "description": "10-band PEQ, \u00b120 dB wide-range, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -20,
+        "maxGain": 20,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FiiO EH11",
+        "FiiO EH13"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq5Band3dBCeilingPkOnly": {
+      "description": "5-band peak-only PEQ, -12/+3 dB asymmetric range, no shelf filters, no pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 3,
+        "maxFilters": 5,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Old Fashioned"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq8Band6dBPkOnly": {
+      "description": "8-band peak-only PEQ, -12/+6 dB, no shelf or LP/HP filters, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 8,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Marigold",
+        "MOONDROP Marigold"
+      ],
+      "deviceGroupNames": []
+    },
+    "walkplayPeq8Band10dBPkOnly": {
+      "description": "WalkPlay 8-band PEQ, \u00b110 dB, peak-only (no shelf or LP/HP filters), pregain \u2014 SchemeNo10, SchemeNo21",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 8,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo10",
+        "SchemeNo21"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "walkplayPeq8Band10dBLsLowpass": {
+      "description": "WalkPlay 8-band PEQ, \u00b110 dB, low-shelf + LP/HP (no high-shelf), pregain \u2014 SchemeNo11",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 8,
+        "supportsLSFilter": true,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo11"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15,
+          "note": "Applies to devices with built-in microphone (AI ENC models)"
+        },
+        "denoise": {
+          "supported": true,
+          "note": "Applies to devices with built-in microphone (AI ENC models)"
+        }
+      }
+    },
+    "walkplayPeq8Band10dBFullShelves": {
+      "description": "WalkPlay 8-band PEQ, \u00b110 dB, full shelves (LS+HS), pregain \u2014 SchemeNo15",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 8,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo15"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "walkplayPeq10Band10dBFullShelves": {
+      "description": "WalkPlay 10-band PEQ, \u00b110 dB, full shelves (LS+HS), pregain \u2014 SchemeNo13, SchemeNo18",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo13",
+        "SchemeNo18"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "walkplayPeq5Band10dBFullShelves": {
+      "description": "WalkPlay 5-band PEQ, \u00b110 dB, full shelves (LS+HS), pregain \u2014 SchemeNo17",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 5,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo17"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "walkplayPeq6Band10dBFullShelves": {
+      "description": "WalkPlay 6-band PEQ, \u00b110 dB, full shelves (LS+HS), pregain \u2014 SchemeNo19",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 6,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo19"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "walkplayPeq10Band10dBPkOnly": {
+      "description": "WalkPlay 10-band PEQ, \u00b110 dB, peak-only (no shelf filters), pregain \u2014 SchemeNo20",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 10,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": [
+        "SchemeNo20"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": false
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "peq8Band6dBLSLowpass": {
+      "description": "8-band PEQ, -12/+6 dB, low-shelf + LP/HP filters, no high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 8,
+        "supportsLSFilter": true,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq5Band6dBFullShelves": {
+      "description": "5-band PEQ, -12/+6 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 5,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq6Band6dBFullShelves": {
+      "description": "6-band PEQ, -12/+6 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 6,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq8Band12dBFullShelves": {
+      "description": "8-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 8,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Rays",
+        "FreeDSP Pro",
+        "FreeDSP Mini",
+        "MOONRIVER 3",
+        "DAWN PRO 2",
+        "DAWN PRO2",
+        "DHA15",
+        "Deco Audio System",
+        "INN Deco75-DH Audio",
+        "Echo A",
+        "AG Rays",
+        "ddHiFi DSP IEM - Memory",
+        "BGVP MX1",
+        "DT04",
+        "MD-QT-042",
+        "MOONDROP HiFi with PD",
+        "CS431XX",
+        "ES9039 ",
+        "TANCHJIM-STARGATE II",
+        "didiHiFi DSP Cable - Memory",
+        "Dual CS43198",
+        "ES9039 HiFi DSP Audio",
+        "Nothing Headphones"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band6dBFullShelves": {
+      "description": "10-band PEQ, -12/+6 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "CS43198 HiFi DSP Audio"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band10dBFullShelves": {
+      "description": "10-band PEQ, \u00b110 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -10,
+        "maxGain": 10,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Protocol Max"
+      ],
+      "deviceGroupNames": [
+        "SchemeNo16"
+      ],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "FAST-LL",
+            "FAST-PC",
+            "SLOW-LL",
+            "SLOW-PC",
+            "NON-OS"
+          ]
+        },
+        "dacBalance": {
+          "supported": true
+        },
+        "dacWorkMode": {
+          "supported": true
+        },
+        "gainMode": {
+          "supported": true
+        },
+        "micGain": {
+          "supported": true,
+          "minDb": -15,
+          "maxDb": 15
+        },
+        "denoise": {
+          "supported": false
+        }
+      }
+    },
+    "peq10Band6dBPkOnly": {
+      "description": "10-band peak-only PEQ, -12/+6 dB, no shelf filters, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 6,
+        "maxFilters": 10,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq5Band12dBFullShelvesNoPregain": {
+      "description": "5-band PEQ, \u00b112 dB, low-shelf + high-shelf, no pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 5,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Kiwi Ears-Allegro PRO",
+        "Kiwi Ears Allegro Mini",
+        "KT02H20 HIFI Audio",
+        "TANCHJIM BUNNY DSP",
+        "TANCHJIM FISSION",
+        "CDSP",
+        "Chu2 DSP"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq12Band15dBFullShelves": {
+      "description": "12-band PEQ, \u00b115 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -15,
+        "maxGain": 15,
+        "maxFilters": 12,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 16.0
+      },
+      "deviceNames": [
+        "Tanchjim Rita"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBPkOnlyNoPregain": {
+      "description": "10-band graphic/peak-only PEQ, \u00b112 dB, no shelf filters, no pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "EarFun Tune Pro"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq4Band6dBPkOnlyNoPregain": {
+      "description": "4-band PEQ, \u00b16 dB, peak-only, no pregain",
+      "peqConstraints": {
+        "minGain": -6,
+        "maxGain": 6,
+        "maxFilters": 4,
+        "supportsLSFilter": false,
+        "supportsHSFilter": false,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 5.0
+      },
+      "deviceNames": [
+        "Edifier W830NB"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBAllFilters": {
+      "description": "10-band PEQ, \u00b112 dB, all biquad filter types (PK/LS/HS/LP/HP/BP/Notch/AllPass), pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": true,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.01,
+        "maxQ": 16.0
+      },
+      "deviceNames": [
+        "Luxsin"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBAllFiltersNoPregain": {
+      "description": "10-band PEQ, \u00b112 dB, all filter types including Band Stop and Constant Q, no pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": true,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": true,
+        "supportsConstantQFilter": true,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Fosi Audio DS3"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq8Band12dBCoreFilters": {
+      "description": "8-band PEQ, -18/+12 dB asymmetric range, core filter types (PK/LS/HS/LP/HP/BP/AP), no pregain",
+      "peqConstraints": {
+        "minGain": -18,
+        "maxGain": 12,
+        "maxFilters": 8,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": true,
+        "supportsManualGlobalGain": false,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.0,
+        "maxQ": 10.0
+      },
+      "deviceNames": [],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBWideAllFilters": {
+      "description": "10-band PEQ, -24/+12 dB asymmetric, all FiiO filter types (PK/LS/HS/LP/HP/BP/AP), pregain \u2014 FiiO default",
+      "peqConstraints": {
+        "minGain": -24,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO QX13",
+        "FIIO Q7",
+        "FIIO BT11",
+        "FIIO BT11 (UAC1.0)",
+        "FIIO Air Link",
+        "FIIO K13 R2R",
+        "FIIO K15",
+        "FIIO FX17",
+        "FiiO Audio DSP",
+        "FIIO AIR AMP",
+        "FIIO DM15 R2R"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBAllFilters7": {
+      "description": "10-band PEQ, \u00b112 dB, all 7 FiiO filter types (PK/LS/HS/LP/HP/BP/AP), pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO KA17",
+        "FIIO KA17 (MQA HID)",
+        "FIIO BTR13",
+        "FIIO KA15",
+        "RETRO NANO",
+        "FIIO QX11",
+        "SNOWSKY Melody"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq31Band12dBWideShelves": {
+      "description": "31-band PEQ, -24/+12 dB asymmetric, shelf filters only (PK/LS/HS), pregain \u2014 FiiO K17/K19",
+      "peqConstraints": {
+        "minGain": -24,
+        "maxGain": 12,
+        "maxFilters": 31,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO K19",
+        "FIIO K17"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBWideShelves": {
+      "description": "10-band PEQ, -24/+12 dB asymmetric, shelf filters only (PK/LS/HS), pregain",
+      "peqConstraints": {
+        "minGain": -24,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO BTR17",
+        "BTR17",
+        "FIIO FP3",
+        "FIIO OAK NANO",
+        "Oak Nano"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBWideLSHP": {
+      "description": "10-band PEQ, -24/+12 dB asymmetric, PK/LS/HS/LP/HP/AP (no BP), pregain \u2014 FiiO BR15 R2R",
+      "peqConstraints": {
+        "minGain": -24,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO BR15 R2R"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq10Band12dBAllFiltersBP": {
+      "description": "10-band PEQ, \u00b112 dB, PK/LS/HS/LP/HP/BP (no AP), pregain \u2014 FiiO FG3",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "FIIO FG3"
+      ],
+      "deviceGroupNames": []
+    },
+    "peq5Band12dBAllFilters7": {
+      "description": "5-band PEQ, \u00b112 dB, all 7 FiiO filter types (PK/LS/HS/LP/HP/BP/AP), pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 5,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": true,
+        "supportsHPFilter": true,
+        "supportsBPFilter": true,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": true,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "JadeAudio JIEZI",
+        "SNOWSKY TINY A",
+        "SNOWSKY TINY B"
+      ],
+      "deviceGroupNames": []
+    }
+  }
+}

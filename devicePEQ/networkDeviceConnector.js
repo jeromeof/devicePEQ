@@ -4,6 +4,7 @@
 const {wiimNetworkHandler} = await import('./wiimNetworkHandler.js');
 const {luxsinNetworkHandler} = await import('./luxsinNetworkHandler.js');
 const {networkDeviceHandlerConfig} = await import('./networkDeviceConfig.js');
+const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
 
 export const NetworkDeviceConnector = (function () {
     let currentDevice = null;
@@ -34,6 +35,12 @@ export const NetworkDeviceConnector = (function () {
             const deviceConfig = networkDeviceHandlerConfig.devices?.[deviceType] || {};
             const defaultModelConfig = networkDeviceHandlerConfig.defaultModelConfig || {};
             const modelConfig = Object.assign({}, defaultModelConfig, deviceConfig.modelConfig || {});
+
+            // Resolve peqConstraints and merge into modelConfig so handlers can read
+            // maxFilters, supportsLSFilter etc. from deviceDetails.modelConfig directly.
+            await loadPeqConstraintsConfig().catch(() => {});
+            const resolvedNetConstraints = resolveConstraints(modelConfig);
+            if (resolvedNetConstraints) Object.assign(modelConfig, resolvedNetConstraints);
 
             currentDevice = {
                 ip: deviceIP,

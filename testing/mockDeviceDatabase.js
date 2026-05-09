@@ -40,7 +40,7 @@ export class MockDeviceDatabase {
         reportId: 7,
         experimental: false,
         supportsLSHSFilters: true,
-        supportsPregain: true,
+        deviceHandlesPregain: false,
         availableSlots: [
           {id: 160, name: "USER1"},
           {id: 161, name: "USER2"}
@@ -113,7 +113,7 @@ export class MockDeviceDatabase {
         maxFilters: 12,
         experimental: false,
         supportsLSHSFilters: true,
-        supportsPregain: true
+        deviceHandlesPregain: false
       },
 
       interactions: {
@@ -167,7 +167,7 @@ export class MockDeviceDatabase {
         maxFilters: 10,
         experimental: true,
         supportsLSHSFilters: true,
-        supportsPregain: true,
+        deviceHandlesPregain: false,
         availableSlots: [
           {id: 101, name: "Custom"},
           {id: 1, name: "Preset 1"}
@@ -218,7 +218,7 @@ export class MockDeviceDatabase {
         experimental: true,
         maxFilters: 10,
         supportsLSHSFilters: false,
-        supportsPregain: true
+        deviceHandlesPregain: false
       },
 
       interactions: {

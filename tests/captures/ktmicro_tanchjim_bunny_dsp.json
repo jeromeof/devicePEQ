@@ -1,0 +1,851 @@
+{
+  "_comment": "Capture from TANCHJIM BUNNY DSP (KT Micro, vendorId=0x31B2, productId=0x1112) \u2014 2026-05-03. Includes both read and write exchanges.",
+  "device": {
+    "vendorId": 12722,
+    "productId": 4370,
+    "productName": "TANCHJIM BUNNY DSP"
+  },
+  "capturedAt": "2026-05-03",
+  "exchanges": [
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          36,
+          0,
+          0,
+          0,
+          82,
+          0,
+          3,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            36,
+            0,
+            0,
+            0,
+            82,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read version/mode (echo)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          38,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            38,
+            0,
+            0,
+            0,
+            82,
+            0,
+            216,
+            255,
+            50,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x26 (band 0)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          39,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            39,
+            0,
+            0,
+            0,
+            82,
+            0,
+            112,
+            23,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x27 (band 0 freq)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          40,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            40,
+            0,
+            0,
+            0,
+            82,
+            0,
+            60,
+            0,
+            200,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x28 (band 1)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          41,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            41,
+            0,
+            0,
+            0,
+            82,
+            0,
+            244,
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x29 (band 1 freq)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          42,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            42,
+            0,
+            0,
+            0,
+            82,
+            0,
+            253,
+            255,
+            32,
+            3
+          ]
+        }
+      ],
+      "description": "Read reg 0x2A (band 2)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          43,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            43,
+            0,
+            0,
+            0,
+            82,
+            0,
+            244,
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x2B (band 2 freq)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          44,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            44,
+            0,
+            0,
+            0,
+            82,
+            0,
+            226,
+            255,
+            164,
+            6
+          ]
+        }
+      ],
+      "description": "Read reg 0x2C (band 3)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          45,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            45,
+            0,
+            0,
+            0,
+            82,
+            0,
+            148,
+            17,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x2D (band 3 freq)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          46,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            46,
+            0,
+            0,
+            0,
+            82,
+            0,
+            196,
+            255,
+            76,
+            29
+          ]
+        }
+      ],
+      "description": "Read reg 0x2E (band 4)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          47,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            47,
+            0,
+            0,
+            0,
+            82,
+            0,
+            88,
+            27,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Read reg 0x2F (band 4 freq)"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          102,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            102,
+            0,
+            0,
+            0,
+            82,
+            0,
+            250,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Final command 0x66"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          38,
+          0,
+          0,
+          0,
+          87,
+          0,
+          216,
+          255,
+          50,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            38,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x26 (band 0) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          39,
+          0,
+          0,
+          0,
+          87,
+          0,
+          112,
+          23,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            39,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x27 (band 0 freq) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          40,
+          0,
+          0,
+          0,
+          87,
+          0,
+          60,
+          0,
+          200,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            40,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x28 (band 1) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          41,
+          0,
+          0,
+          0,
+          87,
+          0,
+          244,
+          1,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            41,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x29 (band 1 freq) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          42,
+          0,
+          0,
+          0,
+          87,
+          0,
+          253,
+          255,
+          32,
+          3
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            42,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2A (band 2) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          43,
+          0,
+          0,
+          0,
+          87,
+          0,
+          244,
+          1,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            43,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2B (band 2 freq) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          44,
+          0,
+          0,
+          0,
+          87,
+          0,
+          226,
+          255,
+          164,
+          6
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            44,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2C (band 3) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          45,
+          0,
+          0,
+          0,
+          87,
+          0,
+          148,
+          17,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            45,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2D (band 3 freq) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          46,
+          0,
+          0,
+          0,
+          87,
+          0,
+          196,
+          255,
+          76,
+          29
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            46,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2E (band 4) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          47,
+          0,
+          0,
+          0,
+          87,
+          0,
+          88,
+          27,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            47,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Write reg 0x2F (band 4 freq) \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          102,
+          0,
+          0,
+          0,
+          87,
+          0,
+          250,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            102,
+            0,
+            0,
+            0,
+            87,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Final write command 0x66 \u2014 ack"
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          83,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            0,
+            0,
+            0,
+            0,
+            83,
+            0,
+            3,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "description": "Save/commit command 0x53 \u2014 ack"
+    }
+  ]
+}

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DevicePEQ — Test Harness</title>
+  <style>
+    body { font-family: monospace; margin: 0; background: #1a1a1a; color: #e0e0e0; }
+    header { background: #111; padding: 12px 16px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 1em; color: #fff; }
+    #run-btn { padding: 6px 14px; background: #2a6db5; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-family: monospace; }
+    #run-btn:hover { background: #3a8de5; }
+    #run-btn:disabled { background: #444; cursor: not-allowed; }
+    #summary { padding: 8px 16px; font-size: 0.85em; color: #aaa; border-bottom: 1px solid #333; min-height: 24px; }
+    #summary .pass { color: #4caf50; }
+    #summary .fail { color: #f44336; }
+    #summary .skip { color: #ff9800; }
+    #output { padding: 8px 0; }
+    .suite { margin: 4px 0; }
+    .suite-name { padding: 6px 16px; font-weight: bold; color: #888; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; }
+    .test { padding: 3px 16px 3px 32px; font-size: 0.85em; display: flex; align-items: baseline; gap: 8px; }
+    .test .icon { width: 16px; flex-shrink: 0; }
+    .test.pass .icon::before { content: '✓'; color: #4caf50; }
+    .test.fail .icon::before { content: '✗'; color: #f44336; }
+    .test.skip .icon::before { content: '–'; color: #888; }
+    .test.running .icon::before { content: '…'; color: #888; }
+    .test .name { flex: 1; }
+    .test.fail .name { color: #f44336; }
+    .test .duration { color: #555; font-size: 0.8em; }
+    .error-detail { padding: 4px 32px 4px 48px; color: #f44336; font-size: 0.8em; white-space: pre-wrap; word-break: break-all; }
+    .test-file-selector { padding: 8px 16px; border-bottom: 1px solid #333; font-size: 0.82em; color: #aaa; }
+    .test-file-selector label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .test-file-selector input[type=checkbox] { accent-color: #2a6db5; }
+    #capture-drop { margin: 8px 16px; padding: 20px; border: 2px dashed #333; border-radius: 6px; text-align: center; color: #555; font-size: 0.82em; cursor: pointer; }
+    #capture-drop.dragover { border-color: #2a6db5; color: #2a6db5; }
+    #capture-log { padding: 0 16px; font-size: 0.78em; color: #666; max-height: 120px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DevicePEQ Test Harness</h1>
+  <button id="run-btn" onclick="runAll()">▶ Run All</button>
+  <span id="live-count" style="font-size:0.8em;color:#666"></span>
+</header>
+
+<div id="summary"></div>
+
+<!-- Capture file drop zone -->
+<div id="capture-drop" ondragover="onCaptureDragOver(event)" ondrop="onCaptureDrop(event)" onclick="captureFileInput.click()">
+  Drop a capture JSON here (or click) to add it to the test suite
+</div>
+<input type="file" id="captureFileInput" accept=".json" style="display:none" onchange="onCaptureFileSelect(event)">
+<div id="capture-log"></div>
+
+<div id="output"></div>
+
+<script type="module">
+
+// ── mini test framework ───────────────────────────────────────────────────────
+
+class Assert {
+  constructor() { this.failures = []; }
+
+  ok(value, msg = 'expected truthy') {
+    if (!value) this.failures.push(`FAIL: ${msg} (got ${JSON.stringify(value)})`);
+  }
+  equal(a, b, msg = `expected ${JSON.stringify(a)} === ${JSON.stringify(b)}`) {
+    if (a !== b) this.failures.push(`FAIL: ${msg} — got ${JSON.stringify(a)}, expected ${JSON.stringify(b)}`);
+  }
+  notEqual(a, b, msg = `expected ${JSON.stringify(a)} !== ${JSON.stringify(b)}`) {
+    if (a === b) this.failures.push(`FAIL: ${msg}`);
+  }
+  deepEqual(a, b, msg = 'deepEqual') {
+    if (JSON.stringify(a) !== JSON.stringify(b))
+      this.failures.push(`FAIL: ${msg} — got ${JSON.stringify(a)}, expected ${JSON.stringify(b)}`);
+  }
+  throws(fn, msg = 'expected throw') {
+    try { fn(); this.failures.push(`FAIL: ${msg} — no error thrown`); } catch (_) {}
+  }
+  get passed() { return this.failures.length === 0; }
+}
+
+// ── test registry ─────────────────────────────────────────────────────────────
+
+const suites = [];      // [{ name, tests: [{name, fn}] }]
+const extraCaptures = {}; // filename → parsed JSON (from drag-drop)
+
+function registerSuite(name, moduleExports) {
+  const tests = Object.entries(moduleExports)
+    .filter(([k]) => k.startsWith('test_'))
+    .map(([k, fn]) => ({ name: k.replace(/^test_/, '').replace(/_/g, ' '), fn }));
+  suites.push({ name, tests });
+}
+
+// ── dynamic module loading ────────────────────────────────────────────────────
+
+// Override loadCapture to inject any drag-dropped captures
+import { MockHIDDevice, loadCapture as _loadCapture } from './MockHIDDevice.js';
+window._loadCapture = _loadCapture;
+
+// Patch loadCapture globally so test files can call it without re-importing.
+// Test files use paths like '../captures/foo.json' which resolve relative to
+// the test file, but fetch() resolves relative to the PAGE (testHarness.html).
+// We extract just the filename and always resolve from ./captures/ here.
+// Point peqConstraints loader at the local server so tests don't hit the prod URL.
+// Must be set before any module imports peqConstraints.js.
+window.DEVICEPEQ_CONFIG_BASE_URL = new URL('../devicePEQ/', import.meta.url).href;
+
+const _capturesBase = new URL('./captures/', import.meta.url).href;
+window.loadCapture = async (url, overrides = {}) => {
+  const filename = url.split('/').pop();
+  if (extraCaptures[filename]) {
+    return new MockHIDDevice({ ...extraCaptures[filename].device, exchanges: extraCaptures[filename].exchanges, ...overrides });
+  }
+  return _loadCapture(_capturesBase + filename, overrides);
+};
+
+// Load test suites
+async function loadSuites() {
+  const suiteModules = [
+    // ── Integration / Regression ───────────────────────────────────────────────
+    { name: 'Connector Routing (regression)', url: './integration/connectorRouting.test.js' },
+    { name: 'Plugin Callbacks & peqConstraints (regression)', url: './integration/pluginCallbacks.test.js' },
+    // ── Mock self-tests ────────────────────────────────────────────────────────
+    { name: 'MockHIDDevice (self-test)', url: './selfTest.js' },
+    // ── Handler unit tests ─────────────────────────────────────────────────────
+    { name: 'WalkPlay HID Handler', url: './handlers/walkplayHidHandler.test.js' },
+    { name: 'WalkPlay Mic Gain (readMicGain / setMicGain)', url: './handlers/walkplay_micgain.test.js' },
+    { name: 'TANCHJIM-SPACE PRO (WalkPlay SchemeNo16)', url: './handlers/walkplay_schemeno16_tanchjim_space_pro.test.js' },
+    { name: 'Fosi Audio DS3 (fosiAudioUsbHID)', url: './handlers/fosi_audio_ds3.test.js' },
+    { name: 'TANCHJIM-ONE DSP (KT Micro)', url: './handlers/ktmicro_tanchjim_one_dsp.test.js' },
+    { name: 'TANCHJIM BUNNY DSP (KT Micro)', url: './handlers/ktmicro_tanchjim_bunny_dsp.test.js' },
+    { name: 'ddHiFi DSP Cable - Memory (WalkPlay SchemeNo15)', url: './handlers/walkplay_schemeno15_ddhifi_dsp_cable.test.js' },
+    { name: 'MOONDROP Marigold (WalkPlay default)', url: './handlers/walkplay_default_moondrop_marigold.test.js' },
+    { name: 'Chu2 DSP (KT Micro)', url: './handlers/ktmicro_chu2_dsp.test.js' },
+    { name: 'Quark2 (WalkPlay SchemeNo11)', url: './handlers/walkplay_schemeno11_quark2.test.js' },
+    { name: 'FIIO KA17 (fiioUsbHID)', url: './handlers/fiio_fiio_ka17.test.js' },
+    { name: 'FIIO KA15 (fiioUsbHID)', url: './handlers/fiio_fiio_ka15.test.js' },
+    { name: 'FIIO OAK NANO (fiioUsbHID)', url: './handlers/fiio_fiio_oak_nano.test.js' },
+    { name: 'TANCHJIM FISSION DSP (KT Micro)', url: './handlers/ktmicro_tanchjim_fission_dsp.test.js' },
+    { name: 'Kiwi Ears-Allegro Mini (KT Micro)', url: './handlers/ktmicro_kiwi_ears_allegro_mini.test.js' },
+    { name: 'Kiwi Ears-Allegro PRO (KT Micro)', url: './handlers/ktmicro_kiwi_ears_allegro_pro.test.js' },
+    { name: 'NiceHCK Octave (WalkPlay SchemeNo18)', url: './handlers/walkplay_schemeno18_nicehck_octave.test.js' },
+    { name: 'TP35 Pro (WalkPlay SchemeNo16)', url: './handlers/walkplay_schemeno16_tp35_pro.test.js' },
+    { name: 'Protocol Max (WalkPlay SchemeNo16)', url: './handlers/walkplay_schemeno16_protocol_max.test.js' },
+    { name: 'Walkplay Extras API', url: './handlers/walkplay_extras.test.js' },
+    { name: 'FIIO QX13 (fiioUsbHID)', url: './handlers/fiio_fiio_qx13.test.js' },
+    { name: 'SNOWSKY Melody (fiioUsbHID)', url: './handlers/fiio_snowsky_melody.test.js' },
+    { name: 'JadeAudio JA11 (fiioUsbHID)', url: './handlers/fiio_jadeaudio_ja11.test.js' },
+    { name: 'Hi-MAX (WalkPlay SchemeNo11)', url: './handlers/walkplay_schemeno11_hi_max.test.js' },
+    { name: 'EPZ TP13 AI ENC audio (WalkPlay SchemeNo11)', url: './handlers/walkplay_schemeno11_epz_tp13.test.js' },
+    { name: 'CS43131 HiFi Audio DSP (WalkPlay SchemeNo11)', url: './handlers/walkplay_schemeno11_cs43131_hifi_audio_dsp.test.js' },
+    { name: 'TANCHJIM-STARGATE II (WalkPlay SchemeNo15)', url: './handlers/walkplay_schemeno15_tanchjim_stargate_ii.test.js' },
+    { name: 'KT02H20 HIFI Audio (ktmicroUsbHidHandler)', url: './handlers/ktmicro_kt02h20_hifi_audio.test.js' },
+    // Qudelix-5K removed: USB HID interface is write-only on macOS; tests can't
+    // run without real vendor HID collections on the mock device object.
+    // Add more test files here as you create them:
+    // { name: 'FiiO HID Handler', url: './handlers/fiioHidHandler.test.js' },
+    // { name: 'USB HID Connector', url: './integration/usbHidConnector.test.js' },
+  ];
+
+  for (const { name, url } of suiteModules) {
+    try {
+      const mod = await import(url);
+      registerSuite(name, mod);
+    } catch (e) {
+      registerSuite(name, {});
+      console.warn(`Could not load ${url}:`, e.message);
+      suites[suites.length - 1]._loadError = e.message;
+    }
+  }
+}
+
+// ── runner ────────────────────────────────────────────────────────────────────
+
+let results = { pass: 0, fail: 0, skip: 0 };
+
+window.runAll = async function() {
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('output').innerHTML = '';
+  document.getElementById('summary').innerHTML = 'Running…';
+  results = { pass: 0, fail: 0, skip: 0 };
+
+  for (const suite of suites) {
+    const suiteEl = document.createElement('div');
+    suiteEl.className = 'suite';
+    suiteEl.innerHTML = `<div class="suite-name">${suite.name}</div>`;
+    if (suite._loadError) {
+      suiteEl.innerHTML += `<div class="error-detail">⚠ Failed to load: ${suite._loadError}</div>`;
+    }
+    document.getElementById('output').appendChild(suiteEl);
+
+    for (const t of suite.tests) {
+      const row = document.createElement('div');
+      row.className = 'test running';
+      row.innerHTML = `<span class="icon"></span><span class="name">${t.name}</span><span class="duration"></span>`;
+      suiteEl.appendChild(row);
+
+      const assert = new Assert();
+      const t0 = performance.now();
+      try {
+        await t.fn(assert);
+        const ms = Math.round(performance.now() - t0);
+        if (assert.passed) {
+          row.className = 'test pass';
+          results.pass++;
+        } else {
+          row.className = 'test fail';
+          results.fail++;
+          assert.failures.forEach(msg => {
+            const d = document.createElement('div');
+            d.className = 'error-detail';
+            d.textContent = msg;
+            suiteEl.appendChild(d);
+          });
+        }
+        row.querySelector('.duration').textContent = `${ms}ms`;
+      } catch (err) {
+        row.className = 'test fail';
+        results.fail++;
+        const d = document.createElement('div');
+        d.className = 'error-detail';
+        d.textContent = `${err.message}\n${err.stack?.split('\n').slice(1,3).join('\n') ?? ''}`;
+        suiteEl.appendChild(d);
+      }
+
+      document.getElementById('live-count').textContent =
+        `${results.pass} pass / ${results.fail} fail`;
+    }
+  }
+
+  const s = document.getElementById('summary');
+  s.innerHTML =
+    `<span class="pass">✓ ${results.pass} passed</span>  ` +
+    `<span class="fail">✗ ${results.fail} failed</span>`;
+
+  document.getElementById('run-btn').disabled = false;
+};
+
+// ── drag-drop capture loading ─────────────────────────────────────────────────
+
+window.onCaptureDragOver = (e) => {
+  e.preventDefault();
+  document.getElementById('capture-drop').classList.add('dragover');
+};
+
+window.onCaptureDrop = (e) => {
+  e.preventDefault();
+  document.getElementById('capture-drop').classList.remove('dragover');
+  [...e.dataTransfer.files].forEach(loadCaptureFile);
+};
+
+window.onCaptureFileSelect = (e) => {
+  [...e.target.files].forEach(loadCaptureFile);
+};
+
+function loadCaptureFile(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      extraCaptures[file.name] = data;
+      const log = document.getElementById('capture-log');
+      log.innerHTML += `<div>✓ Loaded capture: <b>${file.name}</b> — ${data.device?.productName ?? '?'} (${data.exchanges?.length ?? 0} exchanges)</div>`;
+    } catch (e) {
+      alert(`Failed to parse ${file.name}: ${e.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+
+await loadSuites();
+document.getElementById('summary').textContent =
+  `${suites.reduce((n, s) => n + s.tests.length, 0)} tests loaded across ${suites.length} suites — click Run All`;
+
+</script>
+</body>
+</html>

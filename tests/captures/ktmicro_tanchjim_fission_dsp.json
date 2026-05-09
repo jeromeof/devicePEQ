@@ -1,0 +1,31 @@
+{
+  "_comment": "TANCHJIM-FISSION  DSP (KT Micro) — vendorId=0x31B2 productId=0x1119. Pull: seq 0-11 (getCurrentSlot + 5 filters at regs 0x26-0x2F + pregain at 0x66). Push: seq 12-23 (getCurrentSlot + 10 write registers + commit 0x53). compensate2X=false, baseRegisterOffset=0x26. Filters: 30Hz/+10dB, 200Hz/-6.5dB, 1300Hz/-1.2dB, 3000Hz/-4.8dB, 9000Hz/-9.5dB.",
+  "device": {"vendorId": 12722, "productId": 4377, "productName": "TANCHJIM-FISSION  DSP"},
+  "capturedAt": "2026-05-08T22:48:08.342Z",
+  "exchanges": [
+    {"send":{"reportId":75,"data":[36,0,0,0,82,0,3,0,0,0]},"responses":[{"reportId":75,"data":[36,0,0,0,82,0,1,0,0,0]}],"_seq":0,"description":"getCurrentSlot (reg 0x24, slot=1)"},
+    {"send":{"reportId":75,"data":[38,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[38,0,0,0,82,0,100,0,30,0]}],"_seq":1,"description":"filter0 gain/freq (reg 0x26): +10.0dB, 30Hz"},
+    {"send":{"reportId":75,"data":[39,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[39,0,0,0,82,0,44,1,0,0]}],"_seq":2,"description":"filter0 Q/type (reg 0x27): Q=0.3, PK"},
+    {"send":{"reportId":75,"data":[40,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[40,0,0,0,82,0,191,255,200,0]}],"_seq":3,"description":"filter1 gain/freq (reg 0x28): -6.5dB, 200Hz"},
+    {"send":{"reportId":75,"data":[41,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[41,0,0,0,82,0,144,1,0,0]}],"_seq":4,"description":"filter1 Q/type (reg 0x29): Q=0.4, PK"},
+    {"send":{"reportId":75,"data":[42,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[42,0,0,0,82,0,244,255,20,5]}],"_seq":5,"description":"filter2 gain/freq (reg 0x2A): -1.2dB, 1300Hz"},
+    {"send":{"reportId":75,"data":[43,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[43,0,0,0,82,0,132,3,0,0]}],"_seq":6,"description":"filter2 Q/type (reg 0x2B): Q=0.9, PK"},
+    {"send":{"reportId":75,"data":[44,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[44,0,0,0,82,0,208,255,184,11]}],"_seq":7,"description":"filter3 gain/freq (reg 0x2C): -4.8dB, 3000Hz"},
+    {"send":{"reportId":75,"data":[45,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[45,0,0,0,82,0,144,1,0,0]}],"_seq":8,"description":"filter3 Q/type (reg 0x2D): Q=0.4, PK"},
+    {"send":{"reportId":75,"data":[46,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[46,0,0,0,82,0,161,255,40,35]}],"_seq":9,"description":"filter4 gain/freq (reg 0x2E): -9.5dB, 9000Hz"},
+    {"send":{"reportId":75,"data":[47,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[47,0,0,0,82,0,160,15,0,0]}],"_seq":10,"description":"filter4 Q/type (reg 0x2F): Q=4.0, PK"},
+    {"send":{"reportId":75,"data":[102,0,0,0,82,0,0,0,0,0]},"responses":[{"reportId":75,"data":[102,0,0,0,82,0,254,254,0,0]}],"_seq":11,"description":"pregain (reg 0x66): -2dB"},
+    {"send":{"reportId":75,"data":[36,0,0,0,82,0,3,0,0,0]},"responses":[{"reportId":75,"data":[36,0,0,0,82,0,1,0,0,0]}],"_seq":12,"description":"pushToDevice: getCurrentSlot check (slot=1, not disabled)"},
+    {"send":{"reportId":75,"data":[38,0,0,0,87,0,100,0,30,0]},"responses":[{"reportId":75,"data":[38,0,0,0,87,0,3,0,0,0]}],"_seq":13,"description":"write filter0 gain/freq (reg 0x26)"},
+    {"send":{"reportId":75,"data":[39,0,0,0,87,0,44,1,0,0]},"responses":[{"reportId":75,"data":[39,0,0,0,87,0,3,0,0,0]}],"_seq":14,"description":"write filter0 Q/type (reg 0x27)"},
+    {"send":{"reportId":75,"data":[40,0,0,0,87,0,191,255,200,0]},"responses":[{"reportId":75,"data":[40,0,0,0,87,0,3,0,0,0]}],"_seq":15,"description":"write filter1 gain/freq (reg 0x28)"},
+    {"send":{"reportId":75,"data":[41,0,0,0,87,0,144,1,0,0]},"responses":[{"reportId":75,"data":[41,0,0,0,87,0,3,0,0,0]}],"_seq":16,"description":"write filter1 Q/type (reg 0x29)"},
+    {"send":{"reportId":75,"data":[42,0,0,0,87,0,244,255,20,5]},"responses":[{"reportId":75,"data":[42,0,0,0,87,0,3,0,0,0]}],"_seq":17,"description":"write filter2 gain/freq (reg 0x2A)"},
+    {"send":{"reportId":75,"data":[43,0,0,0,87,0,132,3,0,0]},"responses":[{"reportId":75,"data":[43,0,0,0,87,0,3,0,0,0]}],"_seq":18,"description":"write filter2 Q/type (reg 0x2B)"},
+    {"send":{"reportId":75,"data":[44,0,0,0,87,0,208,255,184,11]},"responses":[{"reportId":75,"data":[44,0,0,0,87,0,3,0,0,0]}],"_seq":19,"description":"write filter3 gain/freq (reg 0x2C)"},
+    {"send":{"reportId":75,"data":[45,0,0,0,87,0,144,1,0,0]},"responses":[{"reportId":75,"data":[45,0,0,0,87,0,3,0,0,0]}],"_seq":20,"description":"write filter3 Q/type (reg 0x2D)"},
+    {"send":{"reportId":75,"data":[46,0,0,0,87,0,161,255,40,35]},"responses":[{"reportId":75,"data":[46,0,0,0,87,0,3,0,0,0]}],"_seq":21,"description":"write filter4 gain/freq (reg 0x2E)"},
+    {"send":{"reportId":75,"data":[47,0,0,0,87,0,160,15,0,0]},"responses":[{"reportId":75,"data":[47,0,0,0,87,0,3,0,0,0]}],"_seq":22,"description":"write filter4 Q/type (reg 0x2F)"},
+    {"send":{"reportId":75,"data":[0,0,0,0,83,0,0,0,0,0]},"responses":[{"reportId":75,"data":[0,0,0,0,83,0,3,0,0,0]}],"_seq":23,"description":"commit (0x53)"}
+  ]
+}

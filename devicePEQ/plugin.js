@@ -1,5 +1,8 @@
 // Copyright 2024 : Pragmatic Audio
 
+import { loadPeqConstraintsConfig, resolveConstraints } from './peqConstraints.js';
+import { buildExtras } from './deviceExtras.js';
+
 /**
  * Initialise the Device PEQ plugin.
  *
@@ -21,6 +24,18 @@
  * @param {object}  [context.config]         - Optional plugin configuration flags.
  * @param {boolean} [context.config.advanced] - When true, exposes Serial / BLE / Network
  *                                              connection options in the device picker.
+ * @param {boolean} [context.config.minimalExperience] - When true, hides Pull From Device,
+ *                                              Push To Device, and the preset slot dropdown.
+ *                                              The Connect button changes to "Save to Device"
+ *                                              after a device connects and clicking it pushes
+ *                                              the current filters to the device.
+ * @param {boolean} [context.config.showExtras] - When true, shows a "Show Extras" button
+ *                                              next to the preset dropdown whenever the
+ *                                              connected device has supported extras
+ *                                              (DAC filter, balance, gain mode, etc.).
+ *                                              Expands an inline panel with per-capability
+ *                                              controls; each has an Apply button that
+ *                                              writes directly to the device.
  * @returns {Promise<void>}
  */
 async function initializeDeviceEqPlugin(context) {
@@ -83,6 +98,32 @@ async function initializeDeviceEqPlugin(context) {
     }, 10000); // Check every 10 seconds
   }
 
+  // Pre-load the peqConstraints config so it is cached before any device connects.
+  loadPeqConstraintsConfig().catch(err => console.warn('peqConstraintsConfig failed to load:', err));
+
+  // Returns a compact ID string for console logs across all transport types.
+  // USB HID  : "vendorId=0x2972 productId=0x0001"
+  // USB Serial: "vendorId=0x152A productId=0x89D3"
+  // BLE      : "serviceClassId=00001101-..."
+  // Network  : "" (IP logged separately by the handler)
+  function deviceIdStr(device) {
+    const raw  = device?.rawDevice;
+    const info = device?.info;
+    // USB HID – HIDDevice exposes vendorId / productId directly
+    if (raw?.vendorId != null && raw?.productId != null) {
+      return `vendorId=0x${raw.vendorId.toString(16).toUpperCase().padStart(4,'0')} productId=0x${raw.productId.toString(16).toUpperCase().padStart(4,'0')}`;
+    }
+    // USB Serial – Web Serial stores IDs in the info object captured at connect time
+    if (info?.usbVendorId != null && info?.usbProductId != null) {
+      return `vendorId=0x${info.usbVendorId.toString(16).toUpperCase().padStart(4,'0')} productId=0x${info.usbProductId.toString(16).toUpperCase().padStart(4,'0')}`;
+    }
+    // BLE – no hardware IDs available in the browser
+    if (info?.bluetoothServiceClassId) {
+      return `serviceClassId=${info.bluetoothServiceClassId}`;
+    }
+    return '';
+  }
+
   // Check if showLogs flag is passed in context
   if (context && context.config && context.config.showLogs === true) {
     window.showDeviceLogs = true;
@@ -101,11 +142,84 @@ async function initializeDeviceEqPlugin(context) {
       this.peqDropdown = document.getElementById('device-peq-slot-dropdown');
       this.pullButton = this.deviceEqArea.querySelector('.pull-filters-fromdevice');
       this.pushButton = this.deviceEqArea.querySelector('.push-filters-todevice');
+      this.showExtrasBtn = document.getElementById('show-extras-btn');
+      this.extrasPanel = document.getElementById('device-extras-panel');
       this.lastPushTime = 0; // Track when the push button was last clicked
+      this._extrasExpanded = false;
+
+      this.showExtrasBtn.addEventListener('click', () => {
+        this._extrasExpanded = !this._extrasExpanded;
+        this.extrasPanel.hidden = !this._extrasExpanded;
+        this.showExtrasBtn.textContent = this._extrasExpanded ? 'Hide Extras ▴' : 'Show Extras ▾';
+        // Fire deferred reads the first time the panel opens
+        if (this._extrasExpanded && this._pendingExtrasReads) {
+          this._pendingExtrasReads();
+          this._pendingExtrasReads = null;
+        }
+      });
 
       this.useNetwork = false;
       this.currentDevice = null;
+      this._onDeviceConnected = context?.onDeviceConnected ?? null;
+      this._minimal = context?.config?.minimalExperience === true;
       this.initializeUI();
+    }
+
+    // Register a callback invoked whenever a device successfully connects.
+    // Signature: callback(device, peqConstraints, currentPEQValues)
+    // peqConstraints  – resolved object from peqConstraintsConfig.json.
+    // currentPEQValues – filter array pulled from the device, or null if
+    //                    pullValuesOnConnect is false or the pull failed.
+    setOnDeviceConnected(callback) {
+      this._onDeviceConnected = typeof callback === 'function' ? callback : null;
+    }
+
+    // Pulls filters from the device then fires _onDeviceConnected with all three args.
+    // Called automatically when context.config.pullValuesOnConnect is true.
+    async _pullOnConnect(device, peqConstraints, slot) {
+      let filters = null;
+      const idStr = deviceIdStr(device);
+      const tag = `"${device.model}"${idStr ? ` (${idStr})` : ''}`;
+      const { UsbHIDConnector, UsbSerialConnector, BluetoothBleConnector, NetworkDeviceConnector } = this._connectors ?? {};
+
+      // Yield to the event loop so the connect button handler fully completes
+      // (elemToFilters check, event listener setup, etc.) before we start
+      // sending HID/Serial read commands. Without this the pull races against
+      // the tail of the connection flow and the device times out mid-response.
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      try {
+        // -1 is the sentinel used by WalkPlay (and similar) meaning "no fixed slot —
+        // use whatever is currently selected". Fall back to the dropdown value which
+        // is guaranteed populated because of the setTimeout(0) yield above.
+        const selectedSlot = (slot == null || slot === -1) ? this.peqDropdown.value : slot;
+        console.log(`[peqConstraints] pullValuesOnConnect: pulling from ${tag} slot=${selectedSlot}`);
+        let result = null;
+        if (this.connectionType === 'network') {
+          result = await NetworkDeviceConnector.pullFromDevice(device, selectedSlot);
+        } else if (this.connectionType === 'usb') {
+          result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
+        } else if (this.connectionType === 'serial') {
+          result = await UsbSerialConnector.pullFromDevice(device, selectedSlot);
+        } else if (this.connectionType === 'ble') {
+          result = await BluetoothBleConnector.pullFromDevice(device, selectedSlot);
+        }
+        if (result?.filters?.length > 0) {
+          filters = result.filters;
+          console.log(`[peqConstraints] pullValuesOnConnect: received ${filters.length} filter(s) from ${tag}`);
+          // In minimal mode the callback recipient (graphtool) applies filters to the EQ UI.
+          if (!this._minimal) {
+            context.filtersToElem(filters);
+            context.applyEQ();
+          }
+        } else {
+          console.log(`[peqConstraints] pullValuesOnConnect: no filters returned from ${tag}`);
+        }
+      } catch (err) {
+        console.warn(`[peqConstraints] pullValuesOnConnect: pull failed for ${tag}:`, err);
+      }
+      try { this._onDeviceConnected(device, peqConstraints, filters, device.extras); }
+      catch (e) { console.warn('onDeviceConnected callback error:', e); }
     }
 
     initializeUI() {
@@ -114,6 +228,11 @@ async function initializeDeviceEqPlugin(context) {
       this.pushButton.hidden = true;
       this.peqDropdown.hidden = true;
       this.peqSlotArea.hidden = true;
+      this.showExtrasBtn.hidden = true;
+      this.extrasPanel.hidden = true;
+      this.extrasPanel.innerHTML = '';
+      this._extrasExpanded = false;
+      this._pendingExtrasReads = null;
     }
 
     showConnectedState(device, connectionType, availableSlots, currentSlot) {
@@ -121,14 +240,55 @@ async function initializeDeviceEqPlugin(context) {
       this.currentDevice = device;
       this.connectionType = connectionType;
       window.peqDeviceModelConfig = device.modelConfig || null;
+      const peqConstraints = resolveConstraints(device.modelConfig);
+
+      // Build extras if the connector hasn't already attached them (e.g. non-USB connectors).
+      if (!device.extras) device.extras = buildExtras(device.handler, device);
+      window.peqDeviceExtras = device.extras;
+
+      const idStr = deviceIdStr(device);
+      console.log(
+        `[peqConstraints] connected: "${device.model}"${idStr ? ` (${idStr})` : ''}` +
+        ` ref=${device.modelConfig?.peqConstraintsRef ?? 'inline'}` +
+        ` bands=${peqConstraints?.maxFilters} gain=${peqConstraints?.minGain}/${peqConstraints?.maxGain}dB`
+      );
       document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: window.peqDeviceModelConfig }));
-      this.disconnectButton.hidden = false;
+      document.dispatchEvent(new CustomEvent('PeqDeviceExtrasChanged', { detail: window.peqDeviceExtras }));
+      // Fire immediately so listeners (e.g. graphtool) can update their UI and apply constraints
+      // before the async pull completes.
+      document.dispatchEvent(new CustomEvent('PeqDeviceConnected', { detail: { device, peqConstraints } }));
+
       this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
-      this.pullButton.hidden = false;
-      this.pushButton.hidden = false;
-      this.peqDropdown.hidden = false;
-      this.peqSlotArea.hidden = false;
+      if (this._minimal) {
+        // All elements are in the hidden skeleton — no visible UI to update here.
+      } else {
+        this.disconnectButton.hidden = false;
+        this.pullButton.hidden = false;
+        this.pushButton.hidden = false;
+        this.peqDropdown.hidden = false;
+        this.peqSlotArea.hidden = false;
+      }
+
+      // Pull on connect when configured; pullValuesOnConnect is the sole control for this.
+      // minimalExperience only affects what UI is shown, not whether we pull.
+      if (context?.config?.pullValuesOnConnect === true) {
+        this._pullOnConnect(device, peqConstraints, currentSlot);
+      } else if (this._onDeviceConnected) {
+        try { this._onDeviceConnected(device, peqConstraints, null, device.extras); }
+        catch (e) { console.warn('onDeviceConnected callback error:', e); }
+      }
+
+      // Show extras toggle if configured and device has supported extras
+      this.showExtrasBtn.hidden = true;
+      this.extrasPanel.hidden = true;
+      this.extrasPanel.innerHTML = '';
+      this._extrasExpanded = false;
+      if (context?.config?.showExtras === true && this._hasAnyExtras(device.extras)) {
+        this._buildExtrasPanel(device.extras);
+        this.showExtrasBtn.textContent = 'Show Extras ▾';
+        this.showExtrasBtn.hidden = false;
+      }
 
       // Auto-load flat EQ phone measurement if configured
       if (device.modelConfig && device.modelConfig.flatEQPhoneMeasurement) {
@@ -182,7 +342,9 @@ async function initializeDeviceEqPlugin(context) {
       this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
       window.peqDeviceModelConfig = null;
+      window.peqDeviceExtras = null;
       document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: null }));
+      document.dispatchEvent(new CustomEvent('PeqDeviceExtrasChanged', { detail: null }));
       this.connectButton.hidden = false;
       this.disconnectButton.hidden = true;
       this.deviceNameElem.textContent = 'None';
@@ -191,13 +353,244 @@ async function initializeDeviceEqPlugin(context) {
       this.pullButton.hidden = true;
       this.pushButton.hidden = true;
       this.peqSlotArea.hidden = true;
+      this.showExtrasBtn.hidden = true;
+      this.extrasPanel.hidden = true;
+      this.extrasPanel.innerHTML = '';
+      this._extrasExpanded = false;
+      this._pendingExtrasReads = null;
+    }
+
+    _hasAnyExtras(extras) {
+      if (!extras) return false;
+      return Object.values(extras).some(e => e?.supported === true);
+    }
+
+    _buildExtrasPanel(extras) {
+      const panel = this.extrasPanel;
+      panel.innerHTML = '';
+      this._pendingExtrasReads = null;
+      const deferredReads = [];
+
+      const makeRow = (label, controlHTML, key) => {
+        const row = document.createElement('div');
+        row.className = 'extras-row';
+        row.innerHTML = `
+          <span class="extras-label">${label}</span>
+          <div class="extras-control">${controlHTML}</div>
+          <button class="extras-apply" data-extra="${key}">Apply</button>
+          <span class="extras-status" id="extras-status-${key}"></span>
+        `;
+        return row;
+      };
+
+      const setStatus = (key, msg, cls = '') => {
+        const el = document.getElementById(`extras-status-${key}`);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'extras-status' + (cls ? ' ' + cls : '');
+        if (cls === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'extras-status'; }, 2000);
+      };
+
+      // Deferred: populate is called when panel first opens (not at connect time)
+      const deferRead = (key, getterFn, populate) => {
+        if (typeof getterFn !== 'function') return;
+        deferredReads.push(async () => {
+          console.log(`[extras] Reading ${key}…`);
+          setStatus(key, 'Reading…');
+          try {
+            const val = await getterFn();
+            console.log(`[extras] ${key} =`, val);
+            populate(val);
+            setStatus(key, '');
+          } catch (e) {
+            console.warn(`[extras] ${key} read failed:`, e?.message ?? e);
+            if (e?.code !== 'NOT_IMPLEMENTED') setStatus(key, 'Read failed', 'err');
+            else setStatus(key, '');
+          }
+        });
+      };
+
+      // ── DAC Filter ────────────────────────────────────────────────────────
+      if (extras.dacFilter?.supported) {
+        const opts = (extras.dacFilter.options ?? [])
+          .map(o => `<option value="${o}">${o}</option>`).join('');
+        const row = makeRow('DAC Filter',
+          `<select id="extra-dacFilter" class="extras-select">${opts}</select>`, 'dacFilter');
+        panel.appendChild(row);
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          const val = document.getElementById('extra-dacFilter').value;
+          console.log(`[extras] Setting dacFilter →`, val);
+          try { await extras.dacFilter.set(val); setStatus('dacFilter', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] dacFilter set failed:', e?.message); setStatus('dacFilter', 'Error', 'err'); }
+        });
+        deferRead('dacFilter', extras.dacFilter.get,
+          val => { const el = document.getElementById('extra-dacFilter'); if (el) el.value = val; });
+      }
+
+      // ── DAC Work Mode ─────────────────────────────────────────────────────
+      if (extras.dacWorkMode?.supported) {
+        const modes = extras.dacWorkMode.modes ?? [0, 1];
+        const labels = extras.dacWorkMode.modeLabels ?? modes.map(m => `Mode ${m}`);
+        const opts = modes.map((m, i) => `<option value="${m}">${labels[i] ?? `Mode ${m}`}</option>`).join('');
+        const row = makeRow('DAC Work Mode',
+          `<select id="extra-dacWorkMode" class="extras-select">${opts}</select>`, 'dacWorkMode');
+        panel.appendChild(row);
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          const val = parseInt(document.getElementById('extra-dacWorkMode').value, 10);
+          console.log(`[extras] Setting dacWorkMode →`, val);
+          try { await extras.dacWorkMode.set(val); setStatus('dacWorkMode', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] dacWorkMode set failed:', e?.message); setStatus('dacWorkMode', 'Error', 'err'); }
+        });
+        deferRead('dacWorkMode', extras.dacWorkMode.get, val => {
+          const el = document.getElementById('extra-dacWorkMode');
+          if (!el) return;
+          const knownModes = extras.dacWorkMode.modes ?? [0, 1];
+          if (knownModes.includes(val)) {
+            el.value = String(val);
+          } else {
+            const opt = document.createElement('option');
+            opt.value = String(val);
+            opt.textContent = `Mode ${val} (current)`;
+            el.insertBefore(opt, el.firstChild);
+            el.value = String(val);
+            setStatus('dacWorkMode', `Read: ${val} (non-standard)`, '');
+          }
+        });
+      }
+
+      // ── Gain Mode (boolean toggle) ─────────────────────────────────────────
+      if (extras.gainMode?.supported) {
+        const row = makeRow('Gain Mode',
+          `<label class="toggle-switch">
+             <input type="checkbox" id="extra-gainMode">
+             <span class="toggle-knob"></span>
+           </label>
+           <span id="extra-gainMode-lbl" style="font-size:12px;color:#666">Low Gain</span>`, 'gainMode');
+        panel.appendChild(row);
+        const cb = row.querySelector('#extra-gainMode');
+        const lbl = row.querySelector('#extra-gainMode-lbl');
+        cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'High Gain' : 'Low Gain'; });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          console.log(`[extras] Setting gainMode →`, cb.checked);
+          try { await extras.gainMode.set(cb.checked); setStatus('gainMode', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] gainMode set failed:', e?.message); setStatus('gainMode', 'Error', 'err'); }
+        });
+        deferRead('gainMode', extras.gainMode.get, val => {
+          cb.checked = !!val;
+          lbl.textContent = val ? 'High Gain' : 'Low Gain';
+        });
+      }
+
+      // ── Balance ───────────────────────────────────────────────────────────
+      // Single slider: negative = boost right, positive = boost left
+      if (extras.dacBalance?.supported) {
+        const row = makeRow('Balance',
+          `<span style="font-size:11px;color:#666">L</span>
+           <input type="range" id="extra-dacBalance" class="extras-balance-slider" min="-20" max="20" step="1" value="0">
+           <span style="font-size:11px;color:#666">R</span>
+           <span id="extra-dacBalance-lbl" style="font-size:12px;min-width:65px;text-align:center">Center</span>`, 'dacBalance');
+        panel.appendChild(row);
+        const slider = row.querySelector('#extra-dacBalance');
+        const lbl = row.querySelector('#extra-dacBalance-lbl');
+        slider.addEventListener('input', () => {
+          const v = parseInt(slider.value, 10);
+          lbl.textContent = v === 0 ? 'Center' : v > 0 ? `L +${v}` : `R +${-v}`;
+        });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          const v = parseInt(slider.value, 10);
+          console.log(`[extras] Setting dacBalance → L=${v > 0 ? v : 0} R=${v < 0 ? -v : 0}`);
+          try {
+            await extras.dacBalance.set(v > 0 ? v : 0, v < 0 ? -v : 0);
+            setStatus('dacBalance', 'Saved ✓', 'ok');
+          } catch (e) { console.warn('[extras] dacBalance set failed:', e?.message); setStatus('dacBalance', 'Error', 'err'); }
+        });
+        // dacBalance has no get
+      }
+
+      // ── Mic Gain ──────────────────────────────────────────────────────────
+      if (extras.micGain?.supported) {
+        const min = extras.micGain.minDb ?? extras.micGain.min ?? -15;
+        const max = extras.micGain.maxDb ?? extras.micGain.max ?? 15;
+        const row = makeRow('Mic Gain',
+          `<input type="range" id="extra-micGain" class="extras-range" min="${min}" max="${max}" step="1" value="0">
+           <input type="number" id="extra-micGain-num" class="extras-num-input" min="${min}" max="${max}" step="1" value="0">
+           <span style="font-size:12px;color:#666">dB</span>`, 'micGain');
+        panel.appendChild(row);
+        const sl = row.querySelector('#extra-micGain');
+        const num = row.querySelector('#extra-micGain-num');
+        sl.addEventListener('input', () => { num.value = sl.value; });
+        num.addEventListener('input', () => { sl.value = num.value; });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          console.log(`[extras] Setting micGain →`, num.value);
+          try { await extras.micGain.set(parseFloat(num.value)); setStatus('micGain', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] micGain set failed:', e?.message); setStatus('micGain', 'Error', 'err'); }
+        });
+        deferRead('micGain', extras.micGain.get, val => { sl.value = val; num.value = val; });
+      }
+
+      // ── Noise Reduction ───────────────────────────────────────────────────
+      if (extras.denoise?.supported) {
+        const row = makeRow('Noise Reduction',
+          `<label class="toggle-switch">
+             <input type="checkbox" id="extra-denoise">
+             <span class="toggle-knob"></span>
+           </label>
+           <span id="extra-denoise-lbl" style="font-size:12px;color:#666">Off</span>`, 'denoise');
+        panel.appendChild(row);
+        const cb = row.querySelector('#extra-denoise');
+        const lbl = row.querySelector('#extra-denoise-lbl');
+        cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'On' : 'Off'; });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          console.log(`[extras] Setting denoise →`, cb.checked);
+          try { await extras.denoise.set(cb.checked); setStatus('denoise', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] denoise set failed:', e?.message); setStatus('denoise', 'Error', 'err'); }
+        });
+        deferRead('denoise', extras.denoise.get, val => {
+          cb.checked = !!val;
+          lbl.textContent = val ? 'On' : 'Off';
+        });
+      }
+
+      // ── Output Gain ───────────────────────────────────────────────────────
+      if (extras.outputGain?.supported) {
+        const row = makeRow('Output Gain',
+          `<input type="range" id="extra-outputGain" class="extras-range" min="-10" max="10" step="1" value="0">
+           <input type="number" id="extra-outputGain-num" class="extras-num-input" min="-10" max="10" step="1" value="0">
+           <span style="font-size:12px;color:#666">dB</span>`, 'outputGain');
+        panel.appendChild(row);
+        const sl = row.querySelector('#extra-outputGain');
+        const num = row.querySelector('#extra-outputGain-num');
+        sl.addEventListener('input', () => { num.value = sl.value; });
+        num.addEventListener('input', () => { sl.value = num.value; });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          console.log(`[extras] Setting outputGain →`, num.value);
+          try {
+            await extras.outputGain.set(parseFloat(num.value));
+            setStatus('outputGain', 'Saved ✓ (overwritten on next Push)', 'ok');
+          }
+          catch (e) { console.warn('[extras] outputGain set failed:', e?.message); setStatus('outputGain', 'Error', 'err'); }
+        });
+        // outputGain has no get — Push To Device overwrites this register with preamp delta
+      }
+
+      // Schedule reads to fire when the panel first opens (avoids racing with pull-on-connect)
+      if (deferredReads.length > 0) {
+        this._pendingExtrasReads = () => deferredReads.forEach(fn => fn());
+      }
     }
 
     populatePeqDropdown(slots, currentSlot) {
-      // Clear existing options and add the default "PEQ Disabled" option
-      this.peqDropdown.innerHTML = '<option value="-1">PEQ Disabled</option>';
+      // "PEQ Disabled" is only meaningful for devices that have a real bypass/disabled
+      // preset slot (e.g. FiiO slot 240 = BYPASS). For devices where disabledPresetId
+      // is absent or -1 (the sentinel meaning "no disabled slot") we skip the option
+      // entirely and fall back to the first real slot when no match is found.
+      const disabledPresetId = this.currentDevice?.modelConfig?.disabledPresetId;
+      const hasDisabledPreset = disabledPresetId != null && disabledPresetId !== -1;
 
-      // Populate the dropdown with available slots
+      this.peqDropdown.innerHTML = hasDisabledPreset
+        ? '<option value="-1">PEQ Disabled</option>'
+        : '';
+
       slots.forEach(slot => {
         const option = document.createElement('option');
         option.value = slot.id;
@@ -205,17 +598,15 @@ async function initializeDeviceEqPlugin(context) {
         this.peqDropdown.appendChild(option);
       });
 
-      // Set the selected option based on currentSlot
-      if (currentSlot === -1) {
-        // Select "PEQ Disabled"
+      if (hasDisabledPreset && currentSlot === -1) {
         this.peqDropdown.selectedIndex = 0;
       } else {
-        // Attempt to select the option matching currentSlot
-        const matchingOption = Array.from(this.peqDropdown.options).find(option => option.value === String(currentSlot));
+        const matchingOption = Array.from(this.peqDropdown.options)
+          .find(opt => opt.value === String(currentSlot));
         if (matchingOption) {
           this.peqDropdown.value = currentSlot;
         } else {
-          // If no matching option, default to "PEQ Disabled"
+          // No match — select the first real slot rather than a phantom "PEQ Disabled"
           this.peqDropdown.selectedIndex = 0;
         }
       }
@@ -328,6 +719,33 @@ async function initializeDeviceEqPlugin(context) {
   window.showToast = showToast;
 
   function loadHtml() {
+    // In minimal experience the host provides its own connect/save UI. We only inject
+    // the functional skeleton elements that DeviceEqUI needs internally — nothing visible.
+    if (context?.config?.minimalExperience) {
+      const anchorDiv = context.config.devicePEQAnchorDiv ?? '.extra-eq';
+      const placement = context.config.devicePEQPlacement  ?? 'afterend';
+      const anchor = document.querySelector(anchorDiv);
+      if (anchor) {
+        anchor.insertAdjacentHTML(placement, `
+          <div class="device-eq disabled" id="deviceEqArea" style="display:none">
+            <button class="connect-device" hidden>Connect to Device</button>
+            <button class="disconnect-device" hidden>Disconnect From <span id="deviceName">None</span></button>
+            <div class="peq-slot-area" hidden>
+              <select name="device-peq-slot" id="device-peq-slot-dropdown">
+                <option value="None" selected>Select PEQ Slot</option>
+              </select>
+              <button class="show-extras-btn" id="show-extras-btn" hidden>Show Extras &#9662;</button>
+            </div>
+            <div class="device-extras-panel" id="device-extras-panel" hidden></div>
+            <div class="filters-button">
+              <button class="pull-filters-fromdevice" hidden>Pull From Device</button>
+              <button class="push-filters-todevice" hidden>Push To Device</button>
+            </div>
+          </div>`);
+      }
+      return;
+    }
+
     // Set default values for configuration
     var headingTag = 'h4';
 
@@ -458,6 +876,111 @@ async function initializeDeviceEqPlugin(context) {
       display: inline-block; /* Or block, depending on layout */
     }
 
+    /* ── Device Extras panel ─────────────────────────────────────────────── */
+    .show-extras-btn {
+      font-size: 12px;
+      padding: 3px 10px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #f0f0f0;
+      cursor: pointer;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .show-extras-btn:hover { background: #e0e0e0; }
+
+    .device-extras-panel {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 6px;
+      background: #f9f9f9;
+      width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    .extras-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+      flex-wrap: wrap;
+    }
+    .extras-row:last-child { border-bottom: none; }
+
+    .extras-label {
+      min-width: 120px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .extras-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .extras-select {
+      font-size: 13px;
+      padding: 2px 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .extras-apply {
+      padding: 3px 10px;
+      font-size: 12px;
+      border: 1px solid #999;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .extras-apply:hover { background: #eee; }
+
+    .extras-status {
+      font-size: 11px;
+      color: #888;
+      min-width: 55px;
+    }
+    .extras-status.ok  { color: #2a7; }
+    .extras-status.err { color: #c00; }
+
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-knob {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc;
+      border-radius: 22px;
+      transition: .2s;
+    }
+    .toggle-knob:before {
+      position: absolute;
+      content: "";
+      height: 16px; width: 16px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: .2s;
+    }
+    .toggle-switch input:checked + .toggle-knob { background: #4CAF50; }
+    .toggle-switch input:checked + .toggle-knob:before { transform: translateX(18px); }
+
+    .extras-balance-slider { width: 120px; }
+    .extras-num-input { width: 52px; font-size: 13px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 4px; }
+    .extras-range { width: 110px; }
         </style>
             <${headingTag}>Device PEQ</${headingTag}>
             <div class="settings-row">
@@ -470,7 +993,9 @@ async function initializeDeviceEqPlugin(context) {
                 <select name="device-peq-slot" id="device-peq-slot-dropdown">
                     <option value="None" selected>Select PEQ Slot</option>
                 </select>
+                <button class="show-extras-btn" id="show-extras-btn" hidden>Show Extras &#9662;</button>
             </div>
+            <div class="device-extras-panel" id="device-extras-panel" hidden></div>
             <div class="filters-button">
                 <button class="pull-filters-fromdevice">Pull From Device</button>
                 <button class="push-filters-todevice">Push To Device</button>
@@ -892,6 +1417,11 @@ async function initializeDeviceEqPlugin(context) {
 
         const deviceEqUI = new DeviceEqUI();
 
+        // Inject connector references so _pullOnConnect can reach them.
+        // The connectors are const-scoped to this try block; the class method
+        // can't close over them directly, so we store them on the instance here.
+        deviceEqUI._connectors = { UsbHIDConnector, UsbSerialConnector, BluetoothBleConnector, NetworkDeviceConnector };
+
         // Show the Connect button if WebHID is supported
         deviceEqUI.deviceEqArea.classList.remove('disabled');
         deviceEqUI.connectButton.hidden = false;
@@ -900,6 +1430,12 @@ async function initializeDeviceEqPlugin(context) {
         // Connect Button Event Listener
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
+            // Minimal experience: button becomes "Save to Device" once connected
+            if (context?.config?.minimalExperience && deviceEqUI.currentDevice) {
+              deviceEqUI.pushButton.click();
+              return;
+            }
+
             let selection =  {connectionType: "usb"}; // Assume usb only by default
             if (context.config.advanced) {
               // Show a custom dialog to select Network or USB

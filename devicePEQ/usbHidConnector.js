@@ -7,20 +7,50 @@ export const UsbHIDConnector = ( async function () {
     let currentDevice = null;
 
     const {usbHidDeviceHandlerConfig} = await import('./usbDeviceConfig.js');
+    const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
+    const { buildExtras } = await import('./deviceExtras.js');
 
     const getDeviceConnected = async () => {
         try {
+            // If a device is already connected, close it so the picker can select a
+            // different one (prevents stale currentDevice blocking KT Micro / Qudelix
+            // after switching away from a previously-connected WalkPlay device).
+            if (currentDevice != null) {
+              try { await currentDevice.rawDevice.close(); } catch (_) {}
+              currentDevice = null;
+            }
+
             const vendorToManufacturer = usbHidDeviceHandlerConfig.flatMap(entry =>
               entry.vendorIds.map(vendorId => ({
                 vendorId,
-                name: entry.name
+                ...(entry.hidUsagePage ? { usagePage: entry.hidUsagePage } : {})
               }))
             );
             // Request devices matching the filters
             const selectedDevices = await navigator.hid.requestDevice({ filters: vendorToManufacturer });
 
             if (selectedDevices.length > 0) {
-                const rawDevice = selectedDevices[0];
+                let rawDevice = selectedDevices[0];
+
+                // Some devices (e.g. Qudelix 5K) expose multiple HID interfaces with
+                // identical names. The picker may return the consumer-control interface
+                // (usagePage=0x0C) instead of the vendor PEQ interface (usagePage≥0xFF00).
+                // If that happens, look through previously-granted devices for a sibling
+                // with the same vendorId/productId that has vendor HID collections.
+                const hasVendorHID = rawDevice.collections?.some(c => c.usagePage >= 0xFF00);
+                if (!hasVendorHID) {
+                  const granted = await navigator.hid.getDevices();
+                  const sibling = granted.find(d =>
+                    d !== rawDevice &&
+                    d.vendorId  === rawDevice.vendorId &&
+                    d.productId === rawDevice.productId &&
+                    d.collections?.some(c => c.usagePage >= 0xFF00)
+                  );
+                  if (sibling) {
+                    console.log(`[connector] Swapping to vendor HID interface for "${rawDevice.productName}"`);
+                    rawDevice = sibling;
+                  }
+                }
                 // Find the vendor configuration matching the selected device
               const vendorConfig = usbHidDeviceHandlerConfig.find(entry =>
                 entry.vendorIds.includes(rawDevice.vendorId)
@@ -62,13 +92,14 @@ export const UsbHIDConnector = ( async function () {
                   deviceDetails.modelConfig || {}
                 );
 
+                // Resolve peqConstraints and merge into modelConfig so handlers
+                // can read maxFilters, supportsLSFilter etc. from deviceDetails.modelConfig.
+                await loadPeqConstraintsConfig().catch(() => {});
+                const resolvedConstraints = resolveConstraints(modelConfig);
+                if (resolvedConstraints) Object.assign(modelConfig, resolvedConstraints);
+
                 const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
                 let handler = deviceDetails.handler ||  vendorConfig.handler;
-
-                // Check if already connected
-                if (currentDevice != null) {
-                  return currentDevice;
-                }
 
                 // Open the device if not already open
                 if (!rawDevice.opened) {
@@ -81,6 +112,7 @@ export const UsbHIDConnector = ( async function () {
                     modelConfig: modelConfig,
                     handler: handler
                 };
+                currentDevice.extras = buildExtras(handler, currentDevice);
 
                 return currentDevice;
             } else {
@@ -108,7 +140,19 @@ export const UsbHIDConnector = ( async function () {
     const checkDeviceConnected = async (device) => {
         var rawDevice = device.rawDevice;
         const rawDevices = await navigator.hid.getDevices();
-        var matchingRawDevice =  rawDevices.find(d => d.vendorId === rawDevice.vendorId && d.productId == rawDevice.productId);
+        // When multiple interfaces share vendorId+productId (e.g. Qudelix 5K),
+        // prefer the one whose collections match the currently-held device so we
+        // don't accidentally swap back to the consumer-control interface.
+        const sameCollectionSig = (a, b) =>
+          (a.collections||[]).map(c=>c.usagePage).sort().join() ===
+          (b.collections||[]).map(c=>c.usagePage).sort().join();
+        var matchingRawDevice = rawDevices.find(d =>
+          d.vendorId === rawDevice.vendorId &&
+          d.productId === rawDevice.productId &&
+          sameCollectionSig(d, rawDevice)
+        ) ?? rawDevices.find(d =>
+          d.vendorId === rawDevice.vendorId && d.productId === rawDevice.productId
+        );
         if (typeof matchingRawDevice == 'undefined' || matchingRawDevice == null ) {
             console.error("Device disconnected?");
             alert('Device disconnected?');
@@ -177,10 +221,10 @@ export const UsbHIDConnector = ( async function () {
 
           // Warn about unsupported filter types
           const hasUnsupportedShelfFilters = hasUnsupportedLS || hasUnsupportedHS;
-          if (hasUnsupportedShelfFilters && needsPreGain && device.modelConfig.supportsPregain === false) {
-            console.warn("Device doesn't support shelf filters and auto pregain - both will be ignored");
+          if (hasUnsupportedShelfFilters && needsPreGain && device.modelConfig.deviceHandlesPregain === true) {
+            console.warn("Device handles pregain internally — host-computed pregain and unsupported shelf filters will be ignored");
             if (window.showToast) {
-              window.showToast("Device doesn't support shelf filters and auto pregain - both will be ignored", "warning");
+              window.showToast("Device handles pregain internally — unsupported filters will be ignored", "warning");
             }
           } else if (hasUnsupportedLS && hasUnsupportedHS) {
             console.warn("Device does not support LS or HS filters - ignoring");
@@ -197,10 +241,10 @@ export const UsbHIDConnector = ( async function () {
             if (window.showToast) {
               window.showToast("Device does not support High Shelf filters - ignoring", "warning");
             }
-          } else if (needsPreGain && device.modelConfig.supportsPregain === false) {
-            console.warn("Device does not support auto calculated pregain");
+          } else if (needsPreGain && device.modelConfig.deviceHandlesPregain === true) {
+            console.warn("Device handles pregain internally — host-computed pregain will not be written");
             if (window.showToast) {
-              window.showToast("Device does not support auto calculated pregain", "warning");
+              window.showToast("Device handles pregain internally — no host pregain applied", "warning");
             }
           }
           if (hasUnsupportedLPHP) {
@@ -264,6 +308,10 @@ export const UsbHIDConnector = ( async function () {
 
     const getCurrentDevice = () => currentDevice;
 
+    // Returns the extras object for a device (capabilities beyond core PEQ).
+    // The same object is already attached as device.extras when the device connects.
+    const getExtras = (device) => device?.extras ?? buildExtras(device?.handler, device);
+
     return {
         getDeviceConnected,
         getAvailableSlots,
@@ -273,5 +321,6 @@ export const UsbHIDConnector = ( async function () {
         getCurrentDevice,
         getCurrentSlot,
         enablePEQ,
+        getExtras,
     };
 })();

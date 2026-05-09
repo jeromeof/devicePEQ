@@ -1,9 +1,65 @@
 //
 // Copyright 2024 : Pragmatic Audio
 //
-// Define the shared logic for Walkplay devices
+// Walkplay USB HID Handler
+// ────────────────────────
+// Shared protocol implementation for all Walkplay-chipset USB DAC/dongle devices.
+// Used by SchemeNo10, 11, 13, 15, 16, 17, 18, 19, 20, 21 device groups.
 //
+// Example device: CrinEar Protocol Max (vendorId=0x3302, productId=0x43CC, SchemeNo16)
+//   — 10-band PEQ (±10 dB, LS+HS), DAC filter, DAC balance, DAC work mode, gain mode
+//   — Capture: tests/captures/walkplay_schemeno16_protocol_max.json
+//   — Reference: tests/captures/walkplay_schemeno16_protocol_max_walkplay_site.json
+//
+// Protocol: reportId=0x4B (75), READ=0x80, WRITE=0x01, END=0x00
 // Many thanks to ma0shu for providing a dump
+//
+// ── Core PEQ API (required by all connectors) ─────────────────────────────────
+//   getCurrentSlot(deviceDetails)                       → slot id
+//   pullFromDevice(deviceDetails, slot)                 → { filters, globalGain, currentSlot }
+//   pushToDevice(deviceDetails, phoneObj, slot, gain, filters)
+//   enablePEQ(deviceDetails, enable, slotId)
+//
+// ── Extras API (exposed via deviceExtras.js / plugin showExtras:true) ─────────
+// Extras are scheme-gated in peqConstraintsConfig.json. The plugin renders a
+// collapsible "Show Extras" panel that reads current values on first open and
+// applies changes via Apply buttons.
+//
+//   CMD  Name            Schemes      Description
+//   0x02 micGain         ALL          ADC/input gain ±15 dB, 16-bit signed (CB1300D hardware).
+//                                     Confirmed on SchemeNo11 and SchemeNo16 (Protocol Max)
+//                                     via walkplayPreprocessor/walkplay.js analysis.
+//                                     setMicGain(deviceDetails, dB) / readMicGain(deviceDetails)
+//
+//   0x03 outputGain      ALL          DAC output gain register, 1 byte signed.
+//                                     Written during pushToDevice when deviceHandlesPregain=false.
+//                                     setOutputGain(deviceDetails, gainDb)
+//
+//   0x11 dacFilter       ALL          DSP interpolation filter algorithm:
+//                                       1=FAST-LL  2=FAST-PC  3=SLOW-LL  4=SLOW-PC  5=NON-OS
+//                                     setDacFilter(deviceDetails, type) / readDacFilter(deviceDetails)
+//
+//   0x16 dacBalance      ALL          Left/right channel amplitude trim.
+//                                     Pass leftDelta>0 to boost left, rightDelta>0 to boost right,
+//                                     both 0 to centre. Units are device-native (0–127).
+//                                     setDacBalance(deviceDetails, leftDelta, rightDelta)
+//
+//   0x19 gainMode        SchemeNo16+  Alternative gain-processing mode (Low Gain / High Gain).
+//                                     Boolean: false=Low Gain, true=High Gain.
+//                                     setGainMode(deviceDetails, bool) / readGainMode(deviceDetails)
+//
+//   0x1B denoise         SchemeNo11   ENC/noise-cancellation circuit toggle.
+//                                     setDenoiseEnabled(deviceDetails, bool) / readDenoiseEnabled(deviceDetails)
+//
+//   0x1D dacWorkMode     ALL          DAC operational mode: 0=Class AB, 1=Class H.
+//                                     setDacWorkMode(deviceDetails, mode) / readDacWorkMode(deviceDetails)
+//
+// ── globalGainBuffer ──────────────────────────────────────────────────────────
+// Walkplay hardware applies a fixed -5 dB offset at the DAC stage (modelConfig
+// globalGainBuffer: -5). During pushToDevice the gain register receives only the
+// delta beyond this buffer: Math.min(0, preamp - buffer). So a -3 dB preamp
+// writes 0 (hardware covers it), a -7 dB preamp writes -2 (hardware -5 + reg -2).
+//
 
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;
@@ -12,13 +68,18 @@ export const walkplayUsbHID = (function () {
   const WRITE = 0x01;
   const END = 0x00;
   const CMD = {
-    FLASH_EQ: 0x01,
-    MIC_GAIN: 0x02,
-    GLOBAL_GAIN: 0x03,
-    PEQ_VALUES: 0x09,
-    TEMP_WRITE: 0x0A,
-    VERSION: 0x0C,
-    GET_SLOT: 0x0F,
+    FLASH_EQ:    0x01,
+    MIC_GAIN:    0x02,  // ADC/input gain, 16-bit signed ±32767 = ±15 dB (available on all schemes)
+    GLOBAL_GAIN: 0x03,  // DAC output gain / global EQ offset, 1 byte
+    PEQ_VALUES:  0x09,
+    TEMP_WRITE:  0x0A,
+    VERSION:     0x0C,
+    GET_SLOT:    0x0F,
+    DAC_FILTER:  0x11,  // DSP filter algorithm: 1=FAST-LL, 2=FAST-PC, 3=SLOW-LL, 4=SLOW-PC, 5=NON-OS
+    DAC_BALANCE:  0x16,  // Left/right channel balance
+    GAIN_MODE:    0x19,  // Alternative gain-processing mode toggle — boolean (0=off, 1=on). SchemeNo16/Protocol Max confirmed.
+    DENOISE:      0x1B,  // ENC/noise-cancellation toggle
+    DAC_WORK_MODE: 0x1D, // DAC operational mode (0=normal, 1=alternate)
   };
 
   const DEFAULT_FILTER_COUNT = 8;
@@ -27,9 +88,14 @@ export const walkplayUsbHID = (function () {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
 
+    // Register listeners BEFORE sending so responses are never missed.
+    // (On real hardware latency is long enough that send-then-listen works,
+    // but registering first is the correct pattern and required for testing.)
+
     // Get the version number first
+    const versionResponsePromise = waitForResponse(device, CMD.VERSION);
     await sendReport(device, REPORT_ID, [READ, CMD.VERSION, END]);
-    var response = await waitForResponse(device, CMD.VERSION);
+    var response = await versionResponsePromise;
     const versionBytes = response.slice(3, 6);
     const version = String.fromCharCode(...versionBytes);
 
@@ -46,8 +112,9 @@ export const walkplayUsbHID = (function () {
 
     console.log("Fetching current EQ slot...");
 
-    await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, END]);
-    response = await waitForResponse(device, CMD.PEQ_VALUES);
+    const slotResponsePromise = waitForResponse(device, CMD.PEQ_VALUES);
+      await sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, END]);
+    response = await slotResponsePromise;
     // Slot is at byte 36 in the full HID packet (including report ID).
     // Web HID strips the report ID, so it's at index 35 here.
     const slot = response ? response[35] : -1;
@@ -89,14 +156,14 @@ export const walkplayUsbHID = (function () {
     // Wait for device to process all filter writes
     await delay(100);
 
-    if (deviceDetails.modelConfig && typeof deviceDetails.modelConfig.autoGlobalGain !== 'undefined') {
-      // If the walkplay device auto calculates global gain we can leave the global gain as it was
-      if (!deviceDetails.modelConfig.autoGlobalGain) {
-        // Write the global gain
-        await writeGlobalGain(device, globalGain);
-        console.log(`USB Device PEQ: Walkplay set global gain to ${globalGain}`);
-        await delay(50); // Wait after global gain write
-      }
+    if (deviceDetails.modelConfig.deviceHandlesPregain === false) {
+      const buffer = deviceDetails.modelConfig.globalGainBuffer ?? null;
+      // When a fixed hardware buffer exists, write only the delta beyond it (clamped to 0).
+      // e.g. preamp=-7dB, buffer=-5dB → write -2dB; preamp=-3dB → write 0 (hardware covers it).
+      const gainToWrite = buffer !== null ? Math.min(0, globalGain - buffer) : globalGain;
+      await writeGlobalGain(device, gainToWrite);
+      console.log(`USB Device PEQ: Walkplay set global gain register to ${gainToWrite} dB (preamp ${globalGain} dB, hardware buffer ${buffer} dB)`);
+      await delay(50);
     }
 
     // Commit sequence matching Walkplay app order:
@@ -114,12 +181,25 @@ export const walkplayUsbHID = (function () {
     console.log("PEQ filters successfully pushed to Walkplay device.");
   };
 
+  // Mic gain range: -15..+15 dB, encoded as 16-bit signed scaled by 32767/15.
+  // Special cases from website source: +15 → 32767, -15 → 32769.
   const setMicGain = async (deviceDetails, value) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
-    const gainValue = Math.round(value);
-    const request = [WRITE, CMD.MIC_GAIN, 0x02, 0x00, gainValue, END];
-    console.log(`USB Device PEQ: Walkplay set mic gain to ${gainValue}`);
+    let t;
+    if (value === 15) {
+      t = 32767;
+    } else if (value === -15) {
+      t = 32769;
+    } else {
+      let r = Math.round(value * (32767 / 15));
+      r = Math.max(-32767, Math.min(32767, r));
+      t = r < 0 ? r + 65536 : r;
+    }
+    const lsb = t & 0xFF;
+    const msb = (t >> 8) & 0xFF;
+    const request = [WRITE, CMD.MIC_GAIN, 0x02, lsb, msb];
+    console.log(`USB Device PEQ: Walkplay set mic gain to ${value}dB (encoded: ${t})`);
     await sendReport(device, REPORT_ID, request);
   };
 
@@ -127,8 +207,8 @@ export const walkplayUsbHID = (function () {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
 
-    return new Promise(async (resolve, reject) => {
-      const request = [READ, CMD.MIC_GAIN, 0x00, END];
+    return new Promise((resolve, reject) => {
+      const request = [READ, CMD.MIC_GAIN, 0x00];
 
       const timeout = setTimeout(() => {
         device.removeEventListener("inputreport", onReport);
@@ -142,14 +222,17 @@ export const walkplayUsbHID = (function () {
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
 
-        const micGain = new Int8Array([data[2]])[0];
-        console.log(`USB Device PEQ: Walkplay mic gain value: ${micGain}`);
+        // 16-bit unsigned little-endian → signed → dB
+        const raw = data[2] | (data[3] << 8);
+        const signed = raw > 32767 ? raw - 65536 : raw;
+        const micGain = Math.round((signed * 15 / 32767) * 100) / 100;
+        console.log(`USB Device PEQ: Walkplay mic gain value: ${micGain}dB (raw: ${raw})`);
         resolve(micGain);
       };
 
       device.addEventListener("inputreport", onReport);
       console.log(`USB Device PEQ: Walkplay sending readMicGain command:`, request);
-      await sendReport(device, REPORT_ID, request);
+      sendReport(device, REPORT_ID, request).catch(reject);
     });
   };
 
@@ -168,10 +251,9 @@ export const walkplayUsbHID = (function () {
     // response format, not the per-filter variant).
     const currentSlot = slot;
 
-    device.oninputreport = async (event) => {
+    const onFilterReport = (event) => {
       const data = new Uint8Array(event.data.buffer);
       console.log(`USB Device PEQ: Walkplay pullFromDevice onInputReport received data:`, data);
-
       if (data[1] !== CMD.PEQ_VALUES) return; // ignore unrelated reports
       if (data.length >= 32) {
         const filter = parseFilterPacket(data);
@@ -179,6 +261,8 @@ export const walkplayUsbHID = (function () {
         filters[filter.filterIndex] = filter;
       }
     };
+
+    device.addEventListener('inputreport', onFilterReport);
 
     // Send requests for each filter with increased delay
     for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
@@ -199,7 +283,7 @@ export const walkplayUsbHID = (function () {
       deviceDetails: deviceDetails.modelConfig,
     }));
 
-    device.oninputreport = null;  // Stop listening on this callback for now
+    device.removeEventListener('inputreport', onFilterReport);
 
 
     // Read global gain after waiting for filters
@@ -336,13 +420,172 @@ export const walkplayUsbHID = (function () {
     await device.sendReport(REPORT_ID, request);
   }
 
+  // DAC_FILTER (0x11): select the DAC's DSP filter algorithm.
+  // filterType: 'FAST-LL' | 'FAST-PC' | 'SLOW-LL' | 'SLOW-PC' | 'NON-OS'
+  const setDacFilter = async (deviceDetails, filterType) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    const filterMap = { 'FAST-LL': 1, 'FAST-PC': 2, 'SLOW-LL': 3, 'SLOW-PC': 4, 'NON-OS': 5 };
+    const filterByte = filterMap[filterType] ?? 1;
+    console.log(`USB Device PEQ: Walkplay set DAC filter to ${filterType} (${filterByte})`);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_FILTER, 0x01, filterByte]);
+  };
+
+  // DAC_BALANCE (0x16): left/right channel trim in device units (typically 0..127).
+  // Pass leftDelta > 0 to boost left, rightDelta > 0 to boost right, both 0 to center.
+  const setDacBalance = async (deviceDetails, leftDelta, rightDelta) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    if (leftDelta > 0) {
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x01, 0x00, leftDelta & 0xFF, 0x00]);
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x00, 0x00, 0x00]);
+    } else if (rightDelta > 0) {
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x01, 0x00, 0x00, 0x00]);
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x00, rightDelta & 0xFF, 0x00]);
+    } else {
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x01, 0x00, 0x00]);
+      await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x00, 0x00, 0x00]);
+    }
+  };
+
+  // DENOISE (0x1B): enable or disable the ENC/noise-reduction circuit.
+  const setDenoiseEnabled = async (deviceDetails, enabled) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    console.log(`USB Device PEQ: Walkplay set denoise ${enabled ? 'on' : 'off'}`);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.DENOISE, 0x01, enabled ? 0x01 : 0x00]);
+  };
+
+  // Read current ENC/denoise state. Returns true if enabled, false if disabled.
+  const readDenoiseEnabled = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading denoise state");
+      }, 2000);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.DENOISE) return;
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        resolve(data[3] === 0x01);
+      };
+      device.addEventListener("inputreport", onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.DENOISE, 0x00]).catch(reject);
+    });
+  };
+
+  // Read the current DAC filter algorithm. Returns the filter name string or null.
+  const readDacFilter = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    const filterNames = { 1: 'FAST-LL', 2: 'FAST-PC', 3: 'SLOW-LL', 4: 'SLOW-PC', 5: 'NON-OS' };
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC filter");
+      }, 2000);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.DAC_FILTER) return;
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        // Response format: [READ, CMD, len, value] — value is at data[3]
+        resolve(filterNames[data[3]] ?? null);
+      };
+      device.addEventListener("inputreport", onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.DAC_FILTER]).catch(reject);
+    });
+  };
+
+  // DAC_WORK_MODE (0x1D): set DAC operational mode. mode: 0 = normal, 1 = alternate.
+  const setDacWorkMode = async (deviceDetails, mode) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    console.log(`USB Device PEQ: Walkplay set DAC work mode to ${mode}`);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_WORK_MODE, 0x01, mode & 0xFF]);
+  };
+
+  // Read current DAC work mode. Returns 0 or 1.
+  const readDacWorkMode = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC work mode");
+      }, 2000);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.DAC_WORK_MODE) return;
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        // Response format: [READ, CMD, len, value] — value is at data[3]
+        console.log('[walkplay] readDacWorkMode bytes:', Array.from(data.slice(0, 8)).map(b => '0x' + b.toString(16)));
+        resolve(data[3]);
+      };
+      device.addEventListener("inputreport", onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.DAC_WORK_MODE]).catch(reject);
+    });
+  };
+
+  // Public alias for writeGlobalGain — sets the DAC output/EQ offset gain in dB.
+  const setOutputGain = async (deviceDetails, gainDb) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    console.log(`USB Device PEQ: Walkplay set output gain to ${gainDb}dB`);
+    await writeGlobalGain(device, gainDb);
+  };
+
+  // GAIN_MODE (0x19): alternative gain-processing mode — boolean toggle.
+  // Confirmed present on SchemeNo16 devices (e.g. Protocol Max).
+  // Exact DSP behaviour TBD; treated as a boolean on/off switch.
+  const setGainMode = async (deviceDetails, enabled) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    console.log(`USB Device PEQ: Walkplay set gain mode ${enabled ? 'on' : 'off'}`);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.GAIN_MODE, 0x01, enabled ? 0x01 : 0x00]);
+  };
+
+  const readGainMode = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading gain mode");
+      }, 2000);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.GAIN_MODE) return;
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        resolve(data[3] === 0x01);
+      };
+      device.addEventListener("inputreport", onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.GAIN_MODE, 0x00]).catch(reject);
+    });
+  };
+
   return {
     pushToDevice,
     pullFromDevice,
     getCurrentSlot,
     enablePEQ,
     setMicGain,
-    readMicGain
+    readMicGain,
+    setDacFilter,
+    readDacFilter,
+    setDacBalance,
+    setDenoiseEnabled,
+    readDenoiseEnabled,
+    setDacWorkMode,
+    readDacWorkMode,
+    setOutputGain,
+    setGainMode,
+    readGainMode,
   };
 })();
 

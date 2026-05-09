@@ -273,9 +273,14 @@ export const moondropUsbHidHandler = (function () {
       await device.sendReport(REPORT_ID, enable);
     }
 
-    // Write the global gain (pregain)
-    await writePregain(device, globalGain);
-    console.log(`USB Device PEQ: Moondrop set pregain to ${globalGain}`);
+    // Moondrop devices with supportGlobalGain:true (all except Old Fashioned) automatically
+    // compute gain headroom from the written biquad coefficients. Writing an explicit pregain
+    // on top of that causes double gain reduction. Only write pregain when deviceHandlesPregain
+    // is explicitly false (meaning the host must manage it).
+    if (globalGain !== 0 && deviceDetails.modelConfig.deviceHandlesPregain === false) {
+      await writePregain(device, globalGain);
+      console.log(`USB Device PEQ: Moondrop set pregain to ${globalGain}`);
+    }
 
     const save = buildSavePacket();
     console.log(`USB Device PEQ: Moondrop sending save command:`, save);

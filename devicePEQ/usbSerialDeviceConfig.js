@@ -22,9 +22,7 @@ export const usbSerialDeviceHandlerConfig = [
       "Element IV": {
         usbProductId: 35066,
         modelConfig: {
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:          10,
+          peqConstraintsRef: "peq10Band12dBFullShelves",
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -53,9 +51,7 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "Nothing Headphones": {
         modelConfig: {
-          minGain:                  -12,
-          maxGain:                   12,
-          maxFilters:                 8,
+          peqConstraintsRef: "peq8Band12dBFullShelves",
           firstWritableEQSlot:        5,
           maxWritableEQSlots:         1,
           disconnectOnSave:           false,
@@ -84,10 +80,8 @@ export const usbSerialDeviceHandlerConfig = [
       "FiiO Audio DSP": {
         usbProductId: 21971,
         modelConfig: {
+          peqConstraintsRef: "peq10Band12dBFullShelves",
           baudRate:            57600,
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:          10,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  21,
           disconnectOnSave:    false,
@@ -135,10 +129,8 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "FiiO EH11": {
         modelConfig: {
+          peqConstraintsRef: "peq10Band20dBFullShelves",
           baudRate:            115200,
-          minGain:            -20,
-          maxGain:             20,
-          maxFilters:          10,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -150,10 +142,8 @@ export const usbSerialDeviceHandlerConfig = [
       },
       "FiiO EH13": {
         modelConfig: {
+          peqConstraintsRef: "peq10Band20dBFullShelves",
           baudRate:            115200,
-          minGain:            -20,
-          maxGain:             20,
-          maxFilters:          10,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -180,10 +170,8 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "Tanchjim Rita": {
         modelConfig: {
+          peqConstraintsRef: "peq12Band15dBFullShelves",
           baudRate:            9600,
-          minGain:            -15,
-          maxGain:             15,
-          maxFilters:          12,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -210,10 +198,8 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "Moondrop Edge": {
         modelConfig: {
+          peqConstraintsRef: "peq5Band12dBFullShelves",
           baudRate:            115200,
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:           5,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -240,10 +226,8 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "EarFun Tune Pro": {
         modelConfig: {
+          peqConstraintsRef: "peq10Band12dBPkOnlyNoPregain",
           baudRate:            115200,
-          minGain:            -12,
-          maxGain:             12,
-          maxFilters:          10,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,
@@ -271,10 +255,8 @@ export const usbSerialDeviceHandlerConfig = [
     devices: {
       "Edifier W830NB": {
         modelConfig: {
+          peqConstraintsRef: "peq4Band6dBPkOnlyNoPregain",
           baudRate:            115200,
-          minGain:             -6,
-          maxGain:              6,
-          maxFilters:           4,
           firstWritableEQSlot: 0,
           maxWritableEQSlots:  1,
           disconnectOnSave:    false,

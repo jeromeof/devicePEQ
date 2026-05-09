@@ -5,6 +5,7 @@ export const BluetoothBleConnector = (async function () {
   let currentDevice = null;
 
   const { bluetoothBleDeviceHandlerConfig } = await import('./bluetoothBleDeviceConfig.js');
+  const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
 
   function buildRequestOptions() {
     const filters = [];
@@ -47,9 +48,17 @@ export const BluetoothBleConnector = (async function () {
     });
   }
 
-  function resolveModelConfig(entry, deviceName) {
+  async function resolveModelConfig(entry, deviceName) {
     const deviceDetails = entry.devices?.[deviceName] || entry.devices?.[Object.keys(entry.devices || {})[0]] || {};
-    return Object.assign({}, entry.defaultModelConfig || {}, deviceDetails.modelConfig || {});
+    const modelConfig = Object.assign({}, entry.defaultModelConfig || {}, deviceDetails.modelConfig || {});
+
+    // Resolve peqConstraints and merge into modelConfig so handlers can read
+    // maxFilters, supportsLSFilter etc. from deviceDetails.modelConfig directly.
+    await loadPeqConstraintsConfig().catch(() => {});
+    const resolvedBleConstraints = resolveConstraints(modelConfig);
+    if (resolvedBleConstraints) Object.assign(modelConfig, resolvedBleConstraints);
+
+    return modelConfig;
   }
 
   function createNotificationQueue(rxChar) {
@@ -104,7 +113,7 @@ export const BluetoothBleConnector = (async function () {
       await rxChar.startNotifications();
       const readNotification = createNotificationQueue(rxChar);
 
-      const modelConfig = resolveModelConfig(entry, rawDevice.name || '');
+      const modelConfig = await resolveModelConfig(entry, rawDevice.name || '');
       const model = rawDevice.name || 'Bluetooth Device';
 
       currentDevice = {

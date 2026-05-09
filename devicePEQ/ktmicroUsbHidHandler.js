@@ -143,7 +143,7 @@ export const ktmicroUsbHidHandler = (function () {
     request[6] = processedGlobalGain;
 
     console.log(`USB Device PEQ: KTMicro sending writePregain command:`, request);
-    await sendCommandWithResponse(device, request);
+    await device.sendReport(REPORT_ID, request);
   }
 
   async function pullFromDevice(deviceDetails) {
@@ -156,7 +156,7 @@ export const ktmicroUsbHidHandler = (function () {
       filters.push(filter);
     }
 
-    const pregain = readPregain(device);
+    const pregain = await readPregain(device);
 
     return { filters, globalGain: pregain };
   }
@@ -240,27 +240,28 @@ export const ktmicroUsbHidHandler = (function () {
         const writeGainFreq = buildWritePacket(filterId, freqToWrite, gain);
         const writeQ = buildQPacket(filterId + 1, filters[i].q, filters[i].type);
 
+        // Fire-and-forget writes — KT Micro devices do not all ACK individual register
+        // writes (e.g. TANCHJIM-ONE DSP processes silently). The older handler never
+        // awaited write ACKs; only the commit requires a confirmed response.
         console.log(`USB Device PEQ: KTMicro sending gain/freq for filter ${i}:`, filters[i], writeGainFreq);
-        await sendCommandWithResponse(device, writeGainFreq);
-        console.log(`USB Device PEQ: KTMicro gain/freq for filter ${i} sent and confirmed`);
+        await device.sendReport(REPORT_ID, writeGainFreq);
 
         console.log(`USB Device PEQ: KTMicro sending Q for filter ${i}:`, filters[i].q, writeQ);
-        await sendCommandWithResponse(device, writeQ);
-        console.log(`USB Device PEQ: KTMicro Q for filter ${i} sent and confirmed`);
+        await device.sendReport(REPORT_ID, writeQ);
       }
     } catch (e) {
       console.log(`USB Device PEQ: KTMicro Error during push:`, e);
       throw e;
     }
 
-    if (deviceDetails.modelConfig.supportsPregain) {
+    if (deviceDetails.modelConfig.deviceHandlesPregain === false) {
       await writePregain(device, globalGain);
     }
 
-    const commit = buildCommand (COMMAND_COMMIT);
+    const commit = buildCommand(COMMAND_COMMIT);
     console.log(`USB Device PEQ: KTMicro sending commit command:`, commit);
-    await sendCommandWithResponse(device, commit);
-    console.log(`USB Device PEQ: KTMicro commit sent and confirmed`);
+    await device.sendReport(REPORT_ID, commit);
+    console.log(`USB Device PEQ: KTMicro commit sent`);
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 

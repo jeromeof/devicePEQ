@@ -9,18 +9,13 @@
 export const networkDeviceHandlerConfig = {
   // Defaults applied to all network devices unless overridden per model
   defaultModelConfig: {
-    minGain: -12,
-    maxGain: 12,
-    maxFilters: 10, // Requirement: support up to 10 filters
+    peqConstraintsRef: "peq10Band12dBFullShelves",
     firstWritableEQSlot: 0,
     maxWritableEQSlots: 1,
     disconnectOnSave: false,
     disabledPresetId: -1,
     experimental: false,
-    supportsLSFilter: true,
-    supportsHSFilter: true,
-    supportsPregain: true,
-    supportedFilterTypes: ["PK", "LSQ", "HSQ"], // Requirement: PK, LSQ, HSQ
+    supportedFilterTypes: ["PK", "LSQ", "HSQ"], // Wire-protocol field for network handlers
   },
 
   // Known network devices keyed by selection value used in the UI
@@ -29,15 +24,14 @@ export const networkDeviceHandlerConfig = {
     "WiiM": {
       manufacturer: "WiiM",
       model: "WiiM Network Device",
-      // modelConfig overrides if any in the future
-      modelConfig: {}
+      modelConfig: { peqConstraintsRef: "peq10Band12dBFullShelves" }
     },
 
     // Luxsin X9 device, plain HTTP with custom encoded payloads
     "Luxsin": {
       manufacturer: "Luxsin",
       model: "Luxsin X9",
-      modelConfig: {}
+      modelConfig: { peqConstraintsRef: "peq10Band12dBAllFilters" }
     }
   }
 };

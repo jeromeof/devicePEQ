@@ -5,46 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Device PEQ Plugin Test</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      padding: 20px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
 
     .peq-container {
       border: 1px solid #ccc;
       padding: 15px;
-      max-width: 500px;
+      max-width: 620px;
       margin-bottom: 20px;
       background-color: #f9f9f9;
     }
+    .peq-container h3 { margin-top: 0; }
 
-    .peq-container h3 {
-      margin-top: 0;
+    /* Constraint info banner shown when a device is connected */
+    #peq-constraint-banner {
+      display: none;
+      background: #e8f4fd;
+      border: 1px solid #90c8f0;
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin-bottom: 10px;
+      font-size: 0.85em;
+      color: #1a4a6e;
     }
+    #peq-constraint-banner span { margin-right: 12px; }
 
-    .filter-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    /* Pregain row — hidden unless device requires host-managed pregain (deviceHandlesPregain: false) */
+    #pregain-row {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid #ddd;
     }
+    #pregain-row label { font-weight: bold; }
+    #pregain-input { width: 70px; }
+
+    .filter-list { display: flex; flex-direction: column; gap: 10px; }
 
     .filter-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 4px;
     }
+    .filter-item label { font-size: 0.85em; white-space: nowrap; }
+    .filter-item input[type="number"] { width: 72px; }
 
-    .peq-controls {
-      margin-top: 10px;
+    /* Highlight inputs that exceed device limits */
+    .filter-item input.gain-out-of-range { background: #ffe0e0; border-color: #c00; }
+    .filter-item input.q-out-of-range    { background: #fff3cd; border-color: #e6a817; }
+
+    /* Filter count badge next to the Add Filter button */
+    #filter-count-badge {
+      font-size: 0.8em;
+      color: #666;
+      margin-left: 6px;
     }
+    #filter-count-badge.at-max { color: #c00; font-weight: bold; }
 
-    button {
-      margin-top: 10px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
+    .peq-controls { margin-top: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 
+    button { padding: 5px 10px; cursor: pointer; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -53,31 +76,43 @@
 
 <div class="peq-container">
   <h3>Filters</h3>
+
+  <!-- Shown when a device connects; populated by applyConstraintsToUI() -->
+  <div id="peq-constraint-banner"></div>
+
+  <!-- Pregain — shown only when connected device reports deviceHandlesPregain:false (host must write it) -->
+  <div id="pregain-row">
+    <label for="pregain-input">Pregain (dB):</label>
+    <input type="number" id="pregain-input" value="0" step="0.1">
+  </div>
+
   <div id="filter-list" class="filter-list">
     <div class="filter-item">
       <label>Type:</label>
       <select class="filter-type"></select>
-      <label>Freq:</label> <input type="number" class="filter-freq" value="100">
-      <label>Gain:</label> <input type="number" class="filter-gain" value="-3">
-      <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+      <label>Freq:</label> <input type="number" class="filter-freq" value="100" min="20" max="20000" step="1">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="-3" min="-12" max="12" step="0.1">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707" min="0.1" max="10" step="0.01">
     </div>
     <div class="filter-item">
       <label>Type:</label>
       <select class="filter-type"></select>
-      <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
-      <label>Gain:</label> <input type="number" class="filter-gain" value="1">
-      <label>Q:</label> <input type="number" class="filter-q" value="1.0">
+      <label>Freq:</label> <input type="number" class="filter-freq" value="1000" min="20" max="20000" step="1">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="1" min="-12" max="12" step="0.1">
+      <label>Q:</label> <input type="number" class="filter-q" value="1.0" min="0.1" max="10" step="0.01">
     </div>
     <div class="filter-item">
       <label>Type:</label>
       <select class="filter-type"></select>
-      <label>Freq:</label> <input type="number" class="filter-freq" value="2000">
-      <label>Gain:</label> <input type="number" class="filter-gain" value="3">
-      <label>Q:</label> <input type="number" class="filter-q" value="0.707">
+      <label>Freq:</label> <input type="number" class="filter-freq" value="2000" min="20" max="20000" step="1">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="3" min="-12" max="12" step="0.1">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707" min="0.1" max="10" step="0.01">
     </div>
   </div>
+
   <div class="peq-controls">
-    <button onclick="addFilter()">Add Filter</button>
+    <button id="btn-add-filter" onclick="addFilter()">Add Filter</button>
+    <span id="filter-count-badge"></span>
     <button onclick="clearFilters()">Clear Filters</button>
   </div>
 </div>
@@ -88,6 +123,16 @@
   <button id="btnLoadTargetFR">Load Target FR...</button>
   <input type="file" id="targetFRFileInput" accept=".txt" style="display:none;">
 </div>
+
+<!-- Point the constraints loader at the local copy during dev -->
+<script>window.DEVICEPEQ_CONFIG_BASE_URL = './devicePEQ/';</script>
+
+<!-- Import peqConstraints API and expose resolveConstraints globally -->
+<script type="module">
+  import { loadPeqConstraintsConfig, resolveConstraints } from './devicePEQ/peqConstraints.js';
+  loadPeqConstraintsConfig().catch(err => console.warn('peqConstraintsConfig load failed:', err));
+  window.resolvePeqConstraints = resolveConstraints;
+</script>
 
 <script>
   // Global phoneObj holds the loaded FR data for plugins
@@ -208,20 +253,36 @@
       document.dispatchEvent(new CustomEvent('NormalizeFRChanged'));
     });
   }
-  // All known filter types in display order
+  // All known filter types in display order.
+  // flag: the peqConstraints field that must be true for the type to be enabled.
+  // null means always available (Peak is universally supported).
+  // Canonical filter type values used in filter objects and sent to device handlers.
+  // 'AP' matches the Truthear app convention and is the widely-used short form.
   const ALL_FILTER_TYPES = [
-    { value: 'PK',  label: 'Peak',       flag: null },
-    { value: 'LSQ', label: 'Low Shelf',  flag: 'supportsLSFilter' },
-    { value: 'HSQ', label: 'High Shelf', flag: 'supportsHSFilter' },
-    { value: 'LP',  label: 'Low Pass',   flag: 'supportsLPHPFilters' },
-    { value: 'HP',  label: 'High Pass',  flag: 'supportsLPHPFilters' },
+    { value: 'PK',    label: 'Peak',        flag: null },
+    { value: 'LSQ',   label: 'Low Shelf',   flag: 'supportsLSFilter' },
+    { value: 'HSQ',   label: 'High Shelf',  flag: 'supportsHSFilter' },
+    { value: 'LP',    label: 'Low Pass',    flag: 'supportsLPFilter' },
+    { value: 'HP',    label: 'High Pass',   flag: 'supportsHPFilter' },
+    { value: 'BP',    label: 'Band Pass',   flag: 'supportsBPFilter' },
+    { value: 'NOTCH', label: 'Notch',       flag: 'supportsNotchFilter' },
+    { value: 'BS',    label: 'Band Stop',   flag: 'supportsBandStopFilter' },
+    { value: 'CQ',    label: 'Constant Q',  flag: 'supportsConstantQFilter' },
+    { value: 'AP',    label: 'All Pass',    flag: 'supportsAllPassFilter' },
   ];
+
+  // Resolve peqConstraints from current modelConfig using the loaded API (or fall back)
+  function currentConstraints() {
+    const modelConfig = window.peqDeviceModelConfig || null;
+    if (!modelConfig) return null;
+    return (window.resolvePeqConstraints || (mc => mc))(modelConfig);
+  }
 
   // Build <option> elements for a filter-type <select>, greying out unsupported types
   function buildFilterTypeOptions(selectedType) {
-    const cfg = window.peqDeviceModelConfig || null;
+    const c = currentConstraints();
     return ALL_FILTER_TYPES.map(({ value, label, flag }) => {
-      const supported = !flag || !cfg || cfg[flag] === true;
+      const supported = !flag || !c || c[flag] === true;
       const sel = value === selectedType ? ' selected' : '';
       const dis = supported ? '' : ' disabled';
       const style = supported ? '' : ' style="color:#aaa"';
@@ -229,39 +290,109 @@
     }).join('');
   }
 
-  // Re-stamp every existing filter-type dropdown (preserving current selection)
-  function updateAllFilterTypeDropdowns() {
+  // Apply all constraint-driven UI updates whenever the device config changes
+  function applyConstraintsToUI() {
+    const c = currentConstraints();
+
+    // 1 — filter-type dropdowns
     document.querySelectorAll('select.filter-type').forEach(sel => {
       sel.innerHTML = buildFilterTypeOptions(sel.value);
     });
+
+    // 2 — gain input min/max/step + out-of-range highlight
+    const minGain = c?.minGain ?? -12;
+    const maxGain = c?.maxGain ?? 12;
+    document.querySelectorAll('input.filter-gain').forEach(inp => {
+      inp.setAttribute('min', minGain);
+      inp.setAttribute('max', maxGain);
+      inp.setAttribute('step', '0.1');
+      const v = parseFloat(inp.value);
+      inp.classList.toggle('gain-out-of-range', !isNaN(v) && (v < minGain || v > maxGain));
+    });
+
+    // 2b — Q input min/max/step + out-of-range highlight
+    const minQ = c?.minQ ?? 0.1;
+    const maxQ = c?.maxQ ?? 10.0;
+    document.querySelectorAll('input.filter-q').forEach(inp => {
+      inp.setAttribute('min', minQ);
+      inp.setAttribute('max', maxQ);
+      inp.setAttribute('step', '0.01');
+      const v = parseFloat(inp.value);
+      inp.classList.toggle('q-out-of-range', !isNaN(v) && (v < minQ || v > maxQ));
+    });
+
+    // 3 — pregain row visibility
+    const pregainRow = document.getElementById('pregain-row');
+    if (pregainRow) pregainRow.style.display = c?.deviceHandlesPregain === false ? 'flex' : 'none';
+
+    // 4 — Add Filter button and filter count badge
+    const maxFilters = c?.maxFilters ?? Infinity;
+    const filterCount = document.querySelectorAll('#filter-list .filter-item').length;
+    const addBtn = document.getElementById('btn-add-filter');
+    const badge = document.getElementById('filter-count-badge');
+    if (addBtn) addBtn.disabled = filterCount >= maxFilters;
+    if (badge) {
+      if (c && isFinite(maxFilters)) {
+        badge.textContent = `${filterCount} / ${maxFilters} filters`;
+        badge.className = filterCount >= maxFilters ? 'at-max' : '';
+      } else {
+        badge.textContent = filterCount > 0 ? `${filterCount} filter${filterCount !== 1 ? 's' : ''}` : '';
+        badge.className = '';
+      }
+    }
+
+    // 5 — constraint info banner
+    const banner = document.getElementById('peq-constraint-banner');
+    if (banner) {
+      if (c && window.peqDeviceModelConfig) {
+        const gainStr = c.minGain === -c.maxGain
+          ? `±${c.maxGain} dB`
+          : `${c.minGain} / +${c.maxGain} dB`;
+        const shelves = c.supportsLSFilter && c.supportsHSFilter ? 'LS + HS'
+          : c.supportsLSFilter ? 'LS only'
+          : c.supportsHSFilter ? 'HS only'
+          : 'Peak only';
+        const lphp = c.supportsLPHPFilters ? ' + LP/HP' : '';
+        const pregain = c.deviceHandlesPregain === false ? ' · Pregain' : '';
+        banner.innerHTML = `<span><b>${c.maxFilters} bands</b></span><span>${gainStr}</span><span>${shelves}${lphp}${pregain}</span>`;
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
   }
 
-  // Keep dropdowns in sync when device connects or disconnects
-  document.addEventListener('PeqDeviceModelConfigChanged', updateAllFilterTypeDropdowns);
+  // Re-run on every device connect/disconnect event
+  document.addEventListener('PeqDeviceModelConfigChanged', applyConstraintsToUI);
 
-  // Populate the initial static filter rows on load
+  // Initialise on page load (no device connected yet)
   window.peqDeviceModelConfig = null;
-  updateAllFilterTypeDropdowns();
+  applyConstraintsToUI();
 
-  // Mock function to populate PEQ fields from device settings
+  // Populate PEQ rows from a filter array (called by the plugin after Pull from device)
   function filtersToElem(filters) {
     console.log("Applying filters from device:", filters);
-    const filterList = document.getElementById("filter-list");
-    filterList.innerHTML = ""; // Clear existing filters
+    const c = currentConstraints();
+    const minGain = c?.minGain ?? -12;
+    const maxGain = c?.maxGain ?? 12;
+    const minQ    = c?.minQ   ?? 0.1;
+    const maxQ    = c?.maxQ   ?? 10.0;
+    const filterList = document.getElementById('filter-list');
+    filterList.innerHTML = '';
     filters.forEach(filter => {
-      const filterItem = document.createElement("div");
-      filterItem.className = "filter-item";
-      // Set default filter type to "PK" if not provided
-      const filterType = filter.type || "PK";
+      const filterItem = document.createElement('div');
+      filterItem.className = 'filter-item';
+      const filterType = filter.type || 'PK';
       filterItem.innerHTML = `
-                    <label>Type:</label>
-                    <select class="filter-type">${buildFilterTypeOptions(filterType)}</select>
-                    <label>Freq:</label> <input type="number" class="filter-freq" value="${filter.freq}">
-                    <label>Gain:</label> <input type="number" class="filter-gain" value="${filter.gain}">
-                    <label>Q:</label> <input type="number" class="filter-q" value="${filter.q}">
-                `;
+        <label>Type:</label>
+        <select class="filter-type">${buildFilterTypeOptions(filterType)}</select>
+        <label>Freq:</label> <input type="number" class="filter-freq" value="${filter.freq}" min="20" max="20000" step="1">
+        <label>Gain:</label> <input type="number" class="filter-gain" value="${filter.gain}" min="${minGain}" max="${maxGain}" step="0.1">
+        <label>Q:</label> <input type="number" class="filter-q" value="${filter.q}" min="${minQ}" max="${maxQ}" step="0.01">
+      `;
       filterList.appendChild(filterItem);
     });
+    applyConstraintsToUI();
   }
 
   // Mock function to extract filters from UI for pushing to the device
@@ -363,24 +494,62 @@
     }
   }
 
-    // Utility function to add a new filter entry
+  // Add a new filter row, respecting the device's maxFilters constraint
   function addFilter() {
-    const filterList = document.getElementById("filter-list");
-    const filterItem = document.createElement("div");
-    filterItem.className = "filter-item";
+    const c = currentConstraints();
+    const maxFilters = c?.maxFilters ?? Infinity;
+    const filterList = document.getElementById('filter-list');
+    if (filterList.querySelectorAll('.filter-item').length >= maxFilters) return;
+    const minGain = c?.minGain ?? -12;
+    const maxGain = c?.maxGain ?? 12;
+    const minQ    = c?.minQ   ?? 0.1;
+    const maxQ    = c?.maxQ   ?? 10.0;
+    const filterItem = document.createElement('div');
+    filterItem.className = 'filter-item';
     filterItem.innerHTML = `
-                <label>Type:</label>
-                <select class="filter-type">${buildFilterTypeOptions('PK')}</select>
-                <label>Freq:</label> <input type="number" class="filter-freq" value="1000">
-                <label>Gain:</label> <input type="number" class="filter-gain" value="0">
-                <label>Q:</label> <input type="number" class="filter-q" value="0.707">
-            `;
+      <label>Type:</label>
+      <select class="filter-type">${buildFilterTypeOptions('PK')}</select>
+      <label>Freq:</label> <input type="number" class="filter-freq" value="1000" min="20" max="20000" step="1">
+      <label>Gain:</label> <input type="number" class="filter-gain" value="0" min="${minGain}" max="${maxGain}" step="0.1">
+      <label>Q:</label> <input type="number" class="filter-q" value="0.707" min="${minQ}" max="${maxQ}" step="0.01">
+    `;
     filterList.appendChild(filterItem);
+    applyConstraintsToUI();
   }
 
-  // Utility function to clear all filters
+  // Pad the filter list up to targetCount rows, respecting maxFilters.
+  // Rows already present are left untouched; only empty rows are appended.
+  // Calls applyConstraintsToUI once after all rows are added.
+  function expandFiltersTo(targetCount) {
+    const c = currentConstraints();
+    const maxFilters = c?.maxFilters ?? Infinity;
+    const minGain = c?.minGain ?? -12;
+    const maxGain = c?.maxGain ?? 12;
+    const minQ    = c?.minQ   ?? 0.1;
+    const maxQ    = c?.maxQ   ?? 10.0;
+    const limit = Math.min(targetCount, maxFilters);
+    const filterList = document.getElementById('filter-list');
+    let current = filterList.querySelectorAll('.filter-item').length;
+    while (current < limit) {
+      const item = document.createElement('div');
+      item.className = 'filter-item';
+      item.innerHTML = `
+        <label>Type:</label>
+        <select class="filter-type">${buildFilterTypeOptions('PK')}</select>
+        <label>Freq:</label> <input type="number" class="filter-freq" value="1000" min="20" max="20000" step="1">
+        <label>Gain:</label> <input type="number" class="filter-gain" value="0" min="${minGain}" max="${maxGain}" step="0.1">
+        <label>Q:</label> <input type="number" class="filter-q" value="0.707" min="${minQ}" max="${maxQ}" step="0.01">
+      `;
+      filterList.appendChild(item);
+      current++;
+    }
+    applyConstraintsToUI();
+  }
+
+  // Clear all filters and refresh the constraint UI
   function clearFilters() {
-    document.getElementById("filter-list").innerHTML = "";
+    document.getElementById('filter-list').innerHTML = '';
+    applyConstraintsToUI();
   }
 
       // Typically this should be put into the config.js in a Cringraph
@@ -398,6 +567,8 @@
       let config = {
         advanced: true,
         showLogs: true,
+        showExtras: true,
+        pullValuesOnConnect: true,  // auto-pull device filters on connect and pass to onDeviceConnected
         renderPEQ: {
           enabled: true,
           position: 'peq-controls',
@@ -438,6 +609,20 @@
   // Ensure phoneObj has at least a flat FR before plugins use it
   ensureDefaultFRIntoPhone();
 
+  // Live gain and Q validation: highlight out-of-range inputs as the user types
+  document.getElementById('filter-list').addEventListener('input', e => {
+    const c = currentConstraints();
+    if (!c) return;
+    const v = parseFloat(e.target.value);
+    if (e.target.classList.contains('filter-gain')) {
+      e.target.classList.toggle('gain-out-of-range', !isNaN(v) && (v < c.minGain || v > c.maxGain));
+    } else if (e.target.classList.contains('filter-q')) {
+      const minQ = c.minQ ?? 0.1;
+      const maxQ = c.maxQ ?? 10.0;
+      e.target.classList.toggle('q-out-of-range', !isNaN(v) && (v < minQ || v > maxQ));
+    }
+  });
+
   // Load the plugin with the provided functions and phoneObj
   if (typeof extraEQplugins !== "undefined") {
     loadPlugins(extraEQplugins, {
@@ -447,7 +632,21 @@
       applyEQ,        // Apply EQ
       config,
       getCurrentPhoneTargetNormalisation,
-      loadPairedPhone // Load phone model by fileName
+      loadPairedPhone, // Load phone model by fileName
+      onDeviceConnected(device, peqConstraints, currentPEQValues) {
+        // peqConstraints   – resolved constraint profile from peqConstraintsConfig.json
+        // currentPEQValues – filter array already loaded from device (if pullValuesOnConnect
+        //                    is true and pull succeeded), otherwise null
+        console.log('Device connected:', device.model, peqConstraints);
+
+        // Expand the filter list to the device's full band count.
+        // If currentPEQValues was provided, filtersToElem already populated the rows
+        // with real values; expandFiltersTo pads any remaining empty slots up to maxFilters.
+        // If no values were pulled, this pre-fills all available band slots as blank rows.
+        if (peqConstraints?.maxFilters) {
+          expandFiltersTo(peqConstraints.maxFilters);
+        }
+      }
     });
   }
 

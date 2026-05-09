@@ -6,6 +6,7 @@ export const UsbSerialConnector = (async function () {
   let currentDevice = null;
 
   const { usbSerialDeviceHandlerConfig } = await import('./usbSerialDeviceConfig.js');
+  const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
 
   /**
    * When multiple device configs share the same Bluetooth SPP UUID, show a small
@@ -172,6 +173,12 @@ export const UsbSerialConnector = (async function () {
       let vendorConfig = chosen ? chosen.entry  : null;
       let modelName    = chosen ? chosen.name   : null;
       var modelConfig  = chosen ? (chosen.model.modelConfig || {}) : {};
+
+      // Resolve peqConstraints and merge into modelConfig so handlers can read
+      // maxFilters, supportsLSFilter etc. from deviceDetails.modelConfig directly.
+      await loadPeqConstraintsConfig().catch(() => {});
+      const resolvedSerialConstraints = resolveConstraints(modelConfig);
+      if (resolvedSerialConstraints) Object.assign(modelConfig, resolvedSerialConstraints);
       var handler      = chosen ? chosen.entry.handler : null;
 
       if (!vendorConfig) {
