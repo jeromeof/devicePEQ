@@ -5,22 +5,27 @@
 const PEQ_CONSTRAINTS_CONFIG_URL =
   typeof window !== 'undefined' && window.DEVICEPEQ_CONFIG_BASE_URL
     ? `${window.DEVICEPEQ_CONFIG_BASE_URL}peqConstraintsConfig.json`
-    : 'https://pragmagicaudio.com/devicepeq/config/peqConstraintsConfig.json';
+    : 'https://pragmagicaudio.com/headphones/devicePEQ/peqConstraintsConfig.json';
 
 let _config = null;
 let _loadPromise = null;
 
 // Load (and cache) the constraints config from the given URL.
 // Subsequent calls return the cached result without re-fetching.
+const PEQ_CONSTRAINTS_FALLBACK_URL = new URL('./peqConstraintsConfig.json', import.meta.url).href;
+
 export async function loadPeqConstraintsConfig(url = PEQ_CONSTRAINTS_CONFIG_URL) {
   if (_config) return _config;
   if (_loadPromise) return _loadPromise;
 
-  _loadPromise = fetch(url)
-    .then(r => {
+  const tryFetch = (fetchUrl) =>
+    fetch(fetchUrl).then(r => {
       if (!r.ok) throw new Error(`Failed to load peqConstraintsConfig: ${r.status} ${r.statusText}`);
       return r.json();
-    })
+    });
+
+  _loadPromise = tryFetch(url)
+    .catch(() => tryFetch(PEQ_CONSTRAINTS_FALLBACK_URL))
     .then(data => {
       _config = data;
       _loadPromise = null;

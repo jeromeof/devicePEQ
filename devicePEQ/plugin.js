@@ -24,11 +24,6 @@ import { buildExtras } from './deviceExtras.js';
  * @param {object}  [context.config]         - Optional plugin configuration flags.
  * @param {boolean} [context.config.advanced] - When true, exposes Serial / BLE / Network
  *                                              connection options in the device picker.
- * @param {boolean} [context.config.minimalExperience] - When true, hides Pull From Device,
- *                                              Push To Device, and the preset slot dropdown.
- *                                              The Connect button changes to "Save to Device"
- *                                              after a device connects and clicking it pushes
- *                                              the current filters to the device.
  * @param {boolean} [context.config.showExtras] - When true, shows a "Show Extras" button
  *                                              next to the preset dropdown whenever the
  *                                              connected device has supported extras
@@ -138,113 +133,33 @@ async function initializeDeviceEqPlugin(context) {
       this.connectButton = this.deviceEqArea.querySelector('.connect-device');
       this.disconnectButton = this.deviceEqArea.querySelector('.disconnect-device');
       this.deviceNameElem = document.getElementById('deviceName');
-      this.peqSlotArea = this.deviceEqArea.querySelector('.peq-slot-area');
-      this.peqDropdown = document.getElementById('device-peq-slot-dropdown');
-      this.pullButton = this.deviceEqArea.querySelector('.pull-filters-fromdevice');
-      this.pushButton = this.deviceEqArea.querySelector('.push-filters-todevice');
-      this.showExtrasBtn = document.getElementById('show-extras-btn');
-      this.extrasPanel = document.getElementById('device-extras-panel');
-      this.lastPushTime = 0; // Track when the push button was last clicked
+
+      // Pill UI elements
+      this.linkArea     = document.getElementById('device-link-area');
+      this.linkBtn      = document.getElementById('eq-device-connect-btn');
+      this.linkPopup    = document.getElementById('device-link-popup');
+      this.devicePill   = document.getElementById('device-pill');
+      this.devicePillName = document.getElementById('device-pill-name');
+      this.devicePillClose = document.getElementById('device-pill-close');
+      this.pillIconSync = this.devicePill?.querySelector('.device-pill-icon-sync');
+
+      this.slotRow      = document.getElementById('peq-slot-row');
+      this.peqDropdown  = document.getElementById('device-peq-slot-dropdown');
+      this.pullButton   = this.deviceEqArea.querySelector('.pull-filters-fromdevice');
+      this.pushButton   = this.deviceEqArea.querySelector('.push-filters-todevice');
+      this.settingsBtn  = document.getElementById('peq-settings-btn');
+      this.extrasPanel  = document.getElementById('device-extras-panel');
+      this.lastPushTime = 0;
       this._extrasExpanded = false;
 
-      // Linked panel refs (only present when minimalExperience: true)
-      this.linkedPanel    = document.getElementById('peq-linked-panel');
-      this.linkedLoadBtn  = this.linkedPanel?.querySelector('.peq-load-btn');
-      this.linkedSaveBtn  = this.linkedPanel?.querySelector('.peq-save-btn');
-      this.linkedSettings = this.linkedPanel?.querySelector('.peq-settings-btn');
-      this.linkedSettingsPanel = this.linkedPanel?.querySelector('.peq-settings-panel');
-      this.linkedSlotsSection  = this.linkedPanel?.querySelector('.peq-slots-section');
-      this.linkedExtrasSection = this.linkedPanel?.querySelector('.peq-extras-section');
-      this._linkedState        = 'disconnected'; // disconnected | connecting | idle | loading | saving
-      this._eqSynced           = false;
-      this._postConnectSetup   = false; // true during the connect/load window, suppresses user-edit detection
-      this._pullOnConnectPromise = null; // tracks the in-flight auto-pull so linkedLoadBtn can wait for it
+      this._postConnectSetup    = false;
+      this._pullOnConnectPromise = null;
 
-      if (this.linkedLoadBtn) {
-        this.linkedLoadBtn.addEventListener('click', async () => {
-          if (this._linkedState !== 'idle') return;
-          this._linkedState = 'loading';
-          this._updateLinkedButtons();
-          document.dispatchEvent(new CustomEvent('PeqDeviceLoading'));
-          try {
-            // If auto-pull-on-connect is still in flight, wait for it to finish
-            // before sending our own read commands — concurrent pulls to the same
-            // device cause the device to miss responses and hit the 10s timeout.
-            if (this._pullOnConnectPromise) {
-              console.log('[linkedLoad] waiting for auto-pull to finish…');
-              await this._pullOnConnectPromise.catch(() => {});
-            }
-            const device = this.currentDevice;
-            const selectedSlot = this.peqDropdown.value;
-            const { UsbHIDConnector, UsbSerialConnector, BluetoothBleConnector, NetworkDeviceConnector } = this._connectors ?? {};
-            let result = null;
-            if (this.connectionType === 'network') {
-              result = await NetworkDeviceConnector.pullFromDevice(device, selectedSlot);
-            } else if (this.connectionType === 'usb') {
-              result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
-            } else if (this.connectionType === 'serial') {
-              result = await UsbSerialConnector.pullFromDevice(device, selectedSlot);
-            } else if (this.connectionType === 'ble') {
-              result = await BluetoothBleConnector.pullFromDevice(device, selectedSlot);
-            }
-            if (result?.filters?.length > 0) {
-              this._postConnectSetup = true;
-              context.filtersToElem(result.filters.filter(f => f != null));
-              context.applyEQ();
-              this._eqSynced = true;
-              setTimeout(() => { this._postConnectSetup = false; }, 300);
-            }
-          } catch (e) {
-            console.warn('[linkedLoad] pull failed:', e?.message);
-          } finally {
-            this._linkedState = 'idle';
-            this._updateLinkedButtons();
-            document.dispatchEvent(new CustomEvent('PeqDeviceLoadingDone'));
-          }
-        });
-      }
-      if (this.linkedSaveBtn) {
-        this.linkedSaveBtn.addEventListener('click', () => {
-          if (this.linkedSaveBtn.disabled) return;
-          this._linkedState = 'saving';
-          this._updateLinkedButtons();
-          document.dispatchEvent(new CustomEvent('PeqDeviceLoading'));
-          this.pushButton.click();
-        });
-      }
-      if (this.linkedSettings) {
-        this.linkedSettings.addEventListener('click', () => {
-          const open = this.linkedSettingsPanel && !this.linkedSettingsPanel.hidden;
-          if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = open;
-          this.linkedSettings.setAttribute('aria-expanded', String(!open));
-          this.linkedSettings.classList.toggle('peq-settings-btn--open', !open);
-          if (!open && this._pendingLinkedExtrasReads) {
-            this._pendingLinkedExtrasReads();
-            this._pendingLinkedExtrasReads = null;
-          }
-        });
-      }
-
-      document.addEventListener('applyEQ', () => {
-        if (!this.currentDevice) return;
-        // Ignore events during connect/load window or when not idle (loading, saving, etc.)
-        if (this._linkedState !== 'idle' || this._postConnectSetup) return;
-        // User edited the EQ — mark out of sync
-        this._eqSynced = false;
-        this._updateLinkedButtons();
-      });
-      document.addEventListener('PeqDeviceSaved', () => {
-        if (!this.currentDevice) return;
-        this._eqSynced = true;
-        this._linkedState = 'idle';
-        this._updateLinkedButtons();
-      });
-
-      this.showExtrasBtn.addEventListener('click', () => {
+      this.settingsBtn.addEventListener('click', () => {
         this._extrasExpanded = !this._extrasExpanded;
         this.extrasPanel.hidden = !this._extrasExpanded;
-        this.showExtrasBtn.textContent = this._extrasExpanded ? 'Hide Extras ▴' : 'Show Extras ▾';
-        // Fire deferred reads the first time the panel opens
+        this.settingsBtn.classList.toggle('peq-settings-btn--open', this._extrasExpanded);
+        this.settingsBtn.setAttribute('aria-expanded', String(this._extrasExpanded));
         if (this._extrasExpanded && this._pendingExtrasReads) {
           this._pendingExtrasReads();
           this._pendingExtrasReads = null;
@@ -254,7 +169,7 @@ async function initializeDeviceEqPlugin(context) {
       this.useNetwork = false;
       this.currentDevice = null;
       this._onDeviceConnected = context?.onDeviceConnected ?? null;
-      this._minimal = context?.config?.minimalExperience === true;
+
       this.initializeUI();
     }
 
@@ -265,6 +180,19 @@ async function initializeDeviceEqPlugin(context) {
     //                    pullValuesOnConnect is false or the pull failed.
     setOnDeviceConnected(callback) {
       this._onDeviceConnected = typeof callback === 'function' ? callback : null;
+    }
+
+    setPillState(state, deviceName) {
+      const isConnected = state === 'connected';
+      const isBusy      = state === 'connecting';
+      if (this.linkBtn)   this.linkBtn.hidden   = isConnected || isBusy;
+      if (this.devicePill) {
+        this.devicePill.hidden = !isConnected && !isBusy;
+        this.devicePill.classList.toggle('device-pill--busy', isBusy);
+      }
+      if (deviceName && this.devicePillName) this.devicePillName.textContent = deviceName;
+      // Keep deviceNameElem in sync for any external listeners
+      if (this.deviceNameElem) this.deviceNameElem.textContent = deviceName ?? (isConnected ? '' : 'None');
     }
 
     // Silently pulls filters from the device at connect time and fires _onDeviceConnected
@@ -312,217 +240,35 @@ async function initializeDeviceEqPlugin(context) {
         const current = context.elemToFilters();
         const isEmpty = !current?.length || current.every(f => !f || Math.abs(f?.gain ?? 0) < 0.01);
         if (isEmpty) {
-          // Guard the applyEQ listener so it doesn't treat auto-populate as a user edit
           this._postConnectSetup = true;
           context.filtersToElem(filters);
           context.applyEQ();
-          this._eqSynced = true;
-          this._linkedState = 'idle';
-          if (this.linkedPanel) this._updateLinkedButtons();
           setTimeout(() => { this._postConnectSetup = false; }, 500);
-        } else {
-          // EQ had values — user decides; mark out of sync
-          this._eqSynced = false;
-          this._linkedState = 'idle';
-          if (this.linkedPanel) this._updateLinkedButtons();
         }
-      } else if (this._linkedState === 'connecting') {
-        // Pull returned no filters — still move to idle so buttons are enabled
-        this._eqSynced = false;
-        this._linkedState = 'idle';
-        if (this.linkedPanel) this._updateLinkedButtons();
       }
       try { this._onDeviceConnected(device, peqConstraints, filters, device.extras); }
       catch (e) { console.warn('onDeviceConnected callback error:', e); }
     }
 
     initializeUI() {
-      this.disconnectButton.hidden = true;
+      this.setPillState('disconnected');
       this.pullButton.hidden = true;
       this.pushButton.hidden = true;
-      this.peqDropdown.hidden = true;
-      this.peqSlotArea.hidden = true;
-      this.showExtrasBtn.hidden = true;
+      this.settingsBtn.hidden = true;
       this.extrasPanel.hidden = true;
       this.extrasPanel.innerHTML = '';
       this._extrasExpanded = false;
       this._pendingExtrasReads = null;
-      if (this.linkedPanel) {
-        this.linkedPanel.hidden = true;
-        if (this.linkedSlotsSection) { this.linkedSlotsSection.innerHTML = ''; this.linkedSlotsSection.hidden = true; }
-        if (this.linkedExtrasSection) { this.linkedExtrasSection.innerHTML = ''; this.linkedExtrasSection.hidden = true; }
-        if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = true;
-        if (this.linkedSettings) { this.linkedSettings.setAttribute('aria-expanded', 'false'); this.linkedSettings.classList.remove('peq-settings-btn--open'); this.linkedSettings.hidden = true; }
-      }
-      this._linkedState      = 'disconnected';
-      this._eqSynced         = false;
       this._postConnectSetup = false;
     }
 
-    _updateLinkedButtons() {
-      if (!this.linkedPanel) return;
-      const busy             = this._linkedState === 'loading' || this._linkedState === 'saving' || this._linkedState === 'connecting';
-      const isCustomSlot     = this._isCurrentSlotWritable();
-      const name             = this.currentDevice?.model ?? 'Device';
-      // Load from: available whenever connected and not actively loading/saving/connecting
-      if (this.linkedLoadBtn) {
-        this.linkedLoadBtn.disabled = busy;
-        this.linkedLoadBtn.textContent = 'Load from ' + name;
-      }
-      // Save to: only enabled once EQ has been modified AND a writable slot is selected
-      if (this.linkedSaveBtn) {
-        this.linkedSaveBtn.disabled = busy || this._eqSynced || !isCustomSlot;
-        this.linkedSaveBtn.textContent = 'Save to ' + name;
-      }
-    }
 
-    _isCurrentSlotWritable() {
-      if (!this.currentDevice) return false;
-      const firstWritable = this.currentDevice.modelConfig?.firstWritableEQSlot ?? -1;
-      if (firstWritable < 0) return true; // single custom slot or no constraint
-      const selectedId = parseInt(this.peqDropdown?.value ?? '-1');
-      if (selectedId < 0) return false;
-      return selectedId >= firstWritable;
-    }
-
-    _showLinkedPanel(device, availableSlots) {
-      if (!this.linkedPanel) return;
-      this._linkedState = 'connecting';
-      this._eqSynced = false;
-      this.linkedPanel.hidden = false;
-      // Build slots UI
-      this._buildLinkedSlotsSection(availableSlots, device.modelConfig);
-      // Build extras UI (defer reads until panel opens)
-      this._buildLinkedExtrasSection(device.extras);
-      // Build settings button tooltip listing what's inside
-      this._updateLinkedSettingsTooltip(availableSlots, device.modelConfig, device.extras);
-      this._updateLinkedButtons();
-    }
-
-    _updateLinkedSettingsTooltip(slots, modelConfig, extras) {
-      if (!this.linkedSettings) return;
-      const items = [];
-      const firstWritable = modelConfig?.firstWritableEQSlot ?? -1;
-      const hasMultiSlot  = slots && slots.length > 1;
-      if (hasMultiSlot) {
-        const presets = firstWritable >= 0 ? slots.filter(s => s.id < firstWritable) : [];
-        const custom  = firstWritable >= 0 ? slots.filter(s => s.id >= firstWritable) : slots;
-        if (presets.length) items.push(`Presets (${presets.length})`);
-        if (custom.length)  items.push(`Custom slots (${custom.length})`);
-      }
-      if (extras) {
-        const extraNames = {
-          dacFilter: 'DAC Filter', dacWorkMode: 'DAC Work Mode',
-          gainMode: 'Gain Mode', balance: 'Balance',
-          battery: 'Battery', eqEnabled: 'EQ Enabled',
-          micGain: 'Mic Gain', outputGain: 'Output Gain',
-        };
-        Object.entries(extraNames).forEach(([k, label]) => {
-          if (extras[k]?.supported) items.push(label);
-        });
-      }
-      this.linkedSettings.title = items.length
-        ? 'Settings — ' + items.join(', ')
-        : 'Device Settings';
-      // Show/update the badge count on the button
-      let badge = this.linkedSettings.querySelector('.peq-settings-badge');
-      if (items.length > 0) {
-        if (!badge) {
-          badge = document.createElement('span');
-          badge.className = 'peq-settings-badge';
-          this.linkedSettings.appendChild(badge);
-        }
-        badge.textContent = '!';
-      } else if (badge) {
-        badge.remove();
-      }
-    }
-
-    _buildLinkedSlotsSection(slots, modelConfig) {
-      if (!this.linkedSlotsSection) return;
-      this.linkedSlotsSection.innerHTML = '';
-      if (!slots || slots.length <= 1) {
-        this.linkedSlotsSection.hidden = true;
-        if (this.linkedSettings) this.linkedSettings.hidden = true;
-        return;
-      }
-      const firstWritable = modelConfig?.firstWritableEQSlot ?? -1;
-      const presets = firstWritable >= 0 ? slots.filter(s => s.id < firstWritable) : [];
-      const custom  = firstWritable >= 0 ? slots.filter(s => s.id >= firstWritable) : slots;
-      const showBoth = presets.length > 0 && custom.length > 0;
-
-      const makeGroup = (label, groupSlots, id) => {
-        const row = document.createElement('div');
-        row.className = 'peq-slot-group';
-        const lbl = document.createElement('span');
-        lbl.className = 'peq-slot-group-label';
-        lbl.textContent = label;
-        const sel = document.createElement('select');
-        sel.className = 'peq-slot-select';
-        sel.id = id;
-        groupSlots.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = s.name;
-          if (String(s.id) === String(this.peqDropdown?.value)) opt.selected = true;
-          sel.appendChild(opt);
-        });
-        sel.addEventListener('change', () => {
-          if (this.peqDropdown) {
-            this.peqDropdown.value = sel.value;
-            this.peqDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-          // If presets and custom both exist, deselect the other group's selection
-          if (showBoth && id === 'peq-linked-presets') {
-            const custSel = this.linkedSlotsSection.querySelector('#peq-linked-custom');
-            if (custSel) custSel.selectedIndex = -1;
-          } else if (showBoth && id === 'peq-linked-custom') {
-            const preSel = this.linkedSlotsSection.querySelector('#peq-linked-presets');
-            if (preSel) preSel.selectedIndex = -1;
-          }
-          this._eqSynced = false;
-          this._updateLinkedButtons();
-        });
-        row.appendChild(lbl);
-        row.appendChild(sel);
-        return row;
-      };
-
-      if (presets.length > 0) {
-        this.linkedSlotsSection.appendChild(makeGroup(showBoth ? 'Presets' : 'Slot', presets, 'peq-linked-presets'));
-      }
-      if (custom.length > 0) {
-        this.linkedSlotsSection.appendChild(makeGroup(showBoth ? 'Custom' : 'Slot', custom, 'peq-linked-custom'));
-      }
-      this.linkedSlotsSection.hidden = false;
-      if (this.linkedSettings) this.linkedSettings.hidden = false;
-    }
-
-    _buildLinkedExtrasSection(extras) {
-      if (!this.linkedExtrasSection) return;
-      this.linkedExtrasSection.innerHTML = '';
-      this._pendingLinkedExtrasReads = null;
-      if (!extras || !this._hasAnyExtras(extras)) {
-        this.linkedExtrasSection.hidden = true;
-        return;
-      }
-      // Reuse the existing extras panel build logic but target linkedExtrasSection
-      const savedPanel = this.extrasPanel;
-      this.extrasPanel = this.linkedExtrasSection;
-      this._buildExtrasPanel(extras);
-      // Move _pendingExtrasReads reference
-      this._pendingLinkedExtrasReads = this._pendingExtrasReads;
-      this._pendingExtrasReads = null;
-      this.extrasPanel = savedPanel;
-      this.linkedExtrasSection.hidden = false;
-      if (this.linkedSettings) this.linkedSettings.hidden = false;
-    }
 
     async showConnectedState(device, connectionType, availableSlots, currentSlot) {
       // Ensure constraint config is cached before resolving — handles the race where a device
       // connects before the async JSON fetch completes (would return maxFilters: undefined).
       await loadPeqConstraintsConfig().catch(() => {});
-      this.connectButton.hidden = true;
+      this.setPillState('connecting', device.model);
       this.currentDevice = device;
       this.connectionType = connectionType;
       window.peqDeviceModelConfig = device.modelConfig || null;
@@ -544,17 +290,15 @@ async function initializeDeviceEqPlugin(context) {
       // before the async pull completes.
       document.dispatchEvent(new CustomEvent('PeqDeviceConnected', { detail: { device, peqConstraints } }));
 
-      this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
-      if (this._minimal) {
-        this._showLinkedPanel(device, availableSlots);
-      } else {
-        this.disconnectButton.hidden = false;
-        this.pullButton.hidden = false;
-        this.pushButton.hidden = false;
-        this.peqDropdown.hidden = false;
-        this.peqSlotArea.hidden = false;
-      }
+      this.setPillState('connected', device.model);
+      this.pullButton.hidden = false;
+      this.pushButton.hidden = false;
+      this.pullButton.textContent = `Load from ${device.model}`;
+      this.pushButton.textContent = `Save to ${device.model}`;
+      // Show slot row inside settings panel only when there are selectable slots
+      if (this.slotRow) this.slotRow.hidden = !(availableSlots && availableSlots.length > 0);
+      this.settingsBtn.hidden = false;
 
       // Fetch device filters for the callback when configured. Filters are NOT applied to
       // the EQ graph here — only the explicit "Pull From Device" button does that.
@@ -566,16 +310,16 @@ async function initializeDeviceEqPlugin(context) {
         catch (e) { console.warn('onDeviceConnected callback error:', e); }
       }
 
-      // Show extras toggle if configured and device has supported extras
-      this.showExtrasBtn.hidden = true;
+      // Reset settings panel; build extras rows if configured and available
       this.extrasPanel.hidden = true;
-      this.extrasPanel.innerHTML = '';
       this._extrasExpanded = false;
-      if (context?.config?.showExtras === true && this._hasAnyExtras(device.extras)) {
-        this._buildExtrasPanel(device.extras);
-        this.showExtrasBtn.textContent = 'Show Extras ▾';
-        this.showExtrasBtn.hidden = false;
-      }
+      this.settingsBtn.setAttribute('aria-expanded', 'false');
+      this.settingsBtn.classList.remove('peq-settings-btn--open');
+      // Clear only the extras rows (preserve the slot row via _buildExtrasPanel)
+      const slotRowEl = document.getElementById('peq-slot-row');
+      this.extrasPanel.innerHTML = '';
+      if (slotRowEl) this.extrasPanel.appendChild(slotRowEl);
+      this._buildExtrasPanel(device.extras);
 
       // Auto-load flat EQ phone measurement if configured
       if (device.modelConfig && device.modelConfig.flatEQPhoneMeasurement) {
@@ -626,28 +370,25 @@ async function initializeDeviceEqPlugin(context) {
     }
 
     showDisconnectedState() {
-      this._linkedState = 'disconnected';
-      if (this.linkedPanel) {
-        this.linkedPanel.hidden = true;
-        if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = true;
-      }
       this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
       window.peqDeviceModelConfig = null;
       window.peqDeviceExtras = null;
       document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: null }));
       document.dispatchEvent(new CustomEvent('PeqDeviceExtrasChanged', { detail: null }));
-      this.connectButton.hidden = false;
-      this.disconnectButton.hidden = true;
-      this.deviceNameElem.textContent = 'None';
+      this.setPillState('disconnected');
       this.peqDropdown.innerHTML = '<option value="-1">PEQ Disabled</option>';
-      this.peqDropdown.hidden = true;
       this.pullButton.hidden = true;
       this.pushButton.hidden = true;
-      this.peqSlotArea.hidden = true;
-      this.showExtrasBtn.hidden = true;
+      this.pullButton.textContent = 'Load from Device';
+      this.pushButton.textContent = 'Save to Device';
+      this.settingsBtn.hidden = true;
+      this.settingsBtn.classList.remove('peq-settings-btn--open');
+      this.settingsBtn.setAttribute('aria-expanded', 'false');
       this.extrasPanel.hidden = true;
+      const slotRowEl2 = document.getElementById('peq-slot-row');
       this.extrasPanel.innerHTML = '';
+      if (slotRowEl2) this.extrasPanel.appendChild(slotRowEl2);
       this._extrasExpanded = false;
       this._pendingExtrasReads = null;
     }
@@ -659,18 +400,29 @@ async function initializeDeviceEqPlugin(context) {
 
     _buildExtrasPanel(extras) {
       const panel = this.extrasPanel;
+      // Preserve the slot row — clear only dynamically-added extras rows
+      const slotRow = document.getElementById('peq-slot-row');
       panel.innerHTML = '';
+      if (slotRow) panel.appendChild(slotRow);
       this._pendingExtrasReads = null;
+      // If no extras to show, the panel still contains the slot row (which may itself be hidden).
+      if (!this._hasAnyExtras(extras)) return;
       const deferredReads = [];
+
+      // Section wrapper lets style-alt.css compact-Apply override fire
+      const section = document.createElement('div');
+      section.className = 'peq-extras-section';
+      panel.appendChild(section);
 
       const makeRow = (label, controlHTML, key) => {
         const row = document.createElement('div');
         row.className = 'extras-row';
+        // status comes before Apply to match expected visual order
         row.innerHTML = `
           <span class="extras-label">${label}</span>
           <div class="extras-control">${controlHTML}</div>
-          <button class="extras-apply" data-extra="${key}">Apply</button>
           <span class="extras-status" id="extras-status-${key}"></span>
+          <button class="extras-apply" data-extra="${key}">Apply</button>
         `;
         return row;
       };
@@ -708,7 +460,7 @@ async function initializeDeviceEqPlugin(context) {
           .map(o => `<option value="${o}">${o}</option>`).join('');
         const row = makeRow('DAC Filter',
           `<select id="extra-dacFilter" class="extras-select">${opts}</select>`, 'dacFilter');
-        panel.appendChild(row);
+        section.appendChild(row);
         row.querySelector('.extras-apply').addEventListener('click', async () => {
           const val = document.getElementById('extra-dacFilter').value;
           console.log(`[extras] Setting dacFilter →`, val);
@@ -726,7 +478,7 @@ async function initializeDeviceEqPlugin(context) {
         const opts = modes.map((m, i) => `<option value="${m}">${labels[i] ?? `Mode ${m}`}</option>`).join('');
         const row = makeRow('DAC Work Mode',
           `<select id="extra-dacWorkMode" class="extras-select">${opts}</select>`, 'dacWorkMode');
-        panel.appendChild(row);
+        section.appendChild(row);
         row.querySelector('.extras-apply').addEventListener('click', async () => {
           const val = parseInt(document.getElementById('extra-dacWorkMode').value, 10);
           console.log(`[extras] Setting dacWorkMode →`, val);
@@ -761,7 +513,7 @@ async function initializeDeviceEqPlugin(context) {
         ).join('');
         const row = makeRow('Gain Mode',
           `<select id="extra-gainMode" class="extras-select">${optionsHtml}</select>`, 'gainMode');
-        panel.appendChild(row);
+        section.appendChild(row);
         const sel = row.querySelector('#extra-gainMode');
         row.querySelector('.extras-apply').addEventListener('click', async () => {
           const chosen = gainOpts[parseInt(sel.value, 10)];
@@ -783,9 +535,9 @@ async function initializeDeviceEqPlugin(context) {
              <span style="font-size:11px">L</span>
              <input type="range" id="extra-dacBalance" class="extras-range extras-balance-slider" min="-20" max="20" step="1" value="0">
              <span style="font-size:11px">R</span>
-             <span id="extra-dacBalance-lbl" style="font-size:12px;min-width:60px;text-align:center">Center</span>
+             <span id="extra-dacBalance-lbl" class="extras-balance-lbl">Center</span>
            </div>`, 'dacBalance');
-        panel.appendChild(row);
+        section.appendChild(row);
         const slider = row.querySelector('#extra-dacBalance');
         const lbl = row.querySelector('#extra-dacBalance-lbl');
         slider.addEventListener('input', () => {
@@ -813,7 +565,7 @@ async function initializeDeviceEqPlugin(context) {
              <input type="number" id="extra-micGain-num" class="extras-num-input" min="${min}" max="${max}" step="1" value="0">
              <span class="extras-unit">dB</span>
            </div>`, 'micGain');
-        panel.appendChild(row);
+        section.appendChild(row);
         const sl = row.querySelector('#extra-micGain');
         const num = row.querySelector('#extra-micGain-num');
         sl.addEventListener('input', () => { num.value = sl.value; });
@@ -834,7 +586,7 @@ async function initializeDeviceEqPlugin(context) {
              <span class="toggle-knob"></span>
            </label>
            <span id="extra-denoise-lbl" style="font-size:12px;color:#666">Off</span>`, 'denoise');
-        panel.appendChild(row);
+        section.appendChild(row);
         const cb = row.querySelector('#extra-denoise');
         const lbl = row.querySelector('#extra-denoise-lbl');
         cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'On' : 'Off'; });
@@ -858,7 +610,7 @@ async function initializeDeviceEqPlugin(context) {
           <div class="extras-control"><span id="extra-battery-val" style="font-size:13px">—</span></div>
           <span class="extras-status" id="extras-status-battery"></span>
         `;
-        panel.appendChild(row);
+        section.appendChild(row);
         deferRead('battery', extras.battery.get, val => {
           const el = document.getElementById('extra-battery-val');
           if (el) el.textContent = `${val}%`;
@@ -873,7 +625,7 @@ async function initializeDeviceEqPlugin(context) {
              <span class="toggle-knob"></span>
            </label>
            <span id="extra-eqEnabled-lbl" style="font-size:12px;color:#666">Off</span>`, 'eqEnabled');
-        panel.appendChild(row);
+        section.appendChild(row);
         const cb  = row.querySelector('#extra-eqEnabled');
         const lbl = row.querySelector('#extra-eqEnabled-lbl');
         cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'On' : 'Off'; });
@@ -896,7 +648,7 @@ async function initializeDeviceEqPlugin(context) {
              <input type="number" id="extra-outputGain-num" class="extras-num-input" min="-10" max="10" step="1" value="0">
              <span class="extras-unit">dB</span>
            </div>`, 'outputGain');
-        panel.appendChild(row);
+        section.appendChild(row);
         const sl = row.querySelector('#extra-outputGain');
         const num = row.querySelector('#extra-outputGain-num');
         sl.addEventListener('input', () => { num.value = sl.value; });
@@ -1058,111 +810,6 @@ async function initializeDeviceEqPlugin(context) {
   window.showToast = showToast;
 
   function loadHtml() {
-    // In minimal experience the host provides its own connect/save UI. We only inject
-    // the functional skeleton elements that DeviceEqUI needs internally — nothing visible.
-    if (context?.config?.minimalExperience) {
-      const anchorDiv = context.config.devicePEQAnchorDiv ?? '.extra-eq';
-      const placement = context.config.devicePEQPlacement  ?? 'afterend';
-      const anchor = document.querySelector(anchorDiv);
-      if (anchor) {
-        anchor.insertAdjacentHTML(placement, `
-          <div class="device-eq disabled" id="deviceEqArea" style="display:none">
-            <button class="connect-device" hidden>Connect to Device</button>
-            <button class="disconnect-device" hidden>Disconnect From <span id="deviceName">None</span></button>
-            <div class="peq-slot-area" hidden>
-              <select name="device-peq-slot" id="device-peq-slot-dropdown">
-                <option value="None" selected>Select PEQ Slot</option>
-              </select>
-              <button class="show-extras-btn" id="show-extras-btn" hidden>Show Extras &#9662;</button>
-            </div>
-            <div class="device-extras-panel" id="device-extras-panel" hidden></div>
-            <div class="filters-button">
-              <button class="pull-filters-fromdevice" hidden>Pull From Device</button>
-              <button class="push-filters-todevice" hidden>Push To Device</button>
-            </div>
-          </div>
-          <div class="peq-linked-panel" id="peq-linked-panel" hidden>
-            <div class="peq-action-row">
-              <button class="peq-load-btn" disabled>Load from Device</button>
-              <button class="peq-save-btn" disabled>Save to Device</button>
-              <button class="peq-settings-btn" aria-label="Device settings" aria-expanded="false" hidden>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </button>
-            </div>
-            <div class="peq-settings-panel" hidden>
-              <div class="peq-slots-section" hidden></div>
-              <div class="peq-extras-section" hidden></div>
-            </div>
-          </div>`);
-      }
-      const style = document.createElement('style');
-      style.textContent = `/* DevicePEQ linked panel */
-.peq-linked-panel { display: block; padding: 0 0 6px; }
-.peq-linked-panel[hidden] { display: none !important; }
-.peq-action-row { display: flex; align-items: center; gap: 4px; padding: 0 10px 6px; }
-.peq-load-btn, .peq-save-btn {
-  flex: 1 1 0; min-width: 0; padding: 5px 8px; font-size: 11px; font-weight: 500;
-  border-radius: 6px; border: 1px solid var(--background-color-contrast-more, #888);
-  background: transparent; color: var(--font-color-primary, #111);
-  cursor: pointer; text-align: center; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-  transition: border-color 150ms, color 150ms, opacity 150ms;
-}
-.peq-load-btn:not(:disabled):hover, .peq-save-btn:not(:disabled):hover {
-  border-color: var(--accent-color, #1a6ef5); color: var(--accent-color, #1a6ef5);
-}
-.peq-load-btn:disabled, .peq-save-btn:disabled { opacity: 0.35; cursor: default; }
-.peq-settings-btn {
-  position: relative; flex: none; display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; padding: 0; border-radius: 6px; overflow: visible;
-  border: 1px solid var(--background-color-contrast-more, #888);
-  background: transparent; color: var(--font-color-primary, #111);
-  cursor: pointer; transition: border-color 150ms, color 150ms;
-}
-.peq-settings-btn[hidden] { display: none !important; }
-.peq-settings-btn:not(:disabled):hover, .peq-settings-btn.peq-settings-btn--open {
-  border-color: var(--accent-color, #1a6ef5); color: var(--accent-color, #1a6ef5);
-}
-.peq-settings-badge {
-  position: absolute; top: -5px; right: -5px;
-  min-width: 14px; height: 14px; padding: 0 2px;
-  border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 14px;
-  text-align: center; pointer-events: none;
-  background: var(--accent-color, #1a6ef5); color: #fff;
-}
-.peq-settings-panel {
-  display: flex; flex-direction: column; gap: 10px;
-  border-top: 1px solid var(--background-color-contrast-more, #aaa);
-  padding: 10px 12px 10px;
-}
-.peq-settings-panel[hidden] { display: none !important; }
-.peq-slots-section { display: flex; flex-direction: column; gap: 6px; }
-.peq-slots-section[hidden] { display: none !important; }
-.peq-slot-group { display: flex; align-items: center; gap: 8px; }
-.peq-slot-group-label { font-size: 11px; font-weight: 500; min-width: 50px; flex-shrink: 0; color: var(--font-color-primary, #111); }
-.peq-slot-select { flex: 1; font-size: 11px; padding: 3px 6px; border-radius: 5px; border: 1px solid var(--background-color-contrast-more, #888); background: var(--background-color-inputs, #fff); color: var(--font-color-primary, #111); cursor: pointer; }
-/* Extras rendered inside settings panel — compact override of the full-UI extras styles */
-.peq-extras-section { display: flex; flex-direction: column; gap: 0; }
-.peq-extras-section[hidden] { display: none !important; }
-.peq-extras-section .extras-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--background-color-contrast-more, #ccc); flex-wrap: nowrap; }
-.peq-extras-section .extras-row:last-child { border-bottom: none; }
-.peq-extras-section .extras-label { font-size: 11px; font-weight: 500; min-width: 72px; max-width: 72px; flex-shrink: 0; color: var(--font-color-primary, #111); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.peq-extras-section .extras-control { flex: 1 1 auto; min-width: 0; font-size: 11px; }
-.peq-extras-section .extras-control select,
-.peq-extras-section .extras-control input[type=range] { width: 100%; font-size: 11px; }
-.peq-extras-section .extras-control input[type=number] { width: 48px; font-size: 11px; padding: 1px 4px; }
-.peq-extras-section .extras-apply { flex-shrink: 0; padding: 2px 8px !important; font-size: 11px !important; border-radius: 4px !important; min-width: 0; }
-.peq-extras-section .extras-status { font-size: 10px; flex-shrink: 0; min-width: 28px; text-align: right; }
-/* Slider + number input inline layout */
-.extras-slider-row { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; }
-.extras-slider-row input[type=range] { flex: 1 1 auto; min-width: 0; }
-.extras-slider-row input[type=number] { flex: 0 0 44px; width: 44px; font-size: 11px; padding: 1px 4px; }
-.extras-unit { flex: none; font-size: 11px; color: var(--font-color-inputs, #666); }
-`;
-      document.head.appendChild(style);
-      return;
-    }
-
     // Set default values for configuration
     var headingTag = 'h4';
 
@@ -1176,26 +823,121 @@ async function initializeDeviceEqPlugin(context) {
     const deviceEqHTML = `
         <div class="device-eq disabled" id="deviceEqArea">
         <style>
-    /* Main connect button — matches the "Link Device" pill style */
-    .peq-connect-btn {
-      display: inline-flex;
+    .peq-info-btn[hidden] { display: none !important; }
+
+    /* ── Device link area: pill + connect button ─────────────────────────── */
+    .device-link-area { padding: 2px 0 4px; }
+    .device-link-btn {
+      display: flex !important;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      width: 100%;
-      padding: 12px 18px;
-      background: #f5f5f5;
-      border: 1px solid #aaa;
-      border-radius: 14px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #111;
+      width: 100% !important;
+      padding: 12px 18px !important;
+      background: var(--background-color, #f5f5f5);
+      border: 1px solid var(--background-color-contrast-more, #aaa) !important;
+      border-radius: 14px !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      color: var(--font-color-primary, #111) !important;
       cursor: pointer;
-      text-transform: none;
+      text-transform: none !important;
+      transition: border-color 150ms ease, color 150ms ease;
     }
-    .peq-connect-btn:hover { border-color: #1a6ef5; color: #1a6ef5; }
-    .peq-connect-btn-icon { flex-shrink: 0; opacity: 0.7; }
-    .peq-info-btn[hidden] { display: none !important; }
+    .device-link-btn:hover {
+      border-color: var(--accent-color, #1a6ef5) !important;
+      color: var(--accent-color, #1a6ef5) !important;
+    }
+    .device-link-btn[hidden] { display: none !important; }
+    .device-link-icon { flex-shrink: 0; opacity: 0.7; }
+    .device-link-popup {
+      margin-top: 4px;
+      background: var(--background-color, #fff);
+      border: 1px solid var(--background-color-contrast-more, #ccc);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .device-link-popup[hidden] { display: none !important; }
+    .device-link-popup-item {
+      display: block !important;
+      width: 100% !important;
+      padding: 11px 16px !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      color: var(--font-color-primary, #111) !important;
+      font-size: 13px !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-transform: none !important;
+      cursor: pointer;
+      transition: background-color 100ms ease;
+    }
+    .device-link-popup-item:hover { background: rgba(0,0,0,0.06) !important; }
+    .device-link-popup-divider {
+      height: 1px;
+      background: var(--background-color-contrast-more, #ccc);
+      margin: 0;
+      opacity: 0.4;
+    }
+    /* Connected state pill */
+    .device-pill {
+      background: var(--background-color, #f5f5f5);
+      border: 1px solid var(--background-color-contrast-more, #aaa);
+      border-radius: 14px;
+      overflow: visible;
+      margin-bottom: 4px;
+    }
+    .device-pill[hidden] { display: none !important; }
+    .device-pill--busy { border-color: var(--background-color-contrast-more, #aaa); }
+    .device-pill-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px 10px 14px;
+    }
+    .device-pill-icon {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: var(--font-color-primary, #111);
+      opacity: 0.6;
+    }
+    .device-pill-icon-link { display: block; }
+    .device-pill-icon-sync { display: none; }
+    .device-pill--busy .device-pill-icon-link { display: none; }
+    .device-pill--busy .device-pill-icon-sync { display: block; }
+    @keyframes peqPillSpin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+    .device-pill--busy .device-pill-icon-sync { animation: peqPillSpin 1s linear infinite; opacity: 0.9; }
+    .device-pill-name {
+      flex: 1 1 auto;
+      font-size: 13px !important;
+      font-weight: 400 !important;
+      color: var(--font-color-primary, #111) !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .device-pill-close {
+      flex: none !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 24px !important;
+      height: 24px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 50% !important;
+      color: var(--font-color-primary, #111) !important;
+      font-size: 18px !important;
+      line-height: 1 !important;
+      cursor: pointer;
+      text-transform: none !important;
+      opacity: 0.5;
+      transition: opacity 150ms ease;
+    }
+    .device-pill-close:hover { opacity: 1; }
             .info-button {
       background: none;
       border: none;
@@ -1313,75 +1055,152 @@ async function initializeDeviceEqPlugin(context) {
       display: inline-block; /* Or block, depending on layout */
     }
 
-    /* ── Device Extras panel ─────────────────────────────────────────────── */
-    .show-extras-btn {
-      font-size: 12px;
-      padding: 3px 10px;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      background: #f0f0f0;
-      cursor: pointer;
-      white-space: nowrap;
-      vertical-align: middle;
+    /* ── Slot row (inside expanded settings panel) ────────────────────────── */
+    .peq-slot-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0 4px;
     }
-    .show-extras-btn:hover { background: #e0e0e0; }
+    .peq-slot-row[hidden] { display: none !important; }
+    .peq-slot-row select {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    /* ── Device Extras panel ─────────────────────────────────────────────── */
+    .peq-settings-btn {
+      position: relative;
+      flex: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 28px !important;
+      height: 28px !important;
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      cursor: pointer;
+      text-transform: none !important;
+      overflow: visible !important;
+    }
+    .peq-settings-btn[hidden] { display: none !important; }
+    .peq-settings-btn:hover, .peq-settings-btn.peq-settings-btn--open {
+      color: var(--accent-color, #1a6ef5) !important;
+    }
+    .peq-settings-btn-icon {
+      display: block;
+      width: 18px;
+      height: 18px;
+      background-color: currentColor;
+      mask: var(--icon-eq-settings, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065'/%3E%3Cpath stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0'/%3E%3C/svg%3E"));
+      -webkit-mask: var(--icon-eq-settings, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065'/%3E%3Cpath stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0'/%3E%3C%2Fsvg%3E"));
+      mask-repeat: no-repeat;
+      -webkit-mask-repeat: no-repeat;
+      mask-position: center;
+      -webkit-mask-position: center;
+      mask-size: 18px 18px;
+      -webkit-mask-size: 18px 18px;
+    }
+    .peq-settings-btn-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      box-sizing: border-box;
+      min-width: 11px;
+      height: 11px;
+      padding: 0 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+      line-height: 1;
+      border-radius: 2px;
+      background: var(--accent-color, #1a6ef5);
+      color: #fff;
+      pointer-events: none;
+    }
+    .peq-settings-btn-badge[hidden] { display: none !important; }
 
     .device-extras-panel {
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-top: 6px;
-      background: #f9f9f9;
+      border-top: 1px solid var(--background-color-contrast, #e5e5e5);
+      padding: 6px 0 2px;
+      margin-top: 4px;
+      background: transparent;
       width: 100%;
-      box-sizing: border-box;
       max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .peq-extras-section {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
     }
 
     .extras-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       padding: 5px 0;
-      border-bottom: 1px solid #eee;
-      flex-wrap: wrap;
+      border-bottom: 1px solid var(--background-color-contrast, #ebebeb);
+      min-width: 0;
+      width: 100%;
     }
     .extras-row:last-child { border-bottom: none; }
 
     .extras-label {
-      min-width: 120px;
+      min-width: 90px;
+      max-width: 90px;
       font-size: 13px;
       font-weight: 500;
-      color: #444;
+      color: var(--accent-color-contrast, #444);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .extras-control {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex: 1;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .extras-select {
       font-size: 13px;
       padding: 2px 4px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--background-color-contrast-more, #ccc);
       border-radius: 4px;
+      background: var(--background-color, #fff);
+      color: var(--accent-color-contrast, #333);
+      width: 100%;
+      min-width: 0;
     }
 
     .extras-apply {
-      padding: 3px 10px;
-      font-size: 12px;
-      border: 1px solid #999;
-      border-radius: 4px;
-      background: #fff;
+      flex: none !important;
+      padding: 3px 6px !important;
+      font-size: 11px !important;
+      border-radius: 4px !important;
+      text-transform: none !important;
+      white-space: nowrap !important;
       cursor: pointer;
+      margin-bottom: 0 !important;
+      order: unset !important;
     }
-    .extras-apply:hover { background: #eee; }
 
     .extras-status {
       font-size: 11px;
-      color: #888;
-      min-width: 55px;
+      color: var(--accent-color-contrast-inactive, #888);
+      min-width: 0;
+      white-space: nowrap;
     }
     .extras-status.ok  { color: #2a7; }
     .extras-status.err { color: #c00; }
@@ -1415,28 +1234,68 @@ async function initializeDeviceEqPlugin(context) {
     .toggle-switch input:checked + .toggle-knob { background: #4CAF50; }
     .toggle-switch input:checked + .toggle-knob:before { transform: translateX(18px); }
 
-    .extras-balance-slider { width: 120px; }
-    .extras-num-input { width: 52px; font-size: 13px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 4px; }
-    .extras-range { width: 110px; }
+    .extras-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .extras-balance-slider { width: 60px; flex: 1 1 40px; min-width: 0; }
+    .extras-balance-lbl { font-size: 12px; min-width: 40px; max-width: 60px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .extras-num-input {
+      width: 36px;
+      flex-shrink: 0;
+      font-size: 13px;
+      padding: 2px 4px;
+      border: 1px solid var(--background-color-contrast-more, #ccc);
+      border-radius: 4px;
+      background: var(--background-color, #fff);
+      color: var(--accent-color-contrast, #333);
+    }
+    .extras-range { width: 60px; flex: 1 1 40px; min-width: 0; }
+    .extras-unit { font-size: 12px; color: var(--accent-color-contrast-inactive, #666); flex-shrink: 0; }
         </style>
-            <${headingTag}>Device PEQ</${headingTag}>
-            <div class="settings-row">
-                <button class="connect-device peq-connect-btn">${context?.config?.connectButtonLabel ?? 'Connect to device'}
-                  <svg class="peq-connect-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            ${context?.config?.showTitle !== false ? `<${headingTag}>Device PEQ</${headingTag}>` : ''}
+            <!-- Hidden internal proxy buttons (backward-compat: external code can set data-connectionType and click these) -->
+            <button class="connect-device" hidden style="display:none!important"></button>
+            <button class="disconnect-device" hidden style="display:none!important"><span id="deviceName" hidden></span></button>
+            <!-- Visible connection UI: pill when connected, link button when disconnected -->
+            <div id="device-link-area" class="device-link-area"${context?.config?.showConnectButton === false ? ' hidden' : ''}>
+                <button type="button" id="eq-device-connect-btn" class="device-link-btn"
+                        aria-expanded="false" aria-haspopup="menu">
+                    <svg class="device-link-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    ${context?.config?.connectButtonLabel ?? 'Link Device'}
                 </button>
-                <button class="disconnect-device">Disconnect From <span id="deviceName">None</span></button>
-                <button id="deviceInfoBtn" class="peq-info-btn" aria-label="Device Help" title="Device Help" ${context?.config?.showInfoButton === false ? 'hidden' : ''}>ℹ️</button>
+                <div id="device-link-popup" class="device-link-popup" hidden role="menu" aria-label="Connection type"></div>
+                <div id="device-pill" class="device-pill" hidden>
+                    <div class="device-pill-row">
+                        <span class="device-pill-icon">
+                            <svg class="device-pill-icon-link" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            <svg class="device-pill-icon-sync" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+                        </span>
+                        <span id="device-pill-name" class="device-pill-name"></span>
+                        <button type="button" id="device-pill-close" class="device-pill-close" aria-label="Disconnect">×</button>
+                    </div>
+                </div>
             </div>
-            <div class="peq-slot-area">
-                <select name="device-peq-slot" id="device-peq-slot-dropdown">
-                    <option value="None" selected>Select PEQ Slot</option>
-                </select>
-                <button class="show-extras-btn" id="show-extras-btn" hidden>Show Extras &#9662;</button>
-            </div>
-            <div class="device-extras-panel" id="device-extras-panel" hidden></div>
+            <button id="deviceInfoBtn" class="peq-info-btn" aria-label="Device Help" title="Device Help" ${context?.config?.showInfoButton === false ? 'hidden' : ''}>ℹ️</button>
             <div class="filters-button">
-                <button class="pull-filters-fromdevice">Pull From Device</button>
-                <button class="push-filters-todevice">Push To Device</button>
+                <button class="pull-filters-fromdevice peq-load-btn">Load from Device</button>
+                <button class="push-filters-todevice peq-save-btn">Save to Device</button>
+                <button type="button" class="peq-settings-btn" id="peq-settings-btn" hidden
+                        aria-label="Device settings" title="Device settings" aria-expanded="false">
+                    <span class="peq-settings-btn-icon" aria-hidden="true"></span>
+                    <span class="peq-settings-btn-badge" aria-hidden="true">i</span>
+                </button>
+            </div>
+            <div class="device-extras-panel" id="device-extras-panel" hidden>
+                <div class="peq-slot-row" id="peq-slot-row" hidden>
+                    <select name="device-peq-slot" id="device-peq-slot-dropdown">
+                        <option value="None" selected>Select PEQ Slot</option>
+                    </select>
+                </div>
             </div>
         </div>
         <!-- Modal -->
@@ -1898,22 +1757,116 @@ async function initializeDeviceEqPlugin(context) {
 
         // Show the Connect button if WebHID is supported
         deviceEqUI.deviceEqArea.classList.remove('disabled');
-        deviceEqUI.connectButton.hidden = false;
-        deviceEqUI.disconnectButton.hidden = true;
 
-        // Connect Button Event Listener
+        // ── Pill: build connection-type popup ────────────────────────────────
+        const DEFAULT_LINK_TYPES = [
+          { label: 'USB',                type: 'usb'    },
+          { label: 'Serial / Bluetooth', type: 'serial' },
+          { label: 'Bluetooth (BLE)',    type: 'ble'    },
+          { label: 'Network',            type: 'network'},
+        ];
+        const linkTypes = context?.config?.connectionTypes
+          ?? DEFAULT_LINK_TYPES.filter(t => t.type !== 'network' || context?.config?.showNetwork === true);
+
+        if (deviceEqUI.linkPopup && context?.config?.advanced && linkTypes.length > 0) {
+          linkTypes.forEach((entry, i) => {
+            if (i > 0) {
+              const sep = document.createElement('div');
+              sep.className = 'device-link-popup-divider';
+              sep.setAttribute('role', 'separator');
+              deviceEqUI.linkPopup.appendChild(sep);
+            }
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'device-link-popup-item';
+            btn.setAttribute('role', 'menuitem');
+            btn.textContent = entry.label;
+            btn.dataset.type = entry.type;
+            deviceEqUI.linkPopup.appendChild(btn);
+          });
+        }
+
+        function closeLinkPopup() {
+          if (deviceEqUI.linkPopup) deviceEqUI.linkPopup.hidden = true;
+          if (deviceEqUI.linkBtn) deviceEqUI.linkBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        // Pill link button click — simple: direct USB; advanced: toggle popup
+        if (deviceEqUI.linkBtn) {
+          deviceEqUI.linkBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!context?.config?.advanced) {
+              deviceEqUI.connectButton.dataset.connectionType = 'usb';
+              deviceEqUI.setPillState('connecting');
+              deviceEqUI.connectButton.click();
+              return;
+            }
+            const isOpen = deviceEqUI.linkPopup && !deviceEqUI.linkPopup.hidden;
+            if (isOpen) { closeLinkPopup(); return; }
+            if (deviceEqUI.linkPopup) deviceEqUI.linkPopup.hidden = false;
+            deviceEqUI.linkBtn.setAttribute('aria-expanded', 'true');
+          });
+        }
+
+        // Popup item clicks (non-network close and trigger; network shows dialog first)
+        if (deviceEqUI.linkPopup) {
+          deviceEqUI.linkPopup.addEventListener('click', async (e) => {
+            const item = e.target.closest('.device-link-popup-item');
+            if (!item) return;
+            e.stopPropagation();
+            const type = item.dataset.type;
+            closeLinkPopup();
+            if (type === 'network') {
+              const result = await showNetworkConnectionDialog();
+              if (!result) return;
+              deviceEqUI.connectButton.dataset.connectionType = 'network';
+              deviceEqUI.connectButton.dataset.networkIp = result.ipAddress || '';
+              deviceEqUI.connectButton.dataset.networkDeviceType = result.deviceType || 'WiiM';
+            } else {
+              deviceEqUI.connectButton.dataset.connectionType = type;
+            }
+            deviceEqUI.setPillState('connecting');
+            deviceEqUI.connectButton.click();
+          });
+          // Click outside device-link-area closes popup
+          document.addEventListener('click', (e) => {
+            if (deviceEqUI.linkPopup && !deviceEqUI.linkPopup.hidden &&
+                deviceEqUI.linkArea && !deviceEqUI.linkArea.contains(e.target)) {
+              closeLinkPopup();
+            }
+          });
+        }
+
+        // Pill × button → disconnect
+        if (deviceEqUI.devicePillClose) {
+          deviceEqUI.devicePillClose.addEventListener('click', () => {
+            deviceEqUI.disconnectButton.click();
+          });
+        }
+
+        // Internal connect button handler (used by pill popup AND external proxy callers)
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
-            // A host (e.g. graphtool's dropdown) can pre-select the type via a data attribute,
-            // which lets us skip the dialog even in advanced mode.
             const preselected = deviceEqUI.connectButton.dataset.connectionType;
-            if (preselected) { delete deviceEqUI.connectButton.dataset.connectionType; }
-            let selection = preselected
-              ? { connectionType: preselected }
-              : { connectionType: "usb" }; // default
-            if (!preselected && context.config.advanced) {
-              // Show a custom dialog to select Network or USB
-              selection = await showDeviceSelectionDialog();
+            let selection;
+            if (preselected === 'network') {
+              selection = {
+                connectionType: 'network',
+                ipAddress:      deviceEqUI.connectButton.dataset.networkIp || '',
+                deviceType:     deviceEqUI.connectButton.dataset.networkDeviceType || 'WiiM',
+              };
+              delete deviceEqUI.connectButton.dataset.connectionType;
+              delete deviceEqUI.connectButton.dataset.networkIp;
+              delete deviceEqUI.connectButton.dataset.networkDeviceType;
+            } else if (preselected) {
+              selection = { connectionType: preselected };
+              delete deviceEqUI.connectButton.dataset.connectionType;
+            } else if (context.config.advanced) {
+              // Fallback for direct external clicks without preset
+              selection = await showConnectionMenu(deviceEqUI.linkBtn ?? deviceEqUI.connectButton);
+              if (!selection) return;
+            } else {
+              selection = { connectionType: 'usb' };
             }
 
             if (selection.connectionType == "network") {
@@ -1929,6 +1882,7 @@ async function initializeDeviceEqPlugin(context) {
               if (device?.handler == null) {
                 showToast("Sorry, this network device is not currently supported.", "error");
                 await NetworkDeviceConnector.disconnectDevice();
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device) {
@@ -1953,12 +1907,14 @@ async function initializeDeviceEqPlugin(context) {
               const device = await UsbHIDConnector.getDeviceConnected();
               // If the user cancelled the chooser, just exit silently
               if (device?.cancelled) {
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               // If device is explicitly marked unsupported or has no handler, show unsupported toast
               if (device?.unsupported || device?.handler == null) {
                 showToast("Sorry, this USB device is not currently supported.", "error");
                 await UsbHIDConnector.disconnectDevice();
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device) {
@@ -2004,11 +1960,13 @@ async function initializeDeviceEqPlugin(context) {
               const device = await UsbSerialConnector.getDeviceConnected();
               // If the user cancelled the chooser, just exit silently
               if (device?.cancelled) {
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device?.handler == null) {
                 showToast("Sorry, this USB Serial device is not currently supported.", "error");
                 await UsbSerialConnector.disconnectDevice();
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device) {
@@ -2052,11 +2010,13 @@ async function initializeDeviceEqPlugin(context) {
             } else if (selection.connectionType == "ble") {
               const device = await BluetoothBleConnector.getDeviceConnected();
               if (device?.cancelled) {
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device?.unsupported || device?.handler == null) {
                 showToast("Sorry, this Bluetooth device is not currently supported.", "error");
                 await BluetoothBleConnector.disconnectDevice();
+                deviceEqUI.setPillState('disconnected');
                 return;
               }
               if (device) {
@@ -2097,6 +2057,7 @@ async function initializeDeviceEqPlugin(context) {
           } catch (error) {
             console.error("Error connecting to device:", error);
             showToast("Failed to connect to the device.", "error");
+            deviceEqUI.setPillState('disconnected');
           }
         });
 
@@ -2316,191 +2277,312 @@ async function initializeDeviceEqPlugin(context) {
           });
         }
 
-        function showDeviceSelectionDialog() {
+        function injectConnectionMenuCSS() {
+          if (document.getElementById('peq-conn-menu-styles')) return;
+          const style = document.createElement('style');
+          style.id = 'peq-conn-menu-styles';
+          style.textContent = `
+            /* Fallback styles for devicePEQ connection menu (applied when host CSS is absent) */
+            .device-link-popup:not([hidden]) {
+              display: block;
+              background: #fff;
+              border: 1px solid rgba(0,0,0,0.15);
+              border-radius: 12px;
+              overflow: hidden;
+              margin-top: 4px;
+            }
+            .device-link-popup-item {
+              display: block !important;
+              width: 100% !important;
+              padding: 11px 16px !important;
+              background: transparent !important;
+              border: none !important;
+              border-radius: 0 !important;
+              color: inherit !important;
+              font-family: inherit;
+              font-size: 13px !important;
+              font-weight: 400 !important;
+              text-align: left !important;
+              text-transform: none !important;
+              cursor: pointer;
+            }
+            .device-link-popup-item:hover {
+              background-color: rgba(0,0,0,0.06) !important;
+            }
+            .device-link-popup-divider {
+              height: 1px;
+              background: rgba(0,0,0,0.12);
+              margin: 0;
+            }
+            .peq-network-form {
+              padding: 12px 16px 14px;
+              font-size: 13px;
+            }
+            .peq-network-form p {
+              margin: 0 0 8px;
+              font-size: 13px;
+              font-weight: 500;
+            }
+            .peq-network-radio-group {
+              display: flex;
+              gap: 16px;
+              margin: 0 0 6px;
+            }
+            .peq-network-radio-group label {
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+              cursor: pointer;
+              font-weight: normal;
+            }
+            .peq-network-help {
+              font-size: 12px;
+              color: #666;
+              margin-bottom: 8px;
+              min-height: 1em;
+            }
+            .peq-network-ip-input {
+              width: 100%;
+              padding: 8px 10px;
+              border: 1px solid rgba(0,0,0,0.2);
+              border-radius: 6px;
+              font-size: 13px;
+              box-sizing: border-box;
+              margin-bottom: 10px;
+            }
+            .peq-network-actions {
+              display: flex;
+              gap: 8px;
+            }
+            .peq-network-actions button {
+              flex: 1;
+              padding: 8px;
+              border: none;
+              border-radius: 6px;
+              font-size: 13px;
+              cursor: pointer;
+              font-family: inherit;
+            }
+            .peq-network-btn-back {
+              background: rgba(0,0,0,0.07);
+              color: inherit;
+            }
+            .peq-network-btn-back:hover { background: rgba(0,0,0,0.12); }
+            .peq-network-btn-connect {
+              background: #28a745;
+              color: #fff;
+            }
+            .peq-network-btn-connect:hover { background: #218838; }
+          `;
+          document.head.appendChild(style);
+        }
+
+        function showNetworkConnectionDialog() {
           return new Promise((resolve) => {
-            const storedIP = getCookie("networkDeviceIP") || "";
-            const storedDeviceType = getCookie("networkDeviceType") || "WiiM";
+            const storedIP = getCookie('networkDeviceIP') || '';
+            const storedDeviceType = getCookie('networkDeviceType') || 'WiiM';
 
-            const dialogHTML = `
-      <div id="device-selection-dialog" style="
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: #fff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-          text-align: center;
-          z-index: 10000;
-          min-width: 340px;
-          font-family: Arial, sans-serif;
-      ">
-        <h3 style="margin-bottom: 10px; color: black;">Select Connection Type</h3>
-        <p style="color: black;">Choose how you want to connect to your device.</p>
+            const overlay = document.createElement('div');
+            overlay.id = 'peq-network-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;';
 
-        <!-- Selection Buttons (Vertical Layout) -->
-        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-          <button id="usb-hid-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">USB Device</button>
-          <button id="usb-serial-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #6f42c1; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Serial USB or Bluetooth Device</button>
-          <button id="bluetooth-ble-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Bluetooth (BLE) Device</button>
-          <button id="network-button" style="margin: 5px 0; padding: 10px 15px; font-size: 14px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 80%;">Network</button>
-        </div>
+            overlay.innerHTML = `
+              <div id="peq-network-dialog" style="
+                background:#fff; padding:24px; border-radius:10px;
+                box-shadow:0 6px 24px rgba(0,0,0,0.3); text-align:center;
+                z-index:10000; min-width:340px; max-width:460px; width:90%;
+                font-family:Arial,sans-serif; max-height:90vh; overflow-y:auto;
+              ">
+                <h3 style="margin:0 0 6px;color:#111;">Network Device</h3>
+                <p style="color:#444;margin:0 0 14px;font-size:13px;">Select your device type and enter its local IP address.</p>
 
-        <!-- IP Address Input -->
-        <input type="text" id="ip-input" placeholder="Enter IP Address" value="${storedIP}" style="display: none; margin-top: 10px; width: 80%;">
-        <!-- Test IP Button (Initially Hidden) -->
-        <button id="test-ip-button" style="display: none; margin-top: 10px; padding: 8px 12px; font-size: 13px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;">Test IP Address</button>
-        <!-- Network Options -->
-        <div id="network-options" style="display: none; margin-top: 15px; text-align: left; background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 14px; color: #222;">
-          <p style="margin-bottom: 10px;"><strong>Network Device Selection</strong></p>
-          <p>Select which network device you are using. We recommend using the official apps to find the IP address on your network.</p>
-          <ul style="margin: 8px 0 12px 22px; color: #333;">
-            <li>WiiM: Use the WiiM Home app to find the device IP</li>
-            <li>Luxsin X9: Use the Luxsin/WalkPlay app to find the device IP</li>
-          </ul>
-          <div style="margin-top: 10px; text-align: center;">
-            <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
-              <input type="radio" name="network-device" value="WiiM" ${storedDeviceType === "WiiM" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> WiiM
-            </label>
-            <label style="display: inline-flex; align-items: center; gap: 5px; margin-right: 15px; font-weight: bold; color: black;">
-              <input type="radio" name="network-device" value="Luxsin" ${storedDeviceType === "Luxsin" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> Luxsin X9
-            </label>
-            <label style="display: inline-flex; align-items: center; gap: 5px; font-weight: bold; color: gray;">
-              <input type="radio" name="network-device" value="coming-soon" disabled ${storedDeviceType === "coming-soon" ? "checked" : ""} style="width: 18px; height: 18px; appearance: auto !important; -webkit-appearance: radio !important; -moz-appearance: radio !important; accent-color: #007BFF;"> Other Devices (coming soon)
-            </label>
-          </div>
+                <div style="display:flex;justify-content:center;gap:16px;margin-bottom:10px;">
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-weight:bold;color:#111;cursor:pointer;">
+                    <input type="radio" name="peq-net-dev" value="WiiM" ${storedDeviceType === 'WiiM' ? 'checked' : ''}
+                      style="width:16px;height:16px;appearance:auto!important;-webkit-appearance:radio!important;accent-color:#007BFF;">
+                    WiiM
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-weight:bold;color:#111;cursor:pointer;">
+                    <input type="radio" name="peq-net-dev" value="Luxsin" ${storedDeviceType === 'Luxsin' ? 'checked' : ''}
+                      style="width:16px;height:16px;appearance:auto!important;-webkit-appearance:radio!important;accent-color:#007BFF;">
+                    Luxsin X9
+                  </label>
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-weight:bold;color:#888;cursor:default;">
+                    <input type="radio" name="peq-net-dev" value="coming-soon" disabled
+                      style="width:16px;height:16px;appearance:auto!important;-webkit-appearance:radio!important;">
+                    Other (coming soon)
+                  </label>
+                </div>
 
-          <!-- Device-specific help -->
-          <div id="device-help" style="margin-top: 12px; background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 10px;">
-            <div id="help-wiim" style="display: none; color: #222;">
-              <p><strong>WiiM process</strong></p>
-              <p>WiiM uses HTTPS with a self-signed certificate on its local web server. Your browser will likely warn that the connection is not private. This is expected.</p>
-              <p>To proceed, open the device page in a new tab and accept the certificate warning. After that, this tool can push PEQ settings to the device (reading settings is limited by browser security and may not work).</p>
-              <p>Tip: Use the WiiM Home app to find the device IP address.</p>
-            </div>
-            <div id="help-luxsin" style="display: none; color: #222;">
-              <p><strong>Luxsin X9 process</strong></p>
-              <p>Luxsin X9 uses a simple HTTP interface. When you test the IP, this tool opens <code>/dev/info.cgi?action=syncData</code> on the device; if the IP is correct you should see text/plain content that looks like encoded gibberish (this is expected).</p>
-              <p>No HTTPS certificate acceptance is required. You can both read (pull) and write (push) PEQ settings.</p>
-              <p>Tip: Use the Luxsin/WalkPlay app to find the device IP address. Advanced users can also check <code>/dev/info.cgi?action=syncPeq</code> for current PEQ.</p>
-            </div>
-          </div>
-        </div>
-        <!-- Action Buttons -->
-        <br>
-        <button id="submit-button" style="display: none; margin-top: 10px; padding: 10px 15px; font-size: 14px; background: #28A745; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Connect</button>
-        <button id="cancel-button" style="margin-top: 10px; padding: 10px 15px; font-size: 14px; background: gray; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-      </div>
-    `;
+                <!-- Per-device help text -->
+                <div id="peq-net-help" style="
+                  text-align:left;background:#f9f9f9;padding:12px;border-radius:6px;
+                  font-size:13px;color:#222;margin-bottom:12px;
+                ">
+                  <div id="peq-help-wiim">
+                    <p style="margin:0 0 6px;"><strong>WiiM</strong></p>
+                    <p style="margin:0 0 6px;">WiiM uses HTTPS with a self-signed certificate. Your browser will warn that the connection is not private — this is expected.</p>
+                    <p style="margin:0 0 6px;">To proceed, open the device page in a new tab and accept the certificate warning. After that, this tool can push PEQ settings to the device (reading settings is limited by browser security).</p>
+                    <p style="margin:0;">Tip: Use the <strong>WiiM Home app</strong> to find the device IP address.</p>
+                  </div>
+                  <div id="peq-help-luxsin" style="display:none;">
+                    <p style="margin:0 0 6px;"><strong>Luxsin X9</strong></p>
+                    <p style="margin:0 0 6px;">Luxsin X9 uses a simple HTTP interface — no certificate acceptance required. You can both read (pull) and write (push) PEQ settings.</p>
+                    <p style="margin:0 0 6px;">When you test the IP, this tool opens <code>/dev/info.cgi?action=syncData</code> on the device; if correct you'll see encoded text content (expected).</p>
+                    <p style="margin:0;">Tip: Use the <strong>Luxsin/WalkPlay app</strong> to find the device IP address.</p>
+                  </div>
+                </div>
 
-            const dialogContainer = document.createElement("div");
-            dialogContainer.innerHTML = dialogHTML;
-            document.body.appendChild(dialogContainer);
+                <input type="text" id="peq-net-ip" placeholder="Enter IP Address (e.g. 192.168.1.50)"
+                  value="${storedIP}"
+                  style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:6px;
+                         font-size:13px;box-sizing:border-box;margin-bottom:8px;">
 
-            const ipInput = document.getElementById("ip-input");
-            const networkOptions = document.getElementById("network-options");
-            const submitButton = document.getElementById("submit-button");
-            const testIpButton = document.getElementById("test-ip-button");
-            const helpWiim = document.getElementById("help-wiim");
-            const helpLuxsin = document.getElementById("help-luxsin");
-            // Event: USB HID
-            document.getElementById("usb-hid-button").addEventListener("click", () => {
-              document.body.removeChild(dialogContainer);
-              resolve({ connectionType: "usb" });
-            });
+                <button id="peq-test-ip-btn" style="
+                  display:none;width:100%;margin-bottom:8px;padding:8px;font-size:13px;
+                  background:#ffc107;color:#000;border:none;border-radius:5px;cursor:pointer;
+                ">Test IP Address</button>
 
-            // Event: USB Serial
-            document.getElementById("usb-serial-button").addEventListener("click", () => {
-              document.body.removeChild(dialogContainer);
-              resolve({ connectionType: "serial" });
-            });
+                <div style="display:flex;gap:8px;margin-top:4px;">
+                  <button id="peq-net-cancel" style="
+                    flex:1;padding:10px;font-size:13px;background:#aaa;
+                    color:#fff;border:none;border-radius:5px;cursor:pointer;
+                  ">Cancel</button>
+                  <button id="peq-net-connect" style="
+                    flex:2;padding:10px;font-size:13px;background:#28a745;
+                    color:#fff;border:none;border-radius:5px;cursor:pointer;
+                  ">Connect</button>
+                </div>
+              </div>
+            `;
 
-            // Event: Bluetooth BLE
-            document.getElementById("bluetooth-ble-button").addEventListener("click", () => {
-              document.body.removeChild(dialogContainer);
-              resolve({ connectionType: "ble" });
-            });
+            document.body.appendChild(overlay);
 
-            // Event: Network
-            document.getElementById("network-button").addEventListener("click", () => {
-              ipInput.style.display = "block";
-              networkOptions.style.display = "block";
-              submitButton.style.display = "inline-block";
-              // Initialize help visibility based on stored device type
-              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
-              helpWiim.style.display = selectedDevice === "WiiM" ? "block" : "none";
-              helpLuxsin.style.display = selectedDevice === "Luxsin" ? "block" : "none";
-            });
+            const ipInput     = overlay.querySelector('#peq-net-ip');
+            const testBtn     = overlay.querySelector('#peq-test-ip-btn');
+            const helpWiim    = overlay.querySelector('#peq-help-wiim');
+            const helpLuxsin  = overlay.querySelector('#peq-help-luxsin');
 
-            // Watch for IP input to show the Test IP button
-            ipInput.addEventListener("input", () => {
-              const ip = ipInput.value.trim();
-              const isValid = /^(\d{1,3}\.){3}\d{1,3}$/.test(ip); // basic IPv4 validation
-              testIpButton.style.display = isValid ? "inline-block" : "none";
-              submitButton.style.display = isValid ? "inline-block" : "none";
-            });
+            function updateHelp(type) {
+              helpWiim.style.display   = type === 'WiiM'   ? 'block' : 'none';
+              helpLuxsin.style.display = type === 'Luxsin' ? 'block' : 'none';
+              if (testBtn.style.display !== 'none') {
+                testBtn.textContent = type === 'WiiM' ? 'Open WiiM Status (HTTPS)' : 'Open Luxsin Sync Data (HTTP)';
+              }
+            }
+            updateHelp(storedDeviceType);
 
-            // Switch help text and test button hint when selecting device type
-            const deviceRadios = document.querySelectorAll('input[name="network-device"]');
-            // Defensive: Force radios to render even if host app CSS sets appearance:none
-            deviceRadios.forEach(r => {
+            overlay.querySelectorAll('input[name="peq-net-dev"]').forEach(r => {
               try {
                 r.style.setProperty('appearance', 'auto', 'important');
                 r.style.setProperty('-webkit-appearance', 'radio', 'important');
-                r.style.setProperty('-moz-appearance', 'radio', 'important');
-                r.style.setProperty('accent-color', '#007BFF');
-                r.type = 'radio'; // ensure input remains radio
-              } catch (e) { /* ignore */ }
-              r.addEventListener('change', () => {
-                const val = document.querySelector('input[name="network-device"]:checked')?.value || 'WiiM';
-                helpWiim.style.display = val === 'WiiM' ? 'block' : 'none';
-                helpLuxsin.style.display = val === 'Luxsin' ? 'block' : 'none';
-                // Update button label hint
-                if (testIpButton.style.display !== 'none') {
-                  testIpButton.textContent = val === 'WiiM' ? 'Open WiiM Status (HTTPS)' : 'Open Luxsin Sync Data (HTTP)';
-                }
-              });
+              } catch(e) {}
+              r.addEventListener('change', () => updateHelp(r.value));
             });
 
-            // Handle Test IP Button Click
-            testIpButton.addEventListener("click", () => {
+            ipInput.addEventListener('input', () => {
+              const valid = /^(\d{1,3}\.){3}\d{1,3}$/.test(ipInput.value.trim());
+              testBtn.style.display = valid ? 'block' : 'none';
+              const type = overlay.querySelector('input[name="peq-net-dev"]:checked')?.value || 'WiiM';
+              testBtn.textContent = type === 'WiiM' ? 'Open WiiM Status (HTTPS)' : 'Open Luxsin Sync Data (HTTP)';
+            });
+
+            testBtn.addEventListener('click', () => {
               const ip = ipInput.value.trim();
-              if (!ip) return;
-              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
-              if (selectedDevice === 'WiiM') {
-                const confirmProceed = confirm(`This will open a new tab to https://${ip}.\nIf your browser shows technical info, you've already accepted the certificate. If you see a security warning (e.g., ERR_CERT_AUTHORITY_INVALID), accept the self-signed certificate (issued by Linkplay) via Advanced to proceed.`);
-                if (confirmProceed) {
-                  window.open(`https://${ip}/httpapi.asp?command=getStatusEx`, "_blank", "noopener,noreferrer");
+              const type = overlay.querySelector('input[name="peq-net-dev"]:checked')?.value || 'WiiM';
+              if (type === 'WiiM') {
+                if (confirm(`This will open a new tab to https://${ip}.\nIf you see a security warning (ERR_CERT_AUTHORITY_INVALID), click Advanced and accept the self-signed certificate to proceed.`)) {
+                  window.open(`https://${ip}/httpapi.asp?command=getStatusEx`, '_blank', 'noopener,noreferrer');
                 }
-              } else if (selectedDevice === 'Luxsin') {
-                const confirmProceed = confirm(`This will open a new tab to http://${ip}/dev/info.cgi?action=syncData.\nIf the IP is correct, you should see encoded text/plain content returned by the device.`);
-                if (confirmProceed) {
-                  window.open(`http://${ip}/dev/info.cgi?action=syncData`, "_blank", "noopener,noreferrer");
+              } else {
+                if (confirm(`This will open a new tab to http://${ip}/dev/info.cgi?action=syncData.\nIf the IP is correct you should see encoded text returned by the device.`)) {
+                  window.open(`http://${ip}/dev/info.cgi?action=syncData`, '_blank', 'noopener,noreferrer');
                 }
               }
             });
 
-            // Submit Network
-            submitButton.addEventListener("click", () => {
-              const ip = ipInput.value.trim();
-              if (!ip) {
-                showToast("Please enter a valid IP address.", "error");
-                return;
-              }
-
-              const selectedDevice = document.querySelector('input[name="network-device"]:checked')?.value || "WiiM";
-              document.body.removeChild(dialogContainer);
-              resolve({ connectionType: "network", ipAddress: ip, deviceType: selectedDevice });
+            overlay.querySelector('#peq-net-cancel').addEventListener('click', () => {
+              document.body.removeChild(overlay);
+              resolve(null);
             });
 
-            // Cancel
-            document.getElementById("cancel-button").addEventListener("click", () => {
-              document.body.removeChild(dialogContainer);
-              resolve({connectionType: "none"});
+            overlay.querySelector('#peq-net-connect').addEventListener('click', () => {
+              const ip = ipInput.value.trim();
+              if (!ip) { showToast('Please enter a valid IP address.', 'error'); return; }
+              const selectedDevice = overlay.querySelector('input[name="peq-net-dev"]:checked')?.value || 'WiiM';
+              document.body.removeChild(overlay);
+              resolve({ connectionType: 'network', ipAddress: ip, deviceType: selectedDevice });
             });
           });
         }
+
+        function showConnectionMenu(triggerEl) {
+          return new Promise((resolve) => {
+            injectConnectionMenuCSS();
+
+            // Toggle: if a menu is already open, close it and bail.
+            const existing = document.getElementById('peq-conn-type-menu');
+            if (existing) { existing.remove(); resolve(null); return; }
+
+            // Insert the dropdown below the button's containing row, not inside it,
+            // so it isn't treated as a flex sibling of the button.
+            const rowEl = triggerEl.closest('.settings-row') || triggerEl;
+            const popupEl = document.createElement('div');
+            popupEl.id = 'peq-conn-type-menu';
+            popupEl.className = 'device-link-popup';
+            popupEl.setAttribute('role', 'menu');
+            rowEl.insertAdjacentElement('afterend', popupEl);
+
+            function closeMenu() {
+              document.getElementById('peq-conn-type-menu')?.remove();
+              document.removeEventListener('click', handleOutsideClick, true);
+            }
+
+            function handleOutsideClick(e) {
+              if (!popupEl.contains(e.target) && e.target !== triggerEl) {
+                closeMenu();
+                resolve(null);
+              }
+            }
+
+            const DEFAULT_TYPES = [
+              { label: 'USB Device',         type: 'usb'     },
+              { label: 'Serial / Bluetooth', type: 'serial'  },
+              { label: 'Bluetooth (BLE)',     type: 'ble'     },
+              { label: 'Network',            type: 'network' },
+            ];
+            const types = context?.config?.connectionTypes
+              ?? DEFAULT_TYPES.filter(t => t.type !== 'network' || context?.config?.showNetwork === true);
+            types.forEach((entry, i) => {
+              if (i > 0) {
+                const sep = document.createElement('div');
+                sep.className = 'device-link-popup-divider';
+                sep.setAttribute('role', 'separator');
+                popupEl.appendChild(sep);
+              }
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'device-link-popup-item';
+              btn.setAttribute('role', 'menuitem');
+              btn.textContent = entry.label;
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeMenu();
+                if (entry.type !== 'network') {
+                  resolve({ connectionType: entry.type });
+                } else {
+                  // Network needs its own detailed modal
+                  showNetworkConnectionDialog().then(resolve);
+                }
+              });
+              popupEl.appendChild(btn);
+            });
+
+            // Delay attaching outside-click listener to avoid the current click closing the menu
+            setTimeout(() => document.addEventListener('click', handleOutsideClick, true), 0);
+          });
+        }
+
 
 
         // Disconnect Button Event Listener
@@ -2544,7 +2626,6 @@ async function initializeDeviceEqPlugin(context) {
 
             // Check if we have a timeout but still received some filters
             if (result.filters.length > 0) {
-              // Normal case - all filters received
               context.filtersToElem(result.filters);
               context.applyEQ();
               if (context.config?.showSuccessToasts !== false) showToast("PEQ filters successfully pulled from device.", "success");
