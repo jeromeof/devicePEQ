@@ -1443,7 +1443,7 @@ async function initializeDeviceEqPlugin(context) {
         <div id="deviceInfoModal" class="modal hidden">
           <div class="modal-content">
             <button id="closeModalBtn" class="close" aria-label="Close Modal">&times;</button>
-            <h3>About Device PEQ - v0.18</h3>
+            <h3>About Device PEQ - v0.20</h3>
 
             <div class="tabs">
               <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -1453,34 +1453,33 @@ async function initializeDeviceEqPlugin(context) {
             </div>
 
             <div id="tab-overview" class="tab-content active">
-              <p>This section lets you connect to a compatible audio device and interact with its Parametric EQ (PEQ) settings. Supported connection types include USB HID, USB Serial, Bluetooth SPP, Bluetooth BLE, and Network. Compatible devices include USB DAC dongles (FiiO, Moondrop, Tanchjim, JDS Labs, WiiM, Walkplay-based), and Bluetooth headphones (Audeze Maxwell, Tanchjim Rita, Moondrop Edge, FiiO EH11/EH13, EarFun Tune Pro, Edifier ConnectX, Nothing Headphone 1).</p>
-
+              <p>Connect to a compatible audio device and read or write its Parametric EQ (PEQ) settings directly from the browser. Supported connection types: USB HID, USB Serial, Bluetooth BLE, Bluetooth SPP, and Network (HTTP).</p>
+              <p><strong>Key features:</strong></p>
+              <ul style="margin-top: 4px;">
+                <li><strong>Pull &amp; Push PEQ</strong> — read filters from the device, adjust them in the graph, push them back</li>
+                <li><strong>Listen via Device</strong> — route audio through the connected device with inverse-EQ compensation so you hear a flat reference while tuning</li>
+                <li><strong>Neutral PEQ auto-load</strong> — when a BLE headphone connects, the matching Neutral PEQ measurement is automatically loaded into the graph as a tuning reference</li>
+                <li><strong>Device Extras</strong> — access hardware controls such as EQ on/off, gain mode, DAC filter, balance, mic gain, and output level (where supported)</li>
+                <li><strong>Multiple EQ slots</strong> — switch between presets/slots directly from the UI</li>
+              </ul>
               <details>
-                <summary style="cursor: pointer; font-weight: bold;">Supported Brands & Manufacturers <span style="font-weight: normal; color: #666; font-size: 90%;">(click to expand)</span></summary>
+                <summary style="cursor: pointer; font-weight: bold; margin-top: 10px;">Supported Brands &amp; Manufacturers <span style="font-weight: normal; color: #666; font-size: 90%;">(click to expand)</span></summary>
                 <ul style="margin-top: 8px;">
-                  <li><strong>CrinEar:</strong> Protocol Max</li>
-                  <li><strong>FiiO:</strong> JA11, KA15, KA17, FX17, QX13</li>
-                  <li><strong>Moondrop:</strong> CDSP, Chu II DSP, Quark2, Rays, Marigold </li>
-                  <li><strong>Tanchjim:</strong> Bunny DSP, Fission, One DSP, Stargate II </li>
-                  <li><strong>Truthear</strong> KeyX </li>
-                  <li><strong>EPZ:</strong> GM20 and TP13</li>
-                  <li><strong>Nicehck:</strong> Octave</li>
-                  <li><strong>TRN:</strong> Black Pearl</li>
-                  <li><strong>KiwiEars:</strong> Allegro and Allegro Pro</li>
-                  <li><strong>JCally:</strong> JM20 Pro, JM12, JM98 Pro</li>
-                  <li><strong>Walkplay</strong> Most devices compatible with Walkplay Android APK</li>
-                  <li><strong>KTMicro</strong> Many KTMicro DSP devices should work </li>
-                  <li><strong>JDS Labs:</strong> Supporting the Element IV via USB Serial interface</li>
-                  <li><strong>Nothing:</strong> Headphone (1) via Serial USB or Bluetooth</li>
-                  <li><strong>WiiM:</strong> Supports limited pushing of parametric EQ over the home network</li>
-                  <li><strong>Luxsin:</strong> X9 supports reading and writing PEQ over your home network (HTTP)</li>
-                  <li><strong>Audeze:</strong> Maxwell via Bluetooth BLE or SPP — 10-band PEQ, 4 presets</li>
-                  <li><strong>Tanchjim:</strong> Rita via Bluetooth SPP — 12-band parametric EQ, read + write</li>
-                  <li><strong>Moondrop:</strong> Edge / Edge ANC via Bluetooth SPP — 5-band parametric EQ, read + write</li>
-                  <li><strong>FiiO:</strong> EH11 / EH13 via Bluetooth SPP — 10-band parametric EQ, read + write</li>
-                  <li><strong>EarFun:</strong> Tune Pro via Bluetooth SPP — 10-band graphic EQ (write only)</li>
-                  <li><strong>Edifier:</strong> W830NB and ConnectX headphones via Bluetooth SPP — 4-band PEQ (write only)</li>
-                  <li><strong>Experimental:</strong> Many more device's that have yet to be tested, will be marked as 'Experimental' but may work fine</li>
+                  <li><strong>FiiO / Jade Audio:</strong> JA11, KA15, KA17, FX17, QX13 (USB HID)</li>
+                  <li><strong>Walkplay-based:</strong> Moondrop Marigold/Chu II DSP/Quark2, Tanchjim Stargate II/Space Pro/One DSP/Bunny DSP, EPZ TP13, KiwiEars Allegro/Allegro Pro, JCally JM98 Max/Hi-Max, DDHiFi DSP Cable, Nicehck Octave, CrinEar Protocol Max, and more</li>
+                  <li><strong>KTMicro:</strong> Moondrop CDSP/Chu II DSP, Tanchjim One DSP/Bunny DSP, KiwiEars Allegro Mini/Allegro Pro, KT02H20, and more</li>
+                  <li><strong>Fosi Audio:</strong> DS3 (USB HID)</li>
+                  <li><strong>JDS Labs:</strong> Element IV (USB Serial)</li>
+                  <li><strong>Nothing:</strong> Headphone (1) (USB Serial / Bluetooth SPP)</li>
+                  <li><strong>WiiM:</strong> Network push of parametric EQ</li>
+                  <li><strong>Luxsin:</strong> X9 — full read + write over local network (HTTP)</li>
+                  <li><strong>Audeze:</strong> Maxwell — 10-band PEQ, 4 presets (Bluetooth BLE preferred, SPP fallback)</li>
+                  <li><strong>FiiO:</strong> EH11 / EH13 — 10-band PEQ (Bluetooth BLE)</li>
+                  <li><strong>Tanchjim:</strong> Rita — 12-band PEQ (Bluetooth SPP)</li>
+                  <li><strong>Moondrop:</strong> Edge / Edge ANC — 5-band PEQ (Bluetooth SPP)</li>
+                  <li><strong>EarFun:</strong> Tune Pro — 10-band graphic EQ, write only (Bluetooth SPP)</li>
+                  <li><strong>Edifier:</strong> W830NB / ConnectX — 4-band PEQ, write only (Bluetooth SPP)</li>
+                  <li><em>Experimental:</em> Many more devices that have not been fully tested — marked accordingly but may work fine</li>
                 </ul>
               </details>
             </div>
@@ -1489,7 +1488,8 @@ async function initializeDeviceEqPlugin(context) {
               <div class="sub-tabs">
                 <button class="sub-tab-button active" data-subtab="sub-fiio">FiiO</button>
                 <button class="sub-tab-button" data-subtab="sub-walkplay">Walkplay</button>
-                <button class="sub-tab-button" data-subtab="sub-tanchjim">KTMicro</button>
+                <button class="sub-tab-button" data-subtab="sub-ktmicro">KTMicro</button>
+                <button class="sub-tab-button" data-subtab="sub-fosi">Fosi Audio</button>
                 <button class="sub-tab-button" data-subtab="sub-jdslabs">JDS Labs</button>
                 <button class="sub-tab-button" data-subtab="sub-nothing">Nothing</button>
                 <button class="sub-tab-button" data-subtab="sub-wiim">WiiM</button>
@@ -1499,136 +1499,172 @@ async function initializeDeviceEqPlugin(context) {
 
               <div id="sub-fiio" class="sub-tab-content active">
                 <h5>FiiO / Jade Audio</h5>
-                <p>Currently, I have tested the following FiiO devices: </p>
+                <p>Tested FiiO USB HID devices:</p>
                 <ul>
-                  <li>JA11</li>
-                  <li>KA17</li>
-                  <li>KA15</li>
-                  <li>FX17 (with usbc adapter)</li>
-                  <li>QX13</li>
+                  <li>Jade Audio JA11</li>
+                  <li>FiiO KA15</li>
+                  <li>FiiO KA17</li>
+                  <li>FiiO FX17 (with USB-C adapter)</li>
+                  <li>FiiO QX13</li>
                   <li><em>Note:</em> Retro Nano has limited compatibility</li>
                 </ul>
-                <p>Mostly if a FiiO device works with their excellent Web-based PEQ editor at <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a> it should work here also</p>
+                <p>If a FiiO device works with <a href="https://fiiocontrol.fiio.com" target="_blank">fiiocontrol.fiio.com</a> it should work here too.</p>
+                <p>FiiO EH11 and EH13 Bluetooth headphones are supported via BLE — see the BT Headphones tab.</p>
               </div>
 
               <div id="sub-walkplay" class="sub-tab-content">
                 <h5>Walkplay-Based Devices</h5>
-                <p>Since Walkplay licenses their DSP technology to multiple brands, the following devices are known to work but many other devices might work:</p>
+                <p>Walkplay licenses their DSP to many brands. The following are confirmed working:</p>
                 <ul>
+                  <li>Moondrop Marigold (IEM)</li>
+                  <li>Moondrop Chu II DSP (IEM)</li>
                   <li>Moondrop Quark2 DSP (IEM)</li>
-                  <li>Moondrop Echo A (Dongle)</li>
-                  <li>JCally JM20-Pro (Dongle)</li>
-                  <li>Generic "Hi-Max" (Dongle)</li>
-                  <li>EPZ G20 (IEM)</li>
-                  <li>EPZ TP13 (Dongle)</li>
-                </ul>
-                <p>Walkplay also provide an excellent editor at <a href="https://peq.szwalkplay.com" target="_blank">peq.szwalkplay.com</a> and a decent Android App</p>
-                <p>Note: One quirk with Walkplay devices is their PEQ WebApp and their Android App 'daches' what it thinks is the current PEQ for a device in the cloud (once you register) so values pushed <b>may not be visible</b> to their Website or Mobile App</p>
-              </div>
-
-              <div id="sub-tanchjim" class="sub-tab-content">
-                <h5>KTMicro Devices</h5>
-                <p>Currently, I have tested the following KTMicro DSP devices but many others should work</p>
-                <ul>
-                  <li>Moondrop CDSP</li>
-                  <li>Moondrop Quark2</li>
+                  <li>Tanchjim Stargate II (IEM)</li>
+                  <li>Tanchjim Space Pro (IEM)</li>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
-                  <li>Tanchjim Fission (IEM)</li>
-                  <li>JCally JM12</li>
+                  <li>EPZ TP13 (Dongle)</li>
+                  <li>KiwiEars Allegro / Allegro Pro (Dongle)</li>
+                  <li>JCally JM98 Max / Hi-Max (Dongle)</li>
+                  <li>DDHiFi DSP Cable</li>
+                  <li>Nicehck Octave</li>
+                  <li>CrinEar Protocol Max</li>
                 </ul>
-                <p>You also use the official Tanchjim Android App for EQ and device configuration.</p>
+                <p>Walkplay also have a web editor at <a href="https://peq.szwalkplay.com" target="_blank">peq.szwalkplay.com</a> and an Android app.</p>
+                <p><em>Note:</em> Walkplay's app and website cache EQ state in the cloud, so values pushed here may not appear in their app.</p>
               </div>
 
-            <div id="sub-jdslabs" class="sub-tab-content">
-              <h5>JDS Labs</h5>
-              <p>Supports PEQ control over USB Serial for compatible products like the JDS Labs Element IV, basically if it works on JDS Labs excellent <a href="https://core.jdslabs.com.">Core PEQ</a> it should work. You can push and pull filters directly to the device.</p>
-              <p>Note: This option is only visible in advanced mode </p>
-            </div>
+              <div id="sub-ktmicro" class="sub-tab-content">
+                <h5>KTMicro Devices</h5>
+                <p>Confirmed working KTMicro DSP devices:</p>
+                <ul>
+                  <li>Moondrop CDSP</li>
+                  <li>Moondrop Chu II DSP</li>
+                  <li>Tanchjim One DSP (IEM)</li>
+                  <li>Tanchjim Bunny DSP (IEM)</li>
+                  <li>KiwiEars Allegro Mini</li>
+                  <li>KiwiEars Allegro Pro</li>
+                  <li>KT02H20 HiFi Audio</li>
+                  <li>JCally JM12</li>
+                </ul>
+                <p>Many other KTMicro-based devices should also work — they share the same USB HID protocol.</p>
+              </div>
 
-            <div id="sub-nothing" class="sub-tab-content">
-              <h5>Nothing</h5>
-              <p>Beta support for Nothing Headphone (1) via Serial USB or Bluetooth connection. Supports reading and writing custom EQ profiles with up to 8 parametric filters.</p>
-              <ul>
-                <li>Nothing Headphone (1) - Beta support</li>
-              </ul>
-              <p>The Nothing headphones support multiple EQ profiles: Balanced, Voice, More Treble, More Bass, and Custom. Only the Custom profile supports writing parametric EQ filters.</p>
-              <p>Note: This is experimental devicePEQ Bluetooth support and requires compatible browser with Web Serial API.</p>
-            </div>
+              <div id="sub-fosi" class="sub-tab-content">
+                <h5>Fosi Audio</h5>
+                <p>Supports USB HID PEQ control for Fosi Audio devices using Feature Reports.</p>
+                <ul>
+                  <li>Fosi Audio DS3 — 10-band parametric EQ, gain ±12 dB, read + write</li>
+                </ul>
+                <p>Connect via "USB HID Device". Pull reads all 10 bands; Push writes and commits them in one operation.</p>
+              </div>
 
-            <div id="sub-wiim" class="sub-tab-content">
-              <h5>WiiM</h5>
-              <p>Supports network-based PEQ settings for WiiM devices using HTTP APIs. Requires entering the local IP address of the device and selecting the audio source (e.g., Wi-Fi, Bluetooth).</p>
-              <p>Note: This option is only visible in advanced mode </p>
-            </div>
+              <div id="sub-jdslabs" class="sub-tab-content">
+                <h5>JDS Labs</h5>
+                <p>Supports PEQ control over USB Serial. If it works on <a href="https://core.jdslabs.com" target="_blank">JDS Labs Core PEQ</a> it should work here too. Pull and push supported.</p>
+                <ul>
+                  <li>JDS Labs Element IV</li>
+                </ul>
+                <p><em>Note:</em> This option is only visible in advanced mode.</p>
+              </div>
 
-            <div id="sub-luxsin" class="sub-tab-content">
-              <h5>Luxsin X9</h5>
-              <p>Supports full network-based PEQ control for the Luxsin X9 using its local HTTP interface. You can both read (pull) and write (push) PEQ filters.</p>
-              <ul>
-                <li>Find the X9 IP address in the Luxsin/WalkPlay app.</li>
-                <li>Use "Connect to Device" → "Network", select "Luxsin X9", and enter the IP.</li>
-                <li>Optional: Use "Test IP" to open <code>/dev/info.cgi?action=syncData</code>; you should see encoded text if the IP is correct.</li>
-                <li>After connecting, choose the PEQ slot, then Pull or Push filters as needed.</li>
-              </ul>
-              <p>Tip: No HTTPS certificate steps are needed; Luxsin uses plain HTTP on the local network.</p>
-            </div>
+              <div id="sub-nothing" class="sub-tab-content">
+                <h5>Nothing</h5>
+                <p>Beta support for Nothing Headphone (1) via USB Serial or Bluetooth SPP. Up to 8 parametric filters, read + write.</p>
+                <ul>
+                  <li>Nothing Headphone (1)</li>
+                </ul>
+                <p>The device has preset slots (Balanced, Voice, More Treble, More Bass, Custom). Only the Custom slot supports writing parametric EQ.</p>
+                <p><em>Note:</em> Requires Web Serial API — Chrome or Edge only.</p>
+              </div>
 
-            <div id="sub-bt-headphones" class="sub-tab-content">
-              <h5>Bluetooth Headphones</h5>
-              <p>The following Bluetooth headphones are supported via Bluetooth SPP (Serial) or BLE. Use "Connect to Device" → "Serial USB or Bluetooth Device" for SPP, or "Bluetooth (BLE) Device" for BLE.</p>
-              <ul>
-                <li>
-                  <strong>Audeze Maxwell</strong> (BLE preferred, SPP fallback) — Airoha-chipset headset.
-                  10-band parametric EQ, 4 presets. Read + write supported.
-                  Connect via "Bluetooth (BLE) Device".
-                </li>
-                <li>
-                  <strong>Tanchjim Rita</strong> (Bluetooth SPP) — 12-band parametric EQ.
-                  Gain ±15 dB. Read + write supported.
-                  Connect via "Serial USB or Bluetooth Device".
-                </li>
-                <li>
-                  <strong>Moondrop Edge / Edge ANC</strong> (Bluetooth SPP) — 5-band parametric EQ.
-                  Gain ±12 dB. Read + write supported.
-                  Connect via "Serial USB or Bluetooth Device".
-                </li>
-                <li>
-                  <strong>FiiO EH11 / EH13</strong> (Bluetooth SPP) — FiiO F1 10 serial protocol.
-                  10-band parametric EQ, gain ±20 dB. Read + write supported.
-                  Connect via "Serial USB or Bluetooth Device".
-                </li>
-                <li>
-                  <strong>EarFun Tune Pro</strong> (Bluetooth SPP) — 10-band graphic EQ.
-                  Fixed Q factor; gain ±12 dB. <em>Write only</em> — device does not return EQ data.
-                  Connect via "Serial USB or Bluetooth Device".
-                </li>
-                <li>
-                  <strong>Edifier W830NB / ConnectX headphones</strong> (Bluetooth SPP) — 4-band parametric EQ.
-                  Gain ±6 dB; frequency snapped to 21 verified lookup-table entries. <em>Write only.</em>
-                  Connect via "Serial USB or Bluetooth Device".
-                </li>
-              </ul>
-              <p>Note: Bluetooth connections require a Chromium-based browser (Chrome, Edge, Opera) with Web Serial or Web Bluetooth API support. Pair your headphones with your computer before connecting.</p>
+              <div id="sub-wiim" class="sub-tab-content">
+                <h5>WiiM</h5>
+                <p>Network-based PEQ push for WiiM streamers. Requires entering the device's local IP address and selecting the audio source (Wi-Fi, Bluetooth, etc.).</p>
+                <p><em>Note:</em> This option is only visible in advanced mode.</p>
+              </div>
+
+              <div id="sub-luxsin" class="sub-tab-content">
+                <h5>Luxsin X9</h5>
+                <p>Full network-based read + write PEQ control via local HTTP. No HTTPS certificate setup needed.</p>
+                <ul>
+                  <li>Find the X9 IP in the Luxsin/WalkPlay app.</li>
+                  <li>Choose Network → Luxsin X9, enter the IP.</li>
+                  <li>Optional: click "Test IP" — a new tab should show encoded text at <code>/dev/info.cgi?action=syncData</code>.</li>
+                  <li>Pull or Push filters after connecting.</li>
+                </ul>
+              </div>
+
+              <div id="sub-bt-headphones" class="sub-tab-content">
+                <h5>Bluetooth Headphones</h5>
+                <p>Use "Bluetooth (BLE) Device" for BLE devices, or "Serial USB or Bluetooth Device" for SPP. Pair your headphones before connecting.</p>
+                <ul>
+                  <li>
+                    <strong>Audeze Maxwell</strong> (BLE preferred, SPP fallback) — Airoha chipset.
+                    10-band PEQ, 4 presets. Read + write. Auto-loads Neutral PEQ measurement on connect.
+                    Connect via "Bluetooth (BLE) Device".
+                  </li>
+                  <li>
+                    <strong>FiiO EH11 / EH13</strong> (Bluetooth BLE) — FiiO proprietary protocol.
+                    10-band PEQ, gain ±20 dB. Read + write.
+                    Connect via "Bluetooth (BLE) Device".
+                  </li>
+                  <li>
+                    <strong>Tanchjim Rita</strong> (Bluetooth SPP) — 12-band PEQ.
+                    Gain ±15 dB. Read + write.
+                    Connect via "Serial USB or Bluetooth Device".
+                  </li>
+                  <li>
+                    <strong>Moondrop Edge / Edge ANC</strong> (Bluetooth SPP) — 5-band PEQ.
+                    Gain ±12 dB. Read + write.
+                    Connect via "Serial USB or Bluetooth Device".
+                  </li>
+                  <li>
+                    <strong>EarFun Tune Pro</strong> (Bluetooth SPP) — 10-band graphic EQ.
+                    Fixed Q; gain ±12 dB. <em>Write only.</em>
+                    Connect via "Serial USB or Bluetooth Device".
+                  </li>
+                  <li>
+                    <strong>Edifier W830NB / ConnectX</strong> (Bluetooth SPP) — 4-band PEQ.
+                    Gain ±6 dB; frequency snapped to lookup table. <em>Write only.</em>
+                    Connect via "Serial USB or Bluetooth Device".
+                  </li>
+                </ul>
+                <p><em>Note:</em> Bluetooth requires Chrome, Edge, or Opera with Web Bluetooth / Web Serial API support.</p>
+              </div>
             </div>
-          </div>
 
             <div id="tab-howto" class="tab-content">
+              <h5>USB / HID Devices</h5>
               <ul>
-                <li><strong>Connect to Device:</strong> Open USB prompt and choose your device.</li>
-                <li><strong>Select PEQ Slot:</strong> If supported, choose which EQ slot to view or modify.</li>
-                <li><strong>Pull From Device:</strong> Read and load PEQ filter data into the interface.</li>
-                <li><strong>Push To Device:</strong> Apply your PEQ filter settings back to the device.</li>
-                <li><strong>Disconnect:</strong> Cleanly close the USB connection.</li>
+                <li><strong>Connect:</strong> Click "Connect to Device" → "USB HID Device" and select your device from the browser prompt.</li>
+                <li><strong>Select slot:</strong> If the device has multiple EQ presets, choose the slot you want to edit.</li>
+                <li><strong>Pull:</strong> Click "Pull From Device" to read the current PEQ filters into the graph.</li>
+                <li><strong>Edit:</strong> Adjust filters on the graph or in the filter table.</li>
+                <li><strong>Push:</strong> Click "Push To Device" to write the filters back. Some devices reboot briefly after a write.</li>
+                <li><strong>Disconnect:</strong> Click "Disconnect" to close the connection cleanly.</li>
               </ul>
-              <p>⚠️ Please ensure your device is compatible and unlocked. Some may require the official app to enable USB EQ editing.</p>
-              <h5 style="margin-top:10px;">Network Devices</h5>
-              <p><strong>Luxsin X9:</strong> Choose Network → Luxsin X9, enter the device IP (from the Luxsin/WalkPlay app), and optionally click Test IP. A new tab should show encoded text at <code>/dev/info.cgi?action=syncData</code>. You can Pull and Push PEQ filters after connecting.</p>
-              <p><strong>WiiM:</strong> Choose Network → WiiM and accept the self-signed HTTPS certificate in the browser when prompted. Pushing PEQ is supported; pulling may be limited by browser security.</p>
+              <h5 style="margin-top: 10px;">Bluetooth BLE Devices (e.g. Audeze Maxwell, FiiO EH13)</h5>
+              <ul>
+                <li>Click "Connect to Device" → "Bluetooth (BLE) Device" and select your headphone from the browser Bluetooth picker.</li>
+                <li>The device connects, Pull runs automatically, and the Neutral PEQ measurement is loaded into the graph if one is configured.</li>
+                <li>Edit filters and click "Push To Device" to apply. The connection stays open — no reboot needed.</li>
+                <li>If "Listen via Device" appears, enable it to route audio through the headphone with inverse-EQ compensation for flat-reference monitoring.</li>
+              </ul>
+              <h5 style="margin-top: 10px;">Bluetooth SPP Devices (e.g. Tanchjim Rita, Moondrop Edge)</h5>
+              <ul>
+                <li>Pair the headphone with your computer first.</li>
+                <li>Click "Connect to Device" → "Serial USB or Bluetooth Device" and select the paired Bluetooth serial port.</li>
+                <li>Pull, edit, and Push as with USB devices.</li>
+              </ul>
+              <h5 style="margin-top: 10px;">Network Devices</h5>
+              <p><strong>Luxsin X9:</strong> Choose Network → Luxsin X9, enter the device IP (from the Luxsin/WalkPlay app), optionally click Test IP, then Pull or Push.</p>
+              <p><strong>WiiM:</strong> Choose Network → WiiM, accept the self-signed HTTPS certificate if prompted. Push is supported; Pull may be limited by browser security.</p>
+              <p>⚠️ Some devices require the official app to enable USB EQ editing before they will respond to this tool.</p>
             </div>
 
             <div id="tab-feedback" class="tab-content">
-              <p><strong>Help us improve!</strong> Your feedback is valuable to us. Please let us know about your experience with Device PEQ.</p>
+              <p><strong>Help us improve!</strong> Your feedback is valuable. Please let us know about your experience with Device PEQ.</p>
 
               <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center;">
                 <input type="checkbox" id="modal-is-working-checkbox" style="margin-right: 8px;">

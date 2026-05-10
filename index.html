@@ -68,6 +68,25 @@
 
     button { padding: 5px 10px; cursor: pointer; }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── DevicePEQ plugin container ─────────────────────────────────────── */
+    #deviceEqArea {
+      border: 1px solid #ccc;
+      padding: 15px;
+      max-width: 620px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    /* Keep connect + [I] on the same line; connect button fills remaining space */
+    #deviceEqArea .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #deviceEqArea .settings-row .peq-connect-btn {
+      flex: 1;
+      width: auto;
+    }
   </style>
 </head>
 <body>
