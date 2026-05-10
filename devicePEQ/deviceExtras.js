@@ -59,6 +59,8 @@ export function buildExtras(handler, device) {
     dacBalance: capable(cfg, h, device, 'dacBalance',  null,               'setDacBalance'),
     dacWorkMode:capable(cfg, h, device, 'dacWorkMode','readDacWorkMode',   'setDacWorkMode'),
     gainMode:   capable(cfg, h, device, 'gainMode',   'readGainMode',      'setGainMode'),
+    battery:    capable(cfg, h, device, 'battery',    'readBattery',        null),
+    eqEnabled:  capable(cfg, h, device, 'eqEnabled',  'readEqEnabled',     'setEqEnabled'),
     outputGain: {
       // outputGain is always offered when the handler supports it; not scheme-gated
       supported: typeof h.setOutputGain === 'function',

@@ -19,6 +19,7 @@ export const bluetoothBleDeviceHandlerConfig = [
       rxCharacteristicUuid: "00001102-04a5-1000-1000-40ed981a04a5",
     },
     defaultModelConfig: {
+      peqConstraintsRef:   'bleExtras',
       minGain:             -20,
       maxGain:              20,
       maxFilters:           10,
@@ -54,6 +55,8 @@ export const bluetoothBleDeviceHandlerConfig = [
     },
     devices: {
       "Audeze Maxwell": {
+        measurementName:  "Audeze Maxwell",
+        audioOutputName:  "Audeze Maxwell BT",
         modelConfig: {
           minGain:            -12,
           maxGain:             12,
@@ -63,7 +66,6 @@ export const bluetoothBleDeviceHandlerConfig = [
           disconnectOnSave:    false,
           disabledPresetId:   -1,
           experimental:        false,
-          flatEQPhoneMeasurement: "Audeze Maxwell Flat",
           availableSlots: [
             { id: 0, name: "Preset 1" },
             { id: 1, name: "Preset 2" },

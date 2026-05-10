@@ -154,6 +154,8 @@ async function loadSuites() {
     { name: 'KT02H20 HIFI Audio (ktmicroUsbHidHandler)', url: './handlers/ktmicro_kt02h20_hifi_audio.test.js' },
     // Qudelix-5K removed: USB HID interface is write-only on macOS; tests can't
     // run without real vendor HID collections on the mock device object.
+    { name: 'FIIO EH13 (fiioBle BLE)', url: './handlers/fiio_eh13_ble.test.js' },
+    { name: 'Audeze Maxwell (airohaBle BLE)', url: './handlers/audeze_maxwell_ble.test.js' },
     // Add more test files here as you create them:
     // { name: 'FiiO HID Handler', url: './handlers/fiioHidHandler.test.js' },
     // { name: 'USB HID Connector', url: './integration/usbHidConnector.test.js' },

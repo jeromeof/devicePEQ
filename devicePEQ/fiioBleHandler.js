@@ -213,8 +213,37 @@ export const fiioBle = (function () {
   }
 
   async function enablePEQ(device, enabled, slotId) {
-    // FiiO EH11/EH13 do not expose a BLE on/off toggle for EQ
-    console.log('FiiO BLE: EQ enable/disable not supported via BLE protocol');
+    // FiiO EH11/EH13 do not expose a confirmed BLE on/off toggle for EQ
+    console.log('FiiO BLE: EQ enable/disable not invoked via this path');
+  }
+
+  // ── Extras ─────────────────────────────────────────────────────────────────
+
+  // Battery level — CMD 00 03
+  // TX: F1 10 00 08 00 03 01 FF  →  RX: F1 10 00 09 00 03 01 XX FF  (XX = %)
+  async function readBattery(deviceDetails) {
+    const pkt  = buildPacket(0x00, 0x03, [0x01]);
+    const resp = await sendAndReceive(deviceDetails, pkt, 3000);
+    if (!resp || resp.length < 9) throw new Error('FiiO BLE: no battery response');
+    if (resp[4] !== 0x00 || resp[5] !== 0x03) throw new Error('FiiO BLE: unexpected battery cmd in response');
+    return resp[7]; // 0–100 percent
+  }
+
+  // EQ enabled status — CMD 03 01
+  // TX: F1 10 00 08 03 01 01 FF  →  RX: F1 10 00 09 03 01 01 XX FF  (XX: 01=on, 00=off)
+  async function readEqEnabled(deviceDetails) {
+    const pkt  = buildPacket(0x03, 0x01, [0x01]);
+    const resp = await sendAndReceive(deviceDetails, pkt, 3000);
+    if (!resp || resp.length < 9) throw new Error('FiiO BLE: no EQ status response');
+    if (resp[4] !== 0x03 || resp[5] !== 0x01) throw new Error('FiiO BLE: unexpected EQ status cmd in response');
+    return resp[7] === 0x01;
+  }
+
+  // EQ enable/disable write — CMD 13 01 (mirrors read→write pattern from 03 0D / 13 0D)
+  // Write command is unconfirmed from captures; follows the FiiO read/write cmd convention.
+  async function setEqEnabled(deviceDetails, enabled) {
+    const pkt = buildPacket(0x13, 0x01, [0x01, enabled ? 0x01 : 0x00]);
+    await sendAndReceive(deviceDetails, pkt, 3000);
   }
 
   return {
@@ -222,5 +251,8 @@ export const fiioBle = (function () {
     pullFromDevice,
     pushToDevice,
     enablePEQ,
+    readBattery,
+    readEqEnabled,
+    setEqEnabled,
   };
 })();

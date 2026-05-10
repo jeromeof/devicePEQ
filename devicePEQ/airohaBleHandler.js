@@ -204,7 +204,7 @@ export const airohaBle = (function () {
 
       await writePacket(deviceDetails, command);
       console.log('Airoha BLE: PEQ write command sent');
-      return true;
+      return false;
     } catch (error) {
       console.error('Airoha BLE: pushToDevice failed:', error);
       throw error;

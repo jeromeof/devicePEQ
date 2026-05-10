@@ -116,15 +116,20 @@ export const BluetoothBleConnector = (async function () {
       const modelConfig = await resolveModelConfig(entry, rawDevice.name || '');
       const model = rawDevice.name || 'Bluetooth Device';
 
+      const deviceEntry = entry.devices?.[rawDevice.name]
+        || entry.devices?.[Object.keys(entry.devices || {})[0]]
+        || {};
       currentDevice = {
         rawDevice,
-        manufacturer: entry.manufacturer || 'Bluetooth',
+        manufacturer:    entry.manufacturer || 'Bluetooth',
         model,
         modelConfig,
-        handler: entry.handler,
+        handler:         entry.handler,
         txChar,
         rxChar,
-        readNotification
+        readNotification,
+        measurementName: deviceEntry.measurementName || null,
+        audioOutputName: deviceEntry.audioOutputName  || null,
       };
 
       rawDevice.addEventListener('gattserverdisconnected', () => {

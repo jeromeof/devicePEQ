@@ -1132,6 +1132,30 @@
         "SNOWSKY TINY B"
       ],
       "deviceGroupNames": []
+    },
+
+    "bleExtras": {
+      "description": "FiiO EH11 / EH13 BLE headphones \u2014 10-band PEQ \u00b120 dB, battery read, EQ on/off",
+      "peqConstraints": {
+        "minGain": -20,
+        "maxGain": 20,
+        "maxFilters": 10,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": false,
+        "minQ": 0.01,
+        "maxQ": 10.0
+      },
+      "extras": {
+        "battery":   { "supported": true },
+        "eqEnabled": { "supported": true }
+      },
+      "deviceNames": [
+        "FIIO EH11",
+        "FIIO EH13"
+      ],
+      "deviceGroupNames": []
     }
   }
 }

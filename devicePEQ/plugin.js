@@ -147,6 +147,99 @@ async function initializeDeviceEqPlugin(context) {
       this.lastPushTime = 0; // Track when the push button was last clicked
       this._extrasExpanded = false;
 
+      // Linked panel refs (only present when minimalExperience: true)
+      this.linkedPanel    = document.getElementById('peq-linked-panel');
+      this.linkedLoadBtn  = this.linkedPanel?.querySelector('.peq-load-btn');
+      this.linkedSaveBtn  = this.linkedPanel?.querySelector('.peq-save-btn');
+      this.linkedSettings = this.linkedPanel?.querySelector('.peq-settings-btn');
+      this.linkedSettingsPanel = this.linkedPanel?.querySelector('.peq-settings-panel');
+      this.linkedSlotsSection  = this.linkedPanel?.querySelector('.peq-slots-section');
+      this.linkedExtrasSection = this.linkedPanel?.querySelector('.peq-extras-section');
+      this._linkedState        = 'disconnected'; // disconnected | connecting | idle | loading | saving
+      this._eqSynced           = false;
+      this._postConnectSetup   = false; // true during the connect/load window, suppresses user-edit detection
+      this._pullOnConnectPromise = null; // tracks the in-flight auto-pull so linkedLoadBtn can wait for it
+
+      if (this.linkedLoadBtn) {
+        this.linkedLoadBtn.addEventListener('click', async () => {
+          if (this._linkedState !== 'idle') return;
+          this._linkedState = 'loading';
+          this._updateLinkedButtons();
+          document.dispatchEvent(new CustomEvent('PeqDeviceLoading'));
+          try {
+            // If auto-pull-on-connect is still in flight, wait for it to finish
+            // before sending our own read commands — concurrent pulls to the same
+            // device cause the device to miss responses and hit the 10s timeout.
+            if (this._pullOnConnectPromise) {
+              console.log('[linkedLoad] waiting for auto-pull to finish…');
+              await this._pullOnConnectPromise.catch(() => {});
+            }
+            const device = this.currentDevice;
+            const selectedSlot = this.peqDropdown.value;
+            const { UsbHIDConnector, UsbSerialConnector, BluetoothBleConnector, NetworkDeviceConnector } = this._connectors ?? {};
+            let result = null;
+            if (this.connectionType === 'network') {
+              result = await NetworkDeviceConnector.pullFromDevice(device, selectedSlot);
+            } else if (this.connectionType === 'usb') {
+              result = await UsbHIDConnector.pullFromDevice(device, selectedSlot);
+            } else if (this.connectionType === 'serial') {
+              result = await UsbSerialConnector.pullFromDevice(device, selectedSlot);
+            } else if (this.connectionType === 'ble') {
+              result = await BluetoothBleConnector.pullFromDevice(device, selectedSlot);
+            }
+            if (result?.filters?.length > 0) {
+              this._postConnectSetup = true;
+              context.filtersToElem(result.filters.filter(f => f != null));
+              context.applyEQ();
+              this._eqSynced = true;
+              setTimeout(() => { this._postConnectSetup = false; }, 300);
+            }
+          } catch (e) {
+            console.warn('[linkedLoad] pull failed:', e?.message);
+          } finally {
+            this._linkedState = 'idle';
+            this._updateLinkedButtons();
+            document.dispatchEvent(new CustomEvent('PeqDeviceLoadingDone'));
+          }
+        });
+      }
+      if (this.linkedSaveBtn) {
+        this.linkedSaveBtn.addEventListener('click', () => {
+          if (this.linkedSaveBtn.disabled) return;
+          this._linkedState = 'saving';
+          this._updateLinkedButtons();
+          document.dispatchEvent(new CustomEvent('PeqDeviceLoading'));
+          this.pushButton.click();
+        });
+      }
+      if (this.linkedSettings) {
+        this.linkedSettings.addEventListener('click', () => {
+          const open = this.linkedSettingsPanel && !this.linkedSettingsPanel.hidden;
+          if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = open;
+          this.linkedSettings.setAttribute('aria-expanded', String(!open));
+          this.linkedSettings.classList.toggle('peq-settings-btn--open', !open);
+          if (!open && this._pendingLinkedExtrasReads) {
+            this._pendingLinkedExtrasReads();
+            this._pendingLinkedExtrasReads = null;
+          }
+        });
+      }
+
+      document.addEventListener('applyEQ', () => {
+        if (!this.currentDevice) return;
+        // Ignore events during connect/load window or when not idle (loading, saving, etc.)
+        if (this._linkedState !== 'idle' || this._postConnectSetup) return;
+        // User edited the EQ — mark out of sync
+        this._eqSynced = false;
+        this._updateLinkedButtons();
+      });
+      document.addEventListener('PeqDeviceSaved', () => {
+        if (!this.currentDevice) return;
+        this._eqSynced = true;
+        this._linkedState = 'idle';
+        this._updateLinkedButtons();
+      });
+
       this.showExtrasBtn.addEventListener('click', () => {
         this._extrasExpanded = !this._extrasExpanded;
         this.extrasPanel.hidden = !this._extrasExpanded;
@@ -174,8 +267,9 @@ async function initializeDeviceEqPlugin(context) {
       this._onDeviceConnected = typeof callback === 'function' ? callback : null;
     }
 
-    // Pulls filters from the device then fires _onDeviceConnected with all three args.
-    // Called automatically when context.config.pullValuesOnConnect is true.
+    // Silently pulls filters from the device at connect time and fires _onDeviceConnected
+    // with the result. Does NOT apply filters to the EQ UI — that is the caller's decision.
+    // Explicit "Pull From Device" button clicks apply filters; this only fetches for the callback.
     async _pullOnConnect(device, peqConstraints, slot) {
       let filters = null;
       const idStr = deviceIdStr(device);
@@ -207,16 +301,36 @@ async function initializeDeviceEqPlugin(context) {
         if (result?.filters?.length > 0) {
           filters = result.filters;
           console.log(`[peqConstraints] pullValuesOnConnect: received ${filters.length} filter(s) from ${tag}`);
-          // In minimal mode the callback recipient (graphtool) applies filters to the EQ UI.
-          if (!this._minimal) {
-            context.filtersToElem(filters);
-            context.applyEQ();
-          }
         } else {
           console.log(`[peqConstraints] pullValuesOnConnect: no filters returned from ${tag}`);
         }
       } catch (err) {
         console.warn(`[peqConstraints] pullValuesOnConnect: pull failed for ${tag}:`, err);
+      }
+      // Auto-populate EQ if currently empty and we received filters
+      if (filters?.length > 0 && context?.elemToFilters && context?.filtersToElem) {
+        const current = context.elemToFilters();
+        const isEmpty = !current?.length || current.every(f => !f || Math.abs(f?.gain ?? 0) < 0.01);
+        if (isEmpty) {
+          // Guard the applyEQ listener so it doesn't treat auto-populate as a user edit
+          this._postConnectSetup = true;
+          context.filtersToElem(filters);
+          context.applyEQ();
+          this._eqSynced = true;
+          this._linkedState = 'idle';
+          if (this.linkedPanel) this._updateLinkedButtons();
+          setTimeout(() => { this._postConnectSetup = false; }, 500);
+        } else {
+          // EQ had values — user decides; mark out of sync
+          this._eqSynced = false;
+          this._linkedState = 'idle';
+          if (this.linkedPanel) this._updateLinkedButtons();
+        }
+      } else if (this._linkedState === 'connecting') {
+        // Pull returned no filters — still move to idle so buttons are enabled
+        this._eqSynced = false;
+        this._linkedState = 'idle';
+        if (this.linkedPanel) this._updateLinkedButtons();
       }
       try { this._onDeviceConnected(device, peqConstraints, filters, device.extras); }
       catch (e) { console.warn('onDeviceConnected callback error:', e); }
@@ -233,9 +347,181 @@ async function initializeDeviceEqPlugin(context) {
       this.extrasPanel.innerHTML = '';
       this._extrasExpanded = false;
       this._pendingExtrasReads = null;
+      if (this.linkedPanel) {
+        this.linkedPanel.hidden = true;
+        if (this.linkedSlotsSection) { this.linkedSlotsSection.innerHTML = ''; this.linkedSlotsSection.hidden = true; }
+        if (this.linkedExtrasSection) { this.linkedExtrasSection.innerHTML = ''; this.linkedExtrasSection.hidden = true; }
+        if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = true;
+        if (this.linkedSettings) { this.linkedSettings.setAttribute('aria-expanded', 'false'); this.linkedSettings.classList.remove('peq-settings-btn--open'); this.linkedSettings.hidden = true; }
+      }
+      this._linkedState      = 'disconnected';
+      this._eqSynced         = false;
+      this._postConnectSetup = false;
     }
 
-    showConnectedState(device, connectionType, availableSlots, currentSlot) {
+    _updateLinkedButtons() {
+      if (!this.linkedPanel) return;
+      const busy             = this._linkedState === 'loading' || this._linkedState === 'saving' || this._linkedState === 'connecting';
+      const isCustomSlot     = this._isCurrentSlotWritable();
+      const name             = this.currentDevice?.model ?? 'Device';
+      // Load from: available whenever connected and not actively loading/saving/connecting
+      if (this.linkedLoadBtn) {
+        this.linkedLoadBtn.disabled = busy;
+        this.linkedLoadBtn.textContent = 'Load from ' + name;
+      }
+      // Save to: only enabled once EQ has been modified AND a writable slot is selected
+      if (this.linkedSaveBtn) {
+        this.linkedSaveBtn.disabled = busy || this._eqSynced || !isCustomSlot;
+        this.linkedSaveBtn.textContent = 'Save to ' + name;
+      }
+    }
+
+    _isCurrentSlotWritable() {
+      if (!this.currentDevice) return false;
+      const firstWritable = this.currentDevice.modelConfig?.firstWritableEQSlot ?? -1;
+      if (firstWritable < 0) return true; // single custom slot or no constraint
+      const selectedId = parseInt(this.peqDropdown?.value ?? '-1');
+      if (selectedId < 0) return false;
+      return selectedId >= firstWritable;
+    }
+
+    _showLinkedPanel(device, availableSlots) {
+      if (!this.linkedPanel) return;
+      this._linkedState = 'connecting';
+      this._eqSynced = false;
+      this.linkedPanel.hidden = false;
+      // Build slots UI
+      this._buildLinkedSlotsSection(availableSlots, device.modelConfig);
+      // Build extras UI (defer reads until panel opens)
+      this._buildLinkedExtrasSection(device.extras);
+      // Build settings button tooltip listing what's inside
+      this._updateLinkedSettingsTooltip(availableSlots, device.modelConfig, device.extras);
+      this._updateLinkedButtons();
+    }
+
+    _updateLinkedSettingsTooltip(slots, modelConfig, extras) {
+      if (!this.linkedSettings) return;
+      const items = [];
+      const firstWritable = modelConfig?.firstWritableEQSlot ?? -1;
+      const hasMultiSlot  = slots && slots.length > 1;
+      if (hasMultiSlot) {
+        const presets = firstWritable >= 0 ? slots.filter(s => s.id < firstWritable) : [];
+        const custom  = firstWritable >= 0 ? slots.filter(s => s.id >= firstWritable) : slots;
+        if (presets.length) items.push(`Presets (${presets.length})`);
+        if (custom.length)  items.push(`Custom slots (${custom.length})`);
+      }
+      if (extras) {
+        const extraNames = {
+          dacFilter: 'DAC Filter', dacWorkMode: 'DAC Work Mode',
+          gainMode: 'Gain Mode', balance: 'Balance',
+          battery: 'Battery', eqEnabled: 'EQ Enabled',
+          micGain: 'Mic Gain', outputGain: 'Output Gain',
+        };
+        Object.entries(extraNames).forEach(([k, label]) => {
+          if (extras[k]?.supported) items.push(label);
+        });
+      }
+      this.linkedSettings.title = items.length
+        ? 'Settings — ' + items.join(', ')
+        : 'Device Settings';
+      // Show/update the badge count on the button
+      let badge = this.linkedSettings.querySelector('.peq-settings-badge');
+      if (items.length > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'peq-settings-badge';
+          this.linkedSettings.appendChild(badge);
+        }
+        badge.textContent = '!';
+      } else if (badge) {
+        badge.remove();
+      }
+    }
+
+    _buildLinkedSlotsSection(slots, modelConfig) {
+      if (!this.linkedSlotsSection) return;
+      this.linkedSlotsSection.innerHTML = '';
+      if (!slots || slots.length <= 1) {
+        this.linkedSlotsSection.hidden = true;
+        if (this.linkedSettings) this.linkedSettings.hidden = true;
+        return;
+      }
+      const firstWritable = modelConfig?.firstWritableEQSlot ?? -1;
+      const presets = firstWritable >= 0 ? slots.filter(s => s.id < firstWritable) : [];
+      const custom  = firstWritable >= 0 ? slots.filter(s => s.id >= firstWritable) : slots;
+      const showBoth = presets.length > 0 && custom.length > 0;
+
+      const makeGroup = (label, groupSlots, id) => {
+        const row = document.createElement('div');
+        row.className = 'peq-slot-group';
+        const lbl = document.createElement('span');
+        lbl.className = 'peq-slot-group-label';
+        lbl.textContent = label;
+        const sel = document.createElement('select');
+        sel.className = 'peq-slot-select';
+        sel.id = id;
+        groupSlots.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.name;
+          if (String(s.id) === String(this.peqDropdown?.value)) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', () => {
+          if (this.peqDropdown) {
+            this.peqDropdown.value = sel.value;
+            this.peqDropdown.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          // If presets and custom both exist, deselect the other group's selection
+          if (showBoth && id === 'peq-linked-presets') {
+            const custSel = this.linkedSlotsSection.querySelector('#peq-linked-custom');
+            if (custSel) custSel.selectedIndex = -1;
+          } else if (showBoth && id === 'peq-linked-custom') {
+            const preSel = this.linkedSlotsSection.querySelector('#peq-linked-presets');
+            if (preSel) preSel.selectedIndex = -1;
+          }
+          this._eqSynced = false;
+          this._updateLinkedButtons();
+        });
+        row.appendChild(lbl);
+        row.appendChild(sel);
+        return row;
+      };
+
+      if (presets.length > 0) {
+        this.linkedSlotsSection.appendChild(makeGroup(showBoth ? 'Presets' : 'Slot', presets, 'peq-linked-presets'));
+      }
+      if (custom.length > 0) {
+        this.linkedSlotsSection.appendChild(makeGroup(showBoth ? 'Custom' : 'Slot', custom, 'peq-linked-custom'));
+      }
+      this.linkedSlotsSection.hidden = false;
+      if (this.linkedSettings) this.linkedSettings.hidden = false;
+    }
+
+    _buildLinkedExtrasSection(extras) {
+      if (!this.linkedExtrasSection) return;
+      this.linkedExtrasSection.innerHTML = '';
+      this._pendingLinkedExtrasReads = null;
+      if (!extras || !this._hasAnyExtras(extras)) {
+        this.linkedExtrasSection.hidden = true;
+        return;
+      }
+      // Reuse the existing extras panel build logic but target linkedExtrasSection
+      const savedPanel = this.extrasPanel;
+      this.extrasPanel = this.linkedExtrasSection;
+      this._buildExtrasPanel(extras);
+      // Move _pendingExtrasReads reference
+      this._pendingLinkedExtrasReads = this._pendingExtrasReads;
+      this._pendingExtrasReads = null;
+      this.extrasPanel = savedPanel;
+      this.linkedExtrasSection.hidden = false;
+      if (this.linkedSettings) this.linkedSettings.hidden = false;
+    }
+
+    async showConnectedState(device, connectionType, availableSlots, currentSlot) {
+      // Ensure constraint config is cached before resolving — handles the race where a device
+      // connects before the async JSON fetch completes (would return maxFilters: undefined).
+      await loadPeqConstraintsConfig().catch(() => {});
       this.connectButton.hidden = true;
       this.currentDevice = device;
       this.connectionType = connectionType;
@@ -261,7 +547,7 @@ async function initializeDeviceEqPlugin(context) {
       this.deviceNameElem.textContent = device.model;
       this.populatePeqDropdown(availableSlots, currentSlot);
       if (this._minimal) {
-        // All elements are in the hidden skeleton — no visible UI to update here.
+        this._showLinkedPanel(device, availableSlots);
       } else {
         this.disconnectButton.hidden = false;
         this.pullButton.hidden = false;
@@ -270,10 +556,11 @@ async function initializeDeviceEqPlugin(context) {
         this.peqSlotArea.hidden = false;
       }
 
-      // Pull on connect when configured; pullValuesOnConnect is the sole control for this.
-      // minimalExperience only affects what UI is shown, not whether we pull.
+      // Fetch device filters for the callback when configured. Filters are NOT applied to
+      // the EQ graph here — only the explicit "Pull From Device" button does that.
       if (context?.config?.pullValuesOnConnect === true) {
-        this._pullOnConnect(device, peqConstraints, currentSlot);
+        this._pullOnConnectPromise = this._pullOnConnect(device, peqConstraints, currentSlot)
+          .finally(() => { this._pullOnConnectPromise = null; });
       } else if (this._onDeviceConnected) {
         try { this._onDeviceConnected(device, peqConstraints, null, device.extras); }
         catch (e) { console.warn('onDeviceConnected callback error:', e); }
@@ -339,6 +626,11 @@ async function initializeDeviceEqPlugin(context) {
     }
 
     showDisconnectedState() {
+      this._linkedState = 'disconnected';
+      if (this.linkedPanel) {
+        this.linkedPanel.hidden = true;
+        if (this.linkedSettingsPanel) this.linkedSettingsPanel.hidden = true;
+      }
       this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
       window.peqDeviceModelConfig = null;
@@ -458,26 +750,28 @@ async function initializeDeviceEqPlugin(context) {
         });
       }
 
-      // ── Gain Mode (boolean toggle) ─────────────────────────────────────────
+      // ── Gain Mode (dropdown) ───────────────────────────────────────────────
       if (extras.gainMode?.supported) {
+        const gainOpts = extras.gainMode.options ?? [
+          { label: 'Low Gain', value: false },
+          { label: 'High Gain', value: true },
+        ];
+        const optionsHtml = gainOpts.map((o, i) =>
+          `<option value="${i}">${o.label}</option>`
+        ).join('');
         const row = makeRow('Gain Mode',
-          `<label class="toggle-switch">
-             <input type="checkbox" id="extra-gainMode">
-             <span class="toggle-knob"></span>
-           </label>
-           <span id="extra-gainMode-lbl" style="font-size:12px;color:#666">Low Gain</span>`, 'gainMode');
+          `<select id="extra-gainMode" class="extras-select">${optionsHtml}</select>`, 'gainMode');
         panel.appendChild(row);
-        const cb = row.querySelector('#extra-gainMode');
-        const lbl = row.querySelector('#extra-gainMode-lbl');
-        cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'High Gain' : 'Low Gain'; });
+        const sel = row.querySelector('#extra-gainMode');
         row.querySelector('.extras-apply').addEventListener('click', async () => {
-          console.log(`[extras] Setting gainMode →`, cb.checked);
-          try { await extras.gainMode.set(cb.checked); setStatus('gainMode', 'Saved ✓', 'ok'); }
+          const chosen = gainOpts[parseInt(sel.value, 10)];
+          console.log(`[extras] Setting gainMode →`, chosen?.value);
+          try { await extras.gainMode.set(chosen?.value); setStatus('gainMode', 'Saved ✓', 'ok'); }
           catch (e) { console.warn('[extras] gainMode set failed:', e?.message); setStatus('gainMode', 'Error', 'err'); }
         });
         deferRead('gainMode', extras.gainMode.get, val => {
-          cb.checked = !!val;
-          lbl.textContent = val ? 'High Gain' : 'Low Gain';
+          const idx = gainOpts.findIndex(o => o.value === val || String(o.value) === String(val));
+          sel.value = String(idx >= 0 ? idx : 0);
         });
       }
 
@@ -485,10 +779,12 @@ async function initializeDeviceEqPlugin(context) {
       // Single slider: negative = boost right, positive = boost left
       if (extras.dacBalance?.supported) {
         const row = makeRow('Balance',
-          `<span style="font-size:11px;color:#666">L</span>
-           <input type="range" id="extra-dacBalance" class="extras-balance-slider" min="-20" max="20" step="1" value="0">
-           <span style="font-size:11px;color:#666">R</span>
-           <span id="extra-dacBalance-lbl" style="font-size:12px;min-width:65px;text-align:center">Center</span>`, 'dacBalance');
+          `<div class="extras-slider-row">
+             <span style="font-size:11px">L</span>
+             <input type="range" id="extra-dacBalance" class="extras-range extras-balance-slider" min="-20" max="20" step="1" value="0">
+             <span style="font-size:11px">R</span>
+             <span id="extra-dacBalance-lbl" style="font-size:12px;min-width:60px;text-align:center">Center</span>
+           </div>`, 'dacBalance');
         panel.appendChild(row);
         const slider = row.querySelector('#extra-dacBalance');
         const lbl = row.querySelector('#extra-dacBalance-lbl');
@@ -512,9 +808,11 @@ async function initializeDeviceEqPlugin(context) {
         const min = extras.micGain.minDb ?? extras.micGain.min ?? -15;
         const max = extras.micGain.maxDb ?? extras.micGain.max ?? 15;
         const row = makeRow('Mic Gain',
-          `<input type="range" id="extra-micGain" class="extras-range" min="${min}" max="${max}" step="1" value="0">
-           <input type="number" id="extra-micGain-num" class="extras-num-input" min="${min}" max="${max}" step="1" value="0">
-           <span style="font-size:12px;color:#666">dB</span>`, 'micGain');
+          `<div class="extras-slider-row">
+             <input type="range" id="extra-micGain" class="extras-range" min="${min}" max="${max}" step="1" value="0">
+             <input type="number" id="extra-micGain-num" class="extras-num-input" min="${min}" max="${max}" step="1" value="0">
+             <span class="extras-unit">dB</span>
+           </div>`, 'micGain');
         panel.appendChild(row);
         const sl = row.querySelector('#extra-micGain');
         const num = row.querySelector('#extra-micGain-num');
@@ -551,12 +849,53 @@ async function initializeDeviceEqPlugin(context) {
         });
       }
 
+      // ── Battery (read-only) ───────────────────────────────────────────────
+      if (extras.battery?.supported) {
+        const row = document.createElement('div');
+        row.className = 'extras-row';
+        row.innerHTML = `
+          <span class="extras-label">Battery</span>
+          <div class="extras-control"><span id="extra-battery-val" style="font-size:13px">—</span></div>
+          <span class="extras-status" id="extras-status-battery"></span>
+        `;
+        panel.appendChild(row);
+        deferRead('battery', extras.battery.get, val => {
+          const el = document.getElementById('extra-battery-val');
+          if (el) el.textContent = `${val}%`;
+        });
+      }
+
+      // ── EQ Enabled ────────────────────────────────────────────────────────
+      if (extras.eqEnabled?.supported) {
+        const row = makeRow('EQ Enabled',
+          `<label class="toggle-switch">
+             <input type="checkbox" id="extra-eqEnabled">
+             <span class="toggle-knob"></span>
+           </label>
+           <span id="extra-eqEnabled-lbl" style="font-size:12px;color:#666">Off</span>`, 'eqEnabled');
+        panel.appendChild(row);
+        const cb  = row.querySelector('#extra-eqEnabled');
+        const lbl = row.querySelector('#extra-eqEnabled-lbl');
+        cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'On' : 'Off'; });
+        row.querySelector('.extras-apply').addEventListener('click', async () => {
+          console.log(`[extras] Setting eqEnabled →`, cb.checked);
+          try { await extras.eqEnabled.set(cb.checked); setStatus('eqEnabled', 'Saved ✓', 'ok'); }
+          catch (e) { console.warn('[extras] eqEnabled set failed:', e?.message); setStatus('eqEnabled', 'Error', 'err'); }
+        });
+        deferRead('eqEnabled', extras.eqEnabled.get, val => {
+          cb.checked = !!val;
+          lbl.textContent = val ? 'On' : 'Off';
+        });
+      }
+
       // ── Output Gain ───────────────────────────────────────────────────────
       if (extras.outputGain?.supported) {
         const row = makeRow('Output Gain',
-          `<input type="range" id="extra-outputGain" class="extras-range" min="-10" max="10" step="1" value="0">
-           <input type="number" id="extra-outputGain-num" class="extras-num-input" min="-10" max="10" step="1" value="0">
-           <span style="font-size:12px;color:#666">dB</span>`, 'outputGain');
+          `<div class="extras-slider-row">
+             <input type="range" id="extra-outputGain" class="extras-range" min="-10" max="10" step="1" value="0">
+             <input type="number" id="extra-outputGain-num" class="extras-num-input" min="-10" max="10" step="1" value="0">
+             <span class="extras-unit">dB</span>
+           </div>`, 'outputGain');
         panel.appendChild(row);
         const sl = row.querySelector('#extra-outputGain');
         const num = row.querySelector('#extra-outputGain-num');
@@ -741,8 +1080,86 @@ async function initializeDeviceEqPlugin(context) {
               <button class="pull-filters-fromdevice" hidden>Pull From Device</button>
               <button class="push-filters-todevice" hidden>Push To Device</button>
             </div>
+          </div>
+          <div class="peq-linked-panel" id="peq-linked-panel" hidden>
+            <div class="peq-action-row">
+              <button class="peq-load-btn" disabled>Load from Device</button>
+              <button class="peq-save-btn" disabled>Save to Device</button>
+              <button class="peq-settings-btn" aria-label="Device settings" aria-expanded="false" hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            </div>
+            <div class="peq-settings-panel" hidden>
+              <div class="peq-slots-section" hidden></div>
+              <div class="peq-extras-section" hidden></div>
+            </div>
           </div>`);
       }
+      const style = document.createElement('style');
+      style.textContent = `/* DevicePEQ linked panel */
+.peq-linked-panel { display: block; padding: 0 0 6px; }
+.peq-linked-panel[hidden] { display: none !important; }
+.peq-action-row { display: flex; align-items: center; gap: 4px; padding: 0 10px 6px; }
+.peq-load-btn, .peq-save-btn {
+  flex: 1 1 0; min-width: 0; padding: 5px 8px; font-size: 11px; font-weight: 500;
+  border-radius: 6px; border: 1px solid var(--background-color-contrast-more, #888);
+  background: transparent; color: var(--font-color-primary, #111);
+  cursor: pointer; text-align: center; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  transition: border-color 150ms, color 150ms, opacity 150ms;
+}
+.peq-load-btn:not(:disabled):hover, .peq-save-btn:not(:disabled):hover {
+  border-color: var(--accent-color, #1a6ef5); color: var(--accent-color, #1a6ef5);
+}
+.peq-load-btn:disabled, .peq-save-btn:disabled { opacity: 0.35; cursor: default; }
+.peq-settings-btn {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border-radius: 6px; overflow: visible;
+  border: 1px solid var(--background-color-contrast-more, #888);
+  background: transparent; color: var(--font-color-primary, #111);
+  cursor: pointer; transition: border-color 150ms, color 150ms;
+}
+.peq-settings-btn[hidden] { display: none !important; }
+.peq-settings-btn:not(:disabled):hover, .peq-settings-btn.peq-settings-btn--open {
+  border-color: var(--accent-color, #1a6ef5); color: var(--accent-color, #1a6ef5);
+}
+.peq-settings-badge {
+  position: absolute; top: -5px; right: -5px;
+  min-width: 14px; height: 14px; padding: 0 2px;
+  border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 14px;
+  text-align: center; pointer-events: none;
+  background: var(--accent-color, #1a6ef5); color: #fff;
+}
+.peq-settings-panel {
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 1px solid var(--background-color-contrast-more, #aaa);
+  padding: 10px 12px 10px;
+}
+.peq-settings-panel[hidden] { display: none !important; }
+.peq-slots-section { display: flex; flex-direction: column; gap: 6px; }
+.peq-slots-section[hidden] { display: none !important; }
+.peq-slot-group { display: flex; align-items: center; gap: 8px; }
+.peq-slot-group-label { font-size: 11px; font-weight: 500; min-width: 50px; flex-shrink: 0; color: var(--font-color-primary, #111); }
+.peq-slot-select { flex: 1; font-size: 11px; padding: 3px 6px; border-radius: 5px; border: 1px solid var(--background-color-contrast-more, #888); background: var(--background-color-inputs, #fff); color: var(--font-color-primary, #111); cursor: pointer; }
+/* Extras rendered inside settings panel — compact override of the full-UI extras styles */
+.peq-extras-section { display: flex; flex-direction: column; gap: 0; }
+.peq-extras-section[hidden] { display: none !important; }
+.peq-extras-section .extras-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--background-color-contrast-more, #ccc); flex-wrap: nowrap; }
+.peq-extras-section .extras-row:last-child { border-bottom: none; }
+.peq-extras-section .extras-label { font-size: 11px; font-weight: 500; min-width: 72px; max-width: 72px; flex-shrink: 0; color: var(--font-color-primary, #111); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.peq-extras-section .extras-control { flex: 1 1 auto; min-width: 0; font-size: 11px; }
+.peq-extras-section .extras-control select,
+.peq-extras-section .extras-control input[type=range] { width: 100%; font-size: 11px; }
+.peq-extras-section .extras-control input[type=number] { width: 48px; font-size: 11px; padding: 1px 4px; }
+.peq-extras-section .extras-apply { flex-shrink: 0; padding: 2px 8px !important; font-size: 11px !important; border-radius: 4px !important; min-width: 0; }
+.peq-extras-section .extras-status { font-size: 10px; flex-shrink: 0; min-width: 28px; text-align: right; }
+/* Slider + number input inline layout */
+.extras-slider-row { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; }
+.extras-slider-row input[type=range] { flex: 1 1 auto; min-width: 0; }
+.extras-slider-row input[type=number] { flex: 0 0 44px; width: 44px; font-size: 11px; padding: 1px 4px; }
+.extras-unit { flex: none; font-size: 11px; color: var(--font-color-inputs, #666); }
+`;
+      document.head.appendChild(style);
       return;
     }
 
@@ -759,6 +1176,26 @@ async function initializeDeviceEqPlugin(context) {
     const deviceEqHTML = `
         <div class="device-eq disabled" id="deviceEqArea">
         <style>
+    /* Main connect button — matches the "Link Device" pill style */
+    .peq-connect-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 18px;
+      background: #f5f5f5;
+      border: 1px solid #aaa;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #111;
+      cursor: pointer;
+      text-transform: none;
+    }
+    .peq-connect-btn:hover { border-color: #1a6ef5; color: #1a6ef5; }
+    .peq-connect-btn-icon { flex-shrink: 0; opacity: 0.7; }
+    .peq-info-btn[hidden] { display: none !important; }
             .info-button {
       background: none;
       border: none;
@@ -984,10 +1421,11 @@ async function initializeDeviceEqPlugin(context) {
         </style>
             <${headingTag}>Device PEQ</${headingTag}>
             <div class="settings-row">
-                <button class="connect-device">Connect to Device</button>
+                <button class="connect-device peq-connect-btn">${context?.config?.connectButtonLabel ?? 'Connect to device'}
+                  <svg class="peq-connect-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </button>
                 <button class="disconnect-device">Disconnect From <span id="deviceName">None</span></button>
-                <!-- Info Button -->
-                <button id="deviceInfoBtn" aria-label="Device Help" title="Device Help">ℹ️</button>
+                <button id="deviceInfoBtn" class="peq-info-btn" aria-label="Device Help" title="Device Help" ${context?.config?.showInfoButton === false ? 'hidden' : ''}>ℹ️</button>
             </div>
             <div class="peq-slot-area">
                 <select name="device-peq-slot" id="device-peq-slot-dropdown">
@@ -1430,14 +1868,14 @@ async function initializeDeviceEqPlugin(context) {
         // Connect Button Event Listener
         deviceEqUI.connectButton.addEventListener('click', async () => {
           try {
-            // Minimal experience: button becomes "Save to Device" once connected
-            if (context?.config?.minimalExperience && deviceEqUI.currentDevice) {
-              deviceEqUI.pushButton.click();
-              return;
-            }
-
-            let selection =  {connectionType: "usb"}; // Assume usb only by default
-            if (context.config.advanced) {
+            // A host (e.g. graphtool's dropdown) can pre-select the type via a data attribute,
+            // which lets us skip the dialog even in advanced mode.
+            const preselected = deviceEqUI.connectButton.dataset.connectionType;
+            if (preselected) { delete deviceEqUI.connectButton.dataset.connectionType; }
+            let selection = preselected
+              ? { connectionType: preselected }
+              : { connectionType: "usb" }; // default
+            if (!preselected && context.config.advanced) {
               // Show a custom dialog to select Network or USB
               selection = await showDeviceSelectionDialog();
             }
@@ -1458,7 +1896,7 @@ async function initializeDeviceEqPlugin(context) {
                 return;
               }
               if (device) {
-                deviceEqUI.showConnectedState(
+                await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await NetworkDeviceConnector.getAvailableSlots(device),
@@ -1504,7 +1942,7 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
-                deviceEqUI.showConnectedState(
+                await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await UsbHIDConnector.getAvailableSlots(device),
@@ -1554,7 +1992,7 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
-                deviceEqUI.showConnectedState(
+                await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await UsbSerialConnector.getAvailableSlots(device),
@@ -1599,7 +2037,7 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
-                deviceEqUI.showConnectedState(
+                await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await BluetoothBleConnector.getAvailableSlots(device),
@@ -2073,7 +2511,7 @@ async function initializeDeviceEqPlugin(context) {
               // Normal case - all filters received
               context.filtersToElem(result.filters);
               context.applyEQ();
-              showToast("PEQ filters successfully pulled from device.", "success");
+              if (context.config?.showSuccessToasts !== false) showToast("PEQ filters successfully pulled from device.", "success");
             } else {
               showToast("No PEQ filters found on the device.", "warning");
             }
@@ -2146,6 +2584,8 @@ async function initializeDeviceEqPlugin(context) {
               disconnect = await BluetoothBleConnector.pushToDevice(device, phoneObj, selectedSlot, preamp_gain, filters);
             }
 
+            document.dispatchEvent(new CustomEvent('PeqDeviceSaved', { detail: { filters } }));
+
             if (disconnect) {
               if (deviceEqUI.connectionType == "network") {
                 await NetworkDeviceConnector.disconnectDevice();
@@ -2155,9 +2595,9 @@ async function initializeDeviceEqPlugin(context) {
                 await UsbSerialConnector.disconnectDevice();
               }
               deviceEqUI.showDisconnectedState();
-              showToast("PEQ Saved - Restarting", "success");
+              if (context.config?.showSuccessToasts !== false) showToast("PEQ Saved - Restarting", "success");
             } else {
-              showToast("PEQ Successfully pushed to device", "success");
+              if (context.config?.showSuccessToasts !== false) showToast("PEQ Successfully pushed to device", "success");
             }
 
             // Set the last push time to current time and disable the button
