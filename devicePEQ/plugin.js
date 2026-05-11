@@ -301,8 +301,8 @@ async function initializeDeviceEqPlugin(context) {
       this.setPillState('connected', device.model);
       this.pullButton.hidden = false;
       this.pushButton.hidden = false;
-      this.pullButton.textContent = `Load from ${device.model}`;
-      this.pushButton.textContent = `Save to ${device.model}`;
+      this.pullButton.textContent = context?.config?.pullLabel ?? `Load from ${device.model}`;
+      this.pushButton.textContent = context?.config?.pushLabel ?? `Save to ${device.model}`;
       // Show slot row inside settings panel only when there are selectable slots
       if (this.slotRow) this.slotRow.hidden = !(availableSlots && availableSlots.length > 0);
       this.settingsBtn.hidden = false;
@@ -387,8 +387,8 @@ async function initializeDeviceEqPlugin(context) {
       this.peqDropdown.innerHTML = '<option value="-1">PEQ Disabled</option>';
       this.pullButton.hidden = true;
       this.pushButton.hidden = true;
-      this.pullButton.textContent = 'Load from Device';
-      this.pushButton.textContent = 'Save to Device';
+      this.pullButton.textContent = context?.config?.pullLabel ?? 'Load from Device';
+      this.pushButton.textContent = context?.config?.pushLabel ?? 'Save to Device';
       this.settingsBtn.hidden = true;
       this.settingsBtn.classList.remove('peq-settings-btn--open');
       this.settingsBtn.setAttribute('aria-expanded', 'false');
@@ -847,7 +847,7 @@ async function initializeDeviceEqPlugin(context) {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      flex: 1 1 auto;
+      flex: 1 1 auto !important;
       min-width: 0;
       padding: 12px 18px !important;
       background: var(--background-color, #f5f5f5);
@@ -898,6 +898,8 @@ async function initializeDeviceEqPlugin(context) {
     }
     /* Connected state pill */
     .device-pill {
+      flex: 1 1 auto;
+      min-width: 0;
       background: var(--background-color, #f5f5f5);
       border: 1px solid var(--background-color-contrast-more, #aaa);
       border-radius: 14px;
@@ -1300,8 +1302,8 @@ async function initializeDeviceEqPlugin(context) {
                 <div id="device-link-popup" class="device-link-popup" hidden role="menu" aria-label="Connection type"></div>
             </div>
             <div class="filters-button">
-                <button class="pull-filters-fromdevice peq-load-btn">Load from Device</button>
-                <button class="push-filters-todevice peq-save-btn">Save to Device</button>
+                <button class="pull-filters-fromdevice peq-load-btn">${context?.config?.pullLabel ?? 'Load from Device'}</button>
+                <button class="push-filters-todevice peq-save-btn">${context?.config?.pushLabel ?? 'Save to Device'}</button>
                 <button type="button" class="peq-settings-btn" id="peq-settings-btn" hidden
                         aria-label="Device settings" title="Device settings" aria-expanded="false">
                     <span class="peq-settings-btn-icon" aria-hidden="true"></span>
