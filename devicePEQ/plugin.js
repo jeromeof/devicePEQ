@@ -841,7 +841,7 @@ async function initializeDeviceEqPlugin(context) {
 
     /* ── Device link area: pill + connect button ─────────────────────────── */
     .device-link-area { padding: 2px 0 4px; display: flex; flex-direction: column; gap: 0; }
-    .device-link-row { display: flex; align-items: center; gap: 6px; }
+    .device-link-row { display: flex; align-items: center; gap: 6px; width: 100%; }
     .device-link-btn {
       display: flex !important;
       align-items: center;
