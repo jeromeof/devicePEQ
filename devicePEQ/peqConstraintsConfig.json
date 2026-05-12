@@ -235,20 +235,13 @@
       ],
       "extras": {
         "dacFilter": {
-          "supported": true,
-          "options": [
-            "FAST-LL",
-            "FAST-PC",
-            "SLOW-LL",
-            "SLOW-PC",
-            "NON-OS"
-          ]
+          "supported": false
         },
         "dacBalance": {
-          "supported": true
+          "supported": false
         },
         "dacWorkMode": {
-          "supported": true
+          "supported": false
         },
         "gainMode": {
           "supported": false
@@ -1133,7 +1126,6 @@
       ],
       "deviceGroupNames": []
     },
-
     "bleExtras": {
       "description": "FiiO EH11 / EH13 BLE headphones \u2014 10-band PEQ \u00b120 dB, battery read, EQ on/off",
       "peqConstraints": {
@@ -1148,8 +1140,12 @@
         "maxQ": 10.0
       },
       "extras": {
-        "battery":   { "supported": true },
-        "eqEnabled": { "supported": true }
+        "battery": {
+          "supported": true
+        },
+        "eqEnabled": {
+          "supported": true
+        }
       },
       "deviceNames": [
         "FIIO EH11",

@@ -25,7 +25,8 @@ function capable(cfg, handler, device, capKey, getMethod, setMethod) {
   // Device modelConfig[capKey] holds display/implementation overrides (e.g. modes, modeLabels)
   // that belong to a specific handler rather than the shared capability descriptor.
   const devCfg = device?.modelConfig?.[capKey] ?? {};
-  const isSupported = capCfg.supported === true;
+  // Per-device modelConfig[capKey].supported overrides the profile default.
+  const isSupported = (devCfg.supported !== undefined ? devCfg.supported : capCfg.supported) === true;
 
   const result = { supported: isSupported, ...capCfg, ...devCfg };
   delete result.handler;

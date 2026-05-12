@@ -887,6 +887,14 @@ export const usbHidDeviceHandlerConfig = ([
           schemeNo: 18
         }
       },
+      "CS43131 HiFi Audio DSP": {
+        modelConfig: {
+          peqConstraintsRef: "walkplayPeq8Band10dBLsLowpass",
+          schemeNo: 11,
+          // Has mic input but no ENC circuit — vendor site confirms micGain only, no denoise
+          denoise: { supported: false }
+        }
+      },
       "CS43198 HiFi DSP Audio": {
         manufacturer: "Walkplay",
         handler: walkplayUsbHID,
