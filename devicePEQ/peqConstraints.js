@@ -5,7 +5,7 @@
 const PEQ_CONSTRAINTS_CONFIG_URL =
   typeof window !== 'undefined' && window.DEVICEPEQ_CONFIG_BASE_URL
     ? `${window.DEVICEPEQ_CONFIG_BASE_URL}peqConstraintsConfig.json`
-    : 'https://pragmagicaudio.com/headphones/devicePEQ/peqConstraintsConfig.json';
+    : 'https://pragmagicaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json';
 
 let _config = null;
 let _loadPromise = null;
