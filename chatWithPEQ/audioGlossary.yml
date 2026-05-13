@@ -1,0 +1,1735 @@
+neutral_sound: Perceptually balanced tonal response approximating established target curves. Strongly correlated with smooth, well-controlled frequency response.
+bright_sound: Elevated energy in upper midrange or treble bands. Measurable via frequency response; excessive elevation can increase fatigue.
+warm_sound: Emphasis in low-mid frequencies with moderate treble attenuation. Often associated with reduced perceived sharpness.
+airy_sound: Extended high-frequency output above 10 kHz. Perceptual benefit depends on listener hearing bandwidth and distortion levels.
+slam: Perceived low-frequency impact and transient authority. Objectively linked to adequate headroom, low distortion, and controlled group delay in bass region.
+imaging_precision: Accuracy of spatial localization. Influenced by channel matching, phase coherence, and directivity consistency.
+soundstage_width: Perceived lateral spread. Strongly affected by speaker placement, directivity, and room reflections; in headphones influenced by HRTF cues.
+detail_retrieval: Perceived clarity of low-level information. Objectively related to low noise, low distortion, and absence of masking peaks.
+harshness: Listening discomfort often caused by narrowband peaks or high-order distortion in upper midrange.
+muddy: Perceptual masking in low-mid frequencies due to response peaks or excessive modal decay.
+fatigue: Long-term listening discomfort. Typically associated with spectral imbalance or distortion rather than subtle component differences.
+transparency: Faithful reproduction with minimal measurable deviation. Requires low distortion, flat response, and adequate dynamic range.
+headphone: Personal audio transducer coupling directly to ear. Unlike speakers, headphones bypass room acoustics; therefore frequency response relative to perceptual target is primary determinant of tonal accuracy.
+headphone_frequency_response: Measured response using standardized couplers. Strong correlation exists between target-curve adherence and listener preference in controlled research.
+harman_target: Research-derived headphone response curve based on listener preference studies. Demonstrated statistically significant correlation with higher subjective ratings across large panels.
+diffuse_field_target: Headphone tuning approximating sound arriving equally from all directions. Historically used but not always aligned with modern listener preference data.
+ear_gain_compensation: Boost around 2–5 kHz compensating for natural pinna amplification absent in headphone listening. Necessary for realistic timbral balance.
+open_back_design: Headphone with vented rear allowing pressure equalization. Often yields more natural soundstage but reduced isolation.
+closed_back_design: Sealed headphone providing isolation. Bass response may depend strongly on seal integrity.
+planar_magnetic_driver: Flat diaphragm driven across surface area. Offers low distortion and fast transient response when well implemented.
+electrostatic_driver: Thin charged diaphragm driven by high-voltage field. Capable of extremely low distortion but requires dedicated amplifier.
+dynamic_driver_headphone: Moving-coil design. Performance varies widely depending on tuning and enclosure design.
+seal_dependence: Low-frequency response sensitivity to ear pad seal. Improper seal measurably reduces bass extension.
+channel_matching_headphone: Consistency between left and right drivers. Mismatch greater than approximately 1 dB in critical bands can affect imaging.
+distortion_headphone: Harmonic and intermodulation distortion under load. Generally low at moderate listening levels but increases with excursion in small drivers.
+impedance_variation_headphone: Frequency-dependent impedance affecting amplifier interaction. Relevant mainly with high-output-impedance sources.
+sensitivity_headphone: SPL produced per volt or milliwatt. Determines required amplifier voltage.
+crossfeed_processing: DSP blending stereo channels to simulate speaker listening geometry. Reduces extreme channel separation inherent to headphone playback.
+amplifier: Electronic device increasing signal voltage and/or current to drive a load. In modern designs operating within linear limits, well-engineered amplifiers typically measure below audibility thresholds; audible differences usually arise only when clipping, load interaction, or design flaws occur.
+power_amplifier: High-current amplifier stage driving loudspeakers. Performance is evaluated via distortion, output impedance, noise, and stability into reactive loads.
+output_impedance: Effective source impedance of amplifier. Lower output impedance increases damping factor and reduces frequency response variation with complex speaker loads.
+damping_factor: Ratio of speaker impedance to amplifier output impedance. Extremely high values offer diminishing returns once output impedance is sufficiently low relative to speaker variation.
+slew_rate: Maximum rate of voltage change at amplifier output. Insufficient slew rate can cause measurable transient distortion, though modern amplifiers generally exceed required thresholds.
+clipping_behavior: Manner in which amplifier transitions into overload. Hard clipping produces high-order harmonics and harsh artifacts; soft clipping limits peak distortion more gradually but still represents deviation from source.
+class_a: Amplifier topology with continuous conduction. Offers low crossover distortion but reduced efficiency; audible benefits depend more on measurable distortion levels than topology label.
+class_ab: Hybrid topology reducing crossover distortion while improving efficiency. Most high-performance amplifiers use refined class AB designs.
+class_d: Switching amplifier using pulse-width or pulse-density modulation. When properly designed, measurable distortion and noise levels are comparable to linear amplifiers and typically below audibility thresholds.
+feedback_loop: Portion of output fed back to input to reduce distortion. Properly implemented negative feedback reduces measurable distortion and output impedance without inherent sonic penalty.
+negative_feedback: Technique reducing distortion and stabilizing gain. Claims of inherent negative sonic impact are not supported when loop stability and bandwidth are properly managed.
+open_loop_gain: Amplifier gain without feedback. Higher open-loop gain allows greater distortion reduction via feedback.
+thermal_distortion: Parameter drift due to heating of output devices. Modern bias tracking and heat sinking minimize audible effects.
+power_supply_rejection_ratio: Ability to suppress ripple from supply rails. High PSRR reduces hum and modulation artifacts.
+power_supply_ripple: Residual AC component on DC supply. Audible only when poorly filtered or regulated.
+switching_noise: High-frequency artifacts from class D modulation. Proper output filtering and layout reduce noise below audibility and regulatory limits.
+current_delivery: Amplifier ability to source current into low-impedance loads. Important for maintaining voltage stability with complex loudspeakers.
+reactive_load_stability: Amplifier ability to remain stable with phase-shifting speaker impedance. Poor stability can cause oscillation or distortion.
+gain_structure: Proper allocation of signal levels across components. Incorrect gain staging can increase noise or clipping even when individual components are high quality.
+balanced_input_stage: Differential amplifier rejecting common-mode noise. Objectively beneficial in long cable runs and electrically noisy environments.
+common_mode_rejection_ratio: Measure of balanced input’s noise rejection capability. High CMRR improves signal integrity.
+signal_to_noise_ratio_amplifier: Ratio between output signal and residual noise. Once below room noise floor, further improvements are not perceptually meaningful.
+distortion_spectrum: Distribution of harmonic components. Spectral composition influences perceived character more than total distortion magnitude alone.
+intermodulation_measurement: Two-tone or multitone test evaluating nonlinear mixing. Often more indicative of perceptual impact than THD alone.
+dynamic_headroom: Short-term output capability above continuous rating. Relevant for reproducing transient peaks without clipping.
+rail_voltage: Supply voltage determining maximum output swing. Insufficient rail voltage limits headroom.
+protection_circuit: System preventing damage from overload or short circuit. Properly designed protection should not interfere with linear operation.
+loudspeaker: Electroacoustic transducer converting electrical signals into acoustic pressure waves. Among all playback components, loudspeakers introduce the largest measurable and audible deviations from source due to frequency response irregularities, directivity changes, and distortion.
+frequency_response_flatness: Degree to which loudspeaker output remains even across frequencies. Controlled research consistently shows smoother response predicts higher listener preference ratings.
+directivity_consistency: Uniformity of radiation pattern across frequency. Strong predictor of natural in-room tonal balance due to reflected sound contributions.
+spinorama: Standardized multi-angle loudspeaker measurement set (CEA-2034). Demonstrated correlation between spinorama metrics and blind listening preference.
+on_axis_response: Frequency response measured directly in front of loudspeaker. Important but insufficient alone to predict room performance.
+off_axis_response: Output measured at angles away from primary axis. Critical for predicting room reflections and perceived tonal balance.
+power_response: Total radiated energy across angles. Influences room sound field and overall tonal impression.
+woofer: Driver optimized for low-frequency output. Performance strongly influenced by enclosure alignment and room interaction.
+tweeter: High-frequency driver. Directivity narrowing at crossover frequency often influences perceived brightness and imaging.
+crossover_network: Frequency division system routing bands to drivers. Poor design can introduce phase anomalies or lobing; good design minimizes audible artifacts.
+bass_reflex_enclosure: Ported cabinet using Helmholtz resonance for bass extension. Extends low-frequency output but may increase group delay near tuning frequency.
+sealed_enclosure: Acoustic suspension design. Typically offers smoother rolloff and lower group delay but reduced efficiency.
+group_delay_low_frequency: Frequency-dependent delay at bass frequencies. Audible primarily when excessive and combined with resonant overhang.
+boundary_interference: Response variation caused by speaker placement near surfaces. Often produces comb filtering in low-mid frequencies.
+subwoofer_integration: Alignment of subwoofer phase, level, and crossover with mains. Proper integration measurably smooths modal response and improves bass uniformity.
+room_correction: DSP equalization compensating for frequency response anomalies. Effective at reducing peaks but limited in correcting deep nulls or decay time.
+acoustic_treatment: Physical absorption or diffusion controlling reflections and decay. Generally more effective than electronic correction for time-domain problems.
+distortion_speaker: Nonlinear behavior of drivers at high excursion. Increases with output level and strongly influences perceived clarity at high SPL.
+thermal_compression: Reduction in output due to voice coil heating. Measurable at high power levels; reduces dynamic impact.
+maximum_linear_spl: Highest sound pressure level before significant distortion. Important for large-room or high-dynamic-content playback.
+acoustics: The branch of physics concerned with the generation, propagation, interaction, and perception of mechanical pressure waves in matter. In audio engineering, acoustics governs room behavior, loudspeaker radiation, and microphone capture. Objective acoustic behavior—modal distribution, reflection timing, absorption coefficients—has far greater measurable impact on perceived sound quality than most electronic component variations.
+sound: A mechanical longitudinal pressure wave propagating through a medium such as air. In audio reproduction, fidelity depends on accurate electrical-to-acoustic conversion and minimal distortion of waveform amplitude, timing, and spectral balance.
+frequency: The number of waveform cycles per second measured in hertz. Frequency directly correlates with perceived pitch. Human hearing sensitivity is non-linear across frequency, making frequency response accuracy central to tonal neutrality.
+wavelength: The physical distance a sound wave travels in one cycle. At low frequencies wavelengths become comparable to room dimensions, which explains why room modes dominate bass response more than loudspeaker specification alone.
+amplitude: The magnitude of pressure variation relative to ambient pressure. Perceptually mapped to loudness, though loudness perception is frequency-dependent and nonlinear.
+phase: The relative timing position of a waveform cycle. Absolute phase is rarely perceptible, but relative phase between frequency components affects transient integrity and stereo imaging.
+frequency_response: The magnitude output of a system across frequency. Among measurable parameters, frequency response deviations correlate most strongly with perceived tonal coloration. Controlled research consistently shows smoother, well-controlled response predicts listener preference.
+phase_response: The phase shift introduced across frequencies. While measurable, moderate nonlinear phase is typically less perceptible than amplitude deviations except in crossover regions or at low frequencies with large group delay.
+group_delay: Frequency-dependent time delay derived from phase response. Audible primarily when excessive at low frequencies, where it can produce perceptible bass “overhang.”
+harmonic_distortion: Addition of integer-multiple frequency components due to nonlinear behavior. Low-order harmonics at very low levels may be subtle, but higher-order distortion above threshold is objectively measurable and often perceptually objectionable.
+total_harmonic_distortion: Ratio of summed harmonic energy to fundamental. THD alone does not fully describe subjective impact; distortion spectrum and level both matter.
+intermodulation_distortion: Nonlinear mixing of multiple frequencies producing non-harmonic artifacts. Often more perceptually intrusive than simple harmonic distortion because artifacts are not musically related to source.
+noise_floor: Residual system noise in absence of signal. In practical listening environments, room ambient noise often exceeds electronic noise floor, limiting real-world dynamic range benefits beyond a certain threshold.
+dynamic_range: Difference between maximum undistorted output and noise floor. While digital formats offer extreme theoretical range, effective dynamic range in playback is constrained by acoustic noise and listening levels.
+signal_to_noise_ratio: Ratio of signal level to background noise. Values above typical room noise thresholds yield diminishing perceptual benefit in consumer playback.
+decibel: Logarithmic unit expressing ratios of power or amplitude. Because human loudness perception approximates logarithmic scaling, decibels provide perceptually meaningful comparison.
+equal_loudness_contours: Curves describing how perceived loudness varies with frequency. They demonstrate why flat electrical response does not equate to flat perceptual loudness at all levels.
+masking: Psychoacoustic phenomenon where one sound reduces audibility of another. Modern audio compression exploits masking to remove inaudible information with minimal perceptual impact.
+critical_band: Frequency bandwidth within which masking strongly occurs. This concept underpins perceptual codecs and explains why narrow resonances are often more audible than broadband deviations.
+impulse_response: Complete time-domain characterization of a linear system. From it, both frequency and phase response can be derived. In room acoustics, impulse response reveals reflections and decay behavior that strongly affect clarity.
+reverberation_time: Time required for sound level to decay 60 dB. Excessive reverberation reduces clarity and speech intelligibility; insufficient reverberation may reduce perceived spaciousness.
+standing_wave: Stationary pressure pattern caused by reflections between boundaries. Dominates low-frequency behavior in small rooms and often produces larger audible effects than amplifier differences.
+anechoic_response: Loudspeaker response measured without reflections. Useful baseline metric, but real-world in-room response and directivity are more predictive of perceived neutrality.
+directivity: Angular distribution of sound radiation. Consistent directivity correlates strongly with smooth in-room response and listener preference in controlled studies.
+crest_factor: Ratio of peak to RMS level. Music with high crest factor requires headroom; systems lacking headroom will clip peaks even if average level appears moderate.
+clipping: Waveform truncation when signal exceeds system limits. Produces high-order harmonics and is typically audibly harsh when significant.
+dither: Low-level noise added during quantization to prevent correlated distortion. Scientifically validated technique that measurably improves low-level linearity.
+sampling_rate: Number of samples per second in digital audio. Rates above 44.1 or 48 kHz primarily ease filter design; perceptual improvements beyond properly implemented standard rates are minimal in controlled testing.
+bit_depth: Number of amplitude quantization steps. Higher bit depth benefits production headroom; playback advantage is limited by acoustic noise floor.
+digital_audio: Representation of acoustic waveforms as discrete numerical samples in time and amplitude. When implemented correctly according to Nyquist criteria, properly band-limited digital audio is mathematically capable of transparent reproduction within human hearing limits.
+analog_signal: Continuous electrical representation of sound pressure variation. Susceptible to noise accumulation and component tolerances; digital representation avoids generational degradation when copied.
+analog_to_digital_converter: Circuit that samples and quantizes analog signals. Performance is evaluated via SINAD, linearity, dynamic range, and jitter rejection. Modern well-designed converters exceed audibility thresholds in most playback contexts.
+digital_to_analog_converter: Circuit reconstructing analog waveform from digital samples. Reconstruction accuracy depends on filtering, linearity, and noise shaping; most contemporary DACs measure transparently within human hearing limits.
+nyquist_theorem: Principle stating that a band-limited signal can be perfectly reconstructed when sampled at more than twice its highest frequency. This theorem underpins digital audio transparency when anti-alias filtering is properly implemented.
+aliasing: Distortion caused by insufficient sampling rate, where high frequencies fold into audible band. Prevented by proper anti-alias filtering and adequate sampling rate.
+anti_aliasing_filter: Analog low-pass filter applied before sampling. Its design quality influences measurable phase and amplitude response near Nyquist but has negligible audible impact when properly engineered.
+quantization: Rounding of continuous amplitude to discrete steps. Introduces quantization noise, which is rendered perceptually benign when properly dithered.
+quantization_noise: Error introduced by amplitude rounding. In 16-bit systems, properly dithered quantization noise lies below threshold of hearing in normal listening conditions.
+noise_shaping: Spectral redistribution of quantization noise toward less audible high frequencies. Scientifically validated technique that improves perceived dynamic range without increasing bit depth.
+oversampling: Operating converters at multiples of base sampling rate to simplify analog filtering. Measurably reduces filter distortion and phase anomalies near Nyquist.
+inter_sample_peak: Analog peak occurring between discrete samples. Can cause clipping in poorly designed reconstruction stages; measurable with true peak meters.
+true_peak: Oversampled estimate of waveform peak including inter-sample values. Important in mastering and broadcast compliance to avoid clipping artifacts.
+linear_phase_filter: Digital filter preserving phase relationships across frequency. Prevents phase distortion but introduces symmetrical pre- and post-ringing; audibility of pre-ringing remains limited in controlled testing except under extreme conditions.
+minimum_phase_filter: Filter topology eliminating pre-ringing at cost of nonlinear phase. Often perceptually benign due to human insensitivity to moderate phase deviation.
+brickwall_filter: Extremely steep low-pass filter. Necessary in early digital implementations; modern oversampling reduces need for aggressive slopes.
+sigma_delta_modulation: Conversion method using high-rate 1-bit or few-bit quantization with noise shaping. Dominant architecture in modern DACs due to excellent measurable performance.
+r2r_ladder_dac: Multibit conversion architecture using precision resistors. Can perform transparently if well-implemented; audible differences are typically attributable to measurable distortion or frequency response variation rather than architecture itself.
+sinad: Signal-to-noise-and-distortion ratio combining noise and harmonic distortion. Strong single-number metric for DAC and amplifier transparency; values exceeding approximately 90–100 dB generally exceed practical audibility thresholds.
+thd_plus_noise: Combined harmonic distortion and broadband noise metric. Interpreted alongside output level and frequency for meaningful evaluation.
+dynamic_range_digital: Maximum usable difference between full scale and noise floor. While 24-bit formats exceed acoustic environment limits, they provide production margin and processing safety.
+floating_point_processing: Numerical format with large headroom preventing clipping during intermediate DSP operations. Beneficial in production workflows; irrelevant to final playback if output is properly normalized.
+digital_gain: Amplitude scaling in digital domain. Transparent when performed within available headroom and bit depth constraints.
+sample_rate_conversion: Changing sampling frequency of digital audio. Quality depends on filter design; modern algorithms achieve transparent performance.
+asynchronous_usb_audio: Transfer mode where DAC controls master clock, reducing host timing influence. Measurably lowers jitter susceptibility in poorly isolated systems, though most modern implementations are already below audibility thresholds.
+jitter: Timing deviation in digital sampling clock. Modern DAC designs typically reduce jitter to levels several orders of magnitude below established audibility thresholds.
+bit_perfect_playback: Delivery of identical digital data to DAC without alteration. Necessary for objective verification, though many DSP processes (volume normalization, room correction) intentionally modify data transparently.
+lossless_compression: Data reduction preserving exact original information (e.g., FLAC). Provides storage efficiency with no loss of fidelity.
+lossy_compression: Perceptual data reduction removing masked content. Modern codecs at adequate bitrates (e.g., high-bitrate AAC, Opus) can achieve transparency under controlled blind testing.
+psychoacoustic_model: Algorithm predicting masking behavior to remove inaudible components in compression. Strongly grounded in auditory science and validated in codec performance.
+buffer: Temporary memory compensating for data rate variation. Affects latency but not steady-state audio quality if properly sized.
+latency: Time delay between input and output. Critical for real-time performance applications; irrelevant to playback quality if not interactive.
+dc_offset: Constant voltage shift in waveform. Reduces headroom and may introduce low-frequency artifacts; easily measurable and correctable.
+upsampling: Increasing sample rate via interpolation. Provides measurable reduction in imaging artifacts prior to DAC but does not inherently add new information.
+downsampling: Reducing sample rate after appropriate filtering. Transparent when properly implemented.
+error_correction: Redundant data enabling recovery of transmission errors. Ensures bit integrity in digital storage and transport.
+metadata: Embedded non-audio information such as loudness targets or track labeling. Influences playback behavior but not intrinsic waveform quality.
+high_resolution_audio: Marketing term describing audio above 16-bit 44.1 kHz; controlled blind tests show limited evidence of audible benefit under normal listening conditions when playback chains are properly implemented.
+ultrasonic_extension: Frequency response beyond 20 kHz; while measurable, controlled studies indicate negligible perceptual benefit for most listeners absent nonlinear intermodulation artifacts.
+bit_depth_advantage: Increase in theoretical dynamic range with higher bit depth; 24-bit offers production headroom benefits, but consumer playback rarely exploits full theoretical range due to acoustic noise floors.
+sampling_rate_extension: Increasing sample rate above 44.1 or 48 kHz; primarily simplifies filter design and reduces phase shift near Nyquist, with minimal direct perceptual benefit in controlled tests.
+noise_shaping_benefit: Spectral redistribution of quantization noise to less audible bands; demonstrably improves perceived dynamic range at lower bit depths.
+dither_benefit: Addition of low-level noise to linearize quantization; measurably reduces distortion and improves low-level signal accuracy.
+jitter_audibility: Audibility of clock timing variation; modern DAC jitter levels are typically far below perceptual thresholds unless extreme.
+cable_audibility_claim: Assertion that passive analog cables significantly alter sound; measurable differences are limited to resistance, capacitance, and inductance effects, usually negligible within standard lengths.
+balanced_connection_benefit: Differential signaling reducing common-mode noise; objectively beneficial in long cable runs and professional environments.
+power_conditioner_claim: Assertion that power conditioning improves sound quality; measurable benefit depends on actual power contamination, often minimal in well-designed equipment with regulated supplies.
+ground_loop_audibility: Audible hum caused by unintended ground paths; objectively measurable and correctable through isolation techniques.
+nonlinear_distortion: Signal alteration introducing harmonic or intermodulation components; measurable and often perceptually significant depending on level and spectrum.
+second_harmonic_distortion: Even-order harmonic addition; sometimes perceived as euphonic at low levels, but still measurable deviation from source.
+third_harmonic_distortion: Odd-order harmonic distortion; more likely perceived as harsh at higher levels.
+intermodulation_artifacts: Non-harmonic products from nonlinear systems; often more perceptually objectionable than simple harmonics.
+dynamic_intermodulation: Distortion dependent on signal amplitude envelope; may affect transient clarity.
+transient_intermodulation: Distortion arising from insufficient slew rate; measurable but rare in modern properly designed amplifiers.
+room_acoustics: The behavior of sound within enclosed spaces. In small rooms, low-frequency modal behavior and early reflections dominate perceived tonal balance more than most electronics in the signal chain.
+room_mode: Resonant standing wave determined by room dimensions. Produces peaks and nulls in bass response often exceeding ±10 dB, making placement and treatment more influential than amplifier choice.
+axial_mode: Room resonance between two parallel surfaces. Typically strongest modal component and primary cause of bass unevenness.
+tangential_mode: Room resonance involving four surfaces. Generally weaker than axial but still measurable.
+oblique_mode: Room resonance involving six surfaces. Usually lowest in amplitude but contributes to overall modal density.
+modal_density: Number of resonances per frequency interval. Higher modal density at higher frequencies leads to smoother response compared to sparse low-frequency region.
+bass_trap: Acoustic absorber targeting low-frequency energy. Effective bass trapping measurably reduces modal ringing and improves decay times.
+membrane_absorber: Tuned panel absorbing narrow low-frequency band. Effective when precisely tuned to dominant mode.
+helmholtz_resonator: Cavity absorber tuned to specific frequency. Useful for targeted modal attenuation but narrow in bandwidth.
+porous_absorber: Broadband absorber using fibrous materials. Most effective at mid and high frequencies; limited low-frequency effectiveness unless thick.
+diffuser: Surface scattering sound energy without absorption. Useful for reducing strong specular reflections while preserving liveliness.
+early_reflection: First-order reflection arriving shortly after direct sound. Excessive early reflections reduce imaging precision and clarity.
+reflection_free_zone: Listening geometry minimizing early reflections near mix position. Measurably improves stereo imaging accuracy.
+rt60: Time required for 60 dB decay. In small rooms, full 60 dB measurement may be impractical; shorter decay metrics are used instead.
+decay_time: General measure of reverberation decay. Excess low-frequency decay leads to perceived “boomy” bass.
+clarity_index: Ratio of early to late arriving energy. Higher clarity index correlates with improved speech intelligibility.
+direct_to_reverberant_ratio: Proportion of direct sound relative to reflections. Higher ratios improve localization accuracy.
+flutter_echo: Rapid repetitive reflection between parallel surfaces. Produces audible metallic ringing easily measured in impulse response.
+comb_filtering: Series of frequency notches caused by delayed signal summation. Strongly measurable and often perceptually disruptive.
+speaker_placement: Physical positioning relative to boundaries. Placement strongly affects boundary reinforcement and SBIR effects.
+sbir: Speaker Boundary Interference Response. Low-mid cancellations caused by reflection off nearby surface; measurable and often severe.
+listening_triangle: Equilateral geometry between speakers and listener. Promotes symmetrical arrival times and stable imaging.
+subwoofer_placement: Positioning of subwoofer relative to room boundaries. Strongly affects modal excitation and overall bass smoothness.
+multiple_subwoofers: Use of distributed subs to reduce seat-to-seat variation. Measurably improves bass uniformity across listening area.
+memory_effect_distortion: Hysteresis-related nonlinear behavior in materials; typically small in well-engineered components.
+power_supply_modulation: Audio signal interacting with supply rails; minimized through proper regulation and decoupling.
+rail_sag: Temporary supply voltage drop under load; can reduce headroom if poorly designed.
+headroom_advantage: Additional unclipped margin above nominal level; objectively beneficial for transient-rich program material.
+soft_clipping_characteristic: Gradual overload behavior reducing abrupt distortion artifacts; measurable in waveform shape.
+hard_clipping_artifact: Abrupt waveform truncation producing high-order harmonics; clearly measurable and often perceptually harsh.
+dynamic_range_compression_effect: Reduction in peak-to-average ratio; increases loudness but reduces dynamic contrast.
+loudness_war: Industry trend toward maximizing loudness; measurable reduction in crest factor and dynamic range.
+true_peak_clipping: Distortion caused by inter-sample peaks exceeding reconstruction capability; measurable with oversampled meters.
+ultrasonic_intermodulation: Interaction of ultrasonic content with nonlinear stages producing audible byproducts; measurable but typically negligible in modern systems.
+dc_offset_effect: Constant voltage bias reducing headroom; measurable and correctable.
+filter_ringing: Pre- and post-echo artifacts from steep linear-phase filters; measurable and potentially perceptible at extreme settings.
+minimum_phase_advantage: Reduced pre-ringing compared to linear-phase filters; measurable tradeoff with phase shift.
+phase_distortion_audibility: Audibility of nonlinear phase response; generally low sensitivity unless extreme in midrange.
+group_delay_audibility: Perceptual sensitivity to frequency-dependent delay; typically significant only at low frequencies with large deviations.
+subwoofer_room_interaction: Dominant influence of room modes on low-frequency response; objectively measurable and often more significant than hardware differences.
+speaker_directivity_importance: Off-axis response consistency strongly correlates with listener preference in controlled studies.
+spinorama_relevance: Standardized multi-angle speaker measurement predicting in-room performance.
+room_correction_limitations: DSP equalization cannot fully correct modal decay or time-domain issues; measurable limits exist.
+psychoacoustic_masking_model: Compression algorithms leveraging masking to reduce data rate; well-supported by auditory science.
+blind_listening_validation: Controlled methodology isolating audible differences from bias; gold standard in audio evaluation.
+level_matching_requirement: Accurate comparison requires within 0.1 dB level matching to avoid bias.
+expectation_effect: Perceptual bias influenced by prior belief; repeatedly demonstrated in controlled experiments.
+measurement_first_approach: Engineering philosophy prioritizing objective data before subjective claims.
+evidence_based_audio: Evaluation grounded in controlled testing and reproducible measurements.
+mixing: Balancing and processing multitrack recordings. Objective clarity depends on spectral balance, dynamic control, and avoidance of masking.
+mastering: Final preparation stage ensuring translation across playback systems. Involves level normalization, spectral adjustment, and peak control.
+loudness_normalization: Adjusting program loudness to target LUFS. Reduces incentive for excessive dynamic compression in streaming contexts.
+lufs: Loudness Units relative to Full Scale. Perceptually weighted loudness metric standardized for broadcast and streaming.
+dynamic_range_compression: Reduction of dynamic variation above threshold. Enhances perceived loudness but reduces crest factor.
+limiting: High-ratio compression preventing peaks from exceeding ceiling. Necessary for digital delivery but excessive use increases distortion.
+multiband_compression: Frequency-selective dynamic control. Useful for tonal balance shaping but can introduce phase or pumping artifacts.
+equalization: Frequency-specific gain adjustment. Primary tool for tonal shaping; large corrective boosts may introduce headroom penalties.
+linear_phase_eq: Equalizer maintaining phase alignment across bands. Avoids phase shift but may introduce pre-ringing artifacts.
+minimum_phase_eq: Traditional filter with natural phase shift. Generally perceptually benign for moderate adjustments.
+parallel_compression: Blending compressed and dry signals. Preserves transient impact while increasing average loudness.
+mid_side_processing: Independent manipulation of sum and difference channels. Useful for stereo width control and mastering adjustments.
+automation: Time-varying parameter control. Allows dynamic balance corrections across song sections.
+gain_staging: Proper level management throughout signal chain. Prevents clipping and preserves signal-to-noise ratio.
+noise_floor_production: Accumulated noise from analog stages or plugins. Generally negligible in modern digital workflows.
+blind_test: Listening evaluation where participants do not know test condition. Essential for isolating audible differences from expectation bias.
+double_blind: Test where neither participant nor administrator knows condition. Gold standard for eliminating experimenter bias.
+abx_test: Controlled method where listener identifies unknown sample against A and B references. Provides statistically analyzable results.
+mushra_test: Multi-stimulus test including hidden reference and anchors. Used extensively in codec evaluation research.
+level_matching: Ensuring playback levels are equal within approximately 0.1 dB. Necessary because louder samples are consistently preferred.
+statistical_significance: Probability that result is not due to chance. Necessary to interpret listening test outcomes reliably.
+effect_size: Magnitude of measurable difference between conditions. More meaningful than significance alone.
+expectation_bias: Perceptual influence of prior belief. Demonstrated repeatedly in audio evaluation research.
+confirmation_bias: Tendency to interpret ambiguous perception as supporting prior expectation.
+preference_test: Measures liking rather than accuracy. Does not necessarily indicate fidelity to source.
+discrimination_threshold: Smallest detectable difference under controlled conditions.
+lossy_codec: Compression algorithm removing perceptually masked information. At sufficient bitrate, modern codecs achieve transparency in controlled testing.
+aac: Advanced Audio Coding format. At high bitrates (e.g., 256 kbps), often transparent in double-blind tests.
+mp3: Early perceptual codec. At lower bitrates may introduce audible artifacts; at higher bitrates often transparent for typical material.
+opus: Modern low-latency codec optimized for efficiency. Demonstrates high transparency at moderate bitrates.
+bitrate: Amount of data transmitted per second. Higher bitrate generally reduces compression artifacts.
+codec_artifact: Audible distortion introduced by compression. Includes pre-echo, smearing, or high-frequency loss.
+streaming_normalization: Loudness adjustment applied by streaming platforms. Reduces advantage of heavily limited masters.
+buffering: Temporary data storage during streaming. Affects continuity but not audio fidelity if data integrity preserved.
+cable_break_in: Claim that audio cables audibly improve after hours of signal flow. No known physical mechanism in passive conductors supports time-dependent electrical parameter change at audio voltages beyond negligible thermal stabilization; controlled listening evidence does not support audible effect.
+burn_in_headphone: Claim that headphone sound changes substantially after extended playback. Small measurable compliance changes in driver suspension may occur initially, but magnitude is typically minor compared to unit variation and pad seal effects; listener acclimatization often explains perceived change.
+burn_in_electronics: Claim that solid-state electronics require extended signal use to reach optimal sound. Modern components stabilize thermally within minutes; no credible mechanism supports long-term audible transformation absent measurable parameter drift.
+cable_directionality: Assertion that analog audio cables have preferred signal direction. In passive copper conductors carrying low-frequency AC signals, directionality has no established electrical basis unless shielding is asymmetrical.
+audiophile_fuse: Replacement mains fuse marketed as improving sound. Provided fuse meets electrical rating and does not introduce voltage drop beyond specification, no plausible mechanism exists for altering low-level audio performance.
+power_cable_upgrade: Claim that replacing standard IEC mains cable improves sound quality. Once power reaches regulated supply inside equipment, measurable impact is negligible in competently designed devices unless original cable is defective.
+power_conditioner_magic: Marketing suggesting dramatic sonic improvement from AC conditioning in already regulated systems. Measurable benefit depends on actual AC contamination; most modern regulated supplies already provide substantial rejection.
+vibration_riser: Platform claimed to improve electronics by isolating vibration. Mechanical vibration can affect microphonic components (e.g., vacuum tubes, turntables), but solid-state electronics without moving parts show negligible measurable sensitivity at domestic vibration levels.
+quantum_sticker: Adhesive product claimed to alter electromagnetic behavior of circuits. No known physical mechanism consistent with established electromagnetic theory supports such claims.
+cryogenic_treatment_cable: Process cooling cables to extreme temperatures to “improve conductivity.” While material stress relief may occur in metals, measurable changes in bulk resistance at audio frequencies are negligible relative to threshold of audibility.
+silver_vs_copper_cable_sound: Claim that conductor material significantly alters sound. Silver has slightly lower resistivity than copper, but difference over typical lengths produces negligible amplitude variation in properly sized cables.
+network_switch_sound_quality: Assertion that Ethernet switches alter digital audio sound absent packet loss. Digital data transmission with error correction and buffering preserves bit integrity; absent measurable packet errors or jitter mismanagement, no analog signal difference occurs.
+ethernet_cable_sound_difference: Claim that Ethernet cable category affects tonal balance. Provided cable meets standard and maintains bit integrity, audio data delivered to DAC is identical.
+usb_cable_sound_difference: Claim that USB cable alters sound despite bit-perfect transmission. In asynchronous USB systems, DAC reclocks data; absent data errors or severe power noise coupling, measurable audio difference is unlikely.
+grounding_box: Aftermarket device claiming improved sound via additional grounding path. Improper grounding can cause hum; however, arbitrary grounding additions may introduce safety issues and are unlikely to improve performance beyond resolving measurable ground loops.
+demagnetizing_cd: Device claimed to improve optical disc playback via demagnetization. Optical CD reading uses laser reflection and digital error correction; magnetization of disc substrate has no established effect on decoded bitstream.
+cd_marker_pen: Practice of coloring disc edges to “reduce jitter.” Digital optical systems rely on encoded pit transitions and error correction; edge coloring has no established mechanism for altering recovered data in properly functioning drives.
+speaker_cable_burn_in_device: External signal generator used to accelerate cable conditioning. No known conductor property relevant to audio frequencies changes meaningfully under such treatment.
+directional_fuse: Fuse marketed as having preferred current direction affecting sound. Alternating current reverses direction; no established linear mechanism supports directional sonic impact.
+quantum_noise_harvester: Device claimed to reduce electromagnetic noise by passive placement. No documented reproducible measurement evidence supports effect beyond placebo.
+high_resolution_ultrasonic_benefit: Claim that ultrasonic content directly enhances audible experience. Controlled double-blind testing generally fails to show consistent detection when ultrasonic intermodulation artifacts are controlled.
+analog_warmth_myth: Broad claim that all analog equipment sounds inherently better. Analog systems may introduce measurable harmonic distortion and noise; preference depends on distortion spectrum and listener taste rather than inherent superiority.
+tube_magic: Assertion that vacuum tubes provide inherently superior sound. Tubes introduce measurable even-order harmonic distortion and higher output impedance; perceived warmth arises from measurable coloration rather than mystical properties.
+class_a_always_better: Claim that class A topology guarantees superior sound. Properly designed class AB or class D amplifiers can achieve distortion and noise below audibility; topology alone does not determine fidelity.
+more_bits_always_better: Belief that higher bit depth always yields audible improvement. Playback environments rarely exploit more than 16-bit dynamic range due to acoustic noise floor limitations.
+higher_sample_rate_always_better: Belief that 192 kHz playback inherently improves fidelity. When anti-alias filters are properly designed, 44.1 or 48 kHz sampling captures entire audible band transparently.
+digital_harshness: Claim that digital audio inherently sounds harsh. Early implementations suffered from poor filtering; modern properly implemented digital systems are capable of transparent reproduction.
+jitter_causes_massive_soundstage_collapse: Exaggerated claim of catastrophic spatial degradation from typical jitter levels. Modern jitter magnitudes are typically far below demonstrated audibility thresholds.
+placebo_effect_audio: Perceptual improvement resulting from expectation rather than measurable acoustic change. Repeatedly demonstrated in controlled double-blind audio evaluations.
+expectation_bias_audio: Listener perception influenced by price, brand, or visual cues. Strong effect documented in psychoacoustic research.
+level_bias: Louder playback being perceived as better. Even 0.5 dB differences can influence preference judgments.
+price_quality_association: Cognitive bias associating higher cost with higher perceived quality independent of measurable performance.
+confirmation_bias_audio: Selective attention reinforcing prior belief about sound differences.
+post_purchase_rationalization: Tendency to justify expensive purchase by perceiving improvement.
+sighted_listening: Evaluation performed with knowledge of device identity. Vulnerable to bias and not reliable for subtle difference assessment.
+controlled_comparison: Listening test conducted with matched levels and concealed identities. Most reliable method for establishing audible difference.
+engineering_margin: Design headroom included to prevent clipping or instability. Provides objective benefit when preventing overload but does not inherently change tonal character.
+cable_lifter: Device elevating audio cables from the floor to “reduce distortion” or “improve clarity.” At audio frequencies, electromagnetic coupling to flooring materials is negligible in domestic environments. No established electrical mechanism supports audible change when cables already meet resistance and shielding requirements.
+audiophile_fuse_directionality: Claim that AC mains fuse orientation alters sound quality. Alternating current reverses direction 50–60 times per second; fuse resistance is symmetric. No linear electrical mechanism supports directional sonic variation.
+mains_cable_tonality: Assertion that power cable geometry changes tonal balance. Audio circuits operate after rectification and voltage regulation; once supply ripple rejection exceeds audibility thresholds, upstream cable differences are electrically irrelevant unless defective.
+network_switch_clocking_sound: Claim that Ethernet switch clock quality affects DAC soundstage. Ethernet uses packet-based buffered transmission with error detection; audio data are reconstructed by DAC clock, not network switch timing. No mechanism supports tonal or spatial change absent packet errors.
+ethernet_cable_category_sound: Belief that higher-category Ethernet cables improve “blackness” or imaging. Provided link integrity is maintained and no packet loss occurs, digital data are identical. Audio waveform differences cannot arise from bit-identical streams.
+usb_cable_jitter_imaging: Claim that USB cables alter jitter sufficiently to affect spatial rendering. In asynchronous USB systems, DAC internal clock governs timing. Jitter introduced by cable transmission is orders of magnitude below established audibility thresholds.
+cryogenic_power_cords: Cooling cables to extreme temperatures purportedly alters electron flow properties. While cryogenic treatment may slightly alter grain structure in metals, bulk resistivity at audio frequencies remains unchanged within inaudible margins.
+quantum_audio_devices: Products claiming quantum field alignment or molecular realignment of audio signals. Such claims lack basis in classical electromagnetism governing audio circuits and have no reproducible measurement evidence.
+cable_skin_effect_audibility: Claim that skin effect dramatically alters tonal balance in speaker cables. At audio frequencies (below 20 kHz), skin depth in copper exceeds typical conductor radii; resistance variation across conductor cross-section is negligible.
+directional_speaker_cables: Assertion that drawn copper structure creates signal directionality. Copper conduction at audio frequencies is linear and symmetric; no verified rectifying or directional behavior exists in passive conductors.
+green_marker_cd_tweak: Coloring CD edges claimed to reduce jitter. CD players use digital error correction and buffering; optical reflectivity changes at edge do not alter decoded bitstream if error correction is functioning.
+demagnetizing_vinyl_or_cd: Device claimed to remove magnetic fields affecting sound. Vinyl records and polycarbonate CDs are non-magnetic materials; no physical pathway exists for magnetization to influence audio retrieval.
+resonance_control_stickers: Adhesive products placed on components to improve coherence. Solid-state circuits have negligible acoustic sensitivity unless mechanical vibration reaches microphonic elements, which is uncommon in modern electronics.
+speaker_cable_capacitance_magic: Claim that small capacitance differences in short speaker cables alter tonal balance dramatically. While capacitance and inductance are measurable, values in normal-length cables produce frequency response deviations far below audibility thresholds with low-impedance amplifiers.
+acoustic_resonance_tuning_crystals: Objects placed in room to “balance energy.” Room acoustics are governed by boundary geometry and absorption coefficients; small decorative objects cannot materially alter modal structure or reverberation time.
+high_frequency_ultrasonic_alignment: Claim that ultrasonic frequencies enhance audible realism. Controlled experiments generally show no detectable improvement once audible band response is controlled and nonlinear intermodulation is absent.
+super_clock_external_soundstage: External master clocks marketed for DAC improvement. Unless internal clocking architecture is demonstrably deficient, modern jitter levels are already below perceptual thresholds.
+silver_interconnect_brightness: Belief that silver cables inherently sound brighter than copper. Silver’s resistivity difference from copper is approximately 6%; resulting amplitude differences over short runs are electrically negligible.
+gold_plated_connector_sound: Claim that gold plating improves tonal warmth. Gold plating prevents corrosion; it does not alter frequency response beyond maintaining reliable contact.
+audiophile_router: Network routers marketed as improving tonal purity. Packetized audio transmission ensures identical bit delivery; absent measurable network instability, no waveform change occurs.
+audiophile_switching_power_supply_fear: Belief that switching supplies inherently degrade sound. Properly filtered and regulated switching supplies achieve ripple and noise performance below audibility thresholds.
+burn_in_cable_time_constant: Claim that dielectric “forms” over hundreds of hours to change sound. Dielectric absorption effects occur at extremely small signal levels and stabilize quickly; no credible long-term sonic evolution mechanism is established.
+nano_particle_signal_alignment: Marketing claim that nanomaterials guide electron flow directionally. Electron drift in copper conductors at audio frequencies follows classical conduction laws; such alignment claims lack physical plausibility.
+mechanical_energy_tuning_blocks: Blocks placed on equipment to improve imaging. Solid-state electronics lack mechanisms for micro-vibration to alter linear signal processing in a measurable way under typical domestic vibration levels.
+power_regenerator_soundstage_depth: AC regeneration units creating new sine wave claimed to increase depth. If downstream equipment already has sufficient power supply rejection and regulation, regenerated sine purity does not translate into measurable output waveform difference.
+audiophile_ground_box_black_background: External grounding boxes claimed to improve “blackness.” Proper grounding eliminates hum; beyond eliminating measurable ground loops, additional arbitrary grounding provides no further noise floor benefit.
+cryogenic_treated_fuse_transparency: Fuse cooled to extreme temperature marketed as increasing transparency. Electrical resistance and contact behavior remain within negligible deviation compared to overall circuit impedance.
+quantum_entanglement_audio_cable: Claim that entanglement improves timing coherence. Audio circuits operate under classical electromagnetic theory; quantum entanglement concepts do not apply to macroscopic copper conductors in this context.
+energy_flow_directionality: Marketing language implying signal has preferred physical travel orientation in passive components. Alternating current changes direction cyclically; directional “flow” metaphors are not physically meaningful at audio frequencies.
+infinite_break_in_period: Claim that system continues improving over months. Listener acclimatization and expectation adaptation are better-supported explanations than continuous physical transformation.
+period: The duration of one complete cycle of a waveform; the reciprocal of frequency.
+phase_shift: A displacement of a waveform relative to a reference waveform in time or angle.
+constructive_interference: The reinforcement of sound waves when they combine in phase.
+destructive_interference: The attenuation of sound waves when they combine out of phase.
+harmonic: A sinusoidal component at an integer multiple of a fundamental frequency.
+fundamental_frequency: The lowest frequency of a periodic waveform determining perceived pitch.
+overtone: Any frequency component above the fundamental.
+timbre: The perceptual quality of a sound determined by spectral and temporal characteristics.
+envelope: The amplitude variation of a sound over time.
+attack: The initial rise time of a sound’s amplitude envelope.
+decay: The decrease in amplitude following the attack phase.
+sustain: The steady-state portion of an amplitude envelope.
+release: The time required for amplitude to return to zero after signal termination.
+transient: A short-duration, high-amplitude event within a signal.
+impulse: An extremely short-duration signal approximating a delta function.
+time_domain: Representation of a signal as amplitude versus time.
+frequency_domain: Representation of a signal as magnitude and phase versus frequency.
+fourier_transform: A mathematical transform decomposing a signal into sinusoidal frequency components.
+fft: A computational algorithm for efficiently calculating the discrete Fourier transform.
+spectrogram: A time-varying representation of frequency content using short-time Fourier analysis.
+spectrum: The distribution of signal amplitude across frequency.
+bandwidth: The range of frequencies within which a system operates effectively.
+white_noise: Noise with equal power per hertz across the frequency spectrum.
+pink_noise: Noise with equal energy per octave, decreasing 3 dB per octave.
+brown_noise: Noise whose power density decreases 6 dB per octave.
+distortion: Any alteration of a signal from its original waveform.
+thd: Total harmonic distortion; the ratio of harmonic energy to fundamental energy.
+soft_clipping: Gradual waveform limiting producing lower-order harmonics.
+hard_clipping: Abrupt waveform truncation producing high harmonic content.
+rms: Root mean square value representing effective signal power.
+peak_level: The maximum instantaneous signal amplitude.
+headroom: The margin between nominal operating level and clipping.
+gain: The ratio of output to input amplitude in a system.
+attenuation: Reduction of signal amplitude.
+impedance: The complex opposition to alternating current flow.
+resistance: The real component of impedance opposing current.
+reactance: The imaginary component of impedance due to capacitance or inductance.
+capacitance: The ability of a component to store electric charge.
+inductance: The property of a conductor to resist changes in current flow.
+ohms_law: The relationship V = IR describing voltage, current, and resistance.
+voltage: Electrical potential difference between two points.
+current: Flow of electric charge.
+power: The rate of energy transfer, measured in watts.
+watt: Unit of electrical power equal to one joule per second.
+db_spl: Sound pressure level referenced to 20 micropascals.
+dbfs: Decibels relative to full scale in digital systems.
+dbu: Decibels referenced to 0.775 volts RMS.
+dbv: Decibels referenced to 1 volt RMS.
+loudness: Perceived intensity of sound influenced by frequency and level.
+erb: Equivalent rectangular bandwidth representing auditory filter bandwidth.
+temporal_masking: Masking occurring before or after a masking stimulus.
+spectral_masking: Masking caused by frequency proximity.
+binaural_hearing: Use of both ears to perceive spatial cues.
+interaural_time_difference: Time difference of arrival between ears.
+interaural_level_difference: Level difference between ears due to head shadowing.
+precedence_effect: Localization dominance of the first arriving sound.
+reverberation: Persistence of sound in an enclosed space after source stops.
+absorption_coefficient: Fraction of incident sound energy absorbed by a material.
+diffusion: Scattering of sound energy in multiple directions.
+reflection: Return of sound energy after striking a surface.
+refraction: Bending of sound waves due to medium density changes.
+diffraction: Bending of sound waves around obstacles.
+direct_sound: Sound reaching listener without reflections.
+early_reflections: Initial reflected sounds arriving shortly after direct sound.
+late_reverberation: Dense reflections following early reflections.
+pressure_node: Location in standing wave with minimal pressure variation.
+pressure_antinode: Location in standing wave with maximum pressure variation.
+velocity_node: Location of minimal particle velocity in a standing wave.
+velocity_antinode: Location of maximum particle velocity in a standing wave.
+anechoic: Free of reflections.
+anechoic_chamber: A room designed to eliminate reflections and external noise.
+free_field: An environment without reflective boundaries.
+near_field: Region close to a sound source where pressure and velocity are not in phase.
+far_field: Region where sound waves approximate plane waves.
+inverse_square_law: Sound pressure decreases proportionally to the square of distance.
+acoustic_impedance: The ratio of sound pressure to particle velocity.
+mechanical_resonance: Natural frequency at which a system vibrates with maximum amplitude.
+q_factor: Dimensionless parameter describing resonance sharpness.
+damping: Reduction of oscillation amplitude over time.
+modal_decay: Time taken for a specific room mode to dissipate.
+slap_echo: Discrete echo caused by a strong reflection.
+definition_index: Measure of speech intelligibility in rooms.
+speech_transmission_index: Objective measure of speech intelligibility.
+weighting_curve: Frequency weighting applied to measurements such as A-weighting.
+a_weighting: Frequency weighting approximating human hearing sensitivity at moderate levels.
+c_weighting: Frequency weighting flatter than A-weighting, used for higher levels.
+z_weighting: Flat frequency response weighting.
+loudness_unit: Unit representing perceived loudness relative to reference.
+phon: Unit of loudness level corresponding to equal-loudness contour.
+sone: Unit of perceived loudness proportional to doubling perception.
+psychoacoustics: Study of the relationship between physical sound and perception.
+adc: Analog-to-digital converter that samples and quantizes an analog signal.
+dac: Digital-to-analog converter that reconstructs analog voltage from digital samples.
+sampling: The process of measuring signal amplitude at discrete time intervals.
+nyquist_frequency: Half the sampling rate; highest representable frequency without aliasing.
+reconstruction_filter: Low-pass filter after DAC to smooth stepped output.
+quantization_error: Difference between actual signal and quantized representation.
+16_bit_audio: Digital audio format providing approximately 96 dB theoretical dynamic range.
+24_bit_audio: Digital audio format providing approximately 144 dB theoretical dynamic range.
+32_bit_float: Floating-point format allowing extended headroom in processing.
+fixed_point: Numerical representation with constant scaling factor.
+floating_point: Numerical format with exponent and mantissa for wide dynamic range.
+interpolation: Estimating intermediate sample values during resampling.
+decimation: Downsampling process including filtering and sample reduction.
+pcm: Pulse code modulation; standard linear digital audio encoding.
+dsd: Direct stream digital; 1-bit high-rate sigma-delta encoding.
+clock_recovery: Extraction of timing information from digital data stream.
+word_clock: Synchronization signal ensuring consistent sampling timing.
+bit_clock: Clock defining individual data bit timing.
+synchronous_usb_audio: USB mode where host controls timing.
+isochronous_transfer: USB data transfer mode guaranteeing bandwidth but not retransmission.
+dropout: Audible interruption caused by buffer underrun.
+underrun: Condition where data buffer empties before refill.
+overrun: Condition where incoming data exceeds buffer capacity.
+digital_filter: Mathematical algorithm altering frequency content of a signal.
+fir_filter: Finite impulse response filter with no feedback.
+iir_filter: Infinite impulse response filter using feedback.
+rolloff: Slope of attenuation beyond cutoff frequency.
+passband: Frequency range allowed through a filter.
+stopband: Frequency range attenuated by a filter.
+cutoff_frequency: Frequency at which filter attenuation reaches defined threshold.
+butterworth_filter: Maximally flat magnitude response filter.
+chebyshev_filter: Filter with ripple in passband or stopband.
+bessel_filter: Filter optimized for linear phase response.
+elliptic_filter: Filter with ripple in both passband and stopband offering steep rolloff.
+parametric_eq: Equalizer with adjustable frequency, gain, and Q.
+graphic_eq: Equalizer with fixed frequency bands and adjustable gain.
+high_pass_filter: Filter attenuating frequencies below cutoff.
+low_pass_filter: Filter attenuating frequencies above cutoff.
+band_pass_filter: Filter allowing only a specific frequency range.
+band_stop_filter: Filter attenuating a specific frequency band.
+notch_filter: Narrow band-stop filter.
+shelving_filter: Filter boosting or cutting frequencies above or below a threshold.
+ebu_r128: European broadcast loudness standard.
+lkfs: Loudness units relative to full scale.
+limiter: Processor preventing signal from exceeding threshold.
+compressor: Processor reducing dynamic range above threshold.
+expander: Processor increasing dynamic range.
+noise_gate: Processor attenuating signals below threshold.
+lookahead: Processing delay allowing predictive control.
+sidechain: Control signal path influencing processor behavior.
+envelope_follower: Detector tracking amplitude envelope.
+attack_time: Time taken for processor to respond after threshold crossing.
+release_time: Time for processor to return to neutral state.
+ratio: Degree of gain reduction applied above threshold.
+threshold: Level above which processing begins.
+knee: Transition characteristic between unprocessed and compressed states.
+hard_knee: Abrupt compression onset at threshold.
+soft_knee: Gradual compression onset around threshold.
+harmonic_exciter: Processor adding harmonic distortion to enhance presence.
+bitcrusher: Effect reducing bit depth for distortion.
+word_length_reduction: Decreasing bit depth with dither.
+wav: Uncompressed PCM audio file format.
+aiff: Uncompressed PCM format developed by Apple.
+flac: Lossless compressed audio format.
+alac: Apple lossless audio codec.
+ogg_vorbis: Open-source lossy audio codec.
+bluetooth_audio: Wireless digital audio transmission over Bluetooth.
+aptx: Qualcomm proprietary Bluetooth codec family.
+ldac: Sony high-bitrate Bluetooth codec.
+sbc: Mandatory Bluetooth subband codec.
+clock_drift: Gradual divergence between independent digital clocks.
+pll: Phase-locked loop used for clock synchronization.
+asrc: Asynchronous sample rate conversion.
+headroom_digital: Available amplitude margin below 0 dBFS.
+zero_crossing: Point where waveform crosses zero amplitude.
+denormal_numbers: Very small floating-point values causing CPU inefficiency.
+bitstream: Serial stream of digital audio data.
+container_format: File structure holding encoded audio streams.
+codec: Algorithm for encoding and decoding audio.
+mdct: Modified discrete cosine transform used in lossy codecs.
+subband_coding: Division of signal into frequency bands for compression.
+entropy_coding: Statistical encoding reducing redundancy.
+crc: Cyclic redundancy check for error detection.
+auditory_filter: Frequency-selective mechanism of the cochlea approximated by bandpass filters.
+basilar_membrane: Structure in the cochlea that performs mechanical frequency analysis.
+place_theory: Pitch perception theory based on excitation location along basilar membrane.
+temporal_theory: Pitch perception theory based on neural phase locking timing.
+phase_locking: Neural firing synchronized to waveform phase at low frequencies.
+critical_bandwidth: Frequency bandwidth of auditory filter at a given center frequency.
+erb_rate: Psychoacoustic frequency scale based on equivalent rectangular bandwidth.
+bark_scale: Psychoacoustic scale dividing hearing into critical bands.
+mel_scale: Perceptual pitch scale approximating human frequency discrimination.
+pitch: Perceptual correlate of frequency.
+loudness_growth: Nonlinear relationship between SPL and perceived loudness.
+recruitment: Abnormally rapid loudness growth in hearing impairment.
+just_noticeable_difference: Smallest perceptible change in stimulus parameter.
+frequency_discrimination: Ability to detect small frequency differences.
+temporal_resolution: Ability to resolve rapid changes in time.
+spectral_resolution: Ability to distinguish closely spaced frequencies.
+comodulation_masking_release: Improved detection when masker bands share modulation.
+informational_masking: Masking not explained by energetic overlap.
+energetic_masking: Masking due to overlapping excitation patterns in cochlea.
+simultaneous_masking: Masking occurring during concurrent sounds.
+forward_masking: Masking occurring after masker offset.
+backward_masking: Masking occurring before masker onset.
+auditory_scene_analysis: Cognitive organization of sound into perceptual streams.
+streaming: Perceptual separation of sounds into distinct sequences.
+fusion: Perceptual integration of multiple frequencies into one sound.
+roughness: Perceptual sensation from rapid amplitude fluctuations.
+fluctuation_strength: Perceived modulation at low modulation frequencies.
+sharpness: Perceptual attribute related to high-frequency spectral energy.
+brightness: Perceived emphasis of upper mid and high frequencies.
+warmth: Perceived emphasis in lower midrange frequencies.
+presence: Perceptual prominence in upper midrange frequencies.
+air: Subjective impression of very high frequency extension and openness.
+punch: Perception of midbass transient emphasis.
+boominess: Excessive low-frequency resonance with slow decay.
+sibilance: Excessive emphasis of fricative consonant frequencies.
+grain: Perception of low-level distortion or modulation artifacts.
+detail: Ability to perceive low-level information and microdynamics.
+resolution: System’s ability to reproduce subtle signal differences.
+imaging: Precision of spatial localization between loudspeakers.
+soundstage: Perceived spatial width, depth, and height of reproduced audio.
+localization: Determination of sound source direction.
+externalization: Perception of sound as outside the head.
+head_related_transfer_function: Frequency response from source to eardrum including head and pinna effects.
+hrtf: Abbreviation for head related transfer function.
+pinna_cues: Spectral cues introduced by outer ear shape.
+itd_sensitivity: Sensitivity to interaural time differences.
+ild_sensitivity: Sensitivity to interaural level differences.
+cone_of_confusion: Spatial positions yielding identical ITD and ILD cues.
+precedence_localization: Dominance of first arriving wavefront in localization.
+spatial_release_from_masking: Improved speech perception due to spatial separation.
+cocktail_party_effect: Ability to focus on one source amid competing sounds.
+binaural_unmasking: Improved detection using binaural hearing.
+dichotic_listening: Different signals presented to each ear.
+interaural_cross_correlation: Measure of similarity between ear signals.
+lateralization: Perception of sound position inside the head.
+diffuse_field: Sound field with equal energy from all directions.
+free_field_hearing: Hearing without reflections.
+equalization_curve: Frequency compensation to match perceptual target.
+loudness_compensation: Frequency adjustment for perceived tonal balance at low levels.
+phon_curve: Equal-loudness contour representation.
+temporal_integration: Loudness accumulation over short durations.
+spectral_centroid: Weighted mean frequency of spectrum.
+modulation_transfer_function: System response to amplitude modulation.
+temporal_modulation: Variation in amplitude over time.
+spectral_modulation: Variation in frequency content across spectrum.
+envelope_correlation: Correlation of amplitude envelopes between signals.
+binaural_coherence: Measure of similarity of binaural signals.
+auditory_distance: Perceived distance of sound source.
+doppler_effect: Frequency shift due to relative motion.
+amplitude_modulation: Variation of amplitude at modulation frequency.
+frequency_modulation: Variation of frequency around carrier.
+modulation_depth: Degree of modulation applied to signal.
+critical_ratio: Minimum signal-to-noise ratio for detection.
+threshold_of_hearing: Minimum SPL detectable by average listener.
+threshold_of_pain: SPL at which sound becomes painful.
+temporary_threshold_shift: Short-term hearing sensitivity reduction.
+permanent_threshold_shift: Irreversible hearing damage.
+otosclerosis: Abnormal bone growth affecting hearing.
+presbycusis: Age-related hearing loss.
+audiogram: Graph of hearing threshold versus frequency.
+bone_conduction: Transmission of sound through skull bones.
+air_conduction: Transmission of sound via ear canal and middle ear.
+cochlea: Spiral inner ear organ converting vibrations to neural signals.
+outer_hair_cells: Cochlear cells providing amplification and tuning.
+inner_hair_cells: Cochlear cells converting mechanical motion to neural impulses.
+neural_spike_rate: Frequency of auditory nerve firing.
+spike_synchrony: Temporal alignment of neural firing.
+auditory_nerve: Nerve transmitting signals from cochlea to brainstem.
+inferior_colliculus: Midbrain nucleus involved in auditory processing.
+medial_geniculate_body: Thalamic relay for auditory signals.
+auditory_cortex: Brain region processing complex sound features.
+plasticity: Brain’s ability to adapt auditory processing.
+binaural_beats: Perceived beating from slightly different tones in each ear.
+pitch_shift: Perceived pitch change without tempo alteration.
+time_stretch: Tempo change without pitch alteration.
+driver: Individual transducer element within a loudspeaker system.
+midrange_driver: Driver optimized for mid-frequency reproduction.
+subwoofer: Loudspeaker dedicated to very low-frequency reproduction.
+full_range_driver: Single driver designed to reproduce broad frequency range.
+compression_driver: High-efficiency driver using horn loading.
+horn: Acoustic waveguide increasing efficiency and controlling directivity.
+waveguide: Structure shaping radiation pattern of a driver.
+dome_tweeter: High-frequency driver with dome-shaped diaphragm.
+ribbon_tweeter: High-frequency driver using thin conductive ribbon.
+electrostatic_speaker: Transducer using charged diaphragm between stators.
+dynamic_driver: Moving-coil loudspeaker using magnetic field interaction.
+voice_coil: Coil attached to diaphragm interacting with magnetic field.
+magnet_structure: Magnetic assembly providing static magnetic field.
+motor_strength: Force factor determining driver control capability.
+bl_product: Product of magnetic flux density and wire length in gap.
+cone: Diaphragm radiating acoustic energy.
+surround: Flexible suspension at diaphragm perimeter.
+spider: Suspension element centering voice coil.
+basket: Frame supporting driver components.
+dust_cap: Cover protecting voice coil from debris.
+excursion: Linear displacement of driver diaphragm.
+xmax: Maximum linear excursion before distortion rises significantly.
+sensitivity: Sound pressure level produced at 1 W input at 1 m distance.
+efficiency: Ratio of acoustic output power to electrical input power.
+impedance_curve: Frequency-dependent electrical impedance of loudspeaker.
+nominal_impedance: Rated impedance value for amplifier matching.
+minimum_impedance: Lowest impedance value across frequency range.
+resonant_frequency: Natural free-air resonance of driver.
+fs: Symbol for driver free-air resonance frequency.
+vas: Equivalent compliance volume of driver suspension.
+qts: Total Q factor combining mechanical and electrical damping.
+qes: Electrical Q factor related to motor damping.
+qms: Mechanical Q factor related to suspension damping.
+thiele_small_parameters: Set of electromechanical parameters defining driver behavior.
+bass_reflex: Ported enclosure using Helmholtz resonance for bass extension.
+ported_enclosure: Cabinet with tuned vent for low-frequency reinforcement.
+transmission_line: Enclosure using long damped path to extend bass.
+passive_radiator: Unpowered diaphragm tuned to reinforce low frequencies.
+port_tuning_frequency: Frequency at which bass reflex port resonates.
+baffle: Front panel on which drivers are mounted.
+baffle_step: Low-frequency response change due to finite baffle width.
+crossover: Network dividing signal into frequency bands for drivers.
+active_crossover: Electronic crossover before amplification.
+passive_crossover: Component-based crossover after amplification.
+crossover_frequency: Frequency at which signal division occurs.
+first_order_crossover: Filter slope of 6 dB per octave.
+second_order_crossover: Filter slope of 12 dB per octave.
+fourth_order_crossover: Filter slope of 24 dB per octave.
+linkwitz_riley: Crossover topology yielding flat summed response.
+butterworth_alignment: Maximally flat magnitude response crossover.
+lobing: Interference pattern from multiple drivers radiating same frequencies.
+time_alignment: Adjustment to synchronize driver acoustic centers.
+acoustic_center: Effective origin point of sound radiation.
+polar_response: SPL variation as function of angle.
+beamwidth: Angular width of main radiation lobe.
+directivity_index: Measure of concentration of sound energy.
+anechoic_measurement: Loudspeaker measurement without reflections.
+gated_measurement: Time-windowed measurement reducing room influence.
+nearfield_measurement: Close-proximity measurement isolating driver output.
+farfield_measurement: Measurement taken at distance approximating plane wave.
+impedance_measurement: Measurement of electrical impedance versus frequency.
+waterfall_plot: Time-decay spectral representation showing resonances.
+cumulative_spectral_decay: 3D plot of frequency decay over time.
+multitone_test: Measurement using multiple simultaneous sine waves.
+step_response: System response to step input revealing phase behavior.
+square_wave_response: Response to square wave indicating bandwidth and phase accuracy.
+group_delay_speaker: Frequency-dependent time delay in loudspeaker output.
+power_handling: Maximum electrical power speaker can tolerate.
+crest_factor_music: Ratio between peak and RMS levels typical in music.
+maximum_spl: Highest sound pressure level achievable without excessive distortion.
+reference_level: Standardized playback level, often 85 dB SPL for mixing.
+monitor_speaker: Loudspeaker designed for accurate studio monitoring.
+nearfield_monitor: Studio monitor intended for close listening distance.
+midfield_monitor: Monitor intended for moderate listening distance.
+main_monitor: Large studio loudspeaker for high SPL and extended range.
+active_speaker: Loudspeaker with built-in amplification.
+powered_speaker: Speaker with integrated amplifier.
+bi_amping: Using separate amplifiers for different drivers.
+tri_amping: Using three amplifiers for separate frequency bands.
+line_array: Vertical array of drivers controlling vertical dispersion.
+constant_directivity: Controlled dispersion over frequency range.
+wave_launch: Initial propagation of sound from driver surface.
+preamplifier: Low-level signal amplifier preceding power amplification.
+integrated_amplifier: Device combining preamplifier and power amplifier stages.
+headphone_amplifier: Amplifier optimized for low-impedance and low-power headphone loads.
+class_b: Amplifier topology where each output device conducts for half the waveform cycle.
+class_g: Amplifier topology using multiple supply rails for improved efficiency.
+class_h: Amplifier topology with dynamically modulated supply rails.
+tube_amplifier: Amplifier using vacuum tubes as active devices.
+solid_state_amplifier: Amplifier using semiconductor devices such as transistors.
+op_amp: Integrated operational amplifier used in signal conditioning.
+feedback: Portion of output signal returned to input to control gain and distortion.
+common_mode_rejection: Ability to reject signals common to both inputs.
+power_supply_rejection: Ability to reject power supply ripple.
+bias_current: Quiescent current through output devices.
+thermal_runaway: Self-reinforcing temperature increase in semiconductor devices.
+current_limiting: Protection mechanism restricting output current.
+balanced_connection: Signal transmission using differential pair to reduce noise.
+unbalanced_connection: Signal transmission using single conductor and ground.
+xlr_connector: Three-pin connector used for balanced audio.
+trs_connector: Tip-ring-sleeve connector supporting balanced or stereo signals.
+rca_connector: Unbalanced audio connector common in consumer equipment.
+line_level: Standard signal voltage used in professional or consumer systems.
+mic_level: Low-level output from microphone requiring preamplification.
+instrument_level: Signal level typical of electric guitars and similar devices.
+dac_architecture: Internal design method used in digital-to-analog conversion.
+r2r_ladder: DAC architecture using resistor ladder network for conversion.
+delta_sigma_dac: DAC using oversampling and noise shaping.
+multibit_dac: DAC using multiple bits per sample in conversion stage.
+ladder_dac: Synonym for R-2R ladder DAC.
+current_output_dac: DAC producing current requiring I/V conversion.
+voltage_output_dac: DAC producing voltage directly.
+i_v_stage: Current-to-voltage conversion stage after current-output DAC.
+clock_oscillator: Circuit generating timing reference for digital systems.
+tcxo: Temperature-compensated crystal oscillator.
+ocxo: Oven-controlled crystal oscillator for high stability.
+femto_clock: Marketing term for ultra-low phase noise clock.
+phase_noise: Short-term frequency instability of oscillator.
+spdif: Sony/Philips digital interface format for digital audio.
+aes_ebu: Professional balanced digital audio interface standard.
+i2s: Serial digital audio bus used internally between ICs.
+usb_audio_class: USB standard defining digital audio transmission.
+open_back_headphone: Headphone with vented rear allowing airflow and wider stage.
+closed_back_headphone: Headphone with sealed enclosure for isolation.
+planar_headphone: Headphone using planar magnetic driver.
+electrostatic_headphone: Headphone using electrostatic driver principle.
+dynamic_headphone: Headphone using moving-coil driver.
+headphone_impedance: Nominal electrical impedance of headphone driver.
+headphone_sensitivity: SPL output per milliwatt or per volt input.
+impedance_matching: Matching source and load impedances for optimal transfer.
+output_power: Electrical power delivered to load.
+crossfeed: Processing blending stereo channels to simulate speaker listening.
+microphone: Transducer converting acoustic energy into electrical signal.
+dynamic_microphone: Microphone using moving coil and magnetic induction.
+condenser_microphone: Microphone using capacitor principle requiring polarization voltage.
+electret_microphone: Condenser microphone with permanent charge.
+ribbon_microphone: Microphone using thin metal ribbon in magnetic field.
+polar_pattern: Directional sensitivity pattern of microphone.
+cardioid: Polar pattern most sensitive to front, rejecting rear.
+omnidirectional: Equal sensitivity in all directions.
+figure_eight: Bidirectional polar pattern.
+supercardioid: Tighter front focus with small rear lobe.
+hypercardioid: Narrower front pickup with larger rear lobe.
+proximity_effect: Bass boost occurring when directional mic is close to source.
+phantom_power: 48 V supply powering condenser microphones.
+self_noise: Inherent noise generated by microphone electronics.
+maximum_spl_mic: Highest SPL microphone can handle without distortion.
+dynamic_microphone_range: Range between noise floor and maximum SPL.
+di_box: Direct injection box converting instrument level to balanced mic level.
+reamp_box: Device converting line level to instrument level.
+signal_chain: Ordered sequence of audio devices in recording or playback.
+patchbay: Centralized panel for routing audio signals.
+outboard_gear: External hardware processors.
+monitor_controller: Device controlling speaker selection and level.
+audio_interface: Device combining ADC, DAC, and I/O for computer audio.
+driver_software: Software enabling communication between hardware and OS.
+asio: Low-latency audio driver protocol for Windows.
+core_audio: macOS native low-latency audio framework.
+latency_compensation: DAW alignment of recorded tracks to offset latency.
+direct_monitoring: Monitoring input signal without DAW round-trip delay.
+daw: Digital audio workstation software used for recording, editing, mixing, and mastering.
+multitrack_recording: Recording method capturing separate sources on individual tracks.
+track: Individual recorded audio channel in a DAW session.
+bus: Signal routing path combining multiple tracks.
+aux_send: Routing from track to effects processor or bus.
+return_channel: Channel receiving processed signal from effects.
+insert: Processor placed directly in signal path of a track.
+render: Exporting processed audio to file.
+bounce: Consolidation of tracks or mix to new audio file.
+stem: Submix of grouped elements such as drums or vocals.
+gain_reduction: Amount of level reduction applied by compressor.
+sidechain_compression: Compression triggered by external signal.
+ducking: Level reduction of one signal triggered by another.
+deesser: Processor reducing sibilance via frequency-selective compression.
+multiband_compressor: Compressor dividing signal into multiple frequency bands.
+stereo_width: Perceived spatial spread of stereo signal.
+mono_compatibility: Mix quality when summed to mono.
+phase_correlation: Measure of similarity between stereo channels.
+pan_law: Level compensation applied when panning signal.
+clipping_indicator: Visual warning of signal exceeding threshold.
+metering: Visual representation of signal levels.
+vu_meter: Volume unit meter approximating perceived loudness.
+peak_meter: Meter displaying instantaneous peak levels.
+true_peak_meter: Meter estimating inter-sample peaks.
+integrated_loudness: Average loudness over entire program.
+short_term_loudness: Loudness measured over short window.
+momentary_loudness: Very short window loudness measurement.
+brickwall_limiter: Limiter with very fast attack preventing overs.
+mix_bus: Main stereo output bus.
+headroom_margin: Reserved dynamic space before final limiting.
+dither_noise: Noise intentionally added during bit depth reduction.
+fade_in: Gradual level increase at beginning of audio.
+fade_out: Gradual level decrease at end of audio.
+crossfade: Overlapping fade between two audio clips.
+time_alignment_plugin: Tool aligning signals in time domain.
+phase_rotation: Adjustment of waveform phase without altering magnitude response.
+allpass_filter: Filter altering phase without affecting amplitude.
+transient_shaper: Processor modifying attack and sustain characteristics.
+harmonic_saturation: Controlled addition of harmonic distortion.
+analog_emulation: DSP modeling nonlinear characteristics of analog hardware.
+convolution_reverb: Reverb created using impulse response of real space.
+algorithmic_reverb: Reverb generated using delay networks and filters.
+impulse_library: Collection of measured impulse responses.
+eq_correction_curve: Frequency adjustments applied for flat response.
+target_curve: Desired frequency response profile.
+house_curve: Preferred low-frequency elevated target response.
+room_eq_wizard: Measurement software for acoustic analysis.
+measurement_microphone: Calibrated microphone for accurate acoustic measurement.
+smaart: Professional acoustic measurement software platform.
+dirac_live: Digital room correction system using mixed-phase filters.
+audyssey: Automated room correction system in AV receivers.
+trinnov: Advanced room optimization and spatial processing system.
+miniDSP: DSP hardware platform for custom audio processing.
+fir_room_correction: Room correction using finite impulse response filters.
+iir_room_correction: Room correction using infinite impulse response filters.
+delay_alignment: Adjusting delay for coherent summation.
+polarity: Orientation of signal waveform relative to reference.
+polarity_inversion: Reversal of waveform sign.
+sub_crossover: Frequency dividing main speakers and subwoofer.
+room_gain: Natural low-frequency reinforcement from room boundaries.
+absorber_panel: Material reducing reflected sound energy.
+diffuser_panel: Surface scattering reflections.
+first_reflection_point: Location where primary reflection reaches listener.
+monitor_calibration: Level matching of monitoring system.
+reference_spl: Standardized playback sound pressure level.
+pink_noise_calibration: Use of pink noise for system level setting.
+rta: Real-time analyzer displaying spectral content.
+fft_size: Number of samples used in frequency analysis.
+window_function: Mathematical tapering applied before FFT.
+hann_window: Common FFT window reducing spectral leakage.
+spectral_leakage: Spread of spectral energy due to finite windowing.
+noise_floor_measurement: Determination of system residual noise.
+dynamic_processing: Manipulation of signal amplitude over time.
+mix_translation: Consistency of mix across playback systems.
+architectural_acoustics: Design of buildings to control sound transmission and room response.
+sound_isolation: Prevention of sound transmission between spaces.
+soundproofing: Practical implementation of isolation techniques.
+transmission_loss: Reduction of sound level through a barrier.
+sound_transmission_class: Single-number rating of wall isolation performance.
+impact_insulation_class: Rating of floor-ceiling impact sound isolation.
+mass_law: Principle that transmission loss increases with surface mass.
+decoupling: Mechanical separation reducing vibration transfer.
+resilient_channel: Metal strip isolating drywall from studs.
+double_stud_wall: Wall construction with separated framing members.
+floating_floor: Floor isolated from structural slab to reduce vibration.
+room_within_room: Studio design fully decoupled from outer structure.
+flanking_path: Indirect sound transmission route bypassing barrier.
+acoustic_caulk: Sealant preventing air gaps in isolation construction.
+air_gap: Separation improving isolation performance.
+leaf: Individual layer in multi-layer wall construction.
+coincidence_frequency: Frequency where panel resonates efficiently.
+panel_resonance: Resonant vibration of wall surface.
+critical_frequency: Frequency where sound transmission increases.
+damping_compound: Viscoelastic layer reducing vibration.
+green_glue: Commercial viscoelastic damping compound.
+acoustic_door_seal: Perimeter seal preventing leakage.
+studio_live_room: Recording room designed for natural acoustics.
+control_room: Monitoring room for mixing and production.
+reflection_free_zone_design: Layout minimizing early reflections at mix position.
+rfz_geometry: Angled surfaces preventing flutter echoes.
+bass_trapping_corner: Low-frequency absorber placed in room corners.
+helmholtz_absorber: Tuned cavity absorber targeting narrow band.
+quadratic_residue_diffuser: Diffuser using number theory sequence.
+skyline_diffuser: Two-dimensional quadratic diffuser.
+flutter_echo_path: Parallel reflective surfaces causing rapid echo.
+room_ratio: Proportions of room dimensions influencing modal distribution.
+golden_ratio_room: Room proportion minimizing coincident modes.
+modal_distribution: Frequency spacing of room resonances.
+room_mode_calculation: Analytical determination of modal frequencies.
+sabine_equation: Formula estimating reverberation time.
+eyring_equation: Reverberation model accounting for higher absorption.
+absorption_coefficient_weighted: Frequency-averaged absorption rating.
+noise_criteria_curve: Standard evaluating background noise in buildings.
+hvac_noise: Noise generated by ventilation systems.
+vibration_isolation_mount: Device reducing structure-borne vibration.
+floating_slab: Concrete slab isolated from building structure.
+structure_borne_noise: Sound transmitted through solid materials.
+airborne_noise: Sound transmitted through air.
+impact_noise: Sound generated by physical impact.
+iso_room: Highly isolated recording environment.
+anechoic_wedge: Sound-absorbing wedge used in anechoic chambers.
+reverberation_chamber: Room designed for diffuse sound field measurements.
+semi_anechoic: Chamber with reflective floor and absorptive walls.
+faraday_cage: Shielded enclosure blocking electromagnetic interference.
+semiconductor: Material with controllable electrical conductivity.
+p_n_junction: Boundary between p-type and n-type semiconductor.
+bjt: Bipolar junction transistor used in amplifier circuits.
+mosfet: Metal-oxide semiconductor field-effect transistor.
+jfets: Junction field-effect transistors.
+thermal_runaway_bjt: Temperature-induced current increase in BJT devices.
+gate_capacitance: Capacitance between MOSFET gate and channel.
+transconductance: Ratio of output current change to input voltage change.
+output_stage: Final amplifier stage driving load.
+push_pull: Amplifier configuration using complementary devices.
+single_ended: Amplifier using one active device for full waveform.
+biasing_network: Circuit establishing operating point.
+class_a_bias: Bias condition maintaining continuous conduction.
+crossover_distortion: Distortion at zero crossing in class B stages.
+dead_band: Region where neither output device conducts.
+slew_induced_distortion: Distortion caused by insufficient slew rate.
+thermal_tracking: Compensation for temperature-dependent bias changes.
+heat_sink: Metal structure dissipating thermal energy.
+junction_temperature: Temperature at semiconductor junction.
+safe_operating_area: Operating limits preventing device failure.
+live_sound: Real-time sound reinforcement for audiences in venues.
+pa_system: Public address system amplifying sound for large areas.
+front_of_house: Mixing position serving audience sound.
+monitor_mix: Dedicated mix for performers on stage.
+stage_monitor: Loudspeaker facing performers for foldback.
+in_ear_monitor: Personal monitoring system using earphones.
+sidefill: Stage loudspeaker covering lateral areas.
+delay_tower: Secondary speaker array delayed for distant audience.
+line_array_curvature: Vertical angling controlling coverage.
+array_processing: DSP optimizing line array performance.
+system_tuning: Adjustment of system EQ and delay for venue.
+pink_noise_tuning: Using pink noise for system equalization.
+transfer_function_measurement: Comparing input and output signals for tuning.
+smaart_transfer: Measurement technique using dual-channel FFT.
+gain_before_feedback: Maximum usable gain before acoustic feedback.
+notch_filter_feedback: Narrow filter suppressing feedback frequency.
+ring_out: Process of identifying and attenuating feedback frequencies.
+wireless_microphone: RF-based microphone transmission system.
+uhf_band: Ultra high frequency spectrum used for wireless mics.
+vhf_band: Very high frequency spectrum for wireless systems.
+frequency_coordination: Allocation of non-interfering RF channels.
+diversity_receiver: Receiver using multiple antennas to reduce dropouts.
+true_diversity: Receiver selecting stronger of two independent signals.
+antenna_distribution: Shared antenna system for multiple receivers.
+rf_intermodulation: Unwanted mixing of RF signals producing interference.
+compander: Compression-expansion system reducing RF noise.
+bodypack_transmitter: Wearable wireless microphone transmitter.
+handheld_transmitter: Integrated microphone and RF transmitter.
+squelch: Threshold muting receiver without valid signal.
+rf_scan: Spectrum analysis for selecting clear frequencies.
+power_amplifier_class_td: High-efficiency switching amplifier variant.
+switch_mode_power_supply: High-frequency regulated power conversion.
+pfc: Power factor correction circuit improving efficiency.
+soft_start: Gradual power-up limiting inrush current.
+inrush_current: Initial surge current when powering equipment.
+ground_reference: Electrical reference potential in system.
+common_mode_choke: Inductor reducing common mode noise.
+ferrite_bead: Passive component suppressing high-frequency interference.
+emi_filter: Input filter reducing conducted emissions.
+shield_current: Current flowing through cable shielding.
+star_quad_cable: Four-conductor balanced cable reducing magnetic interference.
+ground_lift: Disconnection of signal ground to prevent hum.
+isolation_transformer: Transformer isolating ground paths.
+balanced_power: Power distribution reducing ground noise.
+rfi_susceptibility: Sensitivity to radio-frequency interference.
+thermal_protection: Circuit disabling device during overheating.
+current_sense_resistor: Resistor measuring output current.
+clip_limiter: Circuit preventing amplifier clipping.
+crowbar_protection: Circuit shorting output to prevent overvoltage damage.
+servo_bias: Circuit stabilizing amplifier operating point.
+finite_element_analysis: Numerical modeling of acoustic structures.
+boundary_element_method: Computational modeling of acoustic radiation.
+klippel_measurement: System analyzing nonlinear loudspeaker behavior.
+laser_displacement_sensor: Device measuring cone excursion.
+nonlinear_parameter: Parameter varying with signal amplitude.
+bl_nonlinearity: Variation of motor force factor with excursion.
+suspension_creep: Time-dependent change in compliance.
+thermal_modulation: Variation of parameters due to heating.
+power_compression_curve: SPL reduction versus input power graph.
+directivity_balloon: 3D visualization of radiation pattern.
+polar_map: Two-dimensional representation of angular response.
+beam_steering: Electronic adjustment of array directionality.
+array_shading: Amplitude tapering across drivers to control sidelobes.
+lobing_pattern: Interference pattern from spaced drivers.
+constant_beamwidth_transducer: Design maintaining consistent dispersion.
+cardioid_subwoofer: Subwoofer array reducing rear radiation.
+end_fire_array: Subwoofer arrangement achieving directional bass.
+gradient_array: Directional subwoofer configuration using phase cancellation.
+automotive_acoustics: Study of sound reproduction and noise behavior inside vehicle cabins.
+cabin_gain: Low-frequency reinforcement caused by confined vehicle interior volume.
+road_noise: Broadband noise generated by tire-road interaction.
+engine_order: Harmonic frequency component related to engine rotational speed.
+active_noise_cancellation: Real-time generation of anti-phase signal to reduce noise.
+feedforward_anc: Noise cancellation using reference microphone before disturbance reaches listener.
+feedback_anc: Noise cancellation using error microphone near listener.
+hybrid_anc: Combination of feedforward and feedback active noise control.
+engine_sound_enhancement: Synthetic augmentation of engine sound through speakers.
+in_cabin_equalization: DSP compensation for vehicle acoustic response.
+seat_to_seat_variation: Acoustic differences between passenger positions.
+headrest_speaker: Speaker integrated into vehicle seat headrest.
+sound_zoning: Independent audio zones within vehicle cabin.
+psychoacoustic_sound_design: Engineering vehicle sounds for desired perception.
+gaming_audio_engine: Software framework handling real-time game audio rendering.
+middleware_audio: Third-party audio engine integrated into game development.
+fmod: Game audio middleware platform.
+wwise: Interactive audio middleware platform.
+spatial_audio_engine: System rendering positional sound in 3D space.
+hrtf_rendering: Spatialization technique using head-related transfer functions.
+binaural_rendering: Simulation of 3D audio over headphones.
+ambisonics: Full-sphere surround sound encoding technique.
+first_order_ambisonics: Ambisonics using four channels (WXYZ).
+higher_order_ambisonics: Ambisonics using additional spherical harmonic components.
+soundfield_microphone: Microphone capturing ambisonic signals.
+object_tracking_audio: Dynamic positioning of sound objects in 3D space.
+occlusion_modeling: Simulation of sound obstruction by objects.
+reverb_zone: Spatially defined reverberation region in game engines.
+doppler_processing: Real-time simulation of Doppler shift in interactive audio.
+virtual_reality_audio: Spatial sound reproduction for immersive VR systems.
+augmented_reality_audio: Spatial audio blended with real environment.
+latency_threshold_vr: Maximum acceptable delay for immersive realism.
+head_tracking: Real-time detection of listener head orientation.
+motion_to_photon_latency: Total delay from movement to rendered output.
+perceptual_codec_testing: Evaluation of codec transparency via listening tests.
+mushra: Multiple stimulus test with hidden reference and anchors.
+triangle_test: Listening test identifying odd sample among three.
+paired_comparison: Direct comparison between two stimuli.
+double_blind_protocol: Test where neither participant nor administrator knows conditions.
+listener_training: Familiarization process for critical listening tests.
+discrimination_test: Evaluation measuring detectability of differences.
+confidence_interval: Range of values likely containing true result.
+analysis_of_variance: Statistical method comparing multiple groups.
+p_value: Probability of observing results assuming null hypothesis.
+subjective_rating_scale: Numerical scale used in listening tests.
+likert_scale: Ordered response scale measuring agreement or perception.
+inter_rater_reliability: Consistency among different listeners.
+intra_rater_reliability: Consistency within same listener over time.
+randomization: Random ordering of test stimuli to avoid bias.
+counterbalancing: Balanced presentation order reducing systematic bias.
+masking_noise_test: Controlled noise used to evaluate detectability.
+threshold_tracking: Adaptive procedure determining detection threshold.
+staircase_method: Psychophysical method adjusting stimulus based on responses.
+just_noticeable_level_difference: Minimum perceptible level change.
+critical_listening: Focused evaluation of subtle audio differences.
+listener_bias: Systematic preference unrelated to actual sound differences.
+calibrated_monitoring: Ensuring consistent playback SPL during tests.
+reference_headphone: Neutral headphone used in evaluation.
+controlled_environment: Acoustically treated room for testing.
+room_variability: Differences in acoustic response across spaces.
+translation_test: Evaluating mix performance across playback systems.
+state_space_model: Mathematical representation of dynamic systems using state variables.
+control_loop: Feedback system regulating output to match reference.
+pid_controller: Proportional-integral-derivative control algorithm.
+stability_margin: Measure of system tolerance before oscillation.
+phase_margin: Difference between phase response and instability point.
+gain_margin: Gain increase required to reach instability.
+pole: Root of system denominator determining stability.
+zero: Root of system numerator shaping frequency response.
+butterworth_alignment_order: Order of filter determining slope steepness.
+chebyshev_ripple: Passband or stopband ripple characteristic of Chebyshev filters.
+elliptic_ripple: Ripple in both passband and stopband for steep filters.
+filter_order: Number of reactive elements determining slope.
+biquad_filter: Second-order IIR filter building block.
+direct_form_i: Implementation structure for digital filters.
+direct_form_ii: Memory-efficient digital filter structure.
+cascade_topology: Series connection of filter sections.
+parallel_topology: Parallel connection of filter sections.
+windowed_sinc_filter: FIR filter using truncated sinc function.
+kaiser_window: Adjustable window function for FIR design.
+blackman_window: Window function reducing spectral leakage.
+spectral_inversion: Technique for designing complementary filters.
+polyphase_filter: Efficient structure for resampling.
+fractional_delay_filter: Filter implementing sub-sample delay.
+adaptive_filter: Filter adjusting coefficients based on input signal.
+lms_algorithm: Least mean squares adaptive filter algorithm.
+nlms_algorithm: Normalized least mean squares algorithm.
+beamforming: Spatial filtering using multiple microphones.
+delay_and_sum: Basic beamforming algorithm summing delayed signals.
+minimum_variance_distortionless_response: Beamformer minimizing output power while preserving target.
+spatial_filter: Filter operating on spatial signal distribution.
+microphone_array: Multiple microphones arranged for spatial processing.
+array_aperture: Physical spacing influencing directional resolution.
+steering_vector: Phase alignment vector for beamforming.
+null_steering: Beamformer technique suppressing unwanted direction.
+echo_cancellation: Removal of acoustic echo in communication systems.
+acoustic_echo_canceller: Adaptive filter removing loudspeaker feedback.
+noise_suppression: Reduction of background noise in speech systems.
+voice_activity_detection: Detection of speech presence.
+speech_codec: Algorithm compressing speech for transmission.
+voip: Voice over IP communication technology.
+g711: Pulse code modulation telephony codec.
+g722: Wideband speech codec.
+g729: Low-bitrate speech compression codec.
+amr: Adaptive multi-rate speech codec.
+evs: Enhanced voice services codec for LTE.
+packet_loss_concealment: Reconstruction of missing audio packets.
+jitter_compensation: Mitigation of packet timing variation.
+machine_learning_audio: Use of neural networks for audio tasks.
+deep_neural_network: Multi-layer model learning complex mappings.
+convolutional_neural_network: Neural network using convolution layers.
+recurrent_neural_network: Network modeling temporal dependencies.
+transformer_model: Attention-based neural architecture.
+speech_recognition: Automatic conversion of speech to text.
+text_to_speech: Synthetic generation of speech from text.
+source_separation: Isolation of individual sources from mixture.
+autoencoder: Neural network learning compressed representations.
+generative_model: Model generating new audio content.
+diffusion_model_audio: Probabilistic generative audio model.
+embedding_vector: Numerical representation of audio features.
+feature_extraction: Derivation of descriptive signal parameters.
+mfcc: Mel-frequency cepstral coefficients used in speech analysis.
+spectral_flux: Measure of spectral change over time.
+zero_crossing_rate: Rate of waveform sign changes.
+harmonic_percussive_separation: Algorithm separating tonal and transient components.
+pitch_detection: Estimation of fundamental frequency.
+cepstrum: Inverse Fourier transform of log magnitude spectrum.
+formant: Resonant frequency of vocal tract.
+prosody: Rhythm and intonation characteristics of speech.
+hearing_aid: Wearable device amplifying sound for hearing impairment.
+wide_dynamic_range_compression: Multiband compression for hearing aids.
+feedback_cancellation: Suppression of acoustic feedback in hearing aids.
+directional_microphone: Hearing aid mic reducing off-axis noise.
+noise_classifier: Algorithm categorizing acoustic environments.
+frequency_lowering: Shifting high frequencies into audible range.
+telecoil: Inductive pickup in hearing aids.
+real_ear_measurement: Verification of hearing aid output in ear canal.
+gain_prescription: Formula defining hearing aid amplification targets.
+nalm_formula: National Acoustic Laboratories hearing aid fitting method.
+dsl_formula: Desired Sensation Level fitting prescription.
+network_audio: Transmission of digital audio over packet-based IP networks.
+audio_over_ip: Real-time digital audio transport using Ethernet infrastructure.
+dante: Proprietary audio-over-IP protocol developed by Audinate.
+aes67: Open interoperability standard for high-performance audio over IP.
+ravennna: Open audio-over-IP technology emphasizing low latency.
+avb: Audio Video Bridging Ethernet standard for time-sensitive networking.
+tsn: Time Sensitive Networking extension for deterministic Ethernet.
+rtp: Real-time Transport Protocol used for streaming media.
+udp: Connectionless transport protocol commonly used for real-time audio.
+tcp: Reliable transport protocol with retransmission control.
+jitter_buffer: Buffer compensating for packet arrival time variation.
+packet_loss: Loss of data packets during transmission.
+latency_variation: Variation in delay due to network congestion.
+ptp: Precision Time Protocol used for network clock synchronization.
+clock_domain: Set of devices synchronized to same timing reference.
+multicast: Network transmission to multiple endpoints simultaneously.
+unicast: One-to-one network transmission.
+bandwidth_allocation: Reservation of network capacity for audio streams.
+quality_of_service: Network prioritization of time-sensitive data.
+buffer_underflow: Condition where playback buffer empties.
+buffer_overflow: Condition where incoming data exceeds buffer.
+streaming_protocol: Standard governing media data transport.
+http_live_streaming: Adaptive bitrate streaming protocol.
+adaptive_bitrate: Streaming adjusting quality based on bandwidth.
+cdn: Content delivery network distributing streaming content.
+lossless_streaming: Streaming delivering bit-perfect compressed audio.
+lossy_streaming: Streaming using perceptual compression.
+fpga: Field Programmable Gate Array used for custom DSP processing.
+asic: Application Specific Integrated Circuit designed for dedicated tasks.
+soc: System on chip integrating CPU, DSP, and peripherals.
+dsp_chip: Processor optimized for real-time signal processing.
+instruction_latency: Delay between instruction issue and completion.
+throughput: Amount of data processed per unit time.
+fixed_latency: Deterministic processing delay.
+parallel_processing: Simultaneous execution of multiple computations.
+vector_processing: Processing multiple data elements per instruction.
+quantization_step: Smallest representable amplitude increment.
+least_significant_bit: Smallest binary digit in digital representation.
+most_significant_bit: Highest value bit in binary number.
+bit_depth_effective: Real-world usable dynamic range of converter.
+effective_number_of_bits: ENOB derived from measured SINAD.
+noise_power_ratio: Ratio of signal power to noise power.
+variance: Statistical measure of signal dispersion.
+standard_deviation: Square root of variance.
+mean_square: Average of squared values.
+crest_factor_distribution: Statistical distribution of peak-to-average ratios.
+probability_density_function: Statistical representation of amplitude likelihood.
+histogram: Graphical representation of value distribution.
+correlation_coefficient: Measure of linear relationship between signals.
+auto_correlation: Correlation of signal with delayed version of itself.
+cross_correlation: Similarity measure between two signals over time shifts.
+convolution: Mathematical operation combining two signals.
+deconvolution: Extraction of system response from measured output.
+laplace_transform: Integral transform used in system analysis.
+z_transform: Discrete-time equivalent of Laplace transform.
+transfer_characteristic: Functional mapping between input and output.
+minimum_phase_system: System whose phase response is uniquely determined by magnitude.
+non_minimum_phase: System with additional phase shift beyond minimum requirement.
+bark_band: Frequency band corresponding to auditory critical band.
+loudness_model_zwicker: Psychoacoustic loudness prediction model.
+moore_glassberg_model: Auditory filter-based loudness model.
+perceptual_entropy: Measure of perceptual coding redundancy.
+masking_threshold: Level below which signal becomes inaudible due to masking.
+temporal_envelope: Slow amplitude variation of signal.
+fine_structure: Rapid oscillatory component of waveform.
+auditory_brainstem_response: Neural measurement of auditory pathway function.
+otoacoustic_emission: Sound emitted by cochlea measurable in ear canal.
+tympanometry: Test measuring middle ear function.
+pure_tone_audiometry: Hearing threshold test using sine tones.
+speech_audiometry: Hearing assessment using speech stimuli.
+impedance_audiometry: Measurement of middle ear acoustic impedance.
+calibration_tone: Reference tone used for level calibration.
+reference_microphone: Calibrated microphone for measurement accuracy.
+sound_level_meter: Instrument measuring sound pressure level.
+class_1_meter: High-precision sound level meter meeting IEC standards.
+class_2_meter: General-purpose sound level meter.
+dosimeter: Personal device measuring noise exposure over time.
+exposure_limit: Maximum allowable occupational noise level.
+hearing_protection: Devices reducing sound exposure.
+attenuation_rating: Reduction in SPL provided by protection device.
+analog_recording: Audio recording method storing continuous electrical signal variations.
+magnetic_tape: Recording medium storing audio as magnetized particles.
+open_reel_tape: Professional tape format using large reels.
+cassette_tape: Compact magnetic tape format for consumer recording.
+tape_speed: Linear speed of tape past playback head, affecting bandwidth and noise.
+ips: Inches per second, unit describing tape speed.
+wow: Low-frequency speed variation in analog playback.
+flutter: High-frequency speed variation in analog playback.
+wow_and_flutter: Combined measure of speed instability.
+tape_saturation: Nonlinear magnetic compression producing harmonic distortion.
+bias_signal: High-frequency signal applied during tape recording to linearize response.
+noise_reduction: System reducing tape hiss via companding.
+dolby_a: Professional multiband tape noise reduction system.
+dolby_b: Consumer tape noise reduction system.
+dolby_c: Enhanced consumer noise reduction format.
+dbx_noise_reduction: Broadband companding noise reduction system.
+head_gap: Physical spacing in tape head influencing high-frequency response.
+azimuth: Alignment angle of tape head relative to tape path.
+print_through: Pre-echo caused by magnetic imprinting between tape layers.
+tape_hiss: Broadband noise inherent in magnetic tape.
+analog_console: Hardware mixing desk for analog signal routing.
+summing_bus: Internal mixing path combining multiple channels.
+transformer_coupling: Signal coupling using magnetic transformer isolation.
+discrete_circuit: Circuit built from individual components rather than integrated IC.
+opamp_based_console: Console using integrated operational amplifiers.
+tube_preamp: Microphone preamplifier using vacuum tubes.
+solid_state_preamp: Microphone preamplifier using semiconductor devices.
+vinyl_record: Analog disc storing audio as modulated groove.
+lp_record: Long-playing vinyl record typically rotating at 33⅓ rpm.
+single_record: Vinyl disc typically rotating at 45 rpm.
+rpm: Revolutions per minute describing platter speed.
+phono_cartridge: Transducer converting groove motion into electrical signal.
+moving_magnet: Cartridge type with magnet attached to cantilever.
+moving_coil: Cartridge type with coil attached to cantilever.
+high_output_mc: Moving coil cartridge with elevated output voltage.
+low_output_mc: Moving coil cartridge requiring high-gain phono stage.
+stylus: Needle tracing vinyl groove.
+elliptical_stylus: Stylus shape with improved groove tracing.
+microline_stylus: Advanced stylus shape for precise groove contact.
+cantilever: Arm connecting stylus to generator.
+tracking_force: Downward force applied to stylus.
+anti_skate: Compensation for inward tracking force during playback.
+compliance: Flexibility of cartridge suspension.
+resonance_frequency_tonearm: Mechanical resonance between cartridge and tonearm.
+tonearm: Mechanical arm supporting phono cartridge.
+effective_mass: Mass parameter influencing tonearm resonance.
+phono_stage: Preamplifier equalizing and amplifying cartridge signal.
+riaa_equalization: Standardized equalization curve for vinyl playback.
+subsonic_filter: High-pass filter removing very low-frequency rumble.
+rumble: Low-frequency noise from turntable bearings or motor.
+idler_drive: Turntable drive system using idler wheel.
+belt_drive: Turntable drive system using elastic belt.
+direct_drive: Turntable drive system using motor directly coupled to platter.
+platter: Rotating disc supporting vinyl record.
+bearing_noise: Mechanical noise from turntable bearing.
+vinyl_surface_noise: Crackle and noise from record wear or contamination.
+inner_groove_distortion: Distortion occurring near center of vinyl due to reduced linear speed.
+lacquer_cutting: Process of engraving master disc for vinyl pressing.
+cutting_lathe: Machine used to engrave vinyl master.
+preview_head: Tape head providing signal for groove spacing control.
+groove_modulation: Physical variation of vinyl groove representing audio.
+stereo_groove: 45/45 degree groove encoding left and right channels.
+mono_groove: Single lateral modulation groove.
+shellac_record: Early brittle disc format predating vinyl.
+78rpm_record: Early high-speed shellac disc format.
+acetate_disc: Temporary lacquer disc for test pressings.
+analog_delay: Echo created using magnetic tape loop.
+plate_reverb: Reverb generated by vibrating metal plate.
+spring_reverb: Reverb created using suspended springs.
+mechanical_filter: Physical acoustic filtering structure.
+analog_synthesizer: Instrument generating sound via analog circuits.
+voltage_controlled_oscillator: Oscillator controlled by input voltage.
+voltage_controlled_filter: Analog filter controlled by voltage.
+voltage_controlled_amplifier: Amplifier controlled by voltage envelope.
+modular_synth: Synthesizer composed of patchable modules.
+patch_cable: Cable connecting modules in analog system.
+control_voltage: Analog signal controlling parameter in synthesizer.
+broadcast_chain: The complete audio signal path from studio production to transmission and reception.
+program_loudness: Average perceived loudness of broadcast content over time.
+loudness_range: Statistical measure of program dynamic variation.
+true_peak_limiting: Limiting process accounting for inter-sample peaks in digital broadcast.
+dialnorm: Dolby metadata parameter controlling dialogue playback level normalization.
+downmix: Reduction of multichannel audio to fewer channels.
+upmix: Algorithmic expansion of stereo content into multichannel format.
+fold_down: Combining multiple channels into stereo or mono.
+metadata_flag: Embedded control information within digital stream.
+ebu_r128_target: -23 LUFS broadcast loudness standard in Europe.
+atsc_a85: North American loudness regulation standard.
+calm_act: US regulation requiring consistent broadcast loudness.
+cinema_reference_level: Standardized theatrical playback level around 85 dB SPL.
+x_curve: Cinema equalization curve compensating for large-room acoustics.
+dolby_cinema_processor: Hardware managing multichannel cinema audio playback.
+immersive_audio: Three-dimensional object-based sound reproduction format.
+object_based_audio: Audio format encoding sound objects with positional metadata.
+channel_based_audio: Audio format assigning signals to fixed speaker channels.
+bed_channel: Fixed multichannel foundation in object-based systems.
+lfe_channel: Low-frequency effects channel in surround formats.
+bass_management: Redirecting low frequencies to subwoofer.
+timecode: Synchronization signal aligning audio and video.
+word_length: Number of bits representing digital audio sample.
+jitter_attenuation: Reduction of clock timing variation.
+linear_power_supply: Power supply using transformer and linear regulation.
+switching_power_supply: High-frequency regulated power supply.
+regulator: Circuit maintaining constant output voltage.
+low_dropout_regulator: Voltage regulator operating with small input-output difference.
+star_grounding: Grounding topology minimizing ground loops.
+ground_loop: Unwanted hum caused by multiple ground paths.
+shielding: Physical barrier reducing electromagnetic interference.
+emi: Electromagnetic interference affecting signal integrity.
+rfi: Radio-frequency interference in audio circuits.
+twisted_pair: Cable design reducing electromagnetic pickup.
+coaxial_cable: Shielded cable with central conductor.
+balanced_line: Differential signal transmission reducing noise.
+unbalanced_line: Single-ended signal transmission referenced to ground.
+common_mode_noise: Noise present equally on both signal conductors.
+differential_signal: Signal represented by voltage difference between two conductors.
+skin_effect: Increased AC resistance at high frequencies due to current distribution.
+capacitance_per_meter: Cable capacitance affecting high-frequency rolloff.
+inductance_per_meter: Cable inductance affecting impedance behavior.
+characteristic_impedance: Transmission line impedance determined by geometry.
+reflection_coefficient: Ratio of reflected to incident wave amplitude.
+termination: Load matching transmission line impedance.
+bode_plot: Graph of magnitude and phase versus frequency.
+network_analyzer: Instrument measuring frequency response and impedance.
+oscilloscope: Instrument displaying voltage versus time.
+audio_analyzer: Precision instrument measuring distortion and noise.
+apx555: High-performance audio analyzer by Audio Precision.
+distortion_residual: Remaining signal after fundamental removed.
+null_test: Comparison technique subtracting signals to reveal differences.
+loopback_test: Routing output to input to evaluate device performance.
+dynamic_headroom_test: Measurement of short-term peak capability.
+burst_test: Short-duration high-level signal measurement.
+multitone_stimulus: Complex signal approximating musical content.
+crest_factor_test: Evaluation of peak-to-average capability.
+phase_noise_plot: Graph showing oscillator phase instability.
+clock_phase_jitter: Short-term deviation in clock timing edges.
+bit_error_rate: Ratio of erroneous bits to total transmitted bits.
+checksum: Error detection code for digital transmission.
+redundancy: Additional data enabling error correction.
+latency_budget: Total allowable delay in signal path.
+synchronization: Alignment of multiple digital systems to common clock.
+genlock: Video synchronization reference used in broadcast.
+wordclock_distribution: Distribution of master clock to multiple devices.
+sample_accuracy: Exact alignment of digital audio samples.
+bit_transparency: Transmission preserving identical bitstream.
+zero_latency_monitoring: Direct hardware monitoring bypassing processing delay.
+gain_calibration: Adjustment to known reference level.
+reference_voltage: Defined voltage used for calibration.
+linearity_error: Deviation from ideal linear response.
+hysteresis: Dependence of system output on previous state.
+transfer_function: Mathematical relationship between input and output.
+noise_bandwidth: Effective bandwidth over which noise is measured.
+weighted_noise: Noise measurement using perceptual weighting curve.
+unweighted_noise: Flat frequency noise measurement.
+crest_factor_limit: Maximum achievable peak-to-average ratio.
+dc_blocking: Removal of DC offset from signal path.
+servo_circuit: Control loop correcting offset or drift.
+thermal_drift: Performance variation due to temperature change.
+component_tolerance: Allowable deviation from nominal value.
+matched_pair: Components selected for tight parameter matching.
+precision_resistor: Resistor with low tolerance and temperature coefficient.
+dielectric_absorption: Capacitor memory effect causing signal error.
+electrolytic_capacitor: Polarized capacitor with high capacitance per volume.
+film_capacitor: Capacitor type with stable characteristics.
+torroidal_transformer: Donut-shaped transformer with low magnetic leakage.
+magnetic_hysteresis: Lagging magnetization effect in core materials.
+eddy_current: Induced currents causing energy loss in conductors.
+shielded_transformer: Transformer designed to reduce EMI.
+neutral: Frequency response approximating a perceptually flat target curve without intentional coloration.
+colored: Frequency response deviating from neutral target producing tonal emphasis.
+transparent: Low distortion and minimal deviation from input signal characteristics.
+analytical: Perceived emphasis on detail often associated with elevated upper midrange or treble energy.
+musical: Subjective descriptor often implying smooth frequency response and low harsh distortion.
+clinical: Perceived highly revealing sound sometimes associated with minimal harmonic coloration.
+warm: Emphasis in low-mid frequencies with slightly attenuated upper treble.
+bright: Elevated energy in upper midrange or treble frequencies.
+dark: Reduced high-frequency energy relative to midrange.
+laid_back: Slight recession in presence region reducing forwardness.
+forward: Elevated presence region increasing vocal immediacy.
+airy: Extended high-frequency response above 10 kHz with low distortion.
+holographic: Strong spatial imaging often associated with consistent off-axis response and low phase distortion.
+three_dimensional: Perception of depth and spatial layering.
+wide_soundstage: Strong lateral imaging often influenced by channel separation and HRTF cues.
+deep_soundstage: Perception of front-to-back layering influenced by reverberation cues.
+separation: Ability to distinguish individual elements in mix.
+microdynamics: Reproduction of small amplitude variations.
+macrodynamics: Reproduction of large-scale dynamic swings.
+impact: Perceived transient force often correlated with low-frequency headroom and low compression.
+speed: Subjective impression of fast transient response and low overhang.
+decay_control: Ability of system to avoid prolonged resonance.
+ringing: Time-domain oscillation following transient stimulus.
+overhang: Excessive low-frequency decay due to high Q resonance.
+tight_bass: Controlled low-frequency response with low group delay.
+loose_bass: Bass reproduction with excessive decay or resonance.
+texture: Perceived fine structure often influenced by distortion spectrum.
+grainy: Audible low-level distortion or jitter artifacts.
+smooth: Lack of sharp peaks in frequency response and low distortion.
+harsh: Excess high-frequency distortion or resonant peaks.
+etched: Emphasized high-frequency transients producing artificial clarity.
+veiled: Attenuation in upper midrange reducing perceived clarity.
+congested: Perceptual masking due to limited dynamic or spectral separation.
+compressed_sound: Reduced dynamic range often due to heavy limiting.
+open_sound: Perceived lack of enclosure coloration and extended high frequencies.
+boxy: Resonant coloration in lower midrange often from enclosure modes.
+nasal: Narrowband emphasis near 1 kHz to 2 kHz.
+shouty: Excessive energy in upper midrange around 2 kHz to 4 kHz.
+sibilant: Overemphasis around 5 kHz to 8 kHz accentuating consonants.
+fatiguing: Listening discomfort often linked to distortion or treble peaks.
+headroom_reserve: Available unclipped output capacity beyond listening level.
+distortion_floor: Baseline distortion level at low signal amplitudes.
+thdn: Total harmonic distortion plus noise.
+imd_smpte: Intermodulation distortion measurement using SMPTE standard tones.
+imd_ccif: Intermodulation distortion measurement using closely spaced high frequencies.
+multitone_distortion: Distortion measurement using complex tone sets approximating music.
+noise_density: Spectral distribution of noise energy.
+phase_linearity: Consistency of phase response across frequency band.
+channel_matching: Consistency between left and right channels.
+channel_separation: Degree of isolation between stereo channels.
+crosstalk: Unwanted signal leakage between channels.
+impulse_symmetry: Symmetry of impulse response indicating phase behavior.
+headphone_target_curve: Frequency response target compensating for ear coupling.
+ear_gain: Natural amplification from pinna and ear canal.
+coupler: Measurement fixture simulating human ear acoustic impedance.
+iec_60318_4: Standard specifying ear simulator dimensions for headphone testing.
+hats: Head and torso simulator used for acoustic measurement.
+ear_simulator: Device replicating acoustic impedance of human ear.
+seal_integrity: Proper acoustic sealing affecting low-frequency response.
+clamp_force: Mechanical pressure applied by headphone on head.
+pad_compliance: Cushion material flexibility affecting seal and response.
+driver_matching: Consistency between left and right headphone drivers.
+planar_transient_response: Rapid diaphragm response due to low moving mass.
+electrostatic_bias: High voltage used to polarize electrostatic diaphragm.
+amplifier_stability: Ability of amplifier to remain oscillation-free with reactive loads.
+load_reactivity: Frequency-dependent impedance variation of speaker.
+output_current_capacity: Maximum current amplifier can supply.
+voltage_swing: Maximum peak voltage output capability.
+thermal_noise: Noise generated by random motion of electrons.
+johnson_noise: Thermal noise proportional to resistance and temperature.
+shot_noise: Noise caused by discrete charge carriers.
+flicker_noise: Low-frequency noise also called 1 over f noise.
+jitter_spectrum: Frequency distribution of clock timing variation.
+phase_modulation_distortion: Distortion due to phase instability.
+fiio: Chinese manufacturer focused on portable DACs, DAPs, and headphone amplifiers. Famous products include K11 DAC/amp and M11 DAP series. Generally strong value-for-money with good measured performance and competitive feature sets.
+topping: Chinese measurement-oriented DAC and amplifier brand. Notable products include DX3 Pro+, D90, and A90. Known for extremely high SINAD and low distortion at competitive pricing; targets value-to-midrange segments.
+smsl: Chinese desktop DAC and amplifier company. Famous for SU-9 and DO200 DACs. Strong objective performance per dollar; typically value-oriented with compact designs.
+fosi_audio: Budget-focused Chinese amplifier and DAC maker. Known for V3 amplifier and K5 Pro DAC/amp. Strong entry-level value, though not always state-of-the-art in measurements.
+loxjie: Sister brand to SMSL offering compact DACs and amplifiers like the D30. Value-focused with generally solid measurement performance.
+aune: Chinese midrange DAC and amplifier brand. Famous for X1s and S6 series. Targets midrange audiophile segment with balanced performance and moderate pricing.
+hifiman: Chinese planar headphone specialist. Notable models include Arya, HE1000, and Sundara. Targets mid-to-high-end with strong technical performance, though quality control has historically varied.
+moondrop: Chinese IEM manufacturer focused on target-curve tuning. Famous for Blessing 2 and Aria. Strong value with measurement-aligned tuning philosophy.
+7hz: Chinese IEM brand known for Timeless planar IEM. Focused on technical performance at competitive pricing.
+truthear: Sub-brand of Moondrop offering budget IEMs like Zero. Very strong value positioning with neutral tuning targets.
+kiwi_ears: Emerging Chinese IEM brand known for Orchestra Lite. Midrange positioning with good measured tuning consistency.
+seeaudio: Chinese IEM manufacturer producing models like Yume. Mid-tier pricing with tuning influenced by measurement-driven approaches.
+tanchjim: Chinese IEM company known for Oxygen and Hana. Strong value and relatively neutral frequency response targets.
+dunu: Chinese IEM brand producing SA6 and Zen series. Mid-to-high tier with strong build quality and mature engineering.
+kz_acoustics: Budget Chinese IEM maker. Known for extremely low-cost multi-driver IEMs. Strong value but variable tuning accuracy.
+cca: Sister brand to KZ offering similar budget multi-driver IEMs. Very price competitive with mixed tuning consistency.
+xduoo: Chinese DAC, amp, and DAP manufacturer. Known for XD05 series. Value-oriented with decent measured performance.
+shanling: Chinese DAP and DAC brand. Famous for M6 and M8 players. Midrange to high-end positioning with polished industrial design.
+cayin: Chinese brand blending tube and solid-state designs. Known for HA-6A tube amp and N8 DAP. Targets mid-to-high-end audiophile market.
+ibasso: Chinese DAP and DAC maker. Famous for DX320 and DC series dongles. Strong technical performance in portable segment.
+questyle: Chinese company specializing in current-mode amplification. Known for CMA Twelve. Mid-to-high tier pricing with strong measured performance.
+matrix_audio: Chinese high-end DAC/streamer manufacturer. Known for X-Sabre series. Targets upper midrange and high-end markets.
+gustard: Chinese DAC and clock manufacturer. Known for X26 Pro and R26. Measurement-focused with midrange pricing.
+sabaj: Chinese electronics brand producing DACs and amps like A20 series. Value to midrange segment.
+audio-gd: Chinese manufacturer of discrete DACs and amps. Known for R2R designs. Targets enthusiast segment; performance varies by model.
+singxer: Chinese digital interface and DDC specialist. Known for SU-6. Focuses on digital transport accuracy.
+denafrips: Chinese R2R DAC brand. Known for Ares II and Pontus. Mid-to-high-end pricing; emphasizes ladder architecture.
+soncoz: Chinese DAC brand producing SGD1. Strong measurement performance at competitive price.
+holo_audio: Chinese high-end R2R DAC manufacturer. Known for Spring and May DACs. Upper-tier pricing targeting audiophile enthusiasts.
+s.m.s.l: Chinese DAC/amp brand known for compact high-performance units like SU-9 and SH-9. Value-driven with strong measured specs.
+aoshida: Chinese distributor/brand associated with Chi-Fi electronics. Budget positioning.
+kinki_studio: Chinese amplifier manufacturer. Known for EX-M1 integrated amplifier. Targets mid-to-high-end market.
+tonewinner: Chinese amplifier brand known for AD-86D. Budget-to-midrange focus.
+wiim: Chinese streaming device manufacturer. Famous for WiiM Mini and WiiM Pro. Exceptional value in network streaming category.
+bluesound: Canadian streaming brand. Known for Node series. Midrange pricing with strong software ecosystem.
+cambridge_audio: UK brand known for CXA series amplifiers and DacMagic. Midrange with solid engineering foundation.
+nad: Canadian brand known for C 368 and Masters series. Strong value-to-performance ratio historically.
+rotel: Japanese-owned brand producing integrated amplifiers like RA-1572. Midrange with solid engineering consistency.
+marantz: Japanese brand known for PM8006 and Model 30. Midrange to high-end, slightly warm tuning philosophy.
+denon: Japanese electronics company producing PMA amplifiers and AVRs. Value-to-midrange mainstream segment.
+yamaha: Japanese manufacturer producing A-S series amplifiers and studio monitors. Strong engineering heritage across price tiers.
+onkyo: Japanese AVR brand. Mainstream value-focused home theater segment.
+pioneer: Japanese electronics brand known for AVRs and DJ equipment. Value-to-midrange.
+jbl: American loudspeaker brand under Harman. Wide range from consumer to professional; generally strong engineering.
+revel: Harman-owned loudspeaker brand focused on research-driven design. Mid-to-high-end with strong measurement correlation to preference.
+kef: British speaker brand known for Uni-Q drivers. Midrange to high-end positioning with controlled directivity focus.
+bowers_wilkins: British loudspeaker manufacturer. Premium positioning with strong brand recognition.
+elac: German loudspeaker brand producing Debut and Uni-Fi series. Strong value in entry and mid-tier segments.
+dynaudio: Danish speaker brand targeting mid-to-high-end with refined driver engineering.
+focal: French manufacturer producing speakers and headphones. Premium pricing with strong technical performance.
+atc: British studio monitor manufacturer. High-end professional monitoring focus.
+genelec: Finnish active monitor manufacturer. Strong research-backed design with high reliability.
+kali_audio: US monitor brand targeting value studio segment with strong measured performance.
+adam_audio: German monitor brand known for ribbon tweeters. Midrange to high-end.
+barefoot_sound: US high-end studio monitor manufacturer. Premium pricing and strong technical reputation.
+pmc: UK transmission line speaker manufacturer. Professional and high-end home markets.
+meyer_sound: US professional reinforcement manufacturer. High-end live and installed sound.
+l_acoustics: French line array manufacturer. Professional touring market leader.
+d_and_b: German professional sound reinforcement brand. High-end professional segment.
+bose: US consumer audio brand. Strong marketing presence; engineering varies by product category.
+bang_and_olufsen: Danish premium consumer brand. High design focus and luxury pricing.
+sonos: US wireless multiroom brand. Strong ecosystem and mainstream premium positioning.
+apple: US technology company producing AirPods and HomePod. Mainstream premium with strong integration ecosystem.
+sony: Japanese electronics giant. Wide product range from consumer to studio.
+sennheiser: German headphone and microphone manufacturer. Broad range from entry to professional high-end.
+beyerdynamic: German headphone and mic manufacturer. Midrange to professional segments.
+akg: Austrian-origin brand under Harman. Known for microphones and headphones; midrange professional.
+shure: US microphone and IEM brand. Strong professional reputation.
+audio_technica: Japanese brand producing headphones and microphones. Broad market coverage.
+grado: US headphone brand known for distinctive open-back designs. Niche high-end market.
+audeze: US planar magnetic headphone manufacturer. High-end pricing with strong technical performance.
+meze_audio: Romanian headphone brand targeting mid-to-high-end aesthetic segment.
+harman_kardon: Harman consumer brand. Premium mainstream positioning.
+svs: US subwoofer and speaker manufacturer. Strong value in subwoofer performance.
+rel_acoustics: UK subwoofer specialist. Mid-to-high-end pricing.
+klipsch: US horn loudspeaker manufacturer. Broad consumer pricing tiers.
+monitor_audio: UK loudspeaker brand. Midrange to high-end.
+paradigm: Canadian loudspeaker manufacturer. Strong value-to-performance historically.
+anthem: Canadian electronics brand known for room correction (ARC). Midrange to high-end.
+arcam: UK electronics brand under Harman. Mid-to-high-end positioning.
+luxman: Japanese high-end electronics manufacturer. Premium audiophile segment.
+accuphase: Japanese ultra high-end amplifier brand. Luxury pricing tier.
+mcintosh: US high-end electronics manufacturer known for distinctive aesthetics. Premium segment.
+pass_labs: US boutique amplifier manufacturer. High-end market focus.
+benchmark_media: US measurement-focused electronics company. Known for DAC3 and AHB2; extremely strong objective performance.
+schiit_audio: US value-focused electronics brand. Broad range from entry to mid-tier; performance varies by product line.
+ifi_audio: UK/Chinese hybrid brand producing portable and desktop DAC/amps. Value to midrange focus.
+blon: Chinese IEM brand known for BL-03. Extremely strong budget value with warm tuning; limited technical refinement but high price-performance ratio.
+tin_hifi: Chinese IEM brand known for T2 and P1. Focus on neutral tuning at affordable pricing; strong value in entry segment.
+qkz: Ultra-budget Chinese IEM manufacturer. Very low pricing with variable tuning quality.
+tripowin: Chinese cable and IEM brand. Known for Zonie cables and collaboration IEMs; value-oriented.
+thieaudio: Chinese brand producing Monarch and Clairvoyance IEMs. Mid-to-high-end segment with strong technical performance and multi-driver designs.
+fearless_audio: Chinese IEM manufacturer targeting mid-to-high-end. Known for custom-style designs and detailed tuning.
+unique_melody: Chinese custom IEM specialist. Premium pricing with strong technical performance in multi-BA designs.
+hidizs: Chinese portable DAC and DAP brand. Known for S9 Pro dongle; strong value and competitive measurements.
+tempotec: Chinese DAC brand known for Sonata series. Budget USB DACs with respectable measured performance.
+ikko: Chinese IEM brand known for OH10. Mid-tier positioning with distinct tuning and aesthetic focus.
+letshuoer: Chinese IEM maker (formerly Shuoer). Known for S12 planar IEM; strong technical performance at midrange price.
+juzear: Emerging Chinese IEM brand. Budget-to-midrange positioning.
+simgot: Chinese IEM manufacturer known for EA500 and EM6L. Strong measurement-aligned tuning at accessible prices.
+kefine: Chinese budget IEM brand. Value-focused with tuning influenced by target curves.
+epz: Chinese IEM company producing budget planar models. Value-driven.
+audiosense: Chinese IEM brand offering multi-BA models. Budget-to-midrange positioning.
+nicehck: Chinese cable and accessory brand. Primarily value aftermarket accessories.
+trn: Chinese IEM manufacturer. Budget-focused with frequent model releases; tuning consistency varies.
+cayin_n3pro: DAP line by Cayin featuring tube output stage. Mid-to-high-end niche targeting coloration enthusiasts.
+luxsin: Emerging Chinese electronics brand producing integrated amps. Mid-tier aspirational positioning.
+audiolab: British brand producing 6000A amplifier and M-DAC. Midrange with solid engineering heritage.
+primare: Swedish electronics manufacturer. Premium mid-to-high-end positioning.
+hegel: Norwegian amplifier brand known for H190 and H390. Upper midrange to high-end with strong engineering emphasis.
+naim: UK electronics manufacturer. Premium pricing with distinctive design philosophy.
+rega: UK turntable and electronics brand. Midrange to high-end with analog focus.
+pro_ject: Austrian turntable manufacturer. Strong value in analog segment.
+music_hall: US turntable brand manufacturing in Asia. Budget-to-midrange.
+clearaudio: German high-end analog manufacturer. Luxury pricing tier.
+technics: Japanese brand under Panasonic. Known for SL-1200 turntables; strong engineering heritage.
+ortofon: Danish cartridge manufacturer. Wide range from budget to premium moving coil.
+sumiko: Cartridge brand covering entry to high-end.
+goldring: UK cartridge manufacturer. Midrange positioning.
+audio_research: US high-end tube electronics manufacturer. Luxury segment.
+rogue_audio: US tube and hybrid amplifier manufacturer. Mid-to-high-end.
+vinnie_rossi: Boutique US electronics brand. Premium pricing.
+ps_audio: US electronics manufacturer. Upper midrange to high-end.
+emotiva: US value-oriented amplifier and processor brand. Strong price-performance ratio.
+outlaw_audio: US internet-direct amplifier brand. Value-focused.
+monoprice: US budget electronics brand. Very strong price-performance in entry segment.
+definitive_technology: US speaker brand under Sound United. Mainstream to midrange.
+polk_audio: US mainstream loudspeaker brand. Broad pricing tiers.
+infinity: Harman speaker brand. Value-to-midrange.
+jamo: Danish-origin brand under Klipsch. Value-oriented.
+wharfedale: UK loudspeaker manufacturer. Strong value in entry and midrange.
+mission: UK speaker brand. Budget-to-midrange.
+q_acoustics: UK loudspeaker manufacturer. Strong value and consistent engineering.
+triangle: French loudspeaker brand. Mid-to-high-end positioning.
+spendor: UK high-end speaker brand. Premium segment.
+harbeth: UK high-end speaker manufacturer. Premium pricing; BBC heritage.
+magico: US ultra-high-end loudspeaker brand. Luxury tier pricing.
+wilson_audio: US ultra-high-end speaker brand. Luxury pricing.
+estelon: Estonian high-end loudspeaker manufacturer. Premium design-focused.
+gryphon: Danish ultra-high-end electronics manufacturer. Luxury pricing.
+devialet: French amplifier and active speaker brand. Premium pricing with hybrid amplification technology.
+bang_olufsen: Danish design-focused premium brand. Luxury consumer positioning.
+sonus_faber: Italian loudspeaker manufacturer. High-end aesthetic-driven segment.
+presonus: US pro audio brand. Budget-to-midrange studio segment.
+focusrite: UK pro audio interface brand. Entry-to-midrange.
+rme: German pro interface brand. High reliability and strong measurement performance.
+universal_audio: US interface and DSP brand. Mid-to-high-end studio focus.
+apogee: US interface brand targeting professional segment.
+motu: US pro audio interface brand. Strong value in midrange segment.
+behringer: German-origin value pro audio brand. Very aggressive pricing.
+midas: Pro audio console brand under Music Tribe. Professional live segment.
+allen_and_heath: UK pro audio console manufacturer. Professional segment.
+soundcraft: UK console brand. Professional midrange.
+yamaha_pro: Professional division of Yamaha. Broad coverage from mixers to speakers.
+roland: Japanese music electronics manufacturer. Broad instrument and audio interface market.
+korg: Japanese music electronics brand. Synthesizers and audio tools.
+akai_professional: US music production hardware brand. Entry-to-midrange.
+native_instruments: German software and hardware audio brand. Production ecosystem focus.
+arturia: French synth and audio interface manufacturer. Midrange creative segment.
+teenage_engineering: Swedish boutique electronic instrument brand. Premium aesthetic-driven niche.
+neumann: German professional microphone and monitor manufacturer. Premium professional tier.
+suca_audio: Chinese budget amplifier brand producing compact Class D desktop amps; strongly value-oriented with basic feature sets.
+doukaudio: Chinese low-cost DAC and tube buffer manufacturer; entry-level pricing with variable measurement consistency.
+nobsound: Chinese brand producing tube buffers and small amplifiers; extremely budget focused with hobbyist appeal.
+aiyima: Chinese Class D amplifier manufacturer known for TPA3255-based amps; very strong value segment with good power per dollar.
+sabaj_audio: Chinese DAC and amplifier brand targeting budget-to-midrange with solid measured performance.
+fx_audio: Chinese compact DAC and headphone amplifier maker; budget-focused with basic functionality.
+xindak: Chinese electronics manufacturer producing amplifiers and DACs; midrange aspirational positioning.
+line_magnetic: Chinese high-end tube amplifier brand; premium pricing with classic vacuum tube topology focus.
+yaqin: Chinese tube amplifier manufacturer; budget-to-midrange analog enthusiast market.
+muzishare: Chinese tube amplifier brand; value-oriented with traditional tube aesthetics.
+raphaelite: Chinese boutique tube amplifier brand; midrange to high-end positioning.
+opera_consonance: Chinese manufacturer producing tube and hybrid amplifiers; mid-to-high-tier pricing.
+auris_audio: Serbian boutique tube headphone amplifier manufacturer; premium enthusiast segment.
+sparkos_labs: US discrete op-amp manufacturer; performance-focused upgrade components for DIY and pro use.
+burson_audio: Australian amplifier and DAC brand; mid-to-high-end enthusiast positioning.
+xi_audio: Chinese boutique headphone amplifier manufacturer; premium niche positioning.
+enzo_audio: Emerging Chinese high-end amplifier boutique; aspirational positioning.
+gato_audio: Danish electronics and speaker manufacturer; premium modern aesthetic positioning.
+vitus_audio: Danish ultra-high-end electronics brand; luxury pricing tier.
+dan_dagostino: US ultra-high-end amplifier brand; flagship luxury positioning.
+constellation_audio: US ultra-high-end electronics brand; premium reference-level pricing.
+audio_note: UK high-end electronics and speaker manufacturer; premium niche audiophile positioning.
+leben: Japanese boutique tube amplifier manufacturer; high-end enthusiast segment.
+shindo_laboratory: Japanese ultra-boutique tube electronics brand; luxury analog focus.
+luxsin_audio: Chinese electronics brand targeting integrated amplifier segment; mid-tier pricing.
+perlisten: US loudspeaker brand with THX Dominus certification; high-performance home theater positioning.
+svsound: Chinese budget speaker manufacturer; value-focused domestic segment.
+audiovector: Danish loudspeaker brand; mid-to-high-end segment.
+piega: Swiss aluminum loudspeaker manufacturer; premium positioning.
+aerial_acoustics: US loudspeaker manufacturer; high-end niche segment.
+legacy_audio: US speaker brand; mid-to-high-end enthusiast positioning.
+tekton_design: US loudspeaker manufacturer; value-to-midrange with unconventional multi-driver arrays.
+osd_audio: US value loudspeaker and install brand; budget segment.
+fluance: Canadian consumer speaker and turntable brand; strong value positioning.
+edifier: Chinese active speaker and headphone brand; excellent value in powered desktop segment.
+swans_hivi: Chinese loudspeaker and driver manufacturer; midrange enthusiast positioning.
+dayton_audio: US value DIY and speaker brand under Parts Express; strong price-performance for hobbyists.
+parts_express: US retailer and brand owner of DIY audio components; value-oriented.
+eminence: US professional loudspeaker driver manufacturer; pro reinforcement focus.
+bms: German high-performance pro driver manufacturer; premium professional segment.
+rcf: Italian professional loudspeaker brand; touring and install focus.
+turbosound: UK pro audio brand under Music Tribe; value-to-midrange live sound.
+mackie: US pro audio brand; budget-to-midrange live and studio equipment.
+qsc: US professional audio amplifier and speaker manufacturer; strong engineering reputation.
+crown: US amplifier brand under Harman; professional reinforcement segment.
+labgruppen: Swedish high-power pro amplifier brand; premium touring segment.
+powersoft: Italian Class D amplifier manufacturer; high-efficiency professional segment.
+martin_audio: UK professional loudspeaker brand; premium touring systems.
+funktion_one: UK boutique pro loudspeaker manufacturer; high-end club and event segment.
+void_acoustics: UK high-design pro loudspeaker manufacturer; premium niche market.
+dynaudio_professional: Studio monitor division of Dynaudio; professional monitoring focus.
+focal_professional: Studio monitor division of Focal; mid-to-high-end studio market.
+krk: US studio monitor brand; entry-to-midrange production segment.
+jbl_professional: Professional division of JBL; wide-range studio and reinforcement coverage.
+avantone: US studio monitor and microphone brand; budget-to-midrange production.
+heritage_audio: Spanish boutique studio electronics brand; premium analog recreation focus.
+dangerous_music: US mastering hardware brand; high-end professional niche.
+manley_labs: US high-end tube studio electronics manufacturer; premium pricing.
+ssl: UK Solid State Logic; professional console and processing brand.
+neve: UK studio console and preamp manufacturer; premium professional heritage.
+api_audio: US studio console and preamp manufacturer; professional segment.
+warm_audio: US budget analog gear recreation brand; value-focused.
+black_lion_audio: US modification and boutique electronics brand; midrange enthusiast niche.
+antelope_audio: Bulgarian interface and clock manufacturer; mid-to-high-end professional segment.
+apollon_audio: European custom amplifier builder using Hypex and Purifi modules; mid-to-high-end value engineering focus.
+hypex: Dutch amplifier module manufacturer; high-performance OEM Class D modules.
+purifi_audio: Danish amplifier and driver technology company; cutting-edge low-distortion engineering.
+minidsp: Hong Kong DSP hardware manufacturer; extremely strong value for measurement-driven room correction.
+dirac: Swedish digital room correction company; algorithm licensing to manufacturers.
+lyngdorf: Danish electronics brand integrating room correction; mid-to-high-end positioning.
+stormaudio: French immersive audio processor brand; premium home theater market.
+emotiva_pro: Professional division of Emotiva; value-focused install segment.
+tonewinner_pro: Chinese amplifier brand targeting theater and pro markets; value-to-midrange.
+svsound_pro: Chinese export pro loudspeaker manufacturer; budget-focused.
+acoustic_energy: UK loudspeaker brand; midrange consumer market.
+monitor_acoustics: UK loudspeaker manufacturer; budget-to-midrange.
+psb_speakers: Canadian loudspeaker manufacturer; research-driven design heritage.
+revel_performa: Harman loudspeaker line; mid-to-high-end with strong measurement correlation.
+definitive_technology_pro: Install-focused loudspeaker brand; mainstream segment.
+audiopro: Swedish powered speaker brand; midrange consumer positioning.
+kanto_audio: Canadian powered speaker brand; strong value in desktop segment.
+audirect: Chinese portable DAC manufacturer known for Beam series; value-focused with competitive measurements in dongle DAC category.
+colorfly: Chinese DAP and DAC manufacturer; midrange enthusiast positioning with distinctive industrial design.
+luxury_precision: Chinese boutique DAP maker; premium portable segment with strong build quality.
+qdc: Chinese professional IEM manufacturer; mid-to-high-end custom and universal monitors.
+soft_ears: Chinese IEM brand targeting high-end tuning accuracy; enthusiast market.
+rose_technics: Chinese headphone and IEM manufacturer; midrange positioning with aesthetic focus.
+soranik: Chinese custom IEM manufacturer; mid-to-high-end niche segment.
+bgvp: Chinese IEM brand; budget-to-midrange multi-driver offerings.
+moondrop_variations: Sub-line under Moondrop; mid-to-high-end IEM segment.
+kbear: Chinese budget IEM manufacturer; very strong value orientation.
+venture_electronics: Chinese earbud and IEM brand; ultra-budget enthusiast segment.
+fiil: Chinese consumer headphone brand; mainstream wireless market.
+oneodio: Chinese budget headphone manufacturer; entry-level consumer positioning.
+anker_soundcore: Chinese consumer audio brand; strong value in wireless headphones and speakers.
+tribit: Chinese portable speaker and headphone brand; value-focused mainstream segment.
+soundpeats: Chinese true wireless earbud manufacturer; aggressive value pricing.
+baseus_audio: Chinese consumer electronics brand; entry-level wireless audio segment.
+oppo_digital: Former high-end disc player and headphone manufacturer; premium segment legacy brand.
+fiio_jadeaudio: FiiO sub-brand focusing on affordable IEMs; strong value orientation.
+tempo_tec_pro: Higher-tier Tempotec line; midrange DAC positioning.
+audiosciencereview_recommended_brands: Informal grouping of brands frequently achieving strong measured performance; value-to-midrange positioning.
+zidoo: Chinese media player manufacturer; midrange home theater segment.
+egreat: Chinese media streaming hardware brand; budget-to-midrange.
+magnetar: Chinese high-end universal disc player manufacturer; premium home theater segment.
+skyworth_audio: Chinese electronics conglomerate audio division; mainstream consumer focus.
+hisense_audio: Chinese TV and soundbar manufacturer; value-to-mainstream.
+tcl_audio: Chinese TV brand expanding into soundbars; value positioning.
+sky_audio: Chinese domestic loudspeaker manufacturer; budget tier.
+micca: US-based value loudspeaker brand manufacturing in Asia; strong budget segment.
+neumi: Value loudspeaker brand; entry-level segment.
+rockville_audio: Budget pro and car audio brand; aggressive pricing.
+pyle_audio: Budget consumer and pro audio brand; entry-level mass market.
+boss_audio: Car audio manufacturer; budget-focused segment.
+jl_audio: US car audio and subwoofer brand; premium automotive segment.
+rockford_fosgate: US car audio brand; midrange to premium automotive focus.
+alpine_audio: Japanese car audio manufacturer; midrange positioning.
+focal_car_audio: Automotive division of Focal; premium segment.
+audison: Italian car audio brand; premium automotive positioning.
+morel: Israeli loudspeaker and car audio driver manufacturer; mid-to-high-end positioning.
+scan_speak: Danish high-end loudspeaker driver manufacturer; premium DIY and OEM segment.
+seas: Norwegian loudspeaker driver manufacturer; mid-to-high-end OEM focus.
+sb_acoustics: Indonesian driver manufacturer with Danish engineering; strong value-to-performance ratio.
+peerless_by_tymphany: Danish-origin driver manufacturer; wide OEM usage.
+tymphany: Global OEM driver manufacturer; midrange industrial focus.
+visaton: German loudspeaker driver manufacturer; DIY and OEM segment.
+accuton: German ceramic driver manufacturer; ultra-high-end loudspeaker market.
+audax: French loudspeaker driver manufacturer; OEM focus.
+wavecor: Danish driver manufacturer; midrange enthusiast segment.
+purifi_drivers: Danish ultra-low distortion driver manufacturer; high-end enthusiast market.
+hivi_swans: Chinese driver and speaker manufacturer; midrange positioning.
+eversolo: Chinese streaming DAC manufacturer under Zidoo; strong value-to-feature ratio.
+volumio: Italian streaming software and hardware brand; midrange enthusiast positioning.
+lumin: Hong Kong high-end streamer manufacturer; premium pricing.
+aurender: Korean high-end music server brand; premium segment.
+innuos: Portuguese high-end server brand; premium pricing tier.
+cocktail_audio: Korean digital audio server manufacturer; midrange enthusiast.
+melco: Japanese audiophile music server brand; premium pricing.
+aavik_acoustics: Danish ultra-high-end electronics brand; luxury segment.
+simaudio_moon: Canadian electronics brand; mid-to-high-end positioning.
+bryston: Canadian amplifier manufacturer; professional-grade reliability with premium pricing.
+parasound: US amplifier brand; strong value-to-performance in midrange segment.
+rotel_michi: High-end Rotel line; premium positioning.
+cambridge_edge: Premium Cambridge Audio line; upper midrange.
+naim_statement: Ultra-high-end flagship electronics line; luxury pricing.
+esoteric: Japanese high-end electronics manufacturer; premium audiophile segment.
+teac_reference: Japanese electronics brand; midrange enthusiast segment.
+marantz_reference: Premium Marantz line; high-end consumer positioning.
+denon_avc_series: Premium Denon AVR line; upper midrange home theater.
+anthem_str: Canadian high-end integrated amplifier with room correction; premium positioning.
+arcam_radias: High-end Arcam electronics; premium pricing.
+lyngdorf_tda: Digital amplifier line with room correction; high-end positioning.
+devialet_expert: Hybrid amplification system; premium segment.
+krell: US high-end amplifier manufacturer; luxury audiophile positioning.
+mark_levinson: Harman-owned high-end electronics brand; premium pricing.
+boulder_amplifiers: US ultra-high-end electronics brand; luxury segment.
+gryphon_audio: Danish ultra-high-end electronics brand; flagship luxury positioning.
+vitus_signature: Danish premium electronics line; high-end audiophile.
+audio_physic: German loudspeaker manufacturer; premium segment.
+vienna_acoustics: Austrian loudspeaker manufacturer; mid-to-high-end.
+gauder_akustik: German high-end loudspeaker brand; premium segment.
+raidho: Danish high-end ribbon loudspeaker brand; luxury pricing.
+mbl: German ultra-high-end omnidirectional loudspeaker manufacturer; luxury positioning.
