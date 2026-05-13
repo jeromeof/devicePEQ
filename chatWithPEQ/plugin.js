@@ -117,6 +117,20 @@ async function initializeChatWithPEQPlugin(context) {
     return hits.slice(0, 6);
   }
 
+  function phonesForBrand(brandQuery) {
+    if (!_phoneDetails) return [];
+    const low = brandQuery.toLowerCase().trim();
+    const results = [];
+    const seen = new Set();
+    for (const [, entry] of _phoneDetails) {
+      if (!seen.has(entry.fullName) && entry.brand.toLowerCase().includes(low)) {
+        seen.add(entry.fullName);
+        results.push({ name: entry.fullName, description: entry.description || null, price: entry.price || null });
+      }
+    }
+    return results;
+  }
+
   function phoneDetailsLookup(name) {
     if (!_phoneDetails) return null;
     const low = name.toLowerCase().trim();
@@ -137,25 +151,25 @@ async function initializeChatWithPEQPlugin(context) {
   function searchPhones(query) {
     if (!context.searchPhones) { console.error(`${CTX} searchPhones not in context`); return []; }
     const results = context.searchPhones(query);
-    console.log(`${CTX} searchPhones("${query}") → ${results.length} results`, results.map(r => r.name));
+    console.warn(`${CTX} searchPhones("${query}") → ${results.length} results`, results.map(r => r.name));
     return results;
   }
   function showPhone(fileName) {
     if (!context.showPhone) { console.error(`${CTX} showPhone not in context`); return { error: 'showPhone not available' }; }
     const r = context.showPhone(fileName);
-    console.log(`${CTX} showPhone("${fileName}") →`, r);
+    console.warn(`${CTX} showPhone("${fileName}") →`, r);
     return r;
   }
   function searchTargets(query) {
     if (!context.searchTargets) { console.error(`${CTX} searchTargets not in context`); return []; }
     const results = context.searchTargets(query);
-    console.log(`${CTX} searchTargets("${query}") → ${results.length} results`, results.map(r => r.name));
+    console.warn(`${CTX} searchTargets("${query}") → ${results.length} results`, results.map(r => r.name));
     return results;
   }
   function showTarget(fileName) {
     if (!context.showTarget) { console.error(`${CTX} showTarget not in context`); return { error: 'showTarget not available' }; }
     const r = context.showTarget(fileName);
-    console.log(`${CTX} showTarget("${fileName}") →`, r);
+    console.warn(`${CTX} showTarget("${fileName}") →`, r);
     return r;
   }
   function setEQModel(phoneName) {
@@ -251,6 +265,13 @@ async function initializeChatWithPEQPlugin(context) {
 
     // If glossary returned nothing meaningful, try phone book
     if (glossaryMatches.length === 0) {
+      // Check for brand/manufacturer match first (e.g. "what does Aune make?")
+      const brandPhones = phonesForBrand(query);
+      if (brandPhones.length > 0) {
+        return { found: true, type: 'brand', brand: query, phones: brandPhones };
+      }
+
+      // Fall back to individual phone lookup
       const phone = phoneDetailsLookup(query);
       if (phone) {
         const phoneResult = {
@@ -270,7 +291,7 @@ async function initializeChatWithPEQPlugin(context) {
         }
         return phoneResult;
       }
-      return { found: false, message: `No glossary terms or headphones matched "${query}"` };
+      return { found: false, message: `No glossary terms, brands, or headphones matched "${query}"` };
     }
 
     return { found: true, type: 'glossary', glossaryMatches };
@@ -302,39 +323,48 @@ async function initializeChatWithPEQPlugin(context) {
 
   // ── Tool: loadTarget ─────────────────────────────────────────────────────
   function loadTarget(name) {
-    const all = searchTargets('');
-    if (!all.length) return { error: 'No targets available' };
+    // No name → list everything
+    if (!name) {
+      const all = searchTargets('');
+      if (!all.length) return { error: 'No targets available' };
+      return { found: false, message: 'Available targets:', availableTargets: all.map(t => t.name) };
+    }
 
-    // Direct search first
-    let matches = name ? searchTargets(name) : all;
+    // 1. Direct search by full name
+    let matches = searchTargets(name);
+    console.warn(`${CTX} loadTarget("${name}") direct → ${matches.length} matches`);
 
-    // Word-by-word fallback: try each significant word in the query separately
-    // so "Harman" matches "Harman 2019", "Harman Over-Ear", etc.
-    if (!matches.length && name) {
+    // 2. Word-by-word fallback so "Harman" matches "Harman 2019", "Harman Over-Ear", etc.
+    if (!matches.length) {
       const words = name.split(/\s+/).filter(w => w.length > 2);
       for (const word of words) {
-        const wordMatches = searchTargets(word);
-        if (wordMatches.length) { matches = wordMatches; break; }
+        const wm = searchTargets(word);
+        console.warn(`${CTX} loadTarget word fallback "${word}" → ${wm.length} matches`);
+        if (wm.length) { matches = wm; break; }
       }
     }
 
+    // 3. Nothing found — list all as a hint (don't fail hard)
     if (!matches.length) {
+      const all = searchTargets('');
       return {
         found: false,
-        message: `"${name}" not found. Available targets:`,
+        message: `"${name}" not found.`,
         availableTargets: all.map(t => t.name),
-        suggestion: 'Call loadTarget again with the exact name from availableTargets'
+        suggestion: all.length
+          ? 'Call loadTarget again with the exact name from availableTargets'
+          : 'No targets appear to be loaded yet'
       };
     }
 
-    // Single match or one clearly best match — load it
+    // Single match — load it immediately
     if (matches.length === 1) {
       const result = showTarget(matches[0].fileName);
       if (result.error) return result;
       return { loaded: true, name: result.name };
     }
 
-    // Multiple matches — present them so the user can pick
+    // Multiple matches — ask the user to pick
     return {
       found: true,
       multipleMatches: true,
@@ -754,9 +784,11 @@ Verified headphones (ONLY these may be named): ${verified}${state.conversationSu
         const confirmHint = {
           lookupAudioContext: result.type === 'glossary'
             ? `Use the glossary definitions to answer the user's question accurately in 1-2 sentences. Do not pad with filler.`
-            : result.type === 'headphone'
-              ? `Use the headphone description from the tool result to answer the question. ${result.measurementLoaded ? 'The measurement has been auto-loaded on the graph — mention that.' : ''} Keep it to 2-3 sentences.`
-              : `The lookup found nothing — answer from your general knowledge but flag if you are uncertain.`,
+            : result.type === 'brand'
+              ? `List the headphones from this brand using the names and descriptions in the tool result. Keep it concise.`
+              : result.type === 'headphone'
+                ? `Use the headphone description from the tool result to answer the question. ${result.measurementLoaded ? 'The measurement has been auto-loaded on the graph — mention that.' : ''} Keep it to 2-3 sentences.`
+                : `The lookup found nothing — answer from your general knowledge but flag if you are uncertain.`,
           findSimilarHeadphones: result.found
             ? `Present the similar headphones to the user. For each, give the name and 1 short sentence from its description. Keep the list concise.`
             : `No similar headphones were found in the database. Suggest a few well-known alternatives from your general knowledge instead.`,
