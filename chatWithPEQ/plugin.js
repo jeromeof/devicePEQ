@@ -302,30 +302,44 @@ async function initializeChatWithPEQPlugin(context) {
 
   // ── Tool: loadTarget ─────────────────────────────────────────────────────
   function loadTarget(name) {
-    // Search targets by name, then load the best match
-    const matches = name ? searchTargets(name) : searchTargets('');
+    const all = searchTargets('');
+    if (!all.length) return { error: 'No targets available' };
+
+    // Direct search first
+    let matches = name ? searchTargets(name) : all;
+
+    // Word-by-word fallback: try each significant word in the query separately
+    // so "Harman" matches "Harman 2019", "Harman Over-Ear", etc.
+    if (!matches.length && name) {
+      const words = name.split(/\s+/).filter(w => w.length > 2);
+      for (const word of words) {
+        const wordMatches = searchTargets(word);
+        if (wordMatches.length) { matches = wordMatches; break; }
+      }
+    }
+
     if (!matches.length) {
-      // Return the full list so the model can present options
-      const all = searchTargets('');
-      if (!all.length) return { error: 'No targets available' };
       return {
         found: false,
         message: `"${name}" not found. Available targets:`,
-        availableTargets: all.map(t => t.name)
+        availableTargets: all.map(t => t.name),
+        suggestion: 'Call loadTarget again with the exact name from availableTargets'
       };
     }
-    if (matches.length === 1 || name) {
-      // Load best match
+
+    // Single match or one clearly best match — load it
+    if (matches.length === 1) {
       const result = showTarget(matches[0].fileName);
       if (result.error) return result;
       return { loaded: true, name: result.name };
     }
-    // Multiple fuzzy matches — ask user which one
+
+    // Multiple matches — present them so the user can pick
     return {
       found: true,
       multipleMatches: true,
-      results: matches,
-      suggestion: 'Multiple targets found — ask the user which one they want to load'
+      results: matches.map(t => t.name),
+      suggestion: 'Multiple targets found — ask the user which one they want, then call loadTarget with the exact name'
     };
   }
 
@@ -454,7 +468,8 @@ Rules:
 - TWO DISTINCT INTENTS — handle them differently:
   1. "Tell me about / what do you know about / what does X sound like" → call searchForPhone ONLY if X is not Verified, then DESCRIBE the sound. Do NOT call updatePEQFilters, showHeadphone, or any other tool.
   2. "Show me / load / display X on the graph" → call showHeadphone, reply ONE sentence confirming loaded. Do NOT describe sound.
-- updatePEQFilters is ONLY for EQ adjustments the user explicitly requests ("make it bassier", "boost treble", "apply EQ"). NEVER call it when describing a headphone.
+- updatePEQFilters is ONLY for EQ adjustments the user explicitly requests ("make it bassier", "boost treble", "apply EQ"). NEVER call it when describing a headphone. NEVER call it when the user mentions a named target curve — use loadTarget instead.
+- TARGET CURVE RULE: Whenever the user asks to "add", "show", "apply", or "load" any named target (Harman, Diffuse Field, IEF, AutoEQ, or any proper-noun target name), ALWAYS call loadTarget — NEVER call updatePEQFilters. If loadTarget returns multipleMatches, present the list and ask which one. If loadTarget returns found:false, reply ONLY with "I couldn't find that target — could you describe what you're looking for in more detail and I'll try again?" — do NOT suggest or apply any EQ filters as a substitute.
 - Only call showHeadphone if the user explicitly wants to SEE or LOAD a measurement onto the graph
 - Call loadTarget when the user wants to load or apply a target curve. Pass empty name "" to list all available targets.
 - If asked about a model NOT in the Verified list, call searchForPhone first — if found:false, reply "I don't have that headphone in my database"
@@ -749,7 +764,11 @@ Verified headphones (ONLY these may be named): ${verified}${state.conversationSu
             ? `Describe the headphone's sound signature and character in 2-3 sentences. Then ask if the user would like to see the measurement on the graph.`
             : `Follow the suggestion in the tool result. Do not invent headphone names.`,
           showHeadphone:   `The headphone is now loaded on the graph. Reply in 1 sentence confirming it is visible. Do NOT describe the sound — the user can see the graph.`,
-          loadTarget:      `The target curve is now loaded. Reply in 1 sentence confirming it is visible.`,
+          loadTarget: result.loaded
+            ? `The target curve "${result.name}" is now loaded. Reply in 1 sentence confirming it is visible.`
+            : result.multipleMatches
+              ? `Multiple targets matched. List them and ask the user which one they want — do NOT apply any EQ.`
+              : `Target not found. Reply ONLY: "I couldn't find that target — could you describe what you're looking for in more detail and I'll try again?" Do NOT suggest or apply any EQ filters.`,
           updatePEQFilters: result.warning
             ? `The EQ was applied but with a problem: ${result.warning}. Tell the user honestly — suggest they load the headphone on the graph first.`
             : `The EQ has been applied to ${result.headphone || 'the headphone'}. Reply in 1 sentence confirming the change.`,
