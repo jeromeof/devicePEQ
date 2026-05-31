@@ -77,9 +77,18 @@ export const luxsinNetworkHandler = (function () {
     }
   }
 
+  const FETCH_TIMEOUT_MS = 6000; // 6 s — enough for a local LAN device to respond
+
+  function fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  }
+
   async function httpGet(ip, pathAndQuery) {
     const url = `http://${ip}${pathAndQuery}`;
-    const response = await fetch(url, { method: 'GET' });
+    const response = await fetchWithTimeout(url, { method: 'GET' });
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     return response.text();
   }
@@ -90,7 +99,7 @@ export const luxsinNetworkHandler = (function () {
     const body = new URLSearchParams();
     body.append('json', encodedJson);
     const url = `http://${ip}${path}`;
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
       body
@@ -172,26 +181,29 @@ export const luxsinNetworkHandler = (function () {
 
       let payload;
       if (isNewPreset) {
-        // Create a brand new preset/profile using the observed payload shape with `peqChange`
-        // Important: filters must be sent as an array of objects (not stringified)
+        // Create a brand new preset via the `peqChange` key.
+        // NOTE: The Luxsin API requires filters as a raw JSON array here (not stringified).
         const newName = (phoneObj && phoneObj.fileName) ? String(phoneObj.fileName) : 'New Profile';
         payload = {
           peqChange: {
             name: newName,
-            filters: luxFilters,
+            filters: luxFilters,          // ← raw array (intentional: create endpoint)
             preamp: Number(preamp ?? 0),
             autoPre: 0,
             canDel: 1
           }
         };
       } else {
+        // Update an existing preset via the `peq` array key.
+        // NOTE: The Luxsin API requires filters as a JSON string here (not a raw array).
+        // This asymmetry is an observed API quirk, not a code bug.
         payload = {
           peq: [{
             index: currentIndex,
             name: profile?.name || phoneObj?.fileName || `Profile ${currentIndex}`,
             canDel: profile?.canDel ?? 1,
             preamp: Number(preamp ?? profile?.preamp ?? 0),
-            filters: JSON.stringify(luxFilters)
+            filters: JSON.stringify(luxFilters)  // ← stringified (intentional: update endpoint)
           }]
         };
       }

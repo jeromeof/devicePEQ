@@ -249,12 +249,14 @@ async function initializeDeviceEqPlugin(context) {
         if (isEmpty) {
           this._postConnectSetup = true;
           context.filtersToElem(filters);
-          context.applyEQ();
+          if (typeof context.applyEQ === 'function') context.applyEQ();
           setTimeout(() => { this._postConnectSetup = false; }, 500);
         }
       }
-      try { this._onDeviceConnected(device, peqConstraints, filters, device.extras); }
-      catch (e) { console.warn('onDeviceConnected callback error:', e); }
+      if (this._onDeviceConnected) {
+        try { this._onDeviceConnected(device, peqConstraints, filters, device.extras); }
+        catch (e) { console.warn('onDeviceConnected callback error:', e); }
+      }
     }
 
     initializeUI() {
@@ -1037,6 +1039,20 @@ async function initializeDeviceEqPlugin(context) {
       gap: 8px;
       margin-bottom: 10px;
       border-bottom: 1px solid #ccc;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      padding-bottom: 2px;
+    }
+
+    .sub-tabs::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .sub-tabs::-webkit-scrollbar-thumb {
+      background: #bbb;
+      border-radius: 3px;
     }
 
     .sub-tab-button {
@@ -1046,6 +1062,8 @@ async function initializeDeviceEqPlugin(context) {
       cursor: pointer;
       border-radius: 4px 4px 0 0;
       font-size: 14px;
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
 
     .sub-tab-button.active {
@@ -1346,7 +1364,7 @@ async function initializeDeviceEqPlugin(context) {
                 <ul style="margin-top: 8px;">
                   <li><strong>FiiO / Jade Audio:</strong> JA11, KA15, KA17, FX17, QX13 (USB HID)</li>
                   <li><strong>Walkplay-based:</strong> Moondrop Marigold/Chu II DSP/Quark2, Tanchjim Stargate II/Space Pro/One DSP/Bunny DSP, EPZ TP13, KiwiEars Allegro/Allegro Pro, JCally JM98 Max/Hi-Max, DDHiFi DSP Cable, Nicehck Octave, CrinEar Protocol Max, and more</li>
-                  <li><strong>KTMicro:</strong> Moondrop CDSP/Chu II DSP, Tanchjim One DSP/Bunny DSP, KiwiEars Allegro Mini/Allegro Pro, KT02H20, and more</li>
+                  <li><strong>KTMicro:</strong> Moondrop CDSP/Chu II DSP, Tanchjim One DSP/Bunny DSP/Fission, KiwiEars Allegro Mini/Allegro Pro/Chorus/S-Link, KT02H20, and more</li>
                   <li><strong>Fosi Audio:</strong> DS3 (USB HID)</li>
                   <li><strong>JDS Labs:</strong> Element IV (USB Serial)</li>
                   <li><strong>Nothing:</strong> Headphone (1) (USB Serial / Bluetooth SPP)</li>
@@ -1421,8 +1439,11 @@ async function initializeDeviceEqPlugin(context) {
                   <li>Moondrop Chu II DSP</li>
                   <li>Tanchjim One DSP (IEM)</li>
                   <li>Tanchjim Bunny DSP (IEM)</li>
+                  <li>Tanchjim Fission (IEM)</li>
                   <li>KiwiEars Allegro Mini</li>
                   <li>KiwiEars Allegro Pro</li>
+                  <li>KiwiEars Chorus (USB-C cable)</li>
+                  <li>KiwiEars S-Link (USB-C cable)</li>
                   <li>KT02H20 HiFi Audio</li>
                   <li>JCally JM12</li>
                 </ul>
@@ -1599,7 +1620,7 @@ async function initializeDeviceEqPlugin(context) {
     if (extraEqElement) {
       // Insert the new HTML below the "extra-eq" div
       extraEqElement.insertAdjacentHTML(placement, deviceEqHTML);
-      console.log('Device EQ UI added ' + placement + ' <div class="' + deviceEqHTML + '">');
+      console.log('Device EQ UI added ' + placement + ' ' + anchorDiv);
     } else {
       console.error('Element <div class="extra-eq"> not found in the DOM.');
     }
@@ -1786,7 +1807,7 @@ async function initializeDeviceEqPlugin(context) {
           { label: 'Network',            type: 'network'},
         ];
         const linkTypes = context?.config?.connectionTypes
-          ?? DEFAULT_LINK_TYPES.filter(t => t.type !== 'network' || context?.config?.showNetwork === true);
+          ?? DEFAULT_LINK_TYPES.filter(t => t.type !== 'network' || context?.config?.advanced === true);
 
         if (deviceEqUI.linkPopup && context?.config?.advanced && linkTypes.length > 0) {
           linkTypes.forEach((entry, i) => {
@@ -1943,7 +1964,7 @@ async function initializeDeviceEqPlugin(context) {
 
                 if (isExperimental) {
                   // Enable logs for experimental devices
-                  showDeviceLogs = true;
+                  window.showDeviceLogs = true;
                   console.log(`Enabling detailed logs for experimental device: ${device.model}`);
 
                   // Show warning popup for experimental devices
@@ -2572,7 +2593,7 @@ async function initializeDeviceEqPlugin(context) {
               { label: 'Network',            type: 'network' },
             ];
             const types = context?.config?.connectionTypes
-              ?? DEFAULT_TYPES.filter(t => t.type !== 'network' || context?.config?.showNetwork === true);
+              ?? DEFAULT_TYPES.filter(t => t.type !== 'network' || context?.config?.advanced === true);
             types.forEach((entry, i) => {
               if (i > 0) {
                 const sep = document.createElement('div');
@@ -2645,7 +2666,7 @@ async function initializeDeviceEqPlugin(context) {
             }
 
             // Check if we have a timeout but still received some filters
-            if (result.filters.length > 0) {
+            if (result?.filters?.length > 0) {
               context.filtersToElem(result.filters);
               context.applyEQ();
               if (context.config?.showSuccessToasts !== false) showToast("PEQ filters successfully pulled from device.", "success");
@@ -2673,13 +2694,10 @@ async function initializeDeviceEqPlugin(context) {
         deviceEqUI.pushButton.addEventListener('click', async () => {
           try {
             // Check if the button is in cooldown period
-            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-            const cooldownTime = 0.2; // Cooldown period in seconds (200ms)
+            const currentTime = Date.now(); // Current time in ms
+            const cooldownTime = 200; // Cooldown period in ms
 
             if (currentTime < deviceEqUI.lastPushTime + cooldownTime) {
-              const remainingTime = (deviceEqUI.lastPushTime + cooldownTime) - currentTime;
-              const remainingMinutes = Math.floor(remainingTime / 60);
-              const remainingSeconds = remainingTime % 60;
               return;
             }
 
@@ -2738,7 +2756,7 @@ async function initializeDeviceEqPlugin(context) {
             }
 
             // Set the last push time to current time and disable the button
-            deviceEqUI.lastPushTime = Math.floor(Date.now() / 1000);
+            deviceEqUI.lastPushTime = Date.now();
             deviceEqUI.pushButton.disabled = true;
             deviceEqUI.pushButton.style.opacity = "0.5";
             deviceEqUI.pushButton.style.cursor = "not-allowed";

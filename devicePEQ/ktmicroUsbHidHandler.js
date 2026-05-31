@@ -103,10 +103,22 @@ export const ktmicroUsbHidHandler = (function () {
     return slotId;
   }
 
-  async function readFullFilter(device, filterIndex, compensate2X, baseRegisterOffset = 0x26) {
-    const gainFreqId = baseRegisterOffset + filterIndex * 2;
-    const qId = gainFreqId + 1;
+  // Resolve the (gain/freq, q/type) register pair for a band.
+  // Most KT Micro devices lay bands out consecutively from baseRegisterOffset
+  // (band i → base+2i, base+2i+1). Some (e.g. KT_1132L, KT_3016L) skip or reorder
+  // registers — those provide an explicit modelConfig.bandRegisters map:
+  //   bandRegisters: [{ freq: 0x35, q: 0x36 }, ... ]  // indexed by band number
+  function bandRegistersFor(modelConfig, filterIndex) {
+    const map = modelConfig.bandRegisters;
+    if (Array.isArray(map) && map[filterIndex]) {
+      return { gainFreqId: map[filterIndex].freq, qId: map[filterIndex].q };
+    }
+    const base = modelConfig.baseRegisterOffset || 0x26;
+    const gainFreqId = base + filterIndex * 2;
+    return { gainFreqId, qId: gainFreqId + 1 };
+  }
 
+  async function readFullFilter(device, filterIndex, compensate2X, gainFreqId, qId) {
     console.log(`USB Device PEQ: KTMicro reading filter ${filterIndex} (Regs: 0x${gainFreqId.toString(16)}, 0x${qId.toString(16)})`);
 
     const dataGainFreq = await sendCommandWithResponse(device, buildReadPacket(gainFreqId));
@@ -149,10 +161,10 @@ export const ktmicroUsbHidHandler = (function () {
   async function pullFromDevice(deviceDetails) {
     const device = deviceDetails.rawDevice;
     const compensate2X = deviceDetails.modelConfig.compensate2X;
-    const baseRegisterOffset = deviceDetails.modelConfig.baseRegisterOffset || 0x26;
     const filters = [];
     for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
-      const filter = await readFullFilter(device, i, compensate2X, baseRegisterOffset);
+      const { gainFreqId, qId } = bandRegistersFor(deviceDetails.modelConfig, i);
+      const filter = await readFullFilter(device, i, compensate2X, gainFreqId, qId);
       filters.push(filter);
     }
 
@@ -224,11 +236,10 @@ export const ktmicroUsbHidHandler = (function () {
 
     try {
       // Now write the filters
-      const baseRegisterOffset = deviceDetails.modelConfig.baseRegisterOffset || 0x26;
       for (let i = 0; i < filters.length; i++) {
         if (i >= deviceDetails.modelConfig.maxFilters) break;
 
-        const filterId = baseRegisterOffset + i * 2;
+        const { gainFreqId, qId } = bandRegistersFor(deviceDetails.modelConfig, i);
         var freqToWrite = filters[i].freq;
         if (deviceDetails.modelConfig.compensate2X) { // Most older KTMicro devices set the wrong frequency
           freqToWrite = filters[i].freq / 2;  // 100Hz seems to end up as 200Hz
@@ -237,8 +248,8 @@ export const ktmicroUsbHidHandler = (function () {
         if (filters[i].disabled) {
           gain = 0;
         }
-        const writeGainFreq = buildWritePacket(filterId, freqToWrite, gain);
-        const writeQ = buildQPacket(filterId + 1, filters[i].q, filters[i].type);
+        const writeGainFreq = buildWritePacket(gainFreqId, freqToWrite, gain);
+        const writeQ = buildQPacket(qId, filters[i].q, filters[i].type);
 
         // Fire-and-forget writes — KT Micro devices do not all ACK individual register
         // writes (e.g. TANCHJIM-ONE DSP processes silently). The older handler never

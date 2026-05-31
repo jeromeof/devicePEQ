@@ -42,6 +42,23 @@ DeviceEQ/
 - Handles **disconnections and device switching**.
 - Uses **cookies to persist the network device's IP and type**.
 
+### **📌 Configuration & Initialization**
+The plugin is initialized by calling `initializeDeviceEqPlugin(context)`.
+
+#### **Minimal Configuration**
+```javascript
+const context = {
+  config: {
+    advanced: true,      // Enables Network, Serial, and BLE options
+    showLogs: false,     // Set to true to see debug logs in console
+    showExtras: true,    // Shows extra device controls (DAC filters, etc.)
+    // connectionTypes: [ { label: 'USB', type: 'hid' } ] // Optional: override default list
+  }
+};
+
+initializeDeviceEqPlugin(context);
+```
+
 ### **📌 How it Works**
 1. User clicks **Connect**.
 2. A **popup asks for USB HID, Serial, or Network**.
@@ -51,6 +68,40 @@ DeviceEQ/
 6. Loads PEQ slots and editable filters.
 7. Users can **push/pull** PEQ settings.
 8. **Network device info is saved in cookies**.
+
+---
+
+## **📏 Constraints & Profiles**
+
+DeviceEQ uses a centralized constraints system to ensure that PEQ settings (gain range, Q range, filter types) are compatible with the connected hardware.
+
+### **🔹 `peqConstraintsConfig.json`**
+This file defines named profiles (e.g., `peq10Band12dBFullShelves`) that specify:
+- **`peqConstraints`**: Min/Max Gain, Max Filters, supported filter types (LS, HS, LP, HP, etc.).
+- **`deviceNames`**: List of specific device names that map to this profile.
+- **`deviceGroupNames`**: List of group/scheme IDs (e.g., Walkplay schemes).
+- **`extras`**: Optional hardware-specific settings like DAC filters or battery read support.
+
+### **🔹 Pulling Constraints (Client Usage)**
+Clients can use the `peqConstraints.js` module to resolve the correct constraints for a device.
+
+```javascript
+import {
+  findConstraintsByDeviceName,
+  getConstraintsByRef,
+  resolveConstraints
+} from './devicePEQ/peqConstraints.js';
+
+// 1. Find by exact or partial device name
+const constraints = findConstraintsByDeviceName("JadeAudio JA11", { partial: true });
+
+// 2. Get a specific profile by its reference name
+const profile = getConstraintsByRef("peq10Band12dBFullShelves");
+
+// 3. Resolve constraints from a model configuration object
+// (Handles both named refs and inline overrides)
+const effective = resolveConstraints(modelConfig);
+```
 
 ---
 

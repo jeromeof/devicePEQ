@@ -10,3 +10,5 @@ dist
 /.editorconfig
 /.claude/
 /.java-version
+/.playwright-mcp/
+/.junie/

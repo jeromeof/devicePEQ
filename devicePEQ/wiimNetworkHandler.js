@@ -5,6 +5,7 @@
 //
 
 const PLUGIN_URI = "http://moddevices.com/plugins/caps/EqNp";
+const SOURCE_NAME = "wifi"; // Input source targeted by EQ commands (wifi, bt, line_in, etc.)
 
 export const wiimNetworkHandler = (function () {
 
@@ -25,7 +26,15 @@ export const wiimNetworkHandler = (function () {
 
       const response = await fetch(url, {method: "GET", mode: "no-cors"});
 
-      if (!response.status)
+      // no-cors responses are always opaque (status=0, body unreadable).
+      // WiiM pull requires CORS headers from the device or a local proxy — see README.
+      if (response.type === 'opaque') {
+        throw new Error(
+          'Cannot read WiiM response: browser CORS/mixed-content restriction. ' +
+          'Serve this page over HTTP or use a local proxy (see network-proxy docs).'
+        );
+      }
+      if (!response.ok)
         throw new Error(`Failed to fetch PEQ data: ${response.status}`);
 
       const data = await response.json();
@@ -122,7 +131,7 @@ export const wiimNetworkHandler = (function () {
         presetNamePayload.Name = phoneObj.fileName;
       }
 
-      const presetNameUrl = `https://${device.ip}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
+      const presetNameUrl = `https://${deviceIp}/httpapi.asp?command=EQSourceSave:${encodeURIComponent(JSON.stringify(presetNamePayload))}`;
       console.log(`Device PEQ: WiiM sending request to save preset name:`, presetNamePayload);
 
       const presetNameResponse = await fetch(presetNameUrl, { method: "GET", mode: "no-cors" });
@@ -163,12 +172,16 @@ export const wiimNetworkHandler = (function () {
       const command = enabled ? "EQChangeSourceFX" : "EQSourceOff";
       const payload = {source_name: SOURCE_NAME, pluginURI: PLUGIN_URI};
       const url = `https://${device.ip}/httpapi.asp?command=${command}:${encodeURIComponent(JSON.stringify(payload))}`;
-      const response = await fetch(url, {method: "GET"});
+      // Use no-cors for consistency with push — response will be opaque but the command fires.
+      const response = await fetch(url, { method: "GET", mode: "no-cors" });
 
-      if (!response.ok) throw new Error(`Failed to ${enabled ? "enable" : "disable"} PEQ: ${response.status}`);
-
-      const data = await response.json();
-      if (data.status !== "OK") throw new Error(`PEQ ${enabled ? "enable" : "disable"} failed: ${JSON.stringify(data)}`);
+      if (response.type !== 'opaque') {
+        if (!response.ok) throw new Error(`Failed to ${enabled ? "enable" : "disable"} PEQ: ${response.status}`);
+        const data = await response.json();
+        if (data.status !== "OK") throw new Error(`PEQ ${enabled ? "enable" : "disable"} failed: ${JSON.stringify(data)}`);
+      } else {
+        console.log(`WiiM PEQ ${enabled ? "enable" : "disable"} sent (response unreadable due to CORS)`);
+      }
 
       console.log(`WiiM PEQ ${enabled ? "enabled" : "disabled"} successfully`);
 
@@ -184,25 +197,28 @@ export const wiimNetworkHandler = (function () {
    * @returns {Array} Formatted PEQ filter list
    */
   function parseWiiMEQData(data) {
-    const eqBands = data.EQBand || [];
-    const filters = [];
-
-    for (let i = 0; i < eqBands.length; i += 4) {
-      const filterType = convertFromWiimMode(eqBands[i].value);
-      const frequency = eqBands[i + 1].value;
-      const qFactor = eqBands[i + 2].value;
-      const gain = eqBands[i + 3].value;
-
-      filters.push({
-        type: filterType,
-        freq: frequency,
-        q: qFactor,
-        gain: gain,
-        disabled: filterType === "Off",
-      });
+    // Group params by band letter (a–j) using param_name so field ordering in
+    // the API response doesn't matter. Each band has: mode, freq, q, gain.
+    const bands = {};
+    for (const param of (data.EQBand || [])) {
+      const match = param.param_name?.match(/^([a-j])_(mode|freq|q|gain)$/);
+      if (match) {
+        const [, letter, field] = match;
+        (bands[letter] ??= {})[field] = param.value;
+      }
     }
 
-    return filters;
+    return Object.keys(bands).sort().map(letter => {
+      const b = bands[letter];
+      const filterType = convertFromWiimMode(b.mode ?? -1);
+      return {
+        type: filterType,
+        freq: b.freq ?? 1000,
+        q: b.q ?? 1,
+        gain: b.gain ?? 0,
+        disabled: filterType === "Off",
+      };
+    });
   }
 
   /**
@@ -211,8 +227,13 @@ export const wiimNetworkHandler = (function () {
    * @returns {number} WiiM PEQ mode value
    */
   function convertToWiimMode(type) {
-    const mapping = {"Off": -1, "Low-Shelf": 0, "Peak": 1, "High-Shelf": 2};
-    return mapping[type] !== undefined ? mapping[type] : 1;
+    const mapping = {
+      "Off":        -1,
+      "Low-Shelf":   0, "LSQ": 0,   // low-shelf (long name + app short code)
+      "Peak":        1, "PK":  1,   // peaking   (long name + app short code)
+      "High-Shelf":  2, "HSQ": 2,   // high-shelf(long name + app short code)
+    };
+    return mapping[type] !== undefined ? mapping[type] : 1; // default to Peak
   }
 
   /**
@@ -241,11 +262,13 @@ export const wiimNetworkHandler = (function () {
     const url = `https://${device.ip}/httpapi.asp?command=EQv2GetList:${encodeURIComponent(PLUGIN_URI)}`;
     try {
       const response = await fetch(url, {method: "GET", mode: "no-cors" });
-      if (!response.status == 0) {
-        throw new Error(`Failed to fetch preset list: ${response.status}`);
+      // Opaque no-cors responses cannot be read; return a placeholder slot.
+      // A local proxy is required for real slot enumeration — see network-proxy docs.
+      if (response.type === 'opaque' || !response.ok) {
+        return [{ id: 0, name: "Default" }];
       }
 
-      return [ {id: 0, name: "Cannot read"}];
+      return [{ id: 0, name: "Cannot read" }];
 
     } catch (error) {
       console.error("Error retrieving preset list from WiiM:", error);

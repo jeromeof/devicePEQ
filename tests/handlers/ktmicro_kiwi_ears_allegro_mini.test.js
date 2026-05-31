@@ -5,6 +5,7 @@
  *
  * peq5Band12dBFullShelvesNoPregain — 5 bands, ±12 dB, LS+HS, no pregain
  * baseRegisterOffset=0x26 (confirmed via capture — config had wrong 0x35)
+ * compensate2X=false (matches Kiwi's official WebHID app; frequencies are raw)
  * Writes fire-and-forget (no ACK from device)
  */
 
@@ -26,7 +27,7 @@ function makeDeviceDetails(mock, overrides = {}) {
       firstWritableEQSlot: 0x03,
       maxWritableEQSlots:     1,
       disconnectOnSave:    true,
-      compensate2X:        true,  // KT Micro Kiwi Ears default
+      compensate2X:        false,
       baseRegisterOffset:  0x26,  // corrected from config's 0x35
       disabledPresetId:   0x02,
       availableSlots: [{ id: 0x03, name: 'Custom' }],
@@ -54,6 +55,18 @@ export async function test_pullFromDevice_returns5Bands(assert) {
   const result = await ktmicroUsbHidHandler.pullFromDevice(details, 0x03);
   const defined = result.filters.filter(f => f !== undefined && f !== null);
   assert.equal(defined.length, 5, 'should return 5 filter bands');
+}
+
+export async function test_pullFromDevice_decodesOfficialKiwiFrequencies(assert) {
+  const mock = await loadCapture('../captures/ktmicro_kiwi_ears_allegro_mini.json');
+  await mock.open();
+  const details = makeDeviceDetails(mock);
+  const result = await ktmicroUsbHidHandler.pullFromDevice(details, 0x03);
+  assert.deepEqual(
+    result.filters.map(f => f.freq),
+    [100, 2000, 3000, 8000, 10000],
+    'should decode raw Kiwi frequencies without KT Micro 2x compensation'
+  );
 }
 
 export async function test_pullFromDevice_gainsWithin12dBRange(assert) {

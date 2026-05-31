@@ -1023,6 +1023,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
           disconnectOnSave: true,
+          compensate2X: false,
           baseRegisterOffset: 0x26
         }
       },
@@ -1031,6 +1032,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
           disconnectOnSave: true,
+          compensate2X: false,
           baseRegisterOffset: 0x26  // corrected from 0x35 — actual USB capture shows 0x26
         }
       },
@@ -1039,6 +1041,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
           disconnectOnSave: true,
+          compensate2X: false,
           baseRegisterOffset: 0x26
         }
       },
@@ -1095,6 +1098,64 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
           compensate2X: false
+        }
+      }
+    },
+    // Matched by productId when productName is too generic to be reliable.
+    // Register layouts mirror the official Kiwi Ears WebHID config (At.KT_*):
+    //   KT_0211L: enable 0x24, bands 0-4 consecutive from 0x26               (Allegro family)
+    //   KT_1132L: enable 0x34, bands 0-3 from 0x35, band4 freq 0x3D          (Chorus family)
+    //   KT_3016L: enable 0x34, bands stored out of order (see bandRegisters)
+    deviceGroups: {
+      // KT_1132L — Kiwi Ears Chorus (0x1132) and sibling (0x3006). Reports generic
+      // productName "Kiwi Ears", so match by productId. Bands 0-3 are consecutive from
+      // 0x35, but Band4_Q is at 0x3F (register 0x3E is skipped — it's a phantom that
+      // always reads 0.7). Confirmed on-device: setting band4 Q changes 0x3F, not 0x3E.
+      "Kiwi Ears KT_1132L": {
+        productIds: [0x1132, 0x3006],
+        manufacturer: "Kiwi Ears",
+        modelConfig: {
+          peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
+          disconnectOnSave: true,
+          compensate2X: false,
+          bandRegisters: [
+            { freq: 0x35, q: 0x36 }, // band0
+            { freq: 0x37, q: 0x38 }, // band1
+            { freq: 0x39, q: 0x3A }, // band2
+            { freq: 0x3B, q: 0x3C }, // band3
+            { freq: 0x3D, q: 0x3F }  // band4 — Q at 0x3F, NOT 0x3E
+          ]
+        }
+      },
+      // KT_0211L variants reached only by productId (Allegro 0x0111 matches by productName).
+      "Kiwi Ears KT_0211L": {
+        productIds: [0x0113],
+        manufacturer: "Kiwi Ears",
+        modelConfig: {
+          peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
+          disconnectOnSave: true,
+          compensate2X: false,
+          baseRegisterOffset: 0x26
+        }
+      },
+      // KT_3016L — Kiwi Ears S-Link (0x3016). Bands are stored OUT OF ORDER, so an explicit
+      // per-band map is required. Verified on-device: this mapping yields ascending band
+      // frequencies, and a write-readback confirmed band2 Q lives at 0x3F (0x3E is phantom).
+      // Physical regs: 53/54=band4, 55/56=band0, 57/58=band3, 59/60=band1, 61/63=band2.
+      "Kiwi Ears KT_3016L": {
+        productIds: [0x3016],
+        manufacturer: "Kiwi Ears",
+        modelConfig: {
+          peqConstraintsRef: "peq5Band12dBFullShelvesNoPregain",
+          disconnectOnSave: true,
+          compensate2X: false,
+          bandRegisters: [
+            { freq: 0x37, q: 0x38 }, // band0
+            { freq: 0x3B, q: 0x3C }, // band1
+            { freq: 0x3D, q: 0x3F }, // band2  (Q at 0x3F, NOT 0x3E)
+            { freq: 0x39, q: 0x3A }, // band3
+            { freq: 0x35, q: 0x36 }  // band4
+          ]
         }
       }
     }
