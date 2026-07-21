@@ -2,10 +2,12 @@
 // Central interface for querying PEQ constraint profiles from peqConstraintsConfig.json.
 // Supports lookup by reference name, device name, device group name, and partial search.
 
+// Default: load constraints from local file. To override, set config.peqConstraintsUrl in your config.js:
+//   peqConstraintsUrl: 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json'
 const PEQ_CONSTRAINTS_CONFIG_URL =
   typeof window !== 'undefined' && window.DEVICEPEQ_CONFIG_BASE_URL
     ? `${window.DEVICEPEQ_CONFIG_BASE_URL}peqConstraintsConfig.json`
-    : 'https://pragmagicaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json';
+    : './devicePEQ/peqConstraintsConfig.json';
 
 let _config = null;
 let _loadPromise = null;
@@ -14,9 +16,12 @@ let _loadPromise = null;
 // Subsequent calls return the cached result without re-fetching.
 const PEQ_CONSTRAINTS_FALLBACK_URL = new URL('./peqConstraintsConfig.json', import.meta.url).href;
 
-export async function loadPeqConstraintsConfig(url = PEQ_CONSTRAINTS_CONFIG_URL) {
+export async function loadPeqConstraintsConfig(url = PEQ_CONSTRAINTS_CONFIG_URL, config = {}) {
   if (_config) return _config;
   if (_loadPromise) return _loadPromise;
+
+  // Allow override from config object
+  const configUrl = config.peqConstraintsUrl || url;
 
   const tryFetch = (fetchUrl) =>
     fetch(fetchUrl).then(r => {
@@ -24,7 +29,7 @@ export async function loadPeqConstraintsConfig(url = PEQ_CONSTRAINTS_CONFIG_URL)
       return r.json();
     });
 
-  _loadPromise = tryFetch(url)
+  _loadPromise = tryFetch(configUrl)
     .catch(() => tryFetch(PEQ_CONSTRAINTS_FALLBACK_URL))
     .then(data => {
       _config = data;

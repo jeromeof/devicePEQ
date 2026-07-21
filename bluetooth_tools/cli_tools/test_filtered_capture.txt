@@ -1,0 +1,18 @@
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+🔇 Keepalive filtering: ENABLED
+
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+

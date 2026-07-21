@@ -1,0 +1,86 @@
+     ____
+    / _  |   Frida 16.7.19 - A world-class dynamic instrumentation toolkit
+   | (_| |
+    > _  |   Commands:
+   /_/ |_|       help      -> Displays the help system
+   . . . .       object?   -> Display information about 'object'
+   . . . .       exit/quit -> Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+   . . . .
+   . . . .   Connected to Redmi Note 5 (id=901f9069)
+Attaching...
+🔍 Testing Edifier hooks...
+✅ Java.perform started
+✅ Found BluetoothSocket class
+✅ Hooked OutputStream.write
+✅ Hooked InputStream.read
+
+📡 Hooks installed - waiting for Bluetooth activity...
+💡 Try changing volume or EQ settings in the app
+
+[Redmi Note 5::PID::26796 ]-> 
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📤 SPP TX: 12 bytes
+Hex: AA EC 44 00 06 A5 A5 A5 E0 A3 AE 00
+
+📥 SPP RX: 7 bytes
+Hex: BB EC 44 00 01 A4 90
+
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📥 SPP RX: 42 bytes
+Hex: BB EC 43 00 24 AD A1 A5 A5 A5 E0 A3 AE A4 A5 A2 AD A9 A0 A7 A5 A9 A3 A4 B1 A6 A5 82 B5 A4 AE 9F 85 41 C3 ED C4 D7 C8 C4 CB 25
+
+📤 SPP TX: 12 bytes
+Hex: AA EC 44 00 06 A5 A5 A5 E0 A9 AE 06
+
+📥 SPP RX: 7 bytes
+Hex: BB EC 44 00 01 A4 90
+
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📥 SPP RX: 42 bytes
+Hex: BB EC 43 00 24 AD A1 A5 A5 A5 E0 A9 AE A4 A5 A2 AD A9 A0 A7 A5 A9 A3 A4 B1 A6 A5 82 B5 A4 AE 9F 85 41 C3 ED C4 D7 C8 C4 CB 2B
+
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📥 SPP RX: 42 bytes
+Hex: BB EC 43 00 24 AD A1 A5 A5 A5 E0 A9 AE A4 A5 A2 AD A9 A0 A7 A5 A9 A3 A4 B1 A6 A5 82 B5 A4 AE 9F 85 41 C3 ED C4 D7 C8 C4 CB 2B
+
+📤 SPP TX: 12 bytes
+Hex: AA EC 44 00 06 A4 A5 A2 AD A3 A0 BB
+
+📥 SPP RX: 7 bytes
+Hex: BB EC 44 00 01 A4 90
+
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📥 SPP RX: 42 bytes
+Hex: BB EC 43 00 24 AD A1 A5 A5 A5 E0 A9 AE A4 A5 A2 AD A3 A0 A7 A5 A9 A3 A4 B1 A6 A5 82 B5 A4 AE 9F 85 41 C3 ED C4 D7 C8 C4 CB 25
+
+📤 SPP TX: 12 bytes
+Hex: AA EC 44 00 06 A4 A5 A2 AD A9 A0 C1
+
+📥 SPP RX: 7 bytes
+Hex: BB EC 44 00 01 A4 90
+
+📤 SPP TX: 6 bytes
+Hex: AA EC 43 00 00 D9
+
+📥 SPP RX: 42 bytes
+Hex: BB EC 43 00 24 AD A1 A5 A5 A5 E0 A9 AE A4 A5 A2 AD A9 A0 A7 A5 A9 A3 A4 B1 A6 A5 82 B5 A4 AE 9F 85 41 C3 ED C4 D7 C8 C4 CB 2B
+Connection terminated
+
+Thank you for using Frida!
+Fatal Python error: _enter_buffered_busy: could not acquire lock for <_io.BufferedReader name='<stdin>'> at interpreter shutdown, possibly due to daemon threads
+Python runtime state: finalizing (tstate=0x0000000103b631a0)
+
+Current thread 0x00000001ee742c40 (most recent call first):
+  <no Python frame>

@@ -61,6 +61,8 @@
 // writes 0 (hardware covers it), a -7 dB preamp writes -2 (hardware -5 + reg -2).
 //
 
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;
   const ALT_REPORT_ID = 0x3C;
@@ -134,16 +136,19 @@ export const walkplayUsbHID = (function () {
     const useAltReport = false;
 
     for (let i = 0; i < filtersToWrite.length; i++) {
-      const filter = filtersToWrite[i];
-      const bArr = computeIIRFilter(i, filter.freq, filter.gain, filter.q);
+      const filter = filtersToWrite[i] || {};
+      const filterToWrite = normalizeFilterForWrite(filter);
+      const bArr = filter.disabled
+        ? new Array(20).fill(0)
+        : computeIIRFilter(i, filterToWrite.freq, filterToWrite.gain, filterToWrite.q);
 
       const packet = [
         WRITE, CMD.PEQ_VALUES, 0x18, 0x00, i, 0x00, 0x00,
         ...bArr,
-        ...convertToByteArray(filter.freq, 2),
-        ...convertToByteArray(Math.round(filter.q * 256), 2),
-        ...convertToByteArray(Math.round(filter.gain * 256), 2),
-        convertFromFilterType(filter.type),
+        ...convertToByteArray(filterToWrite.freq, 2),
+        ...convertToByteArray(Math.round(filterToWrite.q * 256), 2),
+        ...convertToByteArray(Math.round(filterToWrite.gain * 256), 2),
+        convertFromFilterType(filterToWrite.type),
         0x00,
         (deviceDetails.modelConfig && typeof deviceDetails.modelConfig.defaultIndex !== 'undefined') ? deviceDetails.modelConfig.defaultIndex : slot,
         END
@@ -167,16 +172,16 @@ export const walkplayUsbHID = (function () {
     }
 
     // Commit sequence matching Walkplay app order:
-    // [1, 5, 0] and [1, 23, 0] before TEMP_WRITE, then plain [1, 1, 0] for flash.
-    // The slot is already embedded at byte [35] of each filter packet — FLASH_EQ
-    // just says "persist registers to flash" and takes no slot argument.
+    // [1, 5, 0] and [1, 23, 0] before TEMP_WRITE, then [1, 1, 1, 0]
+    // to persist the registers while leaving PEQ enabled. Sending [1, 1, 0]
+    // is the same command shape used for PEQ disable on some firmware.
     await sendReport(device, REPORT_ID, [WRITE, 0x05, END]);
     await delay(20);
     await sendReport(device, REPORT_ID, [WRITE, 0x17, END]);
     await delay(20);
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
     await delay(50);
-    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, END]);
+    await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, END]);
 
     console.log("PEQ filters successfully pushed to Walkplay device.");
   };
@@ -217,6 +222,7 @@ export const walkplayUsbHID = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (data[0] !== READ || data[1] !== CMD.MIC_GAIN) return;
 
         clearTimeout(timeout);
@@ -241,6 +247,19 @@ export const walkplayUsbHID = (function () {
     return mapping[filterType] !== undefined ? mapping[filterType] : 2;
   }
 
+  function normalizeFilterForWrite(filter = {}) {
+    if (filter.disabled) {
+      return { freq: 0, q: 0, gain: 0, type: "PK" };
+    }
+
+    return {
+      freq: Number.isFinite(filter.freq) ? filter.freq : 0,
+      q: Number.isFinite(filter.q) ? filter.q : 0,
+      gain: Number.isFinite(filter.gain) ? filter.gain : 0,
+      type: filter.type || filter.filterType || "PK"
+    };
+  }
+
   const pullFromDevice = async (deviceDetails, slot = -1) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
@@ -253,6 +272,7 @@ export const walkplayUsbHID = (function () {
 
     const onFilterReport = (event) => {
       const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
       console.log(`USB Device PEQ: Walkplay pullFromDevice onInputReport received data:`, data);
       if (data[1] !== CMD.PEQ_VALUES) return; // ignore unrelated reports
       if (data.length >= 32) {
@@ -275,7 +295,10 @@ export const walkplayUsbHID = (function () {
 
     // Wait for filters with increased timeout
     const result = await waitForFilters(() => {
-      return filters.filter(f => f !== undefined).length === deviceDetails.modelConfig.maxFilters;
+      const count = filters.filter(f => f !== undefined).length;
+      const max = deviceDetails.modelConfig.maxFilters;
+      console.log(`USB Device PEQ: Walkplay condition check - received ${count} filters, expecting ${max}`);
+      return count === max;
     }, device, 10000, () => ({  // Increased timeout to 15 seconds
       filters,
       globalGain: 0, // Will be updated after waiting for filters
@@ -323,13 +346,16 @@ export const walkplayUsbHID = (function () {
     // Filter type —
     const type = convertToFilterType(packet[33]);
 
+    // Mark as disabled if: freq is 0 or 0xFFFF (unset marker), or all values are 0
+    const valid = !(freq === 65535 || freq === 0 || q === 0 || (freq === 0 && q === 0 && gain === 0));
+
     return {
       filterIndex,
-      freq,
-      q,
-      gain,
+      freq: valid ? freq : 0,
+      q: valid ? q : 0,
+      gain: valid ? gain : 0,
       type,
-      disabled: !(freq || q || gain)
+      disabled: !valid
     };
   }
 
@@ -358,6 +384,7 @@ export const walkplayUsbHID = (function () {
     if (!device) throw new Error("Device not connected.");
     const data = new Uint8Array(packet);
     console.log(`USB Device PEQ: Walkplay sending report (ID: ${reportId}):`, data);
+    logHidTx('Walkplay', reportId, data);
     await device.sendReport(reportId, data);
   }
 
@@ -372,6 +399,7 @@ export const walkplayUsbHID = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (expectedCmd !== null && data[1] !== expectedCmd) return; // skip unrelated reports
         clearTimeout(timer);
         device.removeEventListener("inputreport", onReport);
@@ -395,6 +423,7 @@ export const walkplayUsbHID = (function () {
 
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         console.log(`USB Device PEQ: Walkplay onInputReport received global gain data:`, data);
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
@@ -407,7 +436,7 @@ export const walkplayUsbHID = (function () {
 
       device.addEventListener("inputreport", onReport);
       console.log(`USB Device PEQ: Walkplay sending readGlobalGain command:`, request);
-      await device.sendReport(REPORT_ID, request);
+      await sendReport(device, REPORT_ID, request);
     });
   }
 
@@ -417,7 +446,7 @@ export const walkplayUsbHID = (function () {
     // Match attached KeyX JS format: [WRITE, GLOBAL_GAIN, 0x02, 0x00, gain]
     const request = new Uint8Array([WRITE, CMD.GLOBAL_GAIN, 0x02, 0x00, gainValue]);
     console.log(`USB Device PEQ: Walkplay sending writeGlobalGain command:`, request);
-    await device.sendReport(REPORT_ID, request);
+    await sendReport(device, REPORT_ID, request);
   }
 
   // DAC_FILTER (0x11): select the DAC's DSP filter algorithm.
@@ -467,6 +496,7 @@ export const walkplayUsbHID = (function () {
       }, 2000);
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (data[0] !== READ || data[1] !== CMD.DENOISE) return;
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
@@ -489,6 +519,7 @@ export const walkplayUsbHID = (function () {
       }, 2000);
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (data[0] !== READ || data[1] !== CMD.DAC_FILTER) return;
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
@@ -519,6 +550,7 @@ export const walkplayUsbHID = (function () {
       }, 2000);
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (data[0] !== READ || data[1] !== CMD.DAC_WORK_MODE) return;
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
@@ -559,6 +591,7 @@ export const walkplayUsbHID = (function () {
       }, 2000);
       const onReport = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
         if (data[0] !== READ || data[1] !== CMD.GAIN_MODE) return;
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
@@ -621,7 +654,7 @@ async function waitForFilters(condition, device, timeout, callback) {
         result.complete = true;
         resolve(result);
       }
-    }, 100);
+    }, 10); // Check more frequently to catch completion sooner
   });
 }
 

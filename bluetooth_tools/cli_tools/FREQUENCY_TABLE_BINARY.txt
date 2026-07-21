@@ -1,0 +1,252 @@
+EDIFIER W830NB - COMPLETE FREQUENCY ENCODING TABLE
+21 Data Points with Binary, Hex, and Decimal Values
+====================================================
+
+Format: Frequency | Byte2 (Hex/Dec/Bin) | Byte3 (Hex/Dec/Bin) | 16-bit Combined (Hex/Dec/Bin)
+
+ 1. 20 Hz
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0xB1 = 177 = 10110001
+    16-bit: 0xA5B1 = 42417 = 1010010110110001
+
+ 2. 50 Hz
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0x97 = 151 = 10010111
+    16-bit: 0xA597 = 42391 = 1010010110010111
+
+ 3. 75 Hz (Peak #1 - low range)
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0xEE = 238 = 11101110
+    16-bit: 0xA5EE = 42478 = 1010010111101110
+
+ 4. 76 Hz (1Hz granularity proof)
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0xE9 = 233 = 11101001
+    16-bit: 0xA5E9 = 42473 = 1010010111101001
+
+ 5. 77 Hz (1Hz granularity proof)
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0xE8 = 232 = 11101000
+    16-bit: 0xA5E8 = 42472 = 1010010111101000
+
+ 6. 100 Hz
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0xC1 = 193 = 11000001
+    16-bit: 0xA5C1 = 42433 = 1010010111000001
+
+ 7. 150 Hz
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0x33 = 51 = 00110011
+    16-bit: 0xA533 = 42291 = 1010010100110011
+
+ 8. 175 Hz (Trough #1 - low range)
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0x0A = 10 = 00001010
+    16-bit: 0xA50A = 42250 = 1010010100001010
+
+ 9. 200 Hz
+    Byte2: 0xA5 = 165 = 10100101
+    Byte3: 0x6D = 109 = 01101101
+    16-bit: 0xA56D = 42349 = 1010010101101101
+
+10. 400 Hz
+    Byte2: 0xA4 = 164 = 10100100
+    Byte3: 0x35 = 53 = 00110101
+    16-bit: 0xA435 = 42037 = 1010010000110101
+
+11. 500 Hz
+    Byte2: 0xA4 = 164 = 10100100
+    Byte3: 0x51 = 81 = 01010001
+    16-bit: 0xA451 = 42065 = 1010010001010001
+
+12. 1000 Hz (Peak #2 - mid range)
+    Byte2: 0xA6 = 166 = 10100110
+    Byte3: 0x4D = 77 = 01001101
+    16-bit: 0xA64D = 42573 = 1010011001001101
+
+13. 1500 Hz (Trough #2 - mid range, DEEP)
+    Byte2: 0xA0 = 160 = 10100000
+    Byte3: 0x79 = 121 = 01111001
+    16-bit: 0xA079 = 41081 = 1010000001111001
+
+14. 2000 Hz
+    Byte2: 0xA2 = 162 = 10100010
+    Byte3: 0x75 = 117 = 01110101
+    16-bit: 0xA275 = 41589 = 1010001001110101
+
+15. 3000 Hz (Peak #3 - high range)
+    Byte2: 0xAE = 174 = 10101110
+    Byte3: 0x1D = 29 = 00011101
+    16-bit: 0xAE1D = 44573 = 1010111000011101
+
+16. 3078 Hz
+    Byte2: 0xA9 = 169 = 10101001
+    Byte3: 0xA3 = 163 = 10100011
+    16-bit: 0xA9A3 = 43427 = 1010100110100011
+
+17. 4000 Hz (NEW!)
+    Byte2: 0xAA = 170 = 10101010
+    Byte3: 0x05 = 5 = 00000101
+    16-bit: 0xAA05 = 43525 = 1010101000000101
+
+18. 5000 Hz (Peak #4 - ABSOLUTE MAXIMUM)
+    Byte2: 0xB6 = 182 = 10110110
+    Byte3: 0x2D = 45 = 00101101
+    16-bit: 0xB62D = 46637 = 1011011000101101
+
+19. 6000 Hz
+    Byte2: 0xB2 = 178 = 10110010
+    Byte3: 0xD5 = 213 = 11010101
+    16-bit: 0xB2D5 = 45781 = 1011001011010101
+
+20. 8000 Hz (Peak #5 - NEW! Second high peak)
+    Byte2: 0xBA = 186 = 10111010
+    Byte3: 0xE5 = 229 = 11100101
+    16-bit: 0xBAE5 = 47845 = 1011101011100101
+
+21. 10000 Hz (MINIMUM VALUE)
+    Byte2: 0x82 = 130 = 10000010
+    Byte3: 0xB5 = 181 = 10110101
+    16-bit: 0x82B5 = 33461 = 1000001010110101
+
+====================================================
+SUMMARY STATISTICS
+====================================================
+
+Value Range:
+  Minimum: 33461 (10000 Hz)
+  Maximum: 47845 (8000 Hz)
+  Span: 14384 units
+
+Byte 2 Range:
+  Minimum: 0x82 = 130 = 10000010 (10000 Hz)
+  Maximum: 0xBA = 186 = 10111010 (8000 Hz)
+  Unique values: 11 different byte2 values
+
+Byte 3 Range:
+  Minimum: 0x05 = 5 = 00000101 (4000 Hz)
+  Maximum: 0xEE = 238 = 11101110 (75 Hz)
+  Full 8-bit range: 5 to 238
+
+Peaks (Local Maxima):
+  1. 75 Hz    → 42478 (0xA5EE = 1010010111101110)
+  2. 1000 Hz  → 42573 (0xA64D = 1010011001001101)
+  3. 3000 Hz  → 44573 (0xAE1D = 1010111000011101)
+  4. 5000 Hz  → 46637 (0xB62D = 1011011000101101) - ABSOLUTE MAX
+  5. 8000 Hz  → 47845 (0xBAE5 = 1011101011100101) - SECOND HIGHEST
+
+Troughs (Local Minima):
+  1. 175 Hz   → 42250 (0xA50A = 1010010100001010)
+  2. 1500 Hz  → 41081 (0xA079 = 1010000001111001) - DEEP
+  3. 10000 Hz → 33461 (0x82B5 = 1000001010110101) - GLOBAL MIN
+
+====================================================
+BYTE 2 PATTERN ANALYSIS
+====================================================
+
+Byte2 = 0xA5 (165 = 10100101): 20-200 Hz (9 frequencies)
+  Pattern: 1010 0101
+  Range: Sub-bass to bass
+
+Byte2 = 0xA4 (164 = 10100100): 400-500 Hz (2 frequencies)
+  Pattern: 1010 0100
+  Range: Low-mid transition
+
+Byte2 = 0xA6 (166 = 10100110): 1000 Hz (1 frequency)
+  Pattern: 1010 0110
+  Range: Mid peak
+
+Byte2 = 0xA0 (160 = 10100000): 1500 Hz (1 frequency)
+  Pattern: 1010 0000
+  Range: Mid trough
+
+Byte2 = 0xA2 (162 = 10100010): 2000 Hz (1 frequency)
+  Pattern: 1010 0010
+  Range: Mid-high
+
+Byte2 = 0xAE (174 = 10101110): 3000 Hz (1 frequency)
+  Pattern: 1010 1110
+  Range: High
+
+Byte2 = 0xA9 (169 = 10101001): 3078 Hz (1 frequency)
+  Pattern: 1010 1001
+  Range: High
+
+Byte2 = 0xAA (170 = 10101010): 4000 Hz (1 frequency)
+  Pattern: 1010 1010
+  Range: High
+
+Byte2 = 0xB6 (182 = 10110110): 5000 Hz (1 frequency)
+  Pattern: 1011 0110
+  Range: Very high (PEAK!)
+
+Byte2 = 0xB2 (178 = 10110010): 6000 Hz (1 frequency)
+  Pattern: 1011 0010
+  Range: Very high
+
+Byte2 = 0xBA (186 = 10111010): 8000 Hz (1 frequency)
+  Pattern: 1011 1010
+  Range: Very high (PEAK!)
+
+Byte2 = 0x82 (130 = 10000010): 10000 Hz (1 frequency)
+  Pattern: 1000 0010
+  Range: Extreme high (CRASH!)
+
+====================================================
+BIT PATTERN OBSERVATIONS
+====================================================
+
+Byte 2 Common Prefix:
+  Most values start with: 101xxxxx (0xA0-0xBF range)
+  Exception: 10000010 (0x82) at 10kHz - drastically different!
+
+Byte 2 Upper Nibble Pattern:
+  Low freq (20-2000 Hz): 0xA_ (1010 xxxx)
+  High freq (3000-8000 Hz): 0xA_ or 0xB_ (1010/1011 xxxx)
+  Extreme high (10000 Hz): 0x8_ (1000 xxxx) - outlier!
+
+Byte 3 Pattern:
+  No obvious bit pattern
+  Full range: 0x05 to 0xEE (5 to 238)
+  Appears to be fine-tuning within Byte2 zones
+
+====================================================
+CSV FORMAT (for import to spreadsheet)
+====================================================
+
+Frequency_Hz,Byte2_Hex,Byte2_Dec,Byte2_Bin,Byte3_Hex,Byte3_Dec,Byte3_Bin,Combined_Hex,Combined_Dec,Combined_Bin
+20,0xA5,165,10100101,0xB1,177,10110001,0xA5B1,42417,1010010110110001
+50,0xA5,165,10100101,0x97,151,10010111,0xA597,42391,1010010110010111
+75,0xA5,165,10100101,0xEE,238,11101110,0xA5EE,42478,1010010111101110
+76,0xA5,165,10100101,0xE9,233,11101001,0xA5E9,42473,1010010111101001
+77,0xA5,165,10100101,0xE8,232,11101000,0xA5E8,42472,1010010111101000
+100,0xA5,165,10100101,0xC1,193,11000001,0xA5C1,42433,1010010111000001
+150,0xA5,165,10100101,0x33,51,00110011,0xA533,42291,1010010100110011
+175,0xA5,165,10100101,0x0A,10,00001010,0xA50A,42250,1010010100001010
+200,0xA5,165,10100101,0x6D,109,01101101,0xA56D,42349,1010010101101101
+400,0xA4,164,10100100,0x35,53,00110101,0xA435,42037,1010010000110101
+500,0xA4,164,10100100,0x51,81,01010001,0xA451,42065,1010010001010001
+1000,0xA6,166,10100110,0x4D,77,01001101,0xA64D,42573,1010011001001101
+1500,0xA0,160,10100000,0x79,121,01111001,0xA079,41081,1010000001111001
+2000,0xA2,162,10100010,0x75,117,01110101,0xA275,41589,1010001001110101
+3000,0xAE,174,10101110,0x1D,29,00011101,0xAE1D,44573,1010111000011101
+3078,0xA9,169,10101001,0xA3,163,10100011,0xA9A3,43427,1010100110100011
+4000,0xAA,170,10101010,0x05,5,00000101,0xAA05,43525,1010101000000101
+5000,0xB6,182,10110110,0x2D,45,00101101,0xB62D,46637,1011011000101101
+6000,0xB2,178,10110010,0xD5,213,11010101,0xB2D5,45781,1011001011010101
+8000,0xBA,186,10111010,0xE5,229,11100101,0xBAE5,47845,1011101011100101
+10000,0x82,130,10000010,0xB5,181,10110101,0x82B5,33461,1000001010110101
+
+====================================================
+NOTES
+====================================================
+
+1. All values verified through hardware capture (Frida + actual device)
+2. Pattern is too complex for simple mathematical formula
+3. Polynomial degree 10 tested: FAILED with 30,000+ unit errors at 4kHz/8kHz
+4. Piecewise linear interpolation is the recommended encoding method
+5. 21 data points provide excellent coverage from 20 Hz to 10 kHz
+
+Generated: January 2026
+Method: Systematic frequency testing via Bluetooth capture
+Device: Edifier W830NB / ConnectX

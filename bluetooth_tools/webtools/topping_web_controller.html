@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topping BLE Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            margin: 10px 0;
+        }
+
+        .status.connected {
+            background: #4caf50;
+        }
+
+        .status.disconnected {
+            background: #f44336;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: grid;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .eq-band {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .eq-band h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .log-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .log-entry.tx {
+            color: #4fc3f7;
+        }
+
+        .log-entry.rx {
+            color: #81c784;
+        }
+
+        .log-entry.info {
+            color: #ffd54f;
+        }
+
+        .log-entry.error {
+            color: #e57373;
+        }
+
+        .device-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .warning {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎧 Topping BLE Controller</h1>
+            <div class="status" id="connectionStatus">Disconnected</div>
+            <p style="margin-top: 10px; opacity: 0.8;">Web Bluetooth Control for E50 II / DX5 II</p>
+        </header>
+
+        <div class="warning">
+            <strong>⚠️ Protocol Discovery Mode</strong><br>
+            Commands are placeholders! Use the Python tool first to discover the actual protocol.
+            This interface will work once you update the command structures in the JavaScript code.
+        </div>
+
+        <!-- Connection -->
+        <div class="card">
+            <h2>📡 Connection</h2>
+            <div class="button-group">
+                <button id="connectBtn" onclick="connectDevice()">Connect to Device</button>
+                <button id="disconnectBtn" onclick="disconnectDevice()" disabled>Disconnect</button>
+                <button id="discoverBtn" onclick="discoverServices()" disabled>Discover Services</button>
+            </div>
+        </div>
+
+        <!-- Device Info -->
+        <div class="card" id="deviceInfoCard" style="display: none;">
+            <h2>📱 Device Information</h2>
+            <div class="device-info">
+                <div class="info-item">
+                    <div class="info-label">Device Name</div>
+                    <div class="info-value" id="deviceName">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Profile</div>
+                    <div class="info-value" id="profileName">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Service UUID</div>
+                    <div class="info-value" id="serviceUuid">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">TX Characteristic</div>
+                    <div class="info-value" id="txChar">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">RX Characteristic</div>
+                    <div class="info-value" id="rxChar">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="card">
+            <h2>🔊 Volume Control</h2>
+            <div class="controls">
+                <div class="control-row">
+                    <label>Volume:</label>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="updateVolumeDisplay()">
+                    <div class="value-display" id="volumeDisplay">50</div>
+                </div>
+                <div class="button-group">
+                    <button onclick="setVolume()">Set Volume</button>
+                    <button onclick="toggleMute()">Toggle Mute</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Selection -->
+        <div class="card">
+            <h2>🎵 Input Source</h2>
+            <div class="button-group">
+                <button onclick="selectInput(1)">USB</button>
+                <button onclick="selectInput(2)">Coaxial</button>
+                <button onclick="selectInput(3)">Optical</button>
+                <button onclick="selectInput(4)">Bluetooth</button>
+            </div>
+        </div>
+
+        <!-- EQ Control -->
+        <div class="card">
+            <h2>🎛️ Equalizer</h2>
+            <div class="button-group">
+                <button onclick="enableEQ(true)">Enable EQ</button>
+                <button onclick="enableEQ(false)">Disable EQ</button>
+                <button onclick="getEQProfile()">Get EQ Profile</button>
+            </div>
+
+            <div id="eqBands" style="margin-top: 20px;">
+                <!-- EQ bands will be populated here -->
+            </div>
+        </div>
+
+        <!-- PEQ Editor -->
+        <div class="card">
+            <h2>🎚️ Parametric EQ</h2>
+            <div class="eq-band">
+                <h4>Band 1 - 100 Hz</h4>
+                <div class="controls">
+                    <div class="control-row">
+                        <label>Frequency:</label>
+                        <input type="range" id="peq1_freq" min="20" max="20000" value="100" oninput="updatePEQDisplay(1)">
+                        <div class="value-display" id="peq1_freq_display">100 Hz</div>
+                    </div>
+                    <div class="control-row">
+                        <label>Gain:</label>
+                        <input type="range" id="peq1_gain" min="-20" max="20" step="0.5" value="0" oninput="updatePEQDisplay(1)">
+                        <div class="value-display" id="peq1_gain_display">0 dB</div>
+                    </div>
+                    <div class="control-row">
+                        <label>Q Factor:</label>
+                        <input type="range" id="peq1_q" min="0.1" max="10" step="0.1" value="1.0" oninput="updatePEQDisplay(1)">
+                        <div class="value-display" id="peq1_q_display">1.0</div>
+                    </div>
+                    <button onclick="setPEQBand(1)">Apply Band 1</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw Command -->
+        <div class="card">
+            <h2>⚙️ Raw Commands</h2>
+            <div class="controls">
+                <div class="control-row">
+                    <label>Hex Data:</label>
+                    <input type="text" id="rawCommand" placeholder="aa0401329d" style="flex: 1;">
+                </div>
+                <div class="button-group">
+                    <button onclick="sendRawCommand()">Send Command</button>
+                    <button onclick="clearLog()">Clear Log</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Log -->
+        <div class="card">
+            <h2>📋 Communication Log</h2>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Web Bluetooth API Configuration - Multiple device profiles
+        const DEVICE_PROFILES = [
+            {
+                name: 'E50 II / DX5 II (Primary)',
+                service: '000090fb-0000-1000-8000-00805f9b34fb',
+                tx: '00008efa-0000-1000-8000-00805f9b34fb',
+                rx: '00009cf1-0000-1000-8000-00805f9b34fb'
+            },
+            {
+                name: 'E50 II / DX5 II (Alternate)',
+                service: '00001100-d102-11e1-9b23-00025b00a5a5',
+                tx: '00001101-d102-11e1-9b23-00025b00a5a5',
+                rx: '00001102-d102-11e1-9b23-00025b00a5a5'
+            },
+            {
+                name: 'Generic Topping (Legacy)',
+                service: '0000ffe0-0000-1000-8000-00805f9b34fb',
+                tx: '0000ffe1-0000-1000-8000-00805f9b34fb',
+                rx: '0000ffe2-0000-1000-8000-00805f9b34fb'
+            }
+        ];
+
+        let bluetoothDevice = null;
+        let bluetoothServer = null;
+        let txCharacteristic = null;
+        let rxCharacteristic = null;
+        let activeProfile = null;
+
+        // Protocol command builder
+        class ToppingProtocol {
+            static buildCommand(cmdType, payload = []) {
+                const packet = [0xAA, cmdType, payload.length, ...payload];
+                const checksum = packet.reduce((a, b) => a ^ b, 0);
+                packet.push(checksum);
+                return new Uint8Array(packet);
+            }
+
+            static setVolume(level) {
+                return this.buildCommand(0x04, [level]);
+            }
+
+            static toggleMute() {
+                return this.buildCommand(0x07, []);
+            }
+
+            static selectInput(source) {
+                return this.buildCommand(0x06, [source]);
+            }
+
+            static enableEQ(enable) {
+                return this.buildCommand(0x02, [enable ? 1 : 0]);
+            }
+
+            static getStatus() {
+                return this.buildCommand(0x01, []);
+            }
+
+            static setPEQBand(band, freq, gain, q) {
+                // Encoding: [band_num, freq_lo, freq_hi, gain_lo, gain_hi, q_lo, q_hi]
+                const freqScaled = Math.floor(freq);
+                const gainScaled = Math.floor(gain * 10);
+                const qScaled = Math.floor(q * 100);
+
+                const payload = [
+                    band,
+                    freqScaled & 0xFF,
+                    (freqScaled >> 8) & 0xFF,
+                    gainScaled & 0xFF,
+                    (gainScaled >> 8) & 0xFF,
+                    qScaled & 0xFF,
+                    (qScaled >> 8) & 0xFF
+                ];
+
+                return this.buildCommand(0x10, payload);
+            }
+        }
+
+        // Logging
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+
+        // Connection Management
+        async function connectDevice() {
+            try {
+                log('Requesting Bluetooth device...', 'info');
+
+                // Request device with all possible service UUIDs
+                const serviceUUIDs = DEVICE_PROFILES.map(p => p.service);
+
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { namePrefix: 'Topping' },
+                        { namePrefix: 'E50' },
+                        { namePrefix: 'DX5' }
+                    ],
+                    optionalServices: serviceUUIDs
+                });
+
+                log(`Connecting to ${bluetoothDevice.name}...`, 'info');
+
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                bluetoothServer = await bluetoothDevice.gatt.connect();
+
+                log('Connected! Discovering services...', 'info');
+
+                // Try each profile until one works
+                let connected = false;
+                for (const profile of DEVICE_PROFILES) {
+                    try {
+                        log(`Trying profile: ${profile.name}`, 'info');
+
+                        const service = await bluetoothServer.getPrimaryService(profile.service);
+
+                        txCharacteristic = await service.getCharacteristic(profile.tx);
+                        rxCharacteristic = await service.getCharacteristic(profile.rx);
+
+                        await rxCharacteristic.startNotifications();
+                        rxCharacteristic.addEventListener('characteristicvaluechanged', handleNotification);
+
+                        activeProfile = profile;
+                        connected = true;
+                        log(`✓ Connected using ${profile.name}`, 'info');
+                        break;
+
+                    } catch (err) {
+                        log(`Profile ${profile.name} not available`, 'info');
+                        continue;
+                    }
+                }
+
+                if (!connected) {
+                    throw new Error('No compatible service profile found');
+                }
+
+                updateConnectionStatus(true);
+                showDeviceInfo();
+
+                log('✓ Device ready!', 'info');
+
+            } catch (error) {
+                log(`Connection error: ${error}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function disconnectDevice() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+        }
+
+        function onDisconnected() {
+            log('Device disconnected', 'info');
+            updateConnectionStatus(false);
+            hideDeviceInfo();
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.textContent = connected ? 'Connected' : 'Disconnected';
+            statusElement.className = connected ? 'status connected' : 'status disconnected';
+
+            document.getElementById('connectBtn').disabled = connected;
+            document.getElementById('disconnectBtn').disabled = !connected;
+            document.getElementById('discoverBtn').disabled = !connected;
+        }
+
+        function showDeviceInfo() {
+            document.getElementById('deviceInfoCard').style.display = 'block';
+            document.getElementById('deviceName').textContent = bluetoothDevice.name;
+
+            if (activeProfile) {
+                document.getElementById('profileName').textContent = activeProfile.name;
+                document.getElementById('serviceUuid').textContent = activeProfile.service.substring(0, 18) + '...';
+                document.getElementById('txChar').textContent = activeProfile.tx.substring(0, 18) + '...';
+                document.getElementById('rxChar').textContent = activeProfile.rx.substring(0, 18) + '...';
+            }
+        }
+
+        function hideDeviceInfo() {
+            document.getElementById('deviceInfoCard').style.display = 'none';
+        }
+
+        // Communication
+        async function writeCommand(data) {
+            if (!txCharacteristic) {
+                log('Not connected to device', 'error');
+                return;
+            }
+
+            try {
+                const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
+                log(`TX: ${hexString}`, 'tx');
+
+                await txCharacteristic.writeValue(data);
+
+            } catch (error) {
+                log(`Write error: ${error}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function handleNotification(event) {
+            const value = event.target.value;
+            const data = new Uint8Array(value.buffer);
+            const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
+
+            log(`RX: ${hexString}`, 'rx');
+
+            // Parse response
+            parseResponse(data);
+        }
+
+        function parseResponse(data) {
+            if (data.length < 3) return;
+
+            const cmd = data[1];
+            const len = data[2];
+
+            // Add parsing logic here based on discovered protocol
+            log(`  Command: 0x${cmd.toString(16)}, Length: ${len}`, 'info');
+        }
+
+        async function discoverServices() {
+            if (!bluetoothServer) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            try {
+                log('Discovering all services...', 'info');
+                const services = await bluetoothServer.getPrimaryServices();
+
+                for (const service of services) {
+                    log(`Service: ${service.uuid}`, 'info');
+
+                    const characteristics = await service.getCharacteristics();
+                    for (const char of characteristics) {
+                        const props = [];
+                        if (char.properties.read) props.push('READ');
+                        if (char.properties.write) props.push('WRITE');
+                        if (char.properties.notify) props.push('NOTIFY');
+
+                        log(`  Char: ${char.uuid} [${props.join(', ')}]`, 'info');
+                    }
+                }
+
+            } catch (error) {
+                log(`Discovery error: ${error}`, 'error');
+            }
+        }
+
+        // Volume Control
+        function updateVolumeDisplay() {
+            const value = document.getElementById('volumeSlider').value;
+            document.getElementById('volumeDisplay').textContent = value;
+        }
+
+        async function setVolume() {
+            const level = parseInt(document.getElementById('volumeSlider').value);
+            const cmd = ToppingProtocol.setVolume(level);
+            await writeCommand(cmd);
+        }
+
+        async function toggleMute() {
+            const cmd = ToppingProtocol.toggleMute();
+            await writeCommand(cmd);
+        }
+
+        // Input Selection
+        async function selectInput(source) {
+            const cmd = ToppingProtocol.selectInput(source);
+            await writeCommand(cmd);
+        }
+
+        // EQ Control
+        async function enableEQ(enable) {
+            const cmd = ToppingProtocol.enableEQ(enable);
+            await writeCommand(cmd);
+        }
+
+        async function getEQProfile() {
+            const cmd = ToppingProtocol.getStatus();
+            await writeCommand(cmd);
+        }
+
+        // PEQ Control
+        function updatePEQDisplay(band) {
+            const freq = document.getElementById(`peq${band}_freq`).value;
+            const gain = document.getElementById(`peq${band}_gain`).value;
+            const q = document.getElementById(`peq${band}_q`).value;
+
+            document.getElementById(`peq${band}_freq_display`).textContent = `${freq} Hz`;
+            document.getElementById(`peq${band}_gain_display`).textContent = `${gain} dB`;
+            document.getElementById(`peq${band}_q_display`).textContent = q;
+        }
+
+        async function setPEQBand(band) {
+            const freq = parseFloat(document.getElementById(`peq${band}_freq`).value);
+            const gain = parseFloat(document.getElementById(`peq${band}_gain`).value);
+            const q = parseFloat(document.getElementById(`peq${band}_q`).value);
+
+            const cmd = ToppingProtocol.setPEQBand(band, freq, gain, q);
+            await writeCommand(cmd);
+        }
+
+        // Raw Commands
+        async function sendRawCommand() {
+            const hexInput = document.getElementById('rawCommand').value.replace(/\s/g, '');
+
+            if (!/^[0-9a-fA-F]+$/.test(hexInput) || hexInput.length % 2 !== 0) {
+                log('Invalid hex string', 'error');
+                return;
+            }
+
+            const bytes = [];
+            for (let i = 0; i < hexInput.length; i += 2) {
+                bytes.push(parseInt(hexInput.substring(i, i + 2), 16));
+            }
+
+            await writeCommand(new Uint8Array(bytes));
+        }
+
+        // Check Web Bluetooth support
+        if (!navigator.bluetooth) {
+            document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h1>⚠️ Web Bluetooth Not Supported</h1><p>Please use Chrome, Edge, or Opera browser on desktop/Android.</p></div>';
+        }
+
+        // Initialize displays
+        updateVolumeDisplay();
+        updatePEQDisplay(1);
+        log('Ready. Click "Connect to Device" to start.', 'info');
+    </script>
+</body>
+</html>

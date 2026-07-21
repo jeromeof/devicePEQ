@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Web Bluetooth Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #0f0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 0;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #log {
+      background: #000;
+      padding: 10px;
+      margin-top: 20px;
+      border: 1px solid #0f0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔬 Web Bluetooth Test Tool</h1>
+  <p>This will test if Web Bluetooth works with your écoute headphones</p>
+
+  <button id="testBtn">🧪 Test Connection</button>
+  <button id="queryBtn" disabled>📊 Query EQ</button>
+
+  <div id="log"></div>
+
+  <script>
+    const SERVICE_UUID = '0000ff77-0000-1000-8000-00805f9b34fb';
+    const WRITE_UUID = '0000ff88-0000-1000-8000-00805f9b34fb';
+    const NOTIFY_UUID = '0000ff99-0000-1000-8000-00805f9b34fb';
+
+    let device, writeChar, notifyChar;
+
+    function log(msg, color = '#0f0') {
+      const div = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      div.innerHTML += `<div style="color: ${color}">[${time}] ${msg}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+
+    function calculateCRC(data, length) {
+      let crc = 0xFFFF;
+      for (let i = 0; i < length; i++) {
+        crc = ((crc << 8) | (crc >> 8)) & 0xFFFF;
+        crc ^= (data[i] & 0xFF);
+        crc ^= ((crc & 0xFF) >> 4) & 0xFFFF;
+        crc ^= (crc << 12) & 0xFFFF;
+        crc ^= ((crc & 0xFF) << 5) & 0xFFFF;
+      }
+      return new Uint8Array([(crc >> 8) & 0xFF, crc & 0xFF]);
+    }
+
+    function handleNotification(event) {
+      const data = new Uint8Array(event.target.value.buffer);
+      const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+      log(`← RECEIVED (${data.length} bytes): ${hex}`, '#ff0');
+
+      // Parse EQ if it's EQ data
+      if (data.length >= 10 && data[0] === 0xFE && data[5] === 0x65) {
+        log('✅ This is EQ data! Parsing...', '#0ff');
+        let offset = 6;
+        for (let i = 0; i < 8; i++) {
+          if (offset + 1 >= data.length - 2) break;
+          let val = (data[offset] << 8) | data[offset + 1];
+          if (val > 32767) val -= 65536;
+          const db = val / 100.0;
+          log(`  Band ${i+1}: ${db > 0 ? '+' : ''}${db.toFixed(1)} dB`, '#0ff');
+          offset += 2;
+        }
+      }
+    }
+
+    document.getElementById('testBtn').onclick = async () => {
+      try {
+        log('🔍 Requesting Bluetooth device...', '#fff');
+
+        device = await navigator.bluetooth.requestDevice({
+          filters: [
+            { name: 'écoute' },
+            { namePrefix: 'ecoute' },
+            { namePrefix: 'écoute' },
+            { services: [SERVICE_UUID] }
+          ],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        log(`✅ Found: ${device.name || 'Unknown'} (${device.id})`, '#0f0');
+
+        log('🔗 Connecting to GATT...', '#fff');
+        const server = await device.gatt.connect();
+        log('✅ Connected to GATT', '#0f0');
+
+        log('🔍 Getting service...', '#fff');
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        log('✅ Got service', '#0f0');
+
+        log('🔍 Getting characteristics...', '#fff');
+        writeChar = await service.getCharacteristic(WRITE_UUID);
+        notifyChar = await service.getCharacteristic(NOTIFY_UUID);
+        log('✅ Got write characteristic', '#0f0');
+        log('✅ Got notify characteristic', '#0f0');
+
+        log('🔔 Enabling notifications...', '#fff');
+        await notifyChar.startNotifications();
+        notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
+        log('✅ Notifications enabled', '#0f0');
+
+        log('🎉 ALL TESTS PASSED! Device is ready.', '#0f0');
+        document.getElementById('queryBtn').disabled = false;
+
+      } catch (err) {
+        log(`❌ ERROR: ${err.message}`, '#f00');
+        console.error(err);
+      }
+    };
+
+    document.getElementById('queryBtn').onclick = async () => {
+      try {
+        const cmd = new Uint8Array([0xFE, 0x08, 0x00, 0x00, 0x00]);
+        const crc = calculateCRC(cmd, 5);
+        const full = new Uint8Array([...cmd, ...crc]);
+
+        const hex = Array.from(full).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        log(`→ SENDING: ${hex}`, '#ff0');
+
+        await writeChar.writeValue(full);
+        log('✅ Query sent, waiting for response...', '#0f0');
+
+      } catch (err) {
+        log(`❌ ERROR: ${err.message}`, '#f00');
+      }
+    };
+
+    // Check if Web Bluetooth is supported
+    if (!navigator.bluetooth) {
+      log('❌ Web Bluetooth is NOT supported in this browser', '#f00');
+      log('   Please use Chrome, Edge, or Opera', '#f00');
+      document.getElementById('testBtn').disabled = true;
+    } else {
+      log('✅ Web Bluetooth is supported', '#0f0');
+      log('   Click "Test Connection" to begin', '#fff');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pip:*)",
+      "Bash(python3.11 -m pip list:*)",
+      "Bash(./bluetooth_toolkit.py:*)",
+      "Bash(adb devices:*)",
+      "Bash(adb shell:*)",
+      "Bash(unxz:*)",
+      "Bash(adb push:*)",
+      "Bash(frida-ps:*)",
+      "Bash(pkill:*)",
+      "Bash(frida:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(sort:*)",
+      "Bash(python3.11:*)",
+      "Bash(pip3 install:*)",
+      "Bash(tee:*)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:files.pythonhosted.org)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}

@@ -1,0 +1,90 @@
+     ____
+    / _  |   Frida 16.7.19 - A world-class dynamic instrumentation toolkit
+   | (_| |
+    > _  |   Commands:
+   /_/ |_|       help      -> Displays the help system
+   . . . .       object?   -> Display information about 'object'
+   . . . .       exit/quit -> Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+   . . . .
+   . . . .   Connected to Redmi Note 5 (id=901f9069)
+Attaching...
+
+================================================================================
+🎧 Sony Headphones SPP Protocol Capture
+================================================================================
+Target: Sony Sound Connect (com.sony.songpal.mdr)
+Protocol: Classic Bluetooth SPP (BR/EDR)
+Devices: WH-1000XM5, WH-1000XM6, WF-1000XM5
+================================================================================
+
+📱 Hooking Classic Bluetooth (SPP) I/O streams...
+
+✅ Hooked OutputStream (TX)
+✅ Hooked InputStream (RX)
+
+================================================================================
+📱 Ready to capture Sony SPP protocol
+🎯 Change EQ settings in the app to see traffic
+================================================================================
+
+[Redmi Note 5::PID::16222 ]-> 
+📤 SPP TX (OutputStream.write)
+   Length: 13 bytes
+   Hex: 3E 0C 00 00 00 00 04 58 00 16 00 7E 3C
+
+   Packet Type: 0x0C (Command/Data)
+   Seq Flags: 00 00 00 00
+   Length: 4
+   Command: EQEBB_SET_PARAM (0x58)
+   >>> Setting EQ Preset: Clear Bass
+
+📥 SPP RX (InputStream.read)
+   Length: 19 bytes
+   Hex: 3E 0C 00 00 00 00 0A 59 00 16 06 11 0A 0A 0A 0A 0A -32 3C
+
+   Packet Type: 0x0C (Command/Data)
+   Seq Flags: 00 00 00 00
+   Length: 10
+   Command: EQEBB_NTFY_PARAM (0x59)
+   >>> EQ Status: Clear Bass
+   >>> Bands: 6
+   >>> Band Values: 11 0A 0A 0A 0A 0A
+   >>> Gains (dB): [+7, +0, +0, +0, +0, +0]
+
+📤 SPP TX (OutputStream.write)
+   Length: 9 bytes
+   Hex: 3E 01 01 00 00 00 00 02 3C
+
+   Packet Type: 0x01 (ACK)
+
+📤 SPP TX (OutputStream.write)
+   Length: 11 bytes
+   Hex: 3E 0C 01 00 00 00 02 5A 00 69 3C
+
+   Packet Type: 0x0C (Command/Data)
+   Seq Flags: 01 00 00 00
+   Length: 2
+   Command: EQEBB_GET_EXTENDED_INFO (0x5a)
+
+📥 SPP RX (InputStream.read)
+   Length: 9 bytes
+   Hex: 3E 01 00 00 00 00 00 01 3C
+
+   Packet Type: 0x01 (ACK)
+
+📥 SPP RX (InputStream.read)
+   Length: 31 bytes
+   Hex: 3E 0C 01 00 00 00 15 5B 00 06 10 00 01 01 01 -70 01 03 -18 01 09 -3C 01 18 -64 01 3D 2E -80 54 3C
+
+   Packet Type: 0x0C (Command/Data)
+   Seq Flags: 01 00 00 00
+   Length: 21
+   Command: EQEBB_RET_EXTENDED_INFO (0x5b)
+
+📤 SPP TX (OutputStream.write)
+   Length: 9 bytes
+   Hex: 3E 01 00 00 00 00 00 01 3C
+
+   Packet Type: 0x01 (ACK)

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ecoute Web Bluetooth Debug</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #0f0;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    button {
+      padding: 15px 30px;
+      margin: 10px 5px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #333;
+      color: #0f0;
+      border: 2px solid #0f0;
+      border-radius: 5px;
+    }
+    button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background: #0f0;
+      color: #000;
+    }
+    #log {
+      background: #000;
+      padding: 15px;
+      margin-top: 20px;
+      border: 2px solid #0f0;
+      max-height: 500px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    h1 { color: #0ff; }
+    .error { color: #f00; }
+    .success { color: #0f0; }
+    .warning { color: #ff0; }
+    .info { color: #0ff; }
+  </style>
+</head>
+<body>
+  <h1>🔬 Ecoute Web Bluetooth - Debug Mode</h1>
+
+  <div>
+    <button id="scanAllBtn">🔍 Scan ALL Devices (Debug)</button>
+    <button id="scanEcouteBtn">🎧 Scan for Ecoute</button>
+    <button id="queryBtn" disabled>📊 Query EQ</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    const SERVICE_UUID = '0000ff77-0000-1000-8000-00805f9b34fb';
+    const WRITE_UUID = '0000ff88-0000-1000-8000-00805f9b34fb';
+    const NOTIFY_UUID = '0000ff99-0000-1000-8000-00805f9b34fb';
+
+    let device, server, writeChar, notifyChar;
+
+    function log(msg, cls = '') {
+      const div = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      div.innerHTML += `<div class="${cls}">[${time}] ${msg}</div>`;
+      div.scrollTop = div.scrollHeight;
+      console.log(msg);
+    }
+
+    function calculateCRC(data, length) {
+      let crc = 0xFFFF;
+      for (let i = 0; i < length; i++) {
+        crc = ((crc << 8) | (crc >> 8)) & 0xFFFF;
+        crc ^= (data[i] & 0xFF);
+        crc ^= ((crc & 0xFF) >> 4) & 0xFFFF;
+        crc ^= (crc << 12) & 0xFFFF;
+        crc ^= ((crc & 0xFF) << 5) & 0xFFFF;
+      }
+      return new Uint8Array([(crc >> 8) & 0xFF, crc & 0xFF]);
+    }
+
+    function handleNotification(event) {
+      const data = new Uint8Array(event.target.value.buffer);
+      const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+      log(`← RECEIVED (${data.length} bytes): ${hex}`, 'success');
+
+      // Parse EQ
+      if (data.length >= 10 && data[0] === 0xFE && data[5] === 0x65) {
+        log('📊 Parsing EQ data...', 'info');
+        let offset = 6;
+        for (let i = 0; i < 8; i++) {
+          if (offset + 1 >= data.length - 2) break;
+          let val = (data[offset] << 8) | data[offset + 1];
+          if (val > 32767) val -= 65536;
+          const db = val / 100.0;
+          log(`  Band ${i+1}: ${db > 0 ? '+' : ''}${db.toFixed(1)} dB`, 'info');
+          offset += 2;
+        }
+      }
+    }
+
+    async function connectToDevice(dev) {
+      try {
+        device = dev;
+        log(`Selected: ${device.name || 'Unknown'}`, 'info');
+        log(`ID: ${device.id}`, 'info');
+
+        log('🔗 Connecting to GATT server...', 'info');
+        server = await device.gatt.connect();
+        log('✅ Connected to GATT!', 'success');
+
+        log('🔍 Getting service ' + SERVICE_UUID + '...', 'info');
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        log('✅ Got service!', 'success');
+
+        log('🔍 Getting characteristics...', 'info');
+        writeChar = await service.getCharacteristic(WRITE_UUID);
+        notifyChar = await service.getCharacteristic(NOTIFY_UUID);
+        log('✅ Got write characteristic', 'success');
+        log('✅ Got notify characteristic', 'success');
+
+        log('🔔 Starting notifications...', 'info');
+        await notifyChar.startNotifications();
+        notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
+        log('✅ Notifications started!', 'success');
+
+        log('', '');
+        log('🎉 SUCCESS! Device is fully connected and ready!', 'success');
+        log('Click "Query EQ" to test communication.', 'info');
+
+        document.getElementById('queryBtn').disabled = false;
+
+      } catch (err) {
+        log(`❌ ERROR during connection: ${err.message}`, 'error');
+        log(`Error name: ${err.name}`, 'error');
+        console.error('Full error:', err);
+      }
+    }
+
+    // Scan ALL devices (for debugging)
+    document.getElementById('scanAllBtn').onclick = async () => {
+      try {
+        log('', '');
+        log('🔍 Opening device picker - SHOWING ALL DEVICES', 'warning');
+        log('This will show every Bluetooth device nearby.', 'warning');
+        log('Look for "écoute" or similar name...', 'info');
+
+        const dev = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [SERVICE_UUID]
+        });
+
+        await connectToDevice(dev);
+
+      } catch (err) {
+        if (err.name === 'NotFoundError') {
+          log('❌ No device selected (user cancelled)', 'error');
+        } else {
+          log(`❌ ERROR: ${err.message}`, 'error');
+        }
+        console.error(err);
+      }
+    };
+
+    // Scan for Ecoute specifically
+    document.getElementById('scanEcouteBtn').onclick = async () => {
+      try {
+        log('', '');
+        log('🔍 Scanning for Ecoute headphones...', 'info');
+        log('Looking for device named "écoute"...', 'info');
+
+        const dev = await navigator.bluetooth.requestDevice({
+          filters: [
+            { name: 'écoute' },
+            { namePrefix: 'ecoute' }
+          ],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        await connectToDevice(dev);
+
+      } catch (err) {
+        if (err.name === 'NotFoundError') {
+          log('❌ Device not found or user cancelled', 'error');
+          log('', '');
+          log('💡 TIP: Try these steps:', 'warning');
+          log('1. Make sure headphones are powered ON', 'warning');
+          log('2. Disconnect them from audio Bluetooth (macOS settings)', 'warning');
+          log('3. Try "Scan ALL Devices" to see if écoute appears', 'warning');
+        } else {
+          log(`❌ ERROR: ${err.message}`, 'error');
+        }
+        console.error(err);
+      }
+    };
+
+    // Query EQ
+    document.getElementById('queryBtn').onclick = async () => {
+      try {
+        log('', '');
+        const cmd = new Uint8Array([0xFE, 0x08, 0x00, 0x00, 0x00]);
+        const crc = calculateCRC(cmd, 5);
+        const full = new Uint8Array([...cmd, ...crc]);
+
+        const hex = Array.from(full).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        log(`→ SENDING QUERY: ${hex}`, 'warning');
+
+        await writeChar.writeValue(full);
+        log('✅ Query sent! Waiting for response...', 'success');
+
+      } catch (err) {
+        log(`❌ ERROR sending query: ${err.message}`, 'error');
+      }
+    };
+
+    // Check browser support
+    if (!navigator.bluetooth) {
+      log('❌ Web Bluetooth NOT supported in this browser!', 'error');
+      log('You must use Chrome, Edge, or Opera.', 'error');
+      document.getElementById('scanAllBtn').disabled = true;
+      document.getElementById('scanEcouteBtn').disabled = true;
+    } else {
+      log('✅ Web Bluetooth is supported', 'success');
+      log('', '');
+      log('INSTRUCTIONS:', 'info');
+      log('1. First try "Scan for Ecoute" button', 'info');
+      log('2. If écoute doesn\'t appear, try "Scan ALL Devices"', 'info');
+      log('3. Select "écoute" from the list', 'info');
+      log('', '');
+      log('Make sure headphones are ON but NOT connected as audio device!', 'warning');
+    }
+  </script>
+</body>
+</html>

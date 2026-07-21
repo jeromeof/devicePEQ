@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ugreen Max5C Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .status.connecting {
+            background: #fef7e0;
+            color: #b8860b;
+        }
+
+        .connect-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .connect-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .connect-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .preset-btn {
+            padding: 20px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        .preset-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .preset-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .preset-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .log-entry.tx {
+            color: #e74c3c;
+        }
+
+        .log-entry.rx {
+            color: #27ae60;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .info-box strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎧 Ugreen Max5C Controller</h1>
+        <p class="subtitle">Web Serial API - Desktop Chrome Required</p>
+
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+
+        <button id="connectBtn" class="connect-btn">
+            Connect to Headphones
+        </button>
+
+        <div class="presets">
+            <button class="preset-btn" data-preset="0">Default</button>
+            <button class="preset-btn" data-preset="1">Jazz</button>
+            <button class="preset-btn" data-preset="2">Rock</button>
+            <button class="preset-btn" data-preset="3">Pop</button>
+            <button class="preset-btn" data-preset="4">Classical</button>
+            <button class="preset-btn" data-preset="5">Vocals</button>
+            <button class="preset-btn" data-preset="6">Bass Boost</button>
+            <button class="preset-btn" data-preset="7">Treble Boost</button>
+        </div>
+
+        <div class="log-title">📋 Communication Log:</div>
+        <div id="log" class="log"></div>
+
+        <div class="info-box">
+            <strong>ℹ️ How to use:</strong><br>
+            1. Pair your Ugreen Max5C with your computer via Bluetooth<br>
+            2. Click "Connect to Headphones"<br>
+            3. Select the Bluetooth serial port (should contain "Ugreen" or serial device)<br>
+            4. Click any preset button to switch EQ modes
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let currentPreset = null;
+
+        const statusDiv = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const logDiv = document.getElementById('log');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+
+        // Check Web Serial API support
+        if (!('serial' in navigator)) {
+            statusDiv.textContent = '❌ Web Serial API not supported. Use Chrome/Edge on desktop.';
+            statusDiv.className = 'status disconnected';
+            connectBtn.disabled = true;
+        }
+
+        // Protocol constants
+        const START_TX = [0xAA, 0xBB, 0xCC];
+        const START_RX = [0xDD, 0xEE, 0xFF];
+
+        function calculateChecksum(data) {
+            // Simple CRC16 calculation (observed from captures)
+            // This is a placeholder - need to reverse engineer the exact algorithm
+            let crc = 0;
+            for (let i = 0; i < data.length; i++) {
+                crc = ((crc << 8) ^ data[i]) & 0xFFFF;
+            }
+            return [(crc >> 8) & 0xFF, crc & 0xFF];
+        }
+
+        function buildPresetCommand(presetNum) {
+            // Command structure: AA BB CC 05 01 [PRESET] [CRC_H] [CRC_L]
+            const cmd = [0xAA, 0xBB, 0xCC, 0x05, 0x01, presetNum];
+            const crc = calculateChecksum(cmd);
+            return new Uint8Array([...cmd, ...crc]);
+        }
+
+        function bytesToHex(bytes) {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        }
+
+        function log(message, type = '') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function connectSerial() {
+            try {
+                statusDiv.textContent = '🔄 Connecting...';
+                statusDiv.className = 'status connecting';
+                connectBtn.disabled = true;
+
+                // Request serial port
+                port = await navigator.serial.requestPort();
+
+                // Open port with standard baud rate
+                await port.open({ baudRate: 115200 });
+
+                log('✅ Connected to serial port', '');
+                statusDiv.textContent = '✅ Connected';
+                statusDiv.className = 'status connected';
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.disabled = false;
+
+                // Enable preset buttons
+                presetBtns.forEach(btn => btn.disabled = false);
+
+                // Start reading responses
+                readLoop();
+
+            } catch (error) {
+                log('❌ Connection failed: ' + error.message, '');
+                statusDiv.textContent = '❌ Connection failed';
+                statusDiv.className = 'status disconnected';
+                connectBtn.disabled = false;
+            }
+        }
+
+        async function disconnectSerial() {
+            if (reader) {
+                await reader.cancel();
+                reader = null;
+            }
+
+            if (port) {
+                await port.close();
+                port = null;
+            }
+
+            statusDiv.textContent = '❌ Disconnected';
+            statusDiv.className = 'status disconnected';
+            connectBtn.textContent = 'Connect to Headphones';
+            presetBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('active');
+            });
+            currentPreset = null;
+            log('👋 Disconnected', '');
+        }
+
+        async function readLoop() {
+            try {
+                reader = port.readable.getReader();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    // Process received data
+                    const hex = bytesToHex(value);
+                    log(`📥 RX: ${hex}`, 'rx');
+
+                    // Check if it's a preset confirmation
+                    if (value.length >= 7 &&
+                        value[0] === 0xDD &&
+                        value[1] === 0xEE &&
+                        value[2] === 0xFF) {
+                        const confirmedPreset = value[6];
+                        updateActivePreset(confirmedPreset);
+                    }
+                }
+            } catch (error) {
+                if (error.message !== 'Releasing lock') {
+                    log('❌ Read error: ' + error.message, '');
+                }
+            } finally {
+                if (reader) {
+                    reader.releaseLock();
+                }
+            }
+        }
+
+        async function sendPresetCommand(presetNum) {
+            if (!port || !port.writable) {
+                log('❌ Not connected', '');
+                return;
+            }
+
+            try {
+                const cmd = buildPresetCommand(presetNum);
+                writer = port.writable.getWriter();
+                await writer.write(cmd);
+                writer.releaseLock();
+
+                const hex = bytesToHex(cmd);
+                log(`📤 TX: ${hex} (Preset ${presetNum})`, 'tx');
+
+            } catch (error) {
+                log('❌ Send error: ' + error.message, '');
+            }
+        }
+
+        function updateActivePreset(presetNum) {
+            currentPreset = presetNum;
+            presetBtns.forEach(btn => {
+                if (parseInt(btn.dataset.preset) === presetNum) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Event listeners
+        connectBtn.addEventListener('click', async () => {
+            if (port) {
+                await disconnectSerial();
+            } else {
+                await connectSerial();
+            }
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const preset = parseInt(btn.dataset.preset);
+                await sendPresetCommand(preset);
+            });
+            btn.disabled = true; // Start disabled
+        });
+
+        // Log initial message
+        log('🎧 Ugreen Max5C Controller ready', '');
+        log('💡 Click "Connect" to start', '');
+    </script>
+</body>
+</html>

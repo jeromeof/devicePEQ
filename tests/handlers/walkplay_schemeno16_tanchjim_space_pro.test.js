@@ -2,7 +2,7 @@
  * TANCHJIM-SPACE PRO (WalkPlay SchemeNo16) — auto-generated tests
  * Capture: tests/captures/walkplay_schemeno16_tanchjim_space_pro.json
  *
- * SchemeNo16: peq10Band10dBFullShelves — 10 bands, ±10 dB, LS+HS, pregain
+ * TANCHJIM-SPACE PRO: SchemeNo16 commands, 10 bands, ±10 dB, peak filters only
  * vendorId=0x3302  productId=0x4367
  */
 
@@ -15,7 +15,7 @@ function makeDeviceDetails(mock, overrides = {}) {
     model: mock.productName,
     manufacturer: 'WalkPlay',
     modelConfig: {
-      peqConstraintsRef: 'peq10Band10dBFullShelves',
+      peqConstraintsRef: 'walkplayPeq10Band10dBPkOnly',
       schemeNo:           16,
       maxFilters:         10,
       minGain:           -10,
@@ -26,6 +26,8 @@ function makeDeviceDetails(mock, overrides = {}) {
       maxWritableEQSlots:    1,
       disconnectOnSave:  false,
       deviceHandlesPregain:    false,
+      supportsLSFilter: false,
+      supportsHSFilter: false,
       availableSlots: [{ id: 101, name: 'Custom' }],
       ...overrides
     }

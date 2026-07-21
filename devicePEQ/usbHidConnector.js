@@ -101,6 +101,15 @@ export const UsbHIDConnector = ( async function () {
                 const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
                 let handler = deviceDetails.handler ||  vendorConfig.handler;
 
+                // Always-on (not gated behind debugLogs) - printed immediately at resolution
+                // time, before any handler method runs, so it's available even if the device
+                // never responds and a handler call later hangs/times out.
+                console.log(
+                  `[usbHidConnector] resolved "${model}" -> manufacturer=${manufacturer} ` +
+                  `vendorId=0x${rawDevice.vendorId.toString(16).toUpperCase().padStart(4,'0')} ` +
+                  `productId=0x${rawDevice.productId.toString(16).toUpperCase().padStart(4,'0')}`
+                );
+
                 // Open the device if not already open
                 if (!rawDevice.opened) {
                     await rawDevice.open();
@@ -173,16 +182,22 @@ export const UsbHIDConnector = ( async function () {
         if (device && device.handler) {
 
           // Create a copy of the filters array to avoid modifying the original
-          const filtersToWrite = [...filters];
+          let filtersToWrite = [...filters];
 
           // Ensure array is at most the maxFilters
           if (filtersToWrite.length > device.modelConfig.maxFilters) {
             console.warn(`USB Device PEQ: Truncating ${filtersToWrite.length} filters to ${device.modelConfig.maxFilters} (device limit)`);
             if (window.showToast) {
-              await window.showToast(`This device only supports ${device.modelConfig.maxFilters} PEQ filters - only first ${device.modelConfig.maxFilters} will be applied.`, "warning", 10000, true);
+              window.showToast(`This device only supports ${device.modelConfig.maxFilters} PEQ filters - applying the first ${device.modelConfig.maxFilters} enabled filters.`, "warning", 10000, true);
             }
 
-            filtersToWrite.splice(device.modelConfig.maxFilters);
+            const enabledFilters = filtersToWrite.filter(f => !f.disabled);
+            filtersToWrite = enabledFilters.length >= device.modelConfig.maxFilters
+              ? enabledFilters.slice(0, device.modelConfig.maxFilters)
+              : [
+                  ...enabledFilters,
+                  ...filtersToWrite.filter(f => f.disabled).slice(0, device.modelConfig.maxFilters - enabledFilters.length)
+                ];
           }
 
           // And do an upfront sanity check on the values

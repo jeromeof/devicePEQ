@@ -4,6 +4,8 @@
 // Define the shared logic for JadeAudio / SnowSky / FiiO devices - Each manufacturer will have slightly
 // different code so best to each have a separate 'module'
 
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 const PEQ_FILTER_COUNT = 0x18; // 24 in hex
 const PEQ_GLOBAL_GAIN = 0x17; // 23 in hex
 const PEQ_FILTER_PARAMS = 0x15; // 21 in hex
@@ -35,6 +37,7 @@ export const fiioUsbHID = (function () {
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('FiiO', data);
         console.log(`USB Device PEQ: getCurrentSlot() onInputReport received data:`, data);
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
@@ -68,10 +71,7 @@ export const fiioUsbHID = (function () {
       var device = deviceDetails.rawDevice;
       var reportId = getFiioReportId(deviceDetails);
 
-      // FiiO devices will automatically cut the max SPL by the maxGain (typically -12)
-      // So, we can safely apply a +12 gain - the larged preamp_gain needed
-      // .e.g. if we need to +5dB for a filter then we can still make the globalGain 7dB
-      await setGlobalGain(device, deviceDetails.modelConfig.maxGain + preamp_gain, reportId);
+      await setGlobalGain(device, clampGlobalGain(preamp_gain, deviceDetails.modelConfig), reportId);
       const maxFilters = deviceDetails.modelConfig.maxFilters;
       const maxFiltersToUse = Math.min(filters.length, maxFilters);
       await setPeqCounter(device, maxFiltersToUse, reportId);
@@ -114,6 +114,7 @@ export const fiioUsbHID = (function () {
 
       device.oninputreport = async (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('FiiO', data);
         console.log(`USB Device PEQ: pullFromDevice() onInputReport received data:`, data);
         if (data[0] === GET_HEADER1 && data[1] === GET_HEADER2) {
           switch (data[4]) {
@@ -214,6 +215,7 @@ async function setPeqParams(device, filterIndex, fc, gain, q, filterType, report
 
   const data = new Uint8Array(packet);
   console.log(`USB Device PEQ: setPeqParams() sending filter ${filterIndex} - Freq: ${fc}Hz, Gain: ${gain}dB, Q: ${q}, Type: ${filterType}`, data);
+  logHidTx('FiiO', reportId, data);
   await device.sendReport(reportId, data);
 }
 
@@ -225,6 +227,7 @@ async function setPresetPeq(device, presetId, reportId) { // Default to 0 if not
 
   const data = new Uint8Array(packet);
   console.log(`USB Device PEQ: setPresetPeq() switching to preset ${presetId}`, data);
+  logHidTx('FiiO', reportId, data);
   await device.sendReport(reportId, data);
 }
 
@@ -239,7 +242,14 @@ async function setGlobalGain(device, gain, reportId) {
 
   const data = new Uint8Array(packet);
   console.log(`USB Device PEQ: setGlobalGain() setting global gain to ${gain}dB`, data);
+  logHidTx('FiiO', reportId, data);
   await device.sendReport(reportId, data);
+}
+
+function clampGlobalGain(gain, modelConfig = {}) {
+  const minGain = typeof modelConfig.minGain === "number" ? modelConfig.minGain : -12;
+  const maxGain = typeof modelConfig.maxGain === "number" ? modelConfig.maxGain : 12;
+  return Math.max(minGain, Math.min(maxGain, gain));
 }
 
 async function setPeqCounter(device, counter, reportId) {
@@ -250,6 +260,7 @@ async function setPeqCounter(device, counter, reportId) {
 
   const data = new Uint8Array(packet);
   console.log(`USB Device PEQ: setPeqCounter() setting filter count to ${counter}`, data);
+  logHidTx('FiiO', reportId, data);
   await device.sendReport(reportId, data);
 }
 
@@ -301,6 +312,7 @@ function getGlobalGain(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_GLOBAL_GAIN, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getGlobalGain() Send data:", data);
+  logHidTx('FiiO', reportId, data);
   device.sendReport(reportId, data);
 }
 
@@ -308,6 +320,7 @@ function getPeqCounter(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_FILTER_COUNT, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPeqCounter() Send data:", data);
+  logHidTx('FiiO', reportId, data);
   device.sendReport(reportId, data);
 }
 
@@ -315,6 +328,7 @@ function getPeqParams(device, filterIndex, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_FILTER_PARAMS, 1, filterIndex, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPeqParams() Send data:", data);
+  logHidTx('FiiO', reportId, data);
   device.sendReport(reportId, data);
 }
 
@@ -322,6 +336,7 @@ function getPresetPeq(device, reportId) {
   const packet = [GET_HEADER1, GET_HEADER2, 0, 0, PEQ_PRESET_SWITCH, 0, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log("getPresetPeq() Send data:", data);
+  logHidTx('FiiO', reportId, data);
   device.sendReport(reportId, data);
 }
 
@@ -330,6 +345,7 @@ function saveToDevice(device, slotId, reportId, customSaveCommandId) {
   const packet = [SET_HEADER1, SET_HEADER2, 0, 0, saveCmd, 1, slotId, 0, END_HEADERS];
   const data = new Uint8Array(packet);
   console.log(`USB Device PEQ: saveToDevice() using command ${saveCmd}, reportId ${reportId} for slot ${slotId}`, data);
+  logHidTx('FiiO', reportId, data);
   device.sendReport(reportId, data);
 }
 

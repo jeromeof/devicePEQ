@@ -31,70 +31,20 @@ import { buildExtras } from './deviceExtras.js';
  *                                              Expands an inline panel with per-capability
  *                                              controls; each has an Apply button that
  *                                              writes directly to the device.
+ * @param {boolean} [context.config.captureConsoleLogs] - When true, captures console logs
+ *                                                        for feedback without suppressing or
+ *                                                        replacing host console behavior.
+ * @param {boolean} [context.config.debugLogs] - When true, shows DevicePEQ debug logs.
+ * @param {string}  [context.config.peqConstraintsUrl] - Optional URL to peqConstraintsConfig.json.
+ *                                                       Defaults to './devicePEQ/peqConstraintsConfig.json'.
+ *                                                       Example: 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json'
  * @returns {Promise<void>}
  */
 async function initializeDeviceEqPlugin(context) {
-  // Initialize console log history array if it doesn't exist
-  if (!window.consoleLogHistory) {
-    window.consoleLogHistory = [];
-
-    // Store original console methods
-    const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-
-    // Flag to control logging visibility
-    window.showDeviceLogs = false;
-
-    // Override console.log to capture logs
-    console.log = function() {
-      // Convert arguments to string and add to history
-      const logString = Array.from(arguments).map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      window.consoleLogHistory.push(`[LOG] ${logString}`);
-
-      // Call original method only if showLogs is true or we have an experimental device
-      if (window.showDeviceLogs) {
-        originalConsoleLog.apply(console, arguments);
-      }
-    };
-
-    // Override console.error to capture errors
-    console.error = function() {
-      // Convert arguments to string and add to history
-      const logString = Array.from(arguments).map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      window.consoleLogHistory.push(`[ERROR] ${logString}`);
-
-      // Always show errors regardless of log settings
-      originalConsoleError.apply(console, arguments);
-    };
-
-    // Override console.warn to capture warnings
-    console.warn = function() {
-      // Convert arguments to string and add to history
-      const logString = Array.from(arguments).map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      window.consoleLogHistory.push(`[WARN] ${logString}`);
-
-      // Always show warnings regardless of log settings
-      originalConsoleWarn.apply(console, arguments);
-    };
-
-    // Limit history to last 500 entries
-    const MAX_LOG_HISTORY = 500;
-    setInterval(() => {
-      if (window.consoleLogHistory.length > MAX_LOG_HISTORY) {
-        window.consoleLogHistory = window.consoleLogHistory.slice(-MAX_LOG_HISTORY);
-      }
-    }, 10000); // Check every 10 seconds
-  }
+  setupDevicePeqLogCapture(context);
 
   // Pre-load the peqConstraints config so it is cached before any device connects.
-  loadPeqConstraintsConfig().catch(err => console.warn('peqConstraintsConfig failed to load:', err));
+  loadPeqConstraintsConfig(undefined, context.config).catch(err => console.warn('peqConstraintsConfig failed to load:', err));
 
   // Returns a compact ID string for console logs across all transport types.
   // USB HID  : "vendorId=0x2972 productId=0x0001"
@@ -117,6 +67,137 @@ async function initializeDeviceEqPlugin(context) {
       return `serviceClassId=${info.bluetoothServiceClassId}`;
     }
     return '';
+  }
+
+  function emitDeviceEvent(name, detail = {}) {
+    document.dispatchEvent(new CustomEvent(name, { detail }));
+  }
+
+  function emitWindowDeviceEvent(name, detail = {}) {
+    window.dispatchEvent(new CustomEvent(name, { detail }));
+  }
+
+  function setupDevicePeqLogCapture(context) {
+    const MAX_LOG_HISTORY = 500;
+    const FEEDBACK_CAPTURE_KEY = 'devicePEQFeedbackLogCapture';
+    if (!window.consoleLogHistory) window.consoleLogHistory = [];
+
+    const readStoredFlag = (key) => {
+      try { return window.localStorage?.getItem(key) === 'true'; }
+      catch (_) { return false; }
+    };
+    const writeStoredFlag = (key, value) => {
+      try { window.localStorage?.setItem(key, value ? 'true' : 'false'); }
+      catch (_) {}
+    };
+
+    const debugEnabled =
+      context?.config?.debugLogs === true ||
+      context?.config?.showLogs === true ||
+      window.devicePEQDebugLogs === true ||
+      window.showDeviceLogs === true;
+    window.devicePEQDebugLogs = debugEnabled;
+    window.showDeviceLogs = debugEnabled;
+
+    const stringifyLogArg = (arg) => {
+      if (typeof arg === 'string') return arg;
+      if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
+      if (typeof arg === 'object' && arg !== null) {
+        try { return JSON.stringify(arg); }
+        catch (_) { return String(arg); }
+      }
+      return String(arg);
+    };
+
+    window.devicePEQRecordConsoleLog = (level, argsLike) => {
+      const args = Array.from(argsLike || []);
+      const label = level === 'error' ? 'ERROR' : level === 'warn' ? 'WARN' : 'LOG';
+      const message = args.map(stringifyLogArg).join(' ');
+      const entry = `[${label}] ${message}`;
+      window.consoleLogHistory.push(entry);
+      if (window.consoleLogHistory.length > MAX_LOG_HISTORY) {
+        window.consoleLogHistory = window.consoleLogHistory.slice(-MAX_LOG_HISTORY);
+      }
+      emitDeviceEvent('PeqDeviceConsoleLog', { level, message, entry, args });
+    };
+
+    window.devicePEQCollectConsoleLogs = () => collectDevicePeqConsoleLogs();
+    window.devicePEQSetDebugLogs = (enabled) => {
+      window.devicePEQDebugLogs = !!enabled;
+      window.showDeviceLogs = !!enabled;
+      if (enabled) installConsoleRouter();
+    };
+    window.devicePEQSetFeedbackLogCapture = (enabled) => {
+      window.devicePEQConsoleCaptureEnabled = !!enabled;
+      window.devicePEQCaptureConsoleLogs = !!enabled;
+      writeStoredFlag(FEEDBACK_CAPTURE_KEY, !!enabled);
+      if (enabled) window.devicePEQEnableConsoleCapture();
+    };
+
+    window.devicePEQConsoleCaptureEnabled =
+      context?.config?.captureConsoleLogs === true ||
+      context?.config?.showLogs === true ||
+      window.devicePEQCaptureConsoleLogs === true ||
+      readStoredFlag(FEEDBACK_CAPTURE_KEY);
+
+    const isDevicePeqConsoleEntry = (args) => {
+      const text = args.map(stringifyLogArg).join(' ');
+      return /(^|\b)(USB Device PEQ|Device PEQ|PEQ Slot selected|PEQ Disabled|PEQ Enabled|Plugin initialized|Device EQ UI|UsbHIDConnector|UsbSerialConnector|BluetoothBleConnector|NetworkDeviceConnector|\[peqConstraints\]|\[extras\]|Airoha |Edifier SPP|EarFun SPP|FiiO BLE|FiiO SPP|FiiO EQ|JDS Labs|Luxsin:|Moondrop Edge|Nothing USB Serial|Rita SPP|Serial device disconnected|Device disconnected|Connected to .* at |Disconnected from .* at )/.test(text);
+    };
+
+    const installConsoleRouter = () => {
+      if (window.__devicePEQConsoleRouterInstalled) return;
+
+      const wrapConsoleMethod = (level) => {
+        const previous = console[level].bind(console);
+        console[level] = function(...args) {
+          const isDevicePeqLog = isDevicePeqConsoleEntry(args);
+          if (!isDevicePeqLog) {
+            previous(...args);
+            return;
+          }
+
+          if (window.devicePEQConsoleCaptureEnabled || window.devicePEQDebugLogs || window.showDeviceLogs) {
+            window.devicePEQRecordConsoleLog(level, args);
+          }
+
+          if (window.devicePEQDebugLogs || window.showDeviceLogs || level === 'error') {
+            previous(...args);
+          }
+        };
+      };
+
+      wrapConsoleMethod('log');
+      wrapConsoleMethod('warn');
+      wrapConsoleMethod('error');
+      window.__devicePEQConsoleRouterInstalled = true;
+    };
+    window.devicePEQEnableConsoleCapture = () => {
+      window.devicePEQConsoleCaptureEnabled = true;
+      window.devicePEQCaptureConsoleLogs = true;
+      writeStoredFlag(FEEDBACK_CAPTURE_KEY, true);
+      installConsoleRouter();
+    };
+
+    if (window.devicePEQConsoleCaptureEnabled || window.devicePEQDebugLogs || window.showDeviceLogs) {
+      installConsoleRouter();
+    }
+  }
+
+  function collectDevicePeqConsoleLogs() {
+    if (!window.consoleLogHistory) {
+      return "No console logs available";
+    }
+
+    const pluginLogs = window.consoleLogHistory.filter(log =>
+      log.includes("Device") ||
+      log.includes("PEQ") ||
+      log.includes("USB") ||
+      log.includes("plugin") ||
+      log.includes("connector")
+    );
+
+    return pluginLogs.slice(-100).join("\n") || "No console logs available";
   }
 
   // Check if showLogs flag is passed in context
@@ -293,11 +374,13 @@ async function initializeDeviceEqPlugin(context) {
         ` ref=${device.modelConfig?.peqConstraintsRef ?? 'inline'}` +
         ` bands=${peqConstraints?.maxFilters} gain=${peqConstraints?.minGain}/${peqConstraints?.maxGain}dB`
       );
-      document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: window.peqDeviceModelConfig }));
-      document.dispatchEvent(new CustomEvent('PeqDeviceExtrasChanged', { detail: window.peqDeviceExtras }));
-      // Fire immediately so listeners (e.g. graphtool) can update their UI and apply constraints
-      // before the async pull completes.
-      document.dispatchEvent(new CustomEvent('PeqDeviceConnected', { detail: { device, peqConstraints } }));
+      emitDeviceEvent('PeqDeviceModelConfigChanged', window.peqDeviceModelConfig);
+      emitDeviceEvent('PeqDeviceExtrasChanged', window.peqDeviceExtras);
+      // Fire immediately so host integrations can react before the async pull completes.
+      emitWindowDeviceEvent('devicePEQ.deviceConnected', {
+        device,
+        connectionType
+      });
 
       this.populatePeqDropdown(availableSlots, currentSlot);
       this.setPillState('connected', device.model);
@@ -379,12 +462,20 @@ async function initializeDeviceEqPlugin(context) {
     }
 
     showDisconnectedState() {
+      const previousDevice = this.currentDevice;
+      const previousConnectionType = this.connectionType;
       this.connectionType = "usb";  // Assume usb
       this.currentDevice = null;
       window.peqDeviceModelConfig = null;
       window.peqDeviceExtras = null;
-      document.dispatchEvent(new CustomEvent('PeqDeviceModelConfigChanged', { detail: null }));
-      document.dispatchEvent(new CustomEvent('PeqDeviceExtrasChanged', { detail: null }));
+      emitDeviceEvent('PeqDeviceModelConfigChanged', null);
+      emitDeviceEvent('PeqDeviceExtrasChanged', null);
+      if (previousDevice) {
+        emitWindowDeviceEvent('devicePEQ.deviceDisconnected', {
+          connectionType: previousConnectionType,
+          device: previousDevice
+        });
+      }
       this.setPillState('disconnected');
       this.peqDropdown.innerHTML = '<option value="-1">PEQ Disabled</option>';
       this.pullButton.hidden = true;
@@ -1669,22 +1760,17 @@ async function initializeDeviceEqPlugin(context) {
 
     // Function to collect recent console logs
     function collectConsoleLogs() {
-      // Return the last 100 console logs that contain plugin-related keywords
-      if (!window.consoleLogHistory) {
-        return "No console logs available";
-      }
+      return window.devicePEQCollectConsoleLogs
+        ? window.devicePEQCollectConsoleLogs()
+        : "No console logs available";
+    }
 
-      // Filter logs related to the plugin
-      const pluginLogs = window.consoleLogHistory.filter(log =>
-        log.includes("Device") ||
-        log.includes("PEQ") ||
-        log.includes("USB") ||
-        log.includes("plugin") ||
-        log.includes("connector")
-      );
-
-      // Return the last 100 logs or all if less than 100
-      return pluginLogs.slice(-100).join("\n");
+    const modalIncludeLogsCheckbox = document.getElementById("modal-include-logs-checkbox");
+    if (modalIncludeLogsCheckbox) {
+      modalIncludeLogsCheckbox.checked = !!window.devicePEQConsoleCaptureEnabled;
+      modalIncludeLogsCheckbox.addEventListener("change", () => {
+        window.devicePEQSetFeedbackLogCapture?.(modalIncludeLogsCheckbox.checked);
+      });
     }
 
     // Set up feedback form submission
@@ -1699,6 +1785,7 @@ async function initializeDeviceEqPlugin(context) {
       // If console log is empty, capture it now
       let logs = "";
       if (includeLogsCheckbox && includeLogsCheckbox.checked) {
+        window.devicePEQSetFeedbackLogCapture?.(true);
         logs = collectConsoleLogs();
       }
 
@@ -1939,7 +2026,7 @@ async function initializeDeviceEqPlugin(context) {
                 if (currentFilters.length > device.modelConfig.maxFilters) {
                   console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
                   if (window.showToast) {
-                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                    window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
                   }
                 }
               }
@@ -1987,7 +2074,7 @@ async function initializeDeviceEqPlugin(context) {
                 if (currentFilters.length > device.modelConfig.maxFilters) {
                   console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
                   if (window.showToast) {
-                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                    window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
                   }
                 }
 
@@ -2039,7 +2126,7 @@ async function initializeDeviceEqPlugin(context) {
                 if (currentFilters.length > device.modelConfig.maxFilters) {
                   console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
                   if (window.showToast) {
-                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                    window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
                   }
                 }
 
@@ -2085,7 +2172,7 @@ async function initializeDeviceEqPlugin(context) {
                 if (currentFilters.length > device.modelConfig.maxFilters) {
                   console.warn(`Device only supports ${device.modelConfig.maxFilters} PEQ filters but ${currentFilters.length} filters are currently loaded`);
                   if (window.showToast) {
-                    await window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
+                    window.showToast(`Warning: This device only supports ${device.modelConfig.maxFilters} PEQ filters, but you currently have ${currentFilters.length} filters loaded. Only the first ${device.modelConfig.maxFilters} will be applied when pushed.`, "warning", 10000, true);
                   }
                 }
 
@@ -2215,6 +2302,14 @@ async function initializeDeviceEqPlugin(context) {
             dialogContainer.innerHTML = dialogHTML;
             document.body.appendChild(dialogContainer);
 
+            const includeLogsCheckbox = document.getElementById("include-logs-checkbox");
+            if (includeLogsCheckbox) {
+              includeLogsCheckbox.checked = !!window.devicePEQConsoleCaptureEnabled;
+              includeLogsCheckbox.addEventListener("change", () => {
+                window.devicePEQSetFeedbackLogCapture?.(includeLogsCheckbox.checked);
+              });
+            }
+
             // Proceed button
             document.getElementById("proceed-button").addEventListener("click", () => {
               document.body.removeChild(dialogContainer);
@@ -2229,22 +2324,9 @@ async function initializeDeviceEqPlugin(context) {
 
             // Function to collect recent console logs
             function collectConsoleLogs() {
-              // Return the last 100 console logs that contain plugin-related keywords
-              if (!window.consoleLogHistory) {
-                return "No console logs available";
-              }
-
-              // Filter logs related to the plugin
-              const pluginLogs = window.consoleLogHistory.filter(log =>
-                log.includes("Device") ||
-                log.includes("PEQ") ||
-                log.includes("USB") ||
-                log.includes("plugin") ||
-                log.includes("connector")
-              );
-
-              // Return the last 100 logs or all if less than 100
-              return pluginLogs.slice(-100).join("\n");
+              return window.devicePEQCollectConsoleLogs
+                ? window.devicePEQCollectConsoleLogs()
+                : "No console logs available";
             }
 
             // Feedback button
@@ -2257,6 +2339,7 @@ async function initializeDeviceEqPlugin(context) {
               // If console log is empty, capture it now
               let logs = "";
               if (includeLogsCheckbox && includeLogsCheckbox.checked) {
+                window.devicePEQSetFeedbackLogCapture?.(true);
                 logs = collectConsoleLogs();
               }
 
@@ -2820,7 +2903,7 @@ async function initializeDeviceEqPlugin(context) {
       }
     }
   } catch (error) {
-    console.  error("Error initializing Device EQ Plugin:", error.message);
+    console.error("Error initializing Device EQ Plugin:", error.message);
   }
 }
 

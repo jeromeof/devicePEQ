@@ -1,0 +1,419 @@
+{
+  "_comment": "Capture from Kiwi Ears S-Link (KT_3016L, vendorId=0x31B2, productId=0x3016) \u2014 2026-05-30. Read directly from device. Bands are stored OUT OF ORDER: physical regs map to bands as 0x35=band4, 0x37=band0, 0x39=band3, 0x3B=band1, 0x3D=band2 (Q regs are reg+1 except band2 whose Q is at 0x3F, skipping the phantom 0x3E that always reads 0.7). Decoded bands ascend by frequency: 101/231/379/4696/16788 Hz. band2 Q=2.0 was written to 0x3F to confirm the mapping (0x3E stayed 0.7). Generic productName 'Kiwi Ears S-Link' -> matched by productId.",
+  "device": {
+    "vendorId": 12722,
+    "productId": 12310,
+    "productName": "Kiwi Ears S-Link"
+  },
+  "capturedAt": "2026-05-30",
+  "exchanges": [
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          36,
+          0,
+          0,
+          0,
+          82,
+          0,
+          3,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            36,
+            0,
+            0,
+            0,
+            82,
+            0,
+            50,
+            48,
+            50,
+            54
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          53,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            53,
+            0,
+            0,
+            0,
+            82,
+            0,
+            58,
+            0,
+            148,
+            65
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          54,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            54,
+            0,
+            0,
+            0,
+            82,
+            0,
+            188,
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          55,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            55,
+            0,
+            0,
+            0,
+            82,
+            0,
+            11,
+            0,
+            101,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          56,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            56,
+            0,
+            0,
+            0,
+            82,
+            0,
+            188,
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          57,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            57,
+            0,
+            0,
+            0,
+            82,
+            0,
+            222,
+            255,
+            88,
+            18
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          58,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            58,
+            0,
+            0,
+            0,
+            82,
+            0,
+            188,
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          59,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            59,
+            0,
+            0,
+            0,
+            82,
+            0,
+            233,
+            255,
+            231,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          60,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            60,
+            0,
+            0,
+            0,
+            82,
+            0,
+            188,
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          61,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            61,
+            0,
+            0,
+            0,
+            82,
+            0,
+            37,
+            0,
+            123,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          63,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            63,
+            0,
+            0,
+            0,
+            82,
+            0,
+            208,
+            7,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "send": {
+        "reportId": 75,
+        "data": [
+          102,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "responses": [
+        {
+          "reportId": 75,
+          "data": [
+            102,
+            0,
+            0,
+            0,
+            82,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

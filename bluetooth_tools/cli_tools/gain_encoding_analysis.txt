@@ -1,0 +1,75 @@
+================================================================================
+EDIFIER W830NB - GAIN ENCODING ANALYSIS
+================================================================================
+
+TEST: Changed Filter 1 to +1dB gain (frequency kept at 100Hz)
+
+SET_BAND Command:
+Hex: AA EC 44 00 06 A5 A5 A5 C1 AD AF EC
+Payload: A5 A5 A5 C1 AD AF
+
+Byte breakdown:
+- Byte 0: A5 (165) - Band index (Filter 0 in code, "Filter 1" in UI)
+- Byte 1: A5 (165) - Unknown parameter
+- Byte 2: A5 (165) - Unknown parameter
+- Byte 3: C1 (193) - Frequency related (this was set when freq changed to 100Hz)
+- Byte 4: AD (173) - **GAIN** ← This changed!
+- Byte 5: AF (175) - Terminator/marker
+
+GET Response (36-byte EQ state):
+AD A1 A5 A5 A5 C1 AD AF | A4 A5 A6 4D A3 AF | ...
+                  ^^
+                Byte 6 = AD (173) - Matches byte 4 from SET_BAND
+
+================================================================================
+COMPARING WITH PREVIOUS CAPTURES:
+================================================================================
+
+Previous capture (Filter 1 at 100Hz, 0dB):
+SET_BAND: A5 A5 A5 C1 A9 AF
+                      ^^
+                   Byte 4 = A9 (169) = 0dB baseline
+
+This capture (Filter 1 at 100Hz, +1dB):
+SET_BAND: A5 A5 A5 C1 AD AF
+                      ^^
+                   Byte 4 = AD (173) = +1dB
+
+================================================================================
+GAIN ENCODING FORMULA:
+================================================================================
+
+Delta: 173 - 169 = 4
+**4 counts per dB**
+
+Formula:
+gain_byte = 169 + (gain_dB * 4)
+gain_byte = 0xA9 + (gain_dB * 4)
+
+Examples:
+- 0dB:   169 + (0 * 4)  = 169 (0xA9) ✓
+- +1dB:  169 + (1 * 4)  = 173 (0xAD) ✓ VERIFIED
+- +3dB:  169 + (3 * 4)  = 181 (0xB5)
+- +6dB:  169 + (6 * 4)  = 193 (0xC1)
+- -3dB:  169 + (-3 * 4) = 157 (0x9D)
+- -6dB:  169 + (-6 * 4) = 145 (0x91)
+
+================================================================================
+SET_BAND PAYLOAD STRUCTURE (6 bytes):
+================================================================================
+
+Byte 0: Band Index (A5=filter 0, A4=filter 1, A7=filter 2, etc.)
+Byte 1: Unknown (always A5=165?)
+Byte 2: Unknown parameter
+Byte 3: Frequency parameter (needs more analysis)
+Byte 4: GAIN (0xA9 + gain_dB * 4)
+Byte 5: Terminator (always 0xAF)
+
+================================================================================
+NEXT STEPS:
+================================================================================
+
+1. Verify +3dB and -3dB to confirm formula
+2. Test extreme values (+6dB, -6dB)
+3. Decode frequency encoding (bytes 2-3)
+4. Identify byte 1 and 2 purpose (Q value? Filter type?)

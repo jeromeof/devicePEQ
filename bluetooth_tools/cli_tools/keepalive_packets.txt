@@ -1,0 +1,3379 @@
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 03 00 D6 0C 00 05 5D 05 00 D6 0C 00 00 5F
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00 05 5D 05 00 D6 0C 00 00 5F
+   │ Checksum: ? (calc: 0x8E, actual: 0x5F)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 60
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 60
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 60
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 60
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 60
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 6
+Hex: 05 5A 02 00 10 09
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x2
+   │ Name:    Battery Status
+   │ Payload: 00 10 09
+   │ Checksum: ? (calc: 0x71, actual: 0x9)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 16
+Hex: 05 5B 0C 00 10 09 00 05 00 FF 00 02 01 07 07 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0xC
+   │ Name:    Unknown
+   │ Payload: 00 10 09 00 05 00 FF 00 02 01 07 07 01
+   │ Checksum: ? (calc: 0x9A, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 2C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00
+   │ Checksum: ? (calc: 0x99, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 2C 00 00 01
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 2C 00 00 01
+   │ Checksum: ? (calc: 0x9C, actual: 0x1)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 01 09 22 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00
+   │ Checksum: ? (calc: 0x8F, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 01 09 22 00 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 01 09 22 00 00 00
+   │ Checksum: ? (calc: 0x92, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+🔇 Keepalive filtering: ENABLED
+
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+🔊 Airoha Protocol Capture v1.0
+NaN
+📱 Initializing Airoha-specific hooks...
+🔇 Keepalive filtering: ENABLED
+
+✅ Bluetooth hooks installed
+✅ BLE GATT hooks installed
+
+✅ Airoha-specific hooks active!
+📡 Monitoring for Airoha protocol packets...
+
+💡 Supported features:
+   - EQ presets and custom EQ
+   - PEQ bands (frequency, gain, Q, type)
+   - ANC/Ambient mode
+   - Battery status
+   - Touch controls
+
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5A 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x44, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 7
+Hex: 05 5B 03 00 D6 0C 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x3
+   │ Name:    Connect Status
+   │ Payload: 00 D6 0C 00
+   │ Checksum: ? (calc: 0x45, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+📥 RX (unknown protocol)
+Length: 9
+Hex: 05 5D 05 00 D6 0C 00 00 5F
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 07 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 07 00
+   │ Checksum: ? (calc: 0x19, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 07 00 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 07 00 00
+   │ Checksum: ? (calc: 0x1C, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📤 AIROHA TX (to device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 8
+Hex: 05 5A 04 00 83 2C 0B 00
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5A
+   │ Command: 0x4
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 0B 00
+   │ Checksum: ? (calc: 0x1D, actual: 0x0)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+📥 AIROHA RX (from device)
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊
+Length: 10
+Hex: 05 5B 06 00 83 2C 00 0B 00 0A
+
+   ┌─ Airoha Protocol ─┐
+   │ Header:  0x5
+   │ Type:    0x5B
+   │ Command: 0x6
+   │ Name:    Unknown
+   │ Payload: 00 83 2C 00 0B 00 0A
+   │ Checksum: ? (calc: 0x20, actual: 0xA)
+   └────────────────────┘
+🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊🔊

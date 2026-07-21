@@ -132,3 +132,23 @@ export async function test_pushToDevice_doesNotThrow(assert) {
   catch (e) { threw = true; console.warn('Push threw:', e.message); }
   assert.ok(!threw, 'pushToDevice should complete without throwing');
 }
+
+export async function test_pushToDevice_writesRequestedNegativePreamp(assert) {
+  const mock = new MockHIDDevice({
+    vendorId: 0x2972,
+    productId: 0x0093,
+    productName: 'FIIO KA17',
+    reportId: 1,
+    responseDelay: 0
+  });
+  await mock.open();
+  const details = makeDeviceDetails(mock);
+  const filters = [{ type: 'PK', freq: 100, q: 1, gain: 0, disabled: false }];
+
+  await fiioUsbHID.pushToDevice(details, null, 7, -5.1, filters);
+
+  const gainWrite = mock.sentBytes.find(b => b[0] === 0xAA && b[4] === 0x17);
+  assert.ok(gainWrite, 'push should send a global gain write');
+  assert.equal(gainWrite[6], 0xFF, 'negative preamp high byte should be signed');
+  assert.equal(gainWrite[7], 0xCD, 'preamp -5.1 dB should encode as -51 tenths, not +6.9 dB');
+}

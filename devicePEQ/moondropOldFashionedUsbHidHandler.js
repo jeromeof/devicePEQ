@@ -1,3 +1,5 @@
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 export const oldFashionedUsbHidHandler = (function () {
   const REPORT_ID = 75;
   const EQ_REG_BASE = 38;
@@ -45,12 +47,14 @@ export const oldFashionedUsbHidHandler = (function () {
 
       const onReport = (event) => {
         const data = new DataView(event.data.buffer);
+        logHidRx('MoondropOldFashioned', new Uint8Array(event.data.buffer));
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
         resolve(data);
       };
 
       device.addEventListener("inputreport", onReport);
+      logHidTx('MoondropOldFashioned', REPORT_ID, packet);
       await device.sendReport(REPORT_ID, packet);
     });
   }
@@ -61,6 +65,7 @@ export const oldFashionedUsbHidHandler = (function () {
       view.setUint8(CMD, WRITE_REG);
       dataBuilder(view);
     });
+    logHidTx('MoondropOldFashioned', REPORT_ID, packet);
     await device.sendReport(REPORT_ID, packet);
   }
 
@@ -123,6 +128,7 @@ export const oldFashionedUsbHidHandler = (function () {
     const packet = createPacket(view => {
       view.setUint8(CMD, SAVE_REG);
     });
+    logHidTx('MoondropOldFashioned', REPORT_ID, packet);
     await device.sendReport(REPORT_ID, packet);
   }
 

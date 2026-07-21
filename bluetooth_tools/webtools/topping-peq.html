@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topping PEQ Tester</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    .peq-container {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .filter-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      border-left: 4px solid #0066cc;
+    }
+    .pregain-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 15px;
+      margin: 5px;
+      cursor: pointer;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #0055aa;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    input, select {
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    label {
+      font-weight: bold;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+    .log {
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #333;
+      background: #eee;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .delete-filter {
+      background-color: #d9534f;
+    }
+    .delete-filter:hover {
+      background-color: #c9302c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Topping PEQ Tester</h1>
+
+    <div class="peq-container">
+      <h2>Device Connection</h2>
+      <p>Connect to your Topping device to read and write PEQ filter.</p>
+      <button id="connectBtn">Connect to Topping DX5 II or E50 II </button>
+      <div id="connectionStatus" class="status"></div>
+    </div>
+
+    <div class="peq-container">
+      <h2>Filter Settings</h2>
+      <div class="actions">
+        <button id="readFiltersBtn" disabled>Read Filters from Device</button>
+        <button id="writeFiltersBtn" disabled>Write Filters to Device</button>
+        <button id="addFilterBtn" disabled>Add Filter</button>
+        <button id="resetFiltersBtn" disabled>Reset Filters</button>
+      </div>
+
+      <div class="pregain-container">
+        <label for="pregain">Pre-gain (dB):</label>
+        <input type="number" id="pregain" min="-60" max="20" step="0.1" value="0" disabled>
+      </div>
+
+      <div id="filterList" class="filter-list">
+        <!-- Filters will be added here dynamically -->
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    // Global variables
+    let device = null;
+    const VENDOR_ID = 0x152A; // 5418 in decimal = 0x152A in hex
+    const DX5II = 0x8740; // 34640 in decimal = 0x8740 in hex
+    const E50II = 0x8750; // 34640 in decimal = 0x8740 in hex
+    const REPORT_ID = 0x01;
+    const MAX_FILTERS = 10;
+
+    // UI elements
+    const connectBtn = document.getElementById('connectBtn');
+    const readFiltersBtn = document.getElementById('readFiltersBtn');
+    const writeFiltersBtn = document.getElementById('writeFiltersBtn');
+    const addFilterBtn = document.getElementById('addFilterBtn');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const filterList = document.getElementById('filterList');
+    const pregainInput = document.getElementById('pregain');
+    const logElement = document.getElementById('log');
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectDevice);
+    readFiltersBtn.addEventListener('click', readFilters);
+    writeFiltersBtn.addEventListener('click', writeFilters);
+    addFilterBtn.addEventListener('click', addEmptyFilter);
+    resetFiltersBtn.addEventListener('click', resetFilters);
+
+    // Helper functions
+    function log(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      logElement.textContent += `[${timestamp}] ${message}\n`;
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    function setStatus(message, isError = false) {
+      connectionStatus.textContent = message;
+      connectionStatus.className = isError ? 'status error' : 'status success';
+    }
+
+    function enableControls(enabled) {
+      readFiltersBtn.disabled = !enabled;
+      writeFiltersBtn.disabled = !enabled;
+      addFilterBtn.disabled = !enabled;
+      resetFiltersBtn.disabled = !enabled;
+      pregainInput.disabled = !enabled;
+    }
+
+    // Core functions for device interaction
+    async function connectDevice() {
+      try {
+        // Request device with specified filters
+        const devices = await navigator.hid.requestDevice({
+          filters: [{ vendorId: VENDOR_ID, productId: DX5II },{ vendorId: VENDOR_ID, productId: E50II }]
+        });
+
+        if (devices.length === 0) {
+          setStatus('No device selected', true);
+          return;
+        }
+
+        device = devices[0];
+
+        if (!device.opened) {
+          await device.open();
+        }
+
+        log(`Connected to ${device.productName}`);
+        setStatus(`Connected to ${device.productName}`);
+        enableControls(true);
+
+        // Setup input report handler
+        device.addEventListener('inputreport', handleInputReport);
+
+      } catch (error) {
+        log(`Error connecting: ${error.message}`);
+        setStatus(`Error: ${error.message}`, true);
+      }
+    }
+
+    // Helper to make a packet for sending commands
+    function makePacket(cmd, data) {
+      const buf = new ArrayBuffer(5);
+      const view = new DataView(buf);
+      view.setUint8(0, cmd & 0xFF);
+      view.setUint32(1, data >>> 0, true);
+      return new Uint8Array(buf);
+    }
+
+    // Send a command to the device
+    async function sendCmd(cmd, data) {
+      const pkt = makePacket(cmd, data);
+      log(`Sending command: 0x${cmd.toString(16)} data: ${data}`);
+      await device.sendReport(REPORT_ID, pkt);
+    }
+
+    // Function to collect echoed responses from device
+    function collectEchoes(wantedCmds, ms = 120) {
+      return new Promise((resolve) => {
+        const found = new Map();
+
+        const onReport = (e) => {
+          if (e.reportId !== REPORT_ID) return;
+          const dv = e.data;
+          if (dv.byteLength < 5) return;
+          const cmd = dv.getUint8(0);
+          if (!wantedCmds.includes(cmd)) return;
+          const val = dv.getUint32(1, true);
+          found.set(cmd, val);
+          log(`Received echo - cmd: 0x${cmd.toString(16)}, value: ${val}`);
+        };
+
+        device.addEventListener("inputreport", onReport);
+
+        const timeout = setTimeout(() => {
+          device.removeEventListener("inputreport", onReport);
+          resolve(found);
+        }, ms);
+      });
+    }
+
+    // Handle input reports
+    function handleInputReport(event) {
+      const data = new Uint8Array(event.data.buffer);
+      log(`Received report: ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+    }
+
+    // Calculate band base address
+    function bandBase(filterIndex) {
+      return (0x90 + filterIndex) & 0xFF;
+    }
+
+    // Decode filter response
+    function decodeFilterResponse(cmd, value) {
+      const page = cmd & 0xF0;
+      const low = cmd & 0x0F;
+      const out = {};
+
+      if (page >= 0x90 && page <= 0x99) {
+        if (low === 0x06) out.disabled = (value === 0);
+        else if (low === 0x07) out.freq = value;
+        else if (low === 0x08) out.gain = value / 2.0;
+        else if (low === 0x09) out.q = value / 10000.0;
+      }
+
+      return out;
+    }
+
+    // Read a single filter from the device
+    async function readFullFilter(filterIndex) {
+      const base = bandBase(filterIndex);
+
+      // Trigger echo of current band state
+      await sendCmd((base + 0x0A) & 0xFF, 1);
+
+      // Collect echoes
+      const want = [(base + 0x06) & 0xFF, (base + 0x07) & 0xFF, (base + 0x08) & 0xFF, (base + 0x09) & 0xFF];
+      const echoes = await collectEchoes(want, 150);
+
+      // Defaults
+      let freq = 1000;
+      let gain = 0;
+      let q = 1.0;
+      let disabled = false;
+
+      // Update with values from echoes
+      for (const [cmd, val] of echoes.entries()) {
+        const partial = decodeFilterResponse(cmd, val);
+        if (partial.freq != null) freq = partial.freq;
+        if (partial.gain != null) gain = partial.gain;
+        if (partial.q != null) q = partial.q;
+        if (partial.disabled != null) disabled = partial.disabled;
+      }
+
+      return { type: "PK", freq, q, gain, disabled };
+    }
+
+    // Functions for reading/writing pregain
+    const PREG_TRIG_A = 0x9C02;
+    const PREG_SET_A = 0x9C01;
+    const PREG_SET_B = 0x9C03;
+
+    function decPregainFixed(val) {
+      val = val >>> 0; // Force unsigned
+      const signed = (val > 0x7FFFFFFF) ? (val - 0x100000000) : val;
+      return signed / 65536.0;
+    }
+
+    function encPregainFixed(dB) {
+      const clamped = Math.max(-60, Math.min(20, dB));
+      let fixed = Math.round(clamped * 65536);
+      return fixed >>> 0;
+    }
+
+    async function readPregain() {
+      await sendCmd(PREG_TRIG_A & 0xFF, 1);
+      const want = [PREG_SET_A & 0xFF, PREG_SET_B & 0xFF];
+      const echoes = await collectEchoes(want, 150);
+
+      const vB = echoes.get(PREG_SET_B & 0xFF);
+      const vA = echoes.get(PREG_SET_A & 0xFF);
+
+      if (vB != null) return decPregainFixed(vB);
+      if (vA != null) return decPregainFixed(vA);
+
+      return 0;
+    }
+
+    async function writePregain(dB) {
+      const fixed = encPregainFixed(dB);
+      await sendCmd(PREG_SET_A & 0xFF, fixed);
+      await sendCmd(PREG_TRIG_A & 0xFF, 1);
+      await sendCmd(PREG_SET_B & 0xFF, fixed);
+      await sendCmd((PREG_TRIG_A + 2) & 0xFF, 1);
+    }
+
+    // Read all filters from the device
+    async function readFilters() {
+      if (!device || !device.opened) {
+        setStatus('Device not connected', true);
+        return;
+      }
+
+      setStatus('Reading filters from device...');
+      log('Starting to read filters from device');
+
+      try {
+        // Clear existing filters
+        filterList.innerHTML = '';
+
+        // Read pregain
+        const pregain = await readPregain();
+        pregainInput.value = pregain.toFixed(1);
+        log(`Read pregain: ${pregain.toFixed(1)} dB`);
+
+        // Read filters
+        for (let i = 0; i < MAX_FILTERS; i++) {
+          const filter = await readFullFilter(i);
+          log(`Read filter ${i}: ${JSON.stringify(filter)}`);
+          addFilterToUI(filter);
+        }
+
+        setStatus('Filters read successfully');
+      } catch (error) {
+        log(`Error reading filters: ${error.message}`);
+        setStatus(`Error reading filters: ${error.message}`, true);
+      }
+    }
+
+    // Write all filters to the device
+    async function writeFilters() {
+      if (!device || !device.opened) {
+        setStatus('Device not connected', true);
+        return;
+      }
+
+      setStatus('Writing filters to device...');
+      log('Starting to write filters to device');
+
+      try {
+        // Write pregain
+        const pregain = parseFloat(pregainInput.value);
+        await writePregain(pregain);
+        log(`Wrote pregain: ${pregain.toFixed(1)} dB`);
+
+        // Get all filter elements
+        const filterElements = filterList.querySelectorAll('.filter-item');
+
+        // Write each filter
+        for (let i = 0; i < filterElements.length; i++) {
+          const filterEl = filterElements[i];
+          const filter = {
+            type: "PK", // Only support peaking filters for now
+            freq: parseInt(filterEl.querySelector('.filter-freq').value),
+            gain: parseFloat(filterEl.querySelector('.filter-gain').value),
+            q: parseFloat(filterEl.querySelector('.filter-q').value),
+            disabled: filterEl.querySelector('.filter-enabled').value === "0"
+          };
+
+          await writeFilter(i, filter);
+          log(`Wrote filter ${i}: ${JSON.stringify(filter)}`);
+        }
+
+        setStatus('Filters written successfully');
+      } catch (error) {
+        log(`Error writing filters: ${error.message}`);
+        setStatus(`Error writing filters: ${error.message}`, true);
+      }
+    }
+
+    // Write a single filter to the device
+    async function writeFilter(filterIndex, filter) {
+      const base = bandBase(filterIndex);
+      const enabled = filter.disabled ? 0 : 1;
+
+      // Enable/disable
+      await sendCmd((base + 0x06) & 0xFF, enabled);
+
+      // Frequency - integer Hz
+      if (Number.isFinite(filter.freq)) {
+        await sendCmd((base + 0x07) & 0xFF, Math.max(1, Math.round(filter.freq)));
+      }
+
+      // Gain - half-dB steps
+      if (Number.isFinite(filter.gain)) {
+        const v = Math.round(filter.gain * 2);
+        await sendCmd((base + 0x08) & 0xFF, ((v << 16) >> 16));
+      }
+
+      // Q - Q * 10000
+      if (Number.isFinite(filter.q)) {
+        await sendCmd((base + 0x09) & 0xFF, Math.max(1, Math.round(filter.q * 10000)));
+      }
+
+      // Apply/commit
+      await sendCmd((base + 0x0A) & 0xFF, 1);
+    }
+
+    // UI Functions
+    function addEmptyFilter() {
+      const filter = {
+        type: "PK",
+        freq: 1000,
+        gain: 0,
+        q: 1.0,
+        disabled: false
+      };
+
+      addFilterToUI(filter);
+    }
+
+    function addFilterToUI(filter) {
+      const filterEl = document.createElement('div');
+      filterEl.className = 'filter-item';
+
+      filterEl.innerHTML = `
+        <div>
+          <label>Type:</label>
+          <select class="filter-type">
+            <option value="PK" selected>Peaking</option>
+          </select>
+        </div>
+        <div>
+          <label>Frequency (Hz):</label>
+          <input type="number" class="filter-freq" min="20" max="20000" step="1" value="${filter.freq}">
+        </div>
+        <div>
+          <label>Gain (dB):</label>
+          <input type="number" class="filter-gain" min="-20" max="20" step="0.1" value="${filter.gain.toFixed(1)}">
+        </div>
+        <div>
+          <label>Q:</label>
+          <input type="number" class="filter-q" min="0.1" max="10" step="0.01" value="${filter.q.toFixed(2)}">
+        </div>
+        <div>
+          <label>Enabled:</label>
+          <select class="filter-enabled">
+            <option value="1" ${!filter.disabled ? 'selected' : ''}>Yes</option>
+            <option value="0" ${filter.disabled ? 'selected' : ''}>No</option>
+          </select>
+          <button class="delete-filter">Delete</button>
+        </div>
+      `;
+
+      // Add delete button handler
+      filterEl.querySelector('.delete-filter').addEventListener('click', () => {
+        filterEl.remove();
+      });
+
+      filterList.appendChild(filterEl);
+    }
+
+    function resetFilters() {
+      // Clear all filters
+      filterList.innerHTML = '';
+
+      // Reset pregain
+      pregainInput.value = "0.0";
+
+      // Add default filters
+      for (let i = 0; i < 3; i++) {
+        addEmptyFilter();
+      }
+
+      setStatus('Filters reset');
+    }
+  </script>
+</body>
+</html>

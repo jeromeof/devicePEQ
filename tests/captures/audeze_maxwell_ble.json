@@ -1,0 +1,35 @@
+{
+  "_comment": "Audeze Maxwell BLE — synthetic capture based on Airoha protocol (airohaBleHandler.js). 10-band PEQ, 4 presets. Pull uses CMD 05 5A 06; Push uses CMD 05 5A BD.",
+  "device": {
+    "productName": "Audeze Maxwell",
+    "manufacturer": "Audeze",
+    "writeWithResponse": false
+  },
+  "exchanges": [
+
+    {
+      "_comment": "Read preset — CMD 05 5A 06 (wildcard on preset byte [6] so slot 0-3 all match). Response: 193-byte Airoha PEQ packet. Band 6 at 1kHz +5dB Q=1.0; all others flat 0dB Q=0.71.",
+      "send":     [5, 90, 6, 0, 0, 10, null, 239, 232, 3],
+      "response": [
+        5, 91, 189, 0, 0, 10, 0, 0, 1, 0, 0, 0, 0,
+        1, 2, 128, 12,  0,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2, 156, 24,  0,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2, 212, 48,  0,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2, 168, 97,  0,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2,  80, 195, 0,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2, 160, 134, 1,   0, 244, 1, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+        1, 2,  64,  13, 3,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2, 128,  26, 6,   0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2,   0,  53, 12,  0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0,
+        1, 2,   0, 106, 24,  0,   0, 0, 0, 0, 0, 0, 0, 0,  71, 0, 0, 0
+      ]
+    },
+
+    {
+      "_comment": "Write preset — CMD 05 5A BD (wildcard remainder). Airoha write-without-response: no ACK returned.",
+      "send":     [5, 90, 189, null, null],
+      "response": []
+    }
+
+  ]
+}

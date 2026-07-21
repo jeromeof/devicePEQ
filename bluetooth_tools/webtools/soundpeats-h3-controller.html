@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SoundPeats H3 BLE Controller</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --text: #c9d1d9;
+      --dim: #8b949e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); padding: 20px; max-width: 1000px; margin: 0 auto; }
+    h1 { color: var(--accent); margin-bottom: 5px; font-size: 1.4em; }
+    h2 { color: var(--dim); font-size: 0.9em; margin-bottom: 20px; font-weight: normal; }
+    h3 { color: var(--accent); font-size: 1em; margin-bottom: 10px; }
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    button {
+      padding: 8px 16px; font-size: 13px; cursor: pointer;
+      background: var(--surface); color: var(--accent); border: 1px solid var(--accent);
+      border-radius: 6px; font-family: inherit;
+    }
+    button:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    button.danger { color: var(--red); border-color: var(--red); }
+    button.danger:hover:not(:disabled) { background: var(--red); color: #fff; }
+    button.success { color: var(--green); border-color: var(--green); }
+    button.success:hover:not(:disabled) { background: var(--green); color: var(--bg); }
+    #status { font-size: 14px; padding: 4px 0; }
+    .connected { color: var(--green); }
+    .disconnected { color: var(--red); }
+    #log {
+      background: #000; border: 1px solid var(--border); border-radius: 6px;
+      padding: 12px; max-height: 400px; overflow-y: auto; font-size: 12px; line-height: 1.6;
+    }
+    .log-rx { color: var(--green); }
+    .log-tx { color: var(--accent); }
+    .log-info { color: var(--yellow); }
+    .log-err { color: var(--red); }
+    .log-dim { color: var(--dim); }
+    .log-parse { color: #a5d6ff; }
+
+    /* EQ Section */
+    .eq-bands { display: flex; gap: 8px; align-items: flex-end; justify-content: center; flex-wrap: wrap; }
+    .eq-band { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 54px; }
+    .eq-band label { font-size: 10px; color: var(--dim); text-align: center; }
+    .eq-band input[type=range] {
+      -webkit-appearance: slider-vertical; appearance: slider-vertical;
+      width: 28px; height: 140px; cursor: pointer;
+      writing-mode: vertical-lr; direction: rtl;
+    }
+    .eq-band .gain-val { font-size: 12px; color: var(--text); min-width: 40px; text-align: center; }
+    .eq-band .freq-hz { font-size: 10px; color: var(--accent); }
+
+    .preset-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    select { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font-family: inherit; font-size: 13px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+    .info-item { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 8px; font-size: 12px; }
+    .info-item .key { color: var(--dim); font-size: 11px; }
+    .info-item .val { color: var(--text); font-size: 14px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <h1>SoundPeats H3 BLE Controller</h1>
+  <h2>Jieli protocol · ae00/ae01/ae02 · Packet: FF 04 00 [len] 00 0A [cmdHi] [cmdLo] [payload]</h2>
+
+  <!-- Connection -->
+  <div class="section">
+    <div class="row">
+      <button id="connectBtn">Connect to H3</button>
+      <button id="disconnectBtn" disabled class="danger">Disconnect</button>
+      <span id="status" class="disconnected">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- Device Info -->
+  <div class="section">
+    <h3>Device Info</h3>
+    <div class="row">
+      <button id="getBatteryBtn" disabled>Get Battery</button>
+      <button id="getFirmwareBtn" disabled>Get Firmware</button>
+      <button id="getAncBtn" disabled>Get ANC Mode</button>
+      <button id="queryAllBtn" disabled>Query All</button>
+    </div>
+    <div class="info-grid" id="infoGrid">
+      <div class="info-item"><div class="key">Left Battery</div><div class="val" id="leftBat">–</div></div>
+      <div class="info-item"><div class="key">Right Battery</div><div class="val" id="rightBat">–</div></div>
+      <div class="info-item"><div class="key">Case Battery</div><div class="val" id="caseBat">–</div></div>
+      <div class="info-item"><div class="key">Firmware</div><div class="val" id="firmware">–</div></div>
+      <div class="info-item"><div class="key">ANC Mode</div><div class="val" id="ancMode">–</div></div>
+    </div>
+  </div>
+
+  <!-- EQ Section -->
+  <div class="section">
+    <h3>Equalizer</h3>
+    <div class="row">
+      <button id="getEqBtn" disabled>Read EQ from Device</button>
+      <button id="sendEqBtn" disabled class="success">Write EQ to Device</button>
+      <button id="resetEqBtn" disabled>Flat (0 dB)</button>
+      <select id="eqVersion">
+        <option value="v2">EQ V2 (0x0E02) — preferred</option>
+        <option value="v1">EQ V1 (0x0E01)</option>
+      </select>
+    </div>
+    <div class="preset-row" style="margin-bottom:12px;">
+      <button class="preset-btn" data-preset="flat">Flat</button>
+      <button class="preset-btn" data-preset="bass">Bass Boost</button>
+      <button class="preset-btn" data-preset="treble">Treble</button>
+      <button class="preset-btn" data-preset="vocal">Vocal</button>
+      <button class="preset-btn" data-preset="vshape">V-Shape</button>
+    </div>
+    <div class="eq-bands" id="eqBands"></div>
+    <div style="margin-top:8px; font-size:11px; color:var(--dim);" id="eqHint">
+      EQ format will be probed on first "Read EQ". V2 = freq+gain+Q per band, V1 = gain only.
+    </div>
+  </div>
+
+  <!-- Raw Commands -->
+  <div class="section">
+    <h3>Raw Commands</h3>
+    <div class="row">
+      <button id="probeCmdsBtn" disabled>Send All Probe Commands</button>
+      <button id="clearLogBtn">Clear Log</button>
+    </div>
+    <div class="row" style="flex-wrap:nowrap;">
+      <input type="text" id="rawHex" placeholder="Hex bytes e.g. FF 04 00 00 00 0A 03 06"
+        style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:8px; font-family:inherit; font-size:13px;">
+      <button id="sendRawBtn" disabled>Send Raw</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="section">
+    <h3>BLE Log</h3>
+    <div id="log"></div>
+  </div>
+
+<script>
+// ─── UUIDs (Jieli SDK) ───────────────────────────────────────────────────────
+const JIELI_SERVICE      = '0000ae00-0000-1000-8000-00805f9b34fb';
+const JIELI_WRITE        = '0000ae01-0000-1000-8000-00805f9b34fb';
+const JIELI_NOTIFY       = '0000ae02-0000-1000-8000-00805f9b34fb';
+const CCCD_UUID          = '00002902-0000-1000-8000-00805f9b34fb';
+
+// Fallback — Actions GATT UUIDs (in case H3 uses a different chip variant)
+const ACTIONS_SERVICE    = '00001100-d102-11e1-9b23-00025b00a5a5';
+const ACTIONS_WRITE      = '00001101-d102-11e1-9b23-00025b00a5a5';
+const ACTIONS_NOTIFY     = '00001102-d102-11e1-9b23-00025b00a5a5';
+
+// ─── Feature codes (from FeatureConstant.java) ───────────────────────────────
+const CMD = {
+  GET_LEFT_BATTERY:    774,   // 0x0306
+  GET_RIGHT_BATTERY:   775,   // 0x0307
+  GET_FIRMWARE:        777,   // 0x0309
+  GET_IN_EAR:          780,   // 0x030C
+  GET_GAME_MODE:       782,   // 0x030E
+  GET_ANC_MODE:        784,   // 0x0310
+  GET_CASE_BATTERY:    803,   // 0x0323
+  GET_DYNAMIC_EQ:      817,   // 0x0331
+  SET_DYNAMIC_EQ:      818,   // 0x0332
+  GET_DYNAMIC_BASS:    828,   // 0x033C
+  MODIFY_EQ_V1:        3585,  // 0x0E01
+  MODIFY_EQ_V2:        3586,  // 0x0E02
+};
+
+// EQ sub-header differs from other commands
+function buildPacket(cmdCode, payload = null) {
+  const payloadBytes = payload || new Uint8Array(0);
+  const len = payloadBytes.length;
+  const isEq = (cmdCode === CMD.MODIFY_EQ_V1 || cmdCode === CMD.MODIFY_EQ_V2);
+  const sub0 = 0x00;
+  const sub1 = isEq ? 0x28 : 0x0A;
+  return new Uint8Array([
+    0xFF, 0x04, 0x00,           // header
+    len,                         // payload length
+    sub0, sub1,                  // sub-header
+    (cmdCode >> 8) & 0xFF,       // cmd high byte
+    cmdCode & 0xFF,              // cmd low byte
+    ...payloadBytes
+  ]);
+}
+
+function parsePacket(data) {
+  if (data.length < 8) return null;
+  const sub = (data[4] << 8) | data[5];
+  const cmd = (data[6] << 8) | data[7];
+  const payloadLen = data[3];
+  const payload = data.slice(8, 8 + payloadLen);
+  return { sub, cmd, payload, raw: data };
+}
+
+function toHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+}
+
+function fromHex(str) {
+  const clean = str.replace(/[^0-9a-fA-F]/g, '');
+  const bytes = [];
+  for (let i = 0; i < clean.length; i += 2) {
+    bytes.push(parseInt(clean.substr(i, 2), 16));
+  }
+  return new Uint8Array(bytes);
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let device = null, server = null;
+let writeChar = null, notifyChar = null;
+let protocol = 'jieli'; // or 'actions'
+
+// ─── Log ─────────────────────────────────────────────────────────────────────
+function log(msg, cls = '') {
+  const div = document.getElementById('log');
+  const t = new Date().toLocaleTimeString('en', { hour12: false });
+  div.innerHTML += `<div class="log-${cls || 'dim'}">[${t}] ${msg}</div>`;
+  div.scrollTop = div.scrollHeight;
+}
+
+// ─── Connection ───────────────────────────────────────────────────────────────
+document.getElementById('connectBtn').onclick = connect;
+document.getElementById('disconnectBtn').onclick = disconnect;
+
+async function connect() {
+  try {
+    log('Requesting BLE device…', 'info');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [
+        { namePrefix: 'SoundPEATS' },
+        { namePrefix: 'SoundPeats' },
+        { namePrefix: 'SOUNDPEATS' },
+        { namePrefix: 'H3' },
+        { services: [JIELI_SERVICE] },
+      ],
+      optionalServices: [JIELI_SERVICE, ACTIONS_SERVICE],
+    });
+    log(`Found: ${device.name || 'unknown'} (${device.id})`, 'info');
+    device.addEventListener('gattserverdisconnected', onDisconnect);
+
+    server = await device.gatt.connect();
+    log('GATT connected', 'info');
+
+    // Try Jieli first, then Actions
+    let connected = false;
+    for (const [svcUUID, writeUUID, notifyUUID, proto] of [
+      [JIELI_SERVICE, JIELI_WRITE, JIELI_NOTIFY, 'jieli'],
+      [ACTIONS_SERVICE, ACTIONS_WRITE, ACTIONS_NOTIFY, 'actions'],
+    ]) {
+      try {
+        const svc = await server.getPrimaryService(svcUUID);
+        writeChar = await svc.getCharacteristic(writeUUID);
+        notifyChar = await svc.getCharacteristic(notifyUUID);
+        await notifyChar.startNotifications();
+        notifyChar.addEventListener('characteristicvaluechanged', onNotify);
+        protocol = proto;
+        log(`Using ${proto.toUpperCase()} protocol (service ${svcUUID.substring(0,8)}…)`, 'info');
+        connected = true;
+        break;
+      } catch (e) {
+        log(`${proto} protocol not found: ${e.message}`, 'dim');
+      }
+    }
+
+    if (!connected) throw new Error('No supported BLE service found');
+    setConnected(true);
+    log('Ready — sending probe…', 'info');
+    await sendCmd(CMD.GET_FIRMWARE);
+    await new Promise(r => setTimeout(r, 200));
+    await sendCmd(CMD.GET_LEFT_BATTERY);
+    await new Promise(r => setTimeout(r, 200));
+    await sendCmd(CMD.GET_RIGHT_BATTERY);
+  } catch (e) {
+    log(`Connect failed: ${e.message}`, 'err');
+    setConnected(false);
+  }
+}
+
+async function disconnect() {
+  if (device && device.gatt.connected) {
+    device.gatt.disconnect();
+  }
+  setConnected(false);
+}
+
+function onDisconnect() {
+  log('BLE disconnected', 'err');
+  setConnected(false);
+}
+
+function setConnected(v) {
+  document.getElementById('status').textContent = v ? `Connected (${device?.name || ''})` : 'Disconnected';
+  document.getElementById('status').className = v ? 'connected' : 'disconnected';
+  ['disconnectBtn','getBatteryBtn','getFirmwareBtn','getAncBtn','queryAllBtn',
+   'getEqBtn','sendEqBtn','resetEqBtn','probeCmdsBtn','sendRawBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (id === 'disconnectBtn') btn.disabled = !v;
+    else btn.disabled = !v || id === 'connectBtn';
+  });
+  document.getElementById('connectBtn').disabled = v;
+}
+
+// ─── Send helpers ─────────────────────────────────────────────────────────────
+async function sendCmd(cmdCode, payload = null) {
+  if (!writeChar) { log('Not connected', 'err'); return; }
+  const pkt = buildPacket(cmdCode, payload ? new Uint8Array(payload) : null);
+  const hex = toHex(pkt);
+  log(`→ TX [cmd=0x${cmdCode.toString(16).toUpperCase().padStart(4,'0')}] ${hex}`, 'tx');
+  try {
+    await writeChar.writeValueWithoutResponse(pkt);
+  } catch (_) {
+    await writeChar.writeValue(pkt);
+  }
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+function onNotify(event) {
+  const data = new Uint8Array(event.target.value.buffer);
+  const hex = toHex(data);
+  log(`← RX (${data.length}B): ${hex}`, 'rx');
+  parseResponse(data);
+}
+
+function parseResponse(data) {
+  const pkt = parsePacket(data);
+  if (!pkt) return;
+  const { cmd, payload } = pkt;
+
+  switch (cmd) {
+    case CMD.GET_LEFT_BATTERY:
+      if (payload.length >= 1) {
+        document.getElementById('leftBat').textContent = payload[0] + '%';
+        log(`  Left battery: ${payload[0]}%`, 'parse');
+      }
+      break;
+    case CMD.GET_RIGHT_BATTERY:
+      if (payload.length >= 1) {
+        document.getElementById('rightBat').textContent = payload[0] + '%';
+        log(`  Right battery: ${payload[0]}%`, 'parse');
+      }
+      break;
+    case CMD.GET_CASE_BATTERY:
+      if (payload.length >= 1) {
+        document.getElementById('caseBat').textContent = payload[0] + '%';
+        log(`  Case battery: ${payload[0]}%`, 'parse');
+      }
+      break;
+    case CMD.GET_FIRMWARE: {
+      const ver = Array.from(payload).map(b => String.fromCharCode(b)).join('').replace(/\0/g, '');
+      document.getElementById('firmware').textContent = ver || toHex(payload);
+      log(`  Firmware: ${ver || toHex(payload)}`, 'parse');
+      break;
+    }
+    case CMD.GET_ANC_MODE: {
+      const modes = ['Normal', 'ANC', 'Transparency', 'Wind Reduction'];
+      const mode = payload.length ? (modes[payload[0]] || `0x${payload[0].toString(16)}`) : '?';
+      document.getElementById('ancMode').textContent = mode;
+      log(`  ANC mode: ${mode}`, 'parse');
+      break;
+    }
+    case CMD.GET_DYNAMIC_EQ:
+      log(`  Dynamic EQ: ${payload[0] ? 'ON' : 'OFF'}`, 'parse');
+      break;
+    case CMD.MODIFY_EQ_V1:
+    case CMD.MODIFY_EQ_V2:
+      log(`  EQ response (${cmd === CMD.MODIFY_EQ_V1 ? 'V1' : 'V2'}, ${payload.length}B payload): ${toHex(payload)}`, 'parse');
+      tryDecodeEq(payload, cmd);
+      break;
+    default:
+      if (payload.length > 0) {
+        log(`  cmd=0x${cmd.toString(16).padStart(4,'0')} payload: ${toHex(payload)}`, 'parse');
+      }
+  }
+}
+
+// ─── EQ decode ────────────────────────────────────────────────────────────────
+// Tries several decoding strategies based on payload size
+function tryDecodeEq(payload, cmd) {
+  if (payload.length === 0) {
+    log('  Empty EQ payload (write ACK?)', 'dim');
+    return;
+  }
+
+  // Strategy 1: payload = N × 3 bytes → [bandIdx, gainSigned, q_or_flags]
+  if (payload.length % 3 === 0) {
+    const n = payload.length / 3;
+    log(`  Trying 3B/band decode (${n} bands):`, 'parse');
+    const gains = [];
+    for (let i = 0; i < n; i++) {
+      const idx = payload[i*3];
+      const gain = payload[i*3+1] > 127 ? payload[i*3+1] - 256 : payload[i*3+1];
+      const q = payload[i*3+2];
+      log(`    Band[${idx}]: gain=${gain}dB  q_byte=0x${q.toString(16)}`, 'parse');
+      gains.push(gain);
+    }
+    applyGainsToSliders(gains);
+    return;
+  }
+
+  // Strategy 2: payload = N × 2 bytes → int16 gain (big-endian, ×10)
+  if (payload.length % 2 === 0) {
+    const n = payload.length / 2;
+    log(`  Trying 2B/band decode (${n} bands, gain×10):`, 'parse');
+    const gains = [];
+    for (let i = 0; i < n; i++) {
+      let v = (payload[i*2] << 8) | payload[i*2+1];
+      if (v > 32767) v -= 65536;
+      const gain = v / 10;
+      log(`    Band[${i}]: gain=${gain.toFixed(1)}dB`, 'parse');
+      gains.push(gain);
+    }
+    applyGainsToSliders(gains);
+    return;
+  }
+
+  // Strategy 3: payload = 1 byte per band, signed, ×1
+  const n = payload.length;
+  log(`  Trying 1B/band decode (${n} bands):`, 'parse');
+  const gains = payload.map(b => b > 127 ? b - 256 : b);
+  gains.forEach((g, i) => log(`    Band[${i}]: gain=${g}dB`, 'parse'));
+  applyGainsToSliders(gains);
+}
+
+// ─── EQ Bands UI ─────────────────────────────────────────────────────────────
+const BANDS = [
+  { freq: 20, label: '20' },
+  { freq: 40, label: '40' },
+  { freq: 63, label: '63' },
+  { freq: 125, label: '125' },
+  { freq: 250, label: '250' },
+  { freq: 500, label: '500' },
+  { freq: 1000, label: '1k' },
+  { freq: 2000, label: '2k' },
+  { freq: 4000, label: '4k' },
+  { freq: 8000, label: '8k' },
+  { freq: 16000, label: '16k' },
+];
+
+function initBands() {
+  const container = document.getElementById('eqBands');
+  container.innerHTML = '';
+  BANDS.forEach((band, i) => {
+    const div = document.createElement('div');
+    div.className = 'eq-band';
+    div.innerHTML = `
+      <div class="freq-hz">${band.label}</div>
+      <input type="range" id="band${i}" min="-12" max="12" step="0.5" value="0" orient="vertical">
+      <div class="gain-val" id="bandVal${i}">0.0</div>
+    `;
+    container.appendChild(div);
+    div.querySelector('input').addEventListener('input', (e) => {
+      document.getElementById(`bandVal${i}`).textContent = parseFloat(e.target.value).toFixed(1);
+    });
+  });
+}
+
+function getGains() {
+  return BANDS.map((_, i) => parseFloat(document.getElementById(`band${i}`).value));
+}
+
+function setGains(gains) {
+  gains.forEach((g, i) => {
+    if (i >= BANDS.length) return;
+    const v = Math.max(-12, Math.min(12, g));
+    document.getElementById(`band${i}`).value = v;
+    document.getElementById(`bandVal${i}`).textContent = v.toFixed(1);
+  });
+}
+
+function applyGainsToSliders(gains) {
+  setGains(gains);
+  document.getElementById('eqHint').textContent =
+    `EQ loaded: ${gains.length} bands decoded. Adjust and click "Write EQ to Device" to apply.`;
+}
+
+initBands();
+
+// ─── Preset buttons ───────────────────────────────────────────────────────────
+const PRESETS = {
+  flat:    [0,0,0,0,0,0,0,0,0,0,0],
+  bass:    [6,5,4,2,1,0,0,0,0,0,0],
+  treble:  [0,0,0,0,0,0,1,2,4,5,6],
+  vocal:   [0,0,-1,-1,2,3,3,2,1,0,0],
+  vshape:  [5,3,1,0,-1,-2,0,1,3,4,5],
+};
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const name = btn.dataset.preset;
+    if (PRESETS[name]) setGains(PRESETS[name]);
+  });
+});
+
+// ─── EQ Build Payload ─────────────────────────────────────────────────────────
+// V2: we send 6 bytes per band (freq_lo, freq_hi, gain_lo, gain_hi, q_lo, q_hi) or
+//     3 bytes per band (band_id, gain_signed, q_as_byte)
+// Without confirmed format, we try the most common Jieli V2 format:
+//   For each band: [bandId(1B), gain×10 as int16 BE (2B), q×100 as int16 BE (2B)] = 5B/band
+// V1: gains only — 1 byte each, signed, in dB (no multiplier)
+
+function buildEqV2Payload(gains) {
+  // Common Jieli V2 format: per band → [bandId, gainHi, gainLo] in int16 big-endian ×10
+  // Q is omitted if not known, or send a default Q
+  const DEFAULT_Q = 1.41; // default Q for peaking filter
+  const payload = [];
+  gains.forEach((g, i) => {
+    const gainInt = Math.round(g * 10);  // ×10
+    const qInt = Math.round(DEFAULT_Q * 100); // ×100
+    payload.push(i);                          // band index
+    payload.push((gainInt >> 8) & 0xFF, gainInt & 0xFF);   // gain BE int16
+    payload.push((qInt >> 8) & 0xFF, qInt & 0xFF);         // Q BE int16
+  });
+  return new Uint8Array(payload);
+}
+
+function buildEqV1Payload(gains) {
+  // V1: simple signed bytes, no multiplier (just dB as int8)
+  return new Uint8Array(gains.map(g => {
+    const v = Math.round(g);
+    return v < 0 ? v + 256 : v;
+  }));
+}
+
+// ─── Button handlers ──────────────────────────────────────────────────────────
+document.getElementById('getBatteryBtn').onclick = async () => {
+  await sendCmd(CMD.GET_LEFT_BATTERY);
+  await new Promise(r => setTimeout(r, 150));
+  await sendCmd(CMD.GET_RIGHT_BATTERY);
+  await new Promise(r => setTimeout(r, 150));
+  await sendCmd(CMD.GET_CASE_BATTERY);
+};
+
+document.getElementById('getFirmwareBtn').onclick = () => sendCmd(CMD.GET_FIRMWARE);
+document.getElementById('getAncBtn').onclick = () => sendCmd(CMD.GET_ANC_MODE);
+
+document.getElementById('queryAllBtn').onclick = async () => {
+  const cmds = [
+    CMD.GET_FIRMWARE, CMD.GET_LEFT_BATTERY, CMD.GET_RIGHT_BATTERY,
+    CMD.GET_CASE_BATTERY, CMD.GET_ANC_MODE, CMD.GET_GAME_MODE,
+    CMD.GET_IN_EAR, CMD.GET_DYNAMIC_EQ, CMD.GET_DYNAMIC_BASS,
+  ];
+  for (const c of cmds) {
+    await sendCmd(c);
+    await new Promise(r => setTimeout(r, 200));
+  }
+};
+
+document.getElementById('getEqBtn').onclick = async () => {
+  const v = document.getElementById('eqVersion').value;
+  const cmdCode = v === 'v1' ? CMD.MODIFY_EQ_V1 : CMD.MODIFY_EQ_V2;
+  log(`Querying EQ (${v.toUpperCase()})…`, 'info');
+  await sendCmd(cmdCode);  // send empty payload = read request
+};
+
+document.getElementById('sendEqBtn').onclick = async () => {
+  const gains = getGains();
+  const v = document.getElementById('eqVersion').value;
+  const cmdCode = v === 'v1' ? CMD.MODIFY_EQ_V1 : CMD.MODIFY_EQ_V2;
+  const payload = v === 'v1' ? buildEqV1Payload(gains) : buildEqV2Payload(gains);
+  log(`Writing EQ (${v.toUpperCase()}, ${gains.length} bands): ${gains.map(g => g.toFixed(1)).join(', ')}`, 'info');
+  await sendCmd(cmdCode, payload);
+};
+
+document.getElementById('resetEqBtn').onclick = async () => {
+  setGains(PRESETS.flat);
+  const v = document.getElementById('eqVersion').value;
+  const cmdCode = v === 'v1' ? CMD.MODIFY_EQ_V1 : CMD.MODIFY_EQ_V2;
+  const payload = v === 'v1' ? buildEqV1Payload(PRESETS.flat) : buildEqV2Payload(PRESETS.flat);
+  await sendCmd(cmdCode, payload);
+};
+
+document.getElementById('probeCmdsBtn').onclick = async () => {
+  log('=== Sending all probe commands ===', 'info');
+  const allCmds = Object.entries(CMD);
+  for (const [name, code] of allCmds) {
+    if (name.startsWith('MODIFY')) continue; // skip write commands in probe
+    log(`  Probing ${name} (0x${code.toString(16).toUpperCase().padStart(4,'0')})…`, 'dim');
+    await sendCmd(code);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  log('=== Probe complete ===', 'info');
+};
+
+document.getElementById('sendRawBtn').onclick = async () => {
+  const hex = document.getElementById('rawHex').value.trim();
+  if (!hex) return;
+  const bytes = fromHex(hex);
+  if (bytes.length === 0) { log('Invalid hex input', 'err'); return; }
+  log(`→ TX raw (${bytes.length}B): ${toHex(bytes)}`, 'tx');
+  try {
+    await writeChar.writeValueWithoutResponse(bytes);
+  } catch (_) {
+    await writeChar.writeValue(bytes);
+  }
+};
+
+document.getElementById('clearLogBtn').onclick = () => {
+  document.getElementById('log').innerHTML = '';
+};
+
+// ─── EQ Version change hint ───────────────────────────────────────────────────
+document.getElementById('eqVersion').onchange = (e) => {
+  const v = e.target.value;
+  document.getElementById('eqHint').textContent =
+    v === 'v1'
+      ? 'V1 (0x0E01): gain-only payload, 1 signed byte per band'
+      : 'V2 (0x0E02): full band data — band_id + gain×10 (int16 BE) + Q×100 (int16 BE)';
+};
+</script>
+</body>
+</html>

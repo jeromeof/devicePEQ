@@ -1,0 +1,115 @@
+================================================================================
+EQ CHANGE CAPTURE ANALYSIS - KEY FINDINGS
+================================================================================
+
+PROBLEM: Excessive "keepalive-like packets"
+CAPTURE: eq_change.txt (2586 lines, 156 packets)
+
+================================================================================
+ROOT CAUSE IDENTIFIED
+================================================================================
+
+Each Command 0x6 query triggers a 193-byte Command 0xBD response!
+
+Flow:
+  APP → Command 0x6 (query filter status, 10 bytes)
+  DEVICE → Command 0xBD (full PEQ config, 193 bytes)
+
+Current behavior:
+  - App sends Command 0x6 in BURSTS of 8-20 packets
+  - Each burst triggers 8-20 × 193-byte responses
+  - Total redundant data: ~4,600 bytes per burst
+
+================================================================================
+PACKET FREQUENCY ANALYSIS
+================================================================================
+
+Most frequent commands:
+  Command 0x6:  45 packets (24 TX + 21 RX) ← MAIN CULPRIT
+  Command 0xBD: 17 packets (1 TX + 16 RX)  ← TRIGGERED BY 0x6
+  Command 0x4:  28 packets (26 TX + 2 RX)  ← Part of polling loop
+  Command 0x3:  25 packets (8 TX + 17 RX)  ← Connect status polling
+
+Repeating patterns detected:
+  [18x] 0x6 → 0x6 → 0x6 → 0x6 → ... (up to 8 in a row!)
+  [5x]  0x3 → 0x2 → 0x4 → 0x4 → 0x4 → 0x4 (status polling loop)
+
+================================================================================
+PEQ STATES DECODED (Command 0xBD)
+================================================================================
+
+State 1 (Line 420, 708, 2298, etc.) - Header byte 4 = 0x01:
+  Filter 0 (32Hz):    +6.00 dB  ← Preset 1?
+  Filters 1-9:         0.00 dB
+
+State 2 (Line 484, 772, etc.) - Header byte 4 = 0x00:
+  All filters:         0.00 dB (FLAT)
+
+State 3 (Line 548, 836, 2362, 2490) - Header byte 4 = 0x00:
+  Filter 0 (32Hz):    -3.00 dB   ┐
+  Filter 1 (64Hz):    -2.00 dB   │
+  Filter 2 (125Hz):   -1.00 dB   │
+  Filter 3 (250Hz):    0.00 dB   │ Sloped EQ curve
+  Filter 4 (500Hz):   +2.00 dB   │ (might be a different preset?)
+  Filter 5 (1kHz):    +4.00 dB   │
+  Filter 6 (2kHz):    +6.00 dB   │
+  Filter 7 (4kHz):    +8.00 dB   ┘
+  Filter 8-9:          0.00 dB
+
+NOTE: User reported changing "filter 1 to +3dB" but the data shows a multi-
+      filter sloped curve instead. This suggests either:
+      - The UI showed a different state than what was captured
+      - A preset was activated instead of individual filter change
+      - The actual SET command was filtered out (keepalive filter enabled!)
+
+================================================================================
+COMMAND 0x6 ANALYSIS
+================================================================================
+
+Structure: 05 5A 06 00 00 0A [filter_id] [preset/value] E8 03
+
+Filter IDs observed:
+  00, 01, 02, 03     - Left channel filters 0-3?
+  10, 11, 12, 13     - Right channel filters 0-3?
+
+Value byte (position 7):
+  0xE4 (228) - Sent for filters 01, 02 only
+  0xEF (239) - Sent for all filters 00-03, 10-13
+
+Hypothesis:
+  - E4 = Query active preset 228 (or modified filters only?)
+  - EF = Query all filters in preset 239?
+  - These values might be preset identifiers, not gain values
+
+================================================================================
+SOLUTION: STOP COMMAND 0x6 POLLING!
+================================================================================
+
+The app is continuously polling with Command 0x6, and each query triggers
+a 193-byte Command 0xBD response. This creates bandwidth explosion.
+
+Recommended changes:
+  1. Remove Command 0x6 burst queries (24 packets → 0 packets)
+  2. Send Command 0xBD query once when opening EQ tab
+  3. Listen for unsolicited 0xBD broadcasts from device
+  4. Reduce status polling (0x3, 0x2, 0x4) from 4-5 loops to 1
+
+Expected bandwidth reduction:
+  Before: ~4,600 bytes of redundant PEQ data per polling cycle
+  After:  ~193 bytes (single query on demand)
+  Savings: ~96% reduction in PEQ-related traffic
+
+================================================================================
+MISSING: ACTUAL FILTER CHANGE COMMANDS
+================================================================================
+
+The capture does NOT show the commands that changed the PEQ values!
+
+Possible reasons:
+  1. Keepalive filtering is ENABLED and filtered them out
+  2. The commands use an unknown/undocumented format
+  3. The device uses internal preset switching (no explicit set command)
+
+To find the actual EQ change protocol:
+  → Disable keepalive filtering and recapture the EQ change session
+  → Look for commands sent between State 2 (flat) and State 3 (sloped)

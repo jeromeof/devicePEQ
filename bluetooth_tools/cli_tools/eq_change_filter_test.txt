@@ -1,0 +1,98 @@
+================================================================================
+EDIFIER W830NB - FILTER CHANGE ANALYSIS
+================================================================================
+
+USER CHANGES:
+- Filter 1: +3dB at 100Hz
+- Filter 2: -3dB at 1000Hz
+
+================================================================================
+CAPTURED SEQUENCE:
+================================================================================
+
+The app made 4 SET_BAND commands, followed by GET commands to verify:
+
+UPDATE 1: Band A5 (165)
+TX: AA EC 44 00 06 A5 A5 A5 97 A9 AF BE
+Payload: A5 A5 A5 97 A9 AF
+                  ^^
+
+UPDATE 2: Band A5 (165) - Same band, different value
+TX: AA EC 44 00 06 A5 A5 A5 C1 A9 AF E8
+Payload: A5 A5 A5 C1 A9 AF
+                  ^^
+Change: Byte 3 changed from 97 -> C1 (151 -> 193, delta = +42)
+
+UPDATE 3: Band A4 (164)
+TX: AA EC 44 00 06 A4 A5 A4 51 A5 AF 72
+Payload: A4 A5 A4 51 A5 AF
+            ^^  ^^
+
+UPDATE 4: Band A4 (164) - Same band, different values
+TX: AA EC 44 00 06 A4 A5 A6 4D A5 AF 70
+Payload: A4 A5 A6 4D A5 AF
+            ^^  ^^
+Change: Byte 2 changed from A4 -> A6 (164 -> 166, delta = +2)
+        Byte 3 changed from 51 -> 4D (81 -> 77, delta = -4)
+
+================================================================================
+FULL EQ STATE PROGRESSION (36-byte payloads from GET responses):
+================================================================================
+
+After UPDATE 1:
+AD A1 A5 A5 A5 97 A9 AF | A4 A5 A4 51 A3 AF | A7 A5 A9 A3 A3 AF | A6 A5 82 B5 A3 AF | 9F 85 41 C3 ED C4 | D7 C8 C4 CB
+         Filter 0?      |    Filter 1?     |    Filter 2?     |    Filter 3?     |    Filter 4?     |  Filter 5?
+
+After UPDATE 2 (byte index 5 changed: 97 -> C1):
+AD A1 A5 A5 A5 C1 A9 AF | A4 A5 A4 51 A3 AF | A7 A5 A9 A3 A3 AF | A6 A5 82 B5 A3 AF | 9F 85 41 C3 ED C4 | D7 C8 C4 CB
+               ^^
+
+After UPDATE 3 (byte index 12 changed: A3 -> A5):
+AD A1 A5 A5 A5 C1 A9 AF | A4 A5 A4 51 A5 AF | A7 A5 A9 A3 A3 AF | A6 A5 82 B5 A3 AF | 9F 85 41 C3 ED C4 | D7 C8 C4 CB
+                                    ^^
+
+After UPDATE 4 (byte indices 10-11 changed: A4 51 -> A6 4D):
+AD A1 A5 A5 A5 C1 A9 AF | A4 A5 A6 4D A5 AF | A7 A5 A9 A3 A3 AF | A6 A5 82 B5 A3 AF | 9F 85 41 C3 ED C4 | D7 C8 C4 CB
+                            ^^  ^^
+
+================================================================================
+ANALYSIS:
+================================================================================
+
+Each filter appears to take 6 bytes in the full EQ state.
+
+Filter boundaries in 36-byte payload:
+- Bytes 0-5:   Filter 0 (AD A1 A5 A5 A5 C1)  <- Changed by updates 1&2
+- Bytes 6-7:   A9 AF (separator/checksum?)
+- Bytes 8-13:  Filter 1 (A4 A5 A6 4D A5 AF)  <- Changed by updates 3&4
+- Bytes 14-19: Filter 2 (A7 A5 A9 A3 A3 AF)
+- Bytes 20-25: Filter 3 (A6 A5 82 B5 A3 AF)
+- Bytes 26-31: Filter 4 (9F 85 41 C3 ED C4)
+- Bytes 32-35: Filter 5? (D7 C8 C4 CB) - Only 4 bytes?
+
+Wait, that doesn't quite work. Let me re-analyze...
+
+Actually, looking at the SET_BAND commands, they all end with AF (175):
+A5 A5 A5 97 A9 AF
+A5 A5 A5 C1 A9 AF
+A4 A5 A4 51 A5 AF
+A4 A5 A6 4D A5 AF
+
+Pattern in SET_BAND (6 bytes):
+- Byte 0: Band identifier (A5=165 for filter 0, A4=164 for filter 1)
+- Byte 1: Always A5 (165)?
+- Bytes 2-4: Parameter values
+- Byte 5: Always AF (175) - likely a marker/checksum
+
+HYPOTHESIS:
+- The app changes ONE filter at a time
+- Updates 1&2: Modified first filter (+3dB at 100Hz)
+  - Possibly one update for frequency, one for gain
+- Updates 3&4: Modified second filter (-3dB at 1000Hz)
+  - Possibly one update for frequency, one for gain
+
+NEXT STEPS:
+- Need to correlate these byte changes with actual filter parameters
+- Try changing just frequency without gain
+- Try changing just gain without frequency
+- Map the encoding: how are dB values encoded? How are Hz values encoded?

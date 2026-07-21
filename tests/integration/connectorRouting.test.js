@@ -50,12 +50,22 @@ async function connectMock(spec) {
 
 // ── WalkPlay devices ──────────────────────────────────────────────────────────
 
-export async function test_walkplay_schemeNo10_routes_correctly(assert) {
+export async function test_jm98max_walkplay_routes_correctly(assert) {
   const device = await connectMock({ vendorId: 0x0661, productId: 0x0881, productName: 'JM98MAX' });
   assert.ok(device, 'should connect successfully');
-  assert.equal(device.modelConfig.maxFilters, 8,       'SchemeNo10 maxFilters should be 8');
-  assert.equal(device.modelConfig.minGain, -10,        'SchemeNo10 minGain should be -10');
-  assert.equal(device.modelConfig.maxGain, 10,         'SchemeNo10 maxGain should be 10');
+  assert.equal(device.modelConfig.maxFilters, 8,       'JM98MAX maxFilters should be 8 (WalkPlay SchemeNo10)');
+  assert.equal(device.modelConfig.minGain, -10,        'JM98MAX minGain should be -10 dB (WalkPlay SchemeNo10)');
+  assert.equal(device.modelConfig.maxGain, 10,         'JM98MAX maxGain should be 10 dB (WalkPlay SchemeNo10)');
+  assert.equal(device.modelConfig.schemeNo, 10,        'schemeNo should be 10');
+  assert.ok(device.handler,                            'handler should be assigned');
+}
+
+export async function test_jm98max_2_walkplay_routes_correctly(assert) {
+  const device = await connectMock({ vendorId: 0x2972, productId: 0x0104, productName: 'JM98MAX 2' });
+  assert.ok(device, 'should connect successfully');
+  assert.equal(device.modelConfig.maxFilters, 8,       'JM98MAX 2 maxFilters should be 8 (WalkPlay SchemeNo10)');
+  assert.equal(device.modelConfig.minGain, -10,        'JM98MAX 2 minGain should be -10 dB (WalkPlay SchemeNo10)');
+  assert.equal(device.modelConfig.maxGain, 10,         'JM98MAX 2 maxGain should be 10 dB (WalkPlay SchemeNo10)');
   assert.equal(device.modelConfig.schemeNo, 10,        'schemeNo should be 10');
   assert.ok(device.handler,                            'handler should be assigned');
 }
@@ -63,10 +73,12 @@ export async function test_walkplay_schemeNo10_routes_correctly(assert) {
 export async function test_walkplay_schemeNo16_routes_correctly(assert) {
   const device = await connectMock({ vendorId: 0x3302, productId: 0x4367, productName: 'TANCHJIM-SPACE PRO' });
   assert.ok(device, 'should connect');
-  assert.equal(device.modelConfig.maxFilters, 10,      'SchemeNo16 maxFilters should be 10');
-  assert.equal(device.modelConfig.minGain, -10,        'SchemeNo16 minGain should be -10');
-  assert.equal(device.modelConfig.maxGain, 10,         'SchemeNo16 maxGain should be 10');
-  assert.equal(device.modelConfig.schemeNo, 16,        'schemeNo should be 16');
+  assert.equal(device.modelConfig.maxFilters, 10,      'TANCHJIM-SPACE PRO maxFilters should be 10');
+  assert.equal(device.modelConfig.minGain, -10,        'TANCHJIM-SPACE PRO minGain should be -10');
+  assert.equal(device.modelConfig.maxGain, 10,         'TANCHJIM-SPACE PRO maxGain should be 10');
+  assert.equal(device.modelConfig.schemeNo, 16,        'TANCHJIM-SPACE PRO should still use SchemeNo16 commands');
+  assert.equal(device.modelConfig.supportsLSFilter, false, 'TANCHJIM-SPACE PRO published/app PEQ is peak-only');
+  assert.equal(device.modelConfig.supportsHSFilter, false, 'TANCHJIM-SPACE PRO published/app PEQ is peak-only');
 }
 
 export async function test_walkplay_schemeNo15_routes_correctly(assert) {
@@ -196,4 +208,52 @@ export async function test_peqConstraints_filterSupport_flags_present(assert) {
     assert.ok(flag in device.modelConfig,
       `modelConfig.${flag} should be present after connector resolves peqConstraints`);
   });
+}
+
+export async function test_pushToDevice_truncatesToEnabledFiltersFirst(assert) {
+  const connector = await UsbHIDConnector;
+  const rawDevice = new MockHIDDevice({
+    vendorId: 0x31B2,
+    productId: 0x0111,
+    productName: 'TANCHJIM-ONE DSP',
+    responseDelay: 0
+  });
+  await rawDevice.open();
+
+  const originalGetDevices = navigator.hid.getDevices.bind(navigator.hid);
+  navigator.hid.getDevices = async () => [rawDevice];
+
+  const received = {};
+  const device = {
+    rawDevice,
+    model: rawDevice.productName,
+    modelConfig: {
+      maxFilters: 3,
+      supportsLSFilter: true,
+      supportsHSFilter: true,
+      deviceHandlesPregain: false,
+      defaultResetFiltersValues: [{ type: 'PK', freq: 100, q: 1, gain: 0, disabled: false }]
+    },
+    handler: {
+      pushToDevice: async (_device, _phoneObj, _slot, _preamp, filters) => {
+        received.filters = filters;
+        return false;
+      }
+    }
+  };
+
+  try {
+    await connector.pushToDevice(device, null, 0, 0, [
+      { type: 'PK', freq: 20, q: 1, gain: 0, disabled: true },
+      { type: 'PK', freq: 100, q: 1, gain: 1, disabled: false },
+      { type: 'PK', freq: 200, q: 1, gain: 0, disabled: true },
+      { type: 'PK', freq: 300, q: 1, gain: 2, disabled: false },
+      { type: 'PK', freq: 400, q: 1, gain: 3, disabled: false }
+    ]);
+  } finally {
+    navigator.hid.getDevices = originalGetDevices;
+  }
+
+  assert.deepEqual(received.filters.map(f => f.freq), [100, 300, 400],
+    'when truncating, connector should keep enabled filters before disabled rows');
 }

@@ -11,6 +11,8 @@
 // - 0x8E (142): Final/commit command
 //
 
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 export const fosiAudioUsbHID = (function () {
 
   // Protocol constants
@@ -131,6 +133,7 @@ export const fosiAudioUsbHID = (function () {
   async function sendCommand(device, reportId, cmd, index = 0, delay = 0) {
     const packet = makePacket(cmd, index);
     console.log(`USB Device PEQ: Fosi Audio sending feature [0x${packet[0].toString(16)}, 0x${packet[1].toString(16)}, ${packet[2]}]`);
+    logHidTx('FosiAudio', reportId, packet);
     await device.sendFeatureReport(reportId, packet);
     if (delay > 0) {
       await waitMs(delay);
@@ -141,6 +144,7 @@ export const fosiAudioUsbHID = (function () {
   async function receiveFeatureReport(device, reportId) {
     try {
       const dataView = await device.receiveFeatureReport(reportId);
+      logHidRx('FosiAudio', new Uint8Array(dataView.buffer));
       console.log(`USB Device PEQ: Fosi Audio received feature report:`, Array.from(new Uint8Array(dataView.buffer).slice(0, 25)));
       return dataView;
     } catch (e) {
@@ -157,6 +161,7 @@ export const fosiAudioUsbHID = (function () {
     packet[2] = presetId;
     packet[3] = bandIndex;
     console.log(`USB Device PEQ: Fosi Audio commit band ${bandIndex} of preset ${presetId}`);
+    logHidTx('FosiAudio', reportId, packet);
     await device.sendReport(reportId, packet);
   }
 
@@ -172,6 +177,7 @@ export const fosiAudioUsbHID = (function () {
         clearTimeout(timer);
         device.removeEventListener("inputreport", handler);
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('FosiAudio', data);
         console.log(`USB Device PEQ: Fosi Audio received:`, Array.from(data.slice(0, 10)));
         resolve(data);
       };
@@ -230,6 +236,7 @@ export const fosiAudioUsbHID = (function () {
 
       const responseHandler = (event) => {
         const data = new Uint8Array(event.data.buffer);
+        logHidRx('FosiAudio', data);
         console.log(`USB Device PEQ: Fosi Audio RAW RESPONSE:`, Array.from(data.slice(0, 25)));
         console.log(`USB Device PEQ: Fosi Audio Response - Header: 0x${data[0]?.toString(16)}, Cmd: 0x${data[1]?.toString(16)}, Byte2: ${data[2]}, Byte3: ${data[3]}`);
 
@@ -267,6 +274,7 @@ export const fosiAudioUsbHID = (function () {
         packet[3] = i;     // band index
 
         console.log(`USB Device PEQ: Fosi Audio requesting band ${i} of preset ${slot}`);
+        logHidTx('FosiAudio', reportId, packet);
         await device.sendFeatureReport(reportId, packet);
 
         // Receive response immediately
@@ -339,6 +347,7 @@ export const fosiAudioUsbHID = (function () {
         // Send SET_EQ_PARAMS command using Feature Report
         const packet = encodeBandParams(slot, i, filterToWrite);
         console.log(`USB Device PEQ: Fosi Audio writing band ${i}: freq=${filterToWrite.freq}Hz gain=${filterToWrite.gain}dB q=${filterToWrite.q}`);
+        logHidTx('FosiAudio', reportId, packet);
         await device.sendFeatureReport(reportId, packet);
         await waitMs(20);
 
@@ -372,6 +381,7 @@ export const fosiAudioUsbHID = (function () {
     enablePacket[0] = HEADER;
     enablePacket[1] = CMD.SET_EQ_ENABLE;
     enablePacket[2] = enable ? 1 : 0;
+    logHidTx('FosiAudio', reportId, enablePacket);
     await device.sendReport(reportId, enablePacket);
     await waitMs(30);
 

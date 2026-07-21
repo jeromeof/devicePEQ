@@ -1,0 +1,60 @@
+{
+  "_comment": "FiiO EH13 BLE — synthetic capture based on FIIO_EH11_BLE_PROTOCOL.md. Pull + push exchanges.",
+  "device": {
+    "productName": "FIIO EH13",
+    "manufacturer": "FiiO",
+    "writeWithResponse": true
+  },
+  "exchanges": [
+
+    {
+      "_comment": "Protocol version handshake — CMD 00 02",
+      "send":     [241, 16, 0, 8, 0, 2, 1, 255],
+      "response": [241, 16, 0, 10, 0, 2, 1, 1, 0, 255]
+    },
+
+    {
+      "_comment": "Read EQ bands — CMD 03 0D (10 bands from protocol doc example)",
+      "send":     [241, 16, 0, 10, 3, 13, 1, 0, 9, 255],
+      "response": [
+        241, 16, 0, 80,   3, 13, 1, 0, 9,
+        0, 64,   0, 25,   1, 244, 0,
+        255, 183, 0, 200, 3, 32,  0,
+        0, 15,   2, 88,   3, 32,  0,
+        255, 201, 7, 8,   7, 208, 0,
+        255, 176, 13, 172, 7, 208, 0,
+        0, 107,  19, 136, 3, 232, 0,
+        0, 10,   19, 136, 15, 160, 0,
+        255, 210, 31, 64, 15, 160, 0,
+        0, 15,   31, 64,  2, 208, 0,
+        0, 0,    62, 128, 2, 208, 0,
+        255
+      ]
+    },
+
+    {
+      "_comment": "Battery level — CMD 00 03",
+      "send":     [241, 16, 0, 8, 0, 3, 1, 255],
+      "response": [241, 16, 0, 9, 0, 3, 1, 72, 255]
+    },
+
+    {
+      "_comment": "EQ enabled status — CMD 03 01",
+      "send":     [241, 16, 0, 8, 3, 1, 1, 255],
+      "response": [241, 16, 0, 9, 3, 1, 1, 1, 255]
+    },
+
+    {
+      "_comment": "Write EQ band — CMD 13 0D (wildcard payload; ACK is always the same)",
+      "send":     [241, 16, null, null, 19, 13, null, null, null, null, null, null, null, null, null, null, null],
+      "response": [241, 16, 0, 8, 19, 13, 1, 255]
+    },
+
+    {
+      "_comment": "Set EQ enabled — CMD 13 01 (unconfirmed write; ACK speculative)",
+      "send":     [241, 16, null, null, 19, 1, null, null, null],
+      "response": [241, 16, 0, 8, 19, 1, 1, 255]
+    }
+
+  ]
+}

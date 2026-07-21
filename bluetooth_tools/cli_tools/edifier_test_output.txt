@@ -1,0 +1,32 @@
+     ____
+    / _  |   Frida 16.7.19 - A world-class dynamic instrumentation toolkit
+   | (_| |
+    > _  |   Commands:
+   /_/ |_|       help      -> Displays the help system
+   . . . .       object?   -> Display information about 'object'
+   . . . .       exit/quit -> Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+   . . . .
+   . . . .   Connected to Redmi Note 5 (id=901f9069)
+Attaching...
+🔍 Testing Edifier hooks...
+✅ Java.perform started
+✅ Found BluetoothSocket class
+✅ Hooked OutputStream.write
+✅ Hooked InputStream.read
+
+📡 Hooks installed - waiting for Bluetooth activity...
+💡 Try changing volume or EQ settings in the app
+
+[Redmi Note 5::PID::25965 ]-> 
+📤 SPP TX: 7 bytes
+Hex: AA EC C4 00 01 A5 00
+
+📤 SPP TX: 6 bytes
+Hex: AA EC D5 00 00 6B
+
+📥 SPP RX: 7 bytes
+Hex: BB EC D5 00 01 A5 22
+
+Thank you for using Frida!

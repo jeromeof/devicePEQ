@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/jeromeof/Development/PragmagicAudio/DevicePEQ/treblizerPEQ log --oneline -20)",
+      "Bash(node -c:*)",
+      "Bash(node --check:*)"
+    ]
+  }
+}

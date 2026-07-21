@@ -11,6 +11,8 @@
 //   payload = [group, ch_mask, band_index, value_hi, value_lo]
 //   gain × 10, Q × 1024, freq raw Hz (int16 big-endian, two's complement)
 
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 export const qudelixUsbHidHandler = (function () {
 
   // HID report IDs (from Qudelix plugin source: Ft enum)
@@ -143,8 +145,7 @@ export const qudelixUsbHidHandler = (function () {
     packet[1] = 0x80;
     packet.set(cmdPayload, 2);
 
-    console.log(`Qudelix TX 0x${cmdId.toString(16).padStart(4,'0')}:`,
-      [...cmdPayload].map(b => b.toString(16).padStart(2,'0')).join(' '));
+    logHidTx('Qudelix', sendReportId, packet);
 
     await device.sendReport(sendReportId, packet);
     await waitMs(15);
@@ -269,6 +270,7 @@ export const qudelixUsbHidHandler = (function () {
       let timer;
       const handler = (event) => {
         const raw = new Uint8Array(event.data.buffer);
+        logHidRx('Qudelix', raw);
         const rsp = parseResponse(raw);
         if (!rsp || rsp.cmdId !== CMD.RspEqPreset) return;
         const d = rsp.data;
@@ -311,10 +313,9 @@ export const qudelixUsbHidHandler = (function () {
       let timer;
       const handler = (event) => {
         const buf = new Uint8Array(event.data.buffer);
+        logHidRx('Qudelix', buf);
         const rsp = parseResponse(buf);
         if (!rsp) return;
-        console.log(`Qudelix RX 0x${rsp.cmdId.toString(16).padStart(4,'0')}:`,
-          [...rsp.data].map(b => b.toString(16).padStart(2,'0')).join(' '));
         if (rsp.cmdId === expectedCmdId) {
           clearTimeout(timer);
           device.removeEventListener('inputreport', handler);

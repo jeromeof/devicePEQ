@@ -45,6 +45,26 @@ export const usbHidDeviceHandlerConfig = ([
         {id: 169, name: "USER10"}
       ]
     },
+    deviceGroups: {
+      "WalkPlay-SchemeNo10": {
+        productIds: [0x0104],
+        manufacturer: "WalkPlay",
+        handler: walkplayUsbHID,
+        modelConfig: {
+          peqConstraintsRef: "walkplayPeq8Band10dBPkOnly",
+          schemeNo: 10,
+          firstWritableEQSlot: 101,
+          maxWritableEQSlots: 1,
+          disconnectOnSave: false,
+          defaultResetFiltersValues: [{gain: 0, freq: 100, q: 1, filterType: "PK"}],
+          deviceHandlesPregain: false,
+          globalGainBuffer: -5,
+          experimental: false,
+          availableSlots: [{id: 101, name: "Custom"}],
+          dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] }
+        }
+      }
+    },
     devices: {
       "FIIO QX13": {
         modelConfig: {
@@ -743,6 +763,14 @@ export const usbHidDeviceHandlerConfig = ([
       }
     },
     devices: {
+      "TANCHJIM-SPACE PRO": {
+        manufacturer: "Tanchjim",
+        modelConfig: {
+          peqConstraintsRef: "walkplayPeq10Band10dBPkOnly",
+          schemeNo: 16,
+          deviceHandlesPregain: false
+        }
+      },
       "Old Fashioned": {
         manufacturer: "Moondrop",
         handler: moondropOldFashionedUsbHID,
@@ -1181,6 +1209,27 @@ export const usbHidDeviceHandlerConfig = ([
         {id: 10, name: "Custom 4"},
         {id: 11, name: "Custom 5"}
       ]
+    },
+    // vendorId 0x152A is shared with Topping. Devices below are matched by productId
+    // (via deviceGroups) so they don't fall through to the Fosi Audio defaults/handler.
+    deviceGroups: {
+      "Topping": {
+        // 0x8750 = DX1 II (confirmed from device logs). Add other Topping productIds here
+        // as they're identified. Protocol in toppingUsbHidHandler.js is reverse-engineered
+        // and unverified against real hardware - treat as experimental.
+        productIds: [0x8750],
+        manufacturer: "Topping",
+        handler: toppingUsbHidHandler,
+        modelConfig: {
+          peqConstraintsRef: "peq10Band12dBFullShelves",
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots: 1,
+          disconnectOnSave: false,
+          deviceHandlesPregain: true,
+          experimental: true,
+          availableSlots: [{id: 0, name: "Custom"}]
+        }
+      }
     },
     devices: {
       "Fosi Audio DS3": {

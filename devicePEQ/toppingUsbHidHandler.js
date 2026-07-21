@@ -1,3 +1,5 @@
+import { logHidTx, logHidRx } from './deviceDebugLog.js';
+
 export const toppingUsbHidHandler = (function () {
   // ===== Known scheme from logs =====
   // Band page: base = 0x90 + bandIndex (0-based; band 0 => 0x90, band 1 => 0x91, band 2 => 0x92, ...)
@@ -39,6 +41,7 @@ export const toppingUsbHidHandler = (function () {
 
   async function sendCmd(device, cmd, data) {
     const pkt = makePacket(cmd, data);
+    logHidTx('Topping', REPORT_ID, pkt);
     await device.sendReport(REPORT_ID, pkt);
   }
 
@@ -59,6 +62,7 @@ export const toppingUsbHidHandler = (function () {
         // Expect reportId === REPORT_ID; ignore others defensively
         if (e.reportId !== REPORT_ID) return;
         const dv = e.data;
+        logHidRx('Topping', new Uint8Array(dv.buffer));
         if (dv.byteLength < 5) return;
         const cmd = dv.getUint8(0);
         if (!wantedCmds.includes(cmd)) return;

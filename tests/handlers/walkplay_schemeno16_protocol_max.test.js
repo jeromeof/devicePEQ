@@ -113,3 +113,37 @@ export async function test_pushToDevice_doesNotThrow(assert) {
   catch (e) { threw = true; console.warn('Push threw:', e.message); }
   assert.ok(!threw, 'pushToDevice should complete without throwing');
 }
+
+export async function test_pushToDevice_finishesWithFlashEnable(assert) {
+  const mock = await loadCapture('../captures/walkplay_schemeno16_protocol_max.json');
+  await mock.open();
+  const details = makeDeviceDetails(mock);
+  const pulled = await walkplayUsbHID.pullFromDevice(details, 101);
+  mock.resetHistory();
+  const filters = pulled.filters.filter(f => f !== undefined);
+
+  await walkplayUsbHID.pushToDevice(details, null, 101, pulled.globalGain, filters);
+
+  const last = mock.sentBytes[mock.sentBytes.length - 1];
+  assert.deepEqual(last, [0x01, 0x01, 0x01, 0x00],
+    'final Walkplay flash command should save with PEQ enabled, not send the disable-shaped packet');
+}
+
+export async function test_pushToDevice_zeroesDisabledFilterBand(assert) {
+  const mock = await loadCapture('../captures/walkplay_schemeno16_protocol_max.json');
+  await mock.open();
+  const details = makeDeviceDetails(mock);
+  const pulled = await walkplayUsbHID.pullFromDevice(details, 101);
+  mock.resetHistory();
+  const filters = pulled.filters.filter(f => f !== undefined);
+  filters[2] = { ...filters[2], disabled: true };
+
+  await walkplayUsbHID.pushToDevice(details, null, 101, pulled.globalGain, filters);
+
+  const bandWrite = mock.sentBytes.find(b => b[0] === 0x01 && b[1] === 0x09 && b[4] === 2);
+  assert.ok(bandWrite, 'should write disabled band 2');
+  assert.deepEqual(bandWrite.slice(7, 27), new Array(20).fill(0),
+    'disabled WalkPlay band should write zero coefficients');
+  assert.deepEqual(bandWrite.slice(27, 33), [0, 0, 0, 0, 0, 0],
+    'disabled WalkPlay band should write zero freq, Q, and gain metadata');
+}
