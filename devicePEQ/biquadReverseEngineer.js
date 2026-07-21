@@ -115,17 +115,18 @@ export function extractFilterFromBiquadBytes(biquadBytes, sampleRate = 96000) {
 export function extractAllFiltersFromResponse(responseBytes, sampleRate = 96000) {
   // Response structure:
   // [0-5]: header
-  // [6-25]: biquad for filter
-  // [26-27]: frequency (but might be 0xFF for unset)
-  // [28-29]: Q
-  // [30-31]: gain
-  // [32]: type
+  // [6]: padding
+  // [7-26]: biquad for filter (20 bytes)
+  // [27-28]: frequency (but might be 0xFF for unset)
+  // [29-30]: Q
+  // [31-32]: gain
+  // [33]: type
 
   const filters = [];
 
   // For now, extract the first filter (at index 0)
   // Full response usually contains one filter per packet
-  const biquadBytes = responseBytes.slice(6, 26); // 20 bytes
+  const biquadBytes = responseBytes.slice(7, 27); // 20 bytes at correct offset
 
   const result = extractFilterFromBiquadBytes(biquadBytes, sampleRate);
 

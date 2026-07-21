@@ -354,7 +354,7 @@ export const walkplayUsbHID = (function () {
     if (metadataCorrupted) {
       // Metadata is corrupted, try to extract from biquad coefficients instead
       try {
-        const biquadBytes = packet.slice(6, 26); // Extract 20-byte biquad section
+        const biquadBytes = packet.slice(7, 27); // Extract 20-byte biquad section (bytes 7-26)
         const extracted = extractFilterFromBiquadBytes(biquadBytes);
 
         if (!extracted.disabled) {
