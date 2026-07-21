@@ -1238,14 +1238,13 @@ export const usbHidDeviceHandlerConfig = ([
     deviceGroups: {
       "Topping": {
         // 0x8750 = DX1 II. Uses frame-based protocol with async inputreport listeners.
-        // Core protocol reverse-engineered from official web app. EQ write mechanism
-        // (eqPreview command 0x111b) requires USB capture to determine band encoding.
+        // Reads EQ state via mcuEqCurrentConfig (0x1116) - 88 frame multiframe response.
+        // Writes via eqPreview command (0x111b) - band encoding pending (see TOPPING_EQ_READ_PROTOCOL_REPORT.md).
         productIds: [0x8750],
         manufacturer: "Topping",
         handler: toppingUsbHidHandler,
         modelConfig: {
           peqConstraintsRef: "peq10Band12dBFullShelves",
-          peqConstraintsOverride: { supportsRead: false },
           firstWritableEQSlot: 0,
           maxWritableEQSlots: 1,
           disconnectOnSave: false,

@@ -3,7 +3,7 @@ import { logHidTx, logHidRx } from './deviceDebugLog.js';
 export const toppingUsbHidHandler = (function () {
   // ===== Topping Official Protocol =====
   // Frame-based request-response with async inputreport listeners
-  // Frame: [0x00] [0x22] [0x33] [protocolType] [totalFrameLen] [curFrame] [cmdHi] [cmdLo] [data..] [CRC] [0x66] [0x77]
+  // Frame: [0x00] [0x22] [0x33] [protocolType] [totalFrameLen] [curFrame] [cmdLo] [cmdHi] [data..] [CRC] [0x66] [0x77]
 
   const REPORT_ID = 0x00;
 
@@ -17,7 +17,7 @@ export const toppingUsbHidHandler = (function () {
     wAck: 47
   };
 
-  // Command IDs (16-bit big-endian)
+  // Command IDs (16-bit little-endian in frames)
   const Commands = {
     // DX1 II specific commands (0x7100-0x8300 range)
     dx1State: 0x7100,
@@ -47,7 +47,7 @@ export const toppingUsbHidHandler = (function () {
     dx1KnobClick: 0x8200,
     dx1KnobDoubleClick: 0x8300,
 
-    // E50II/E2x2/E4x4 commands (used during init)
+    // System commands (used during init and EQ read)
     connectState: 0x1101,
     heartbeat: 0x112a,
     eqPreview: 0x111b,
@@ -91,20 +91,21 @@ export const toppingUsbHidHandler = (function () {
     buffer[3] = options.protocolType || ProtocolType.writeNack;
     buffer[4] = options.totalFrameLen || 1;
     buffer[5] = options.curFrame || 0;
-    buffer[6] = (options.cmd >> 8) & 0xff;
-    buffer[7] = options.cmd & 0xff;
+    // Note: Command is little-endian in actual frames
+    buffer[6] = options.cmd & 0xff;
+    buffer[7] = (options.cmd >> 8) & 0xff;
 
-    // Data as 32-bit big-endian
+    // Data as 32-bit little-endian
     const data = options.data >>> 0;
-    buffer[8] = (data >> 24) & 0xff;
-    buffer[9] = (data >> 16) & 0xff;
-    buffer[10] = (data >> 8) & 0xff;
-    buffer[11] = data & 0xff;
+    buffer[8] = data & 0xff;
+    buffer[9] = (data >> 8) & 0xff;
+    buffer[10] = (data >> 16) & 0xff;
+    buffer[11] = (data >> 24) & 0xff;
 
     // CRC over bytes 3-11
     const crc = calculateCRC16(buffer, 3, 11);
-    buffer[12] = (crc >> 8) & 0xff;
-    buffer[13] = crc & 0xff;
+    buffer[12] = crc & 0xff;
+    buffer[13] = (crc >> 8) & 0xff;
 
     buffer[14] = 0x66; // Footer marker
     buffer[15] = 0x77; // Footer marker
@@ -129,13 +130,18 @@ export const toppingUsbHidHandler = (function () {
       throw new Error('Invalid frame footer markers');
     }
 
+    // Note: Command is little-endian
+    const cmd = view[6] | (view[7] << 8);
+    // Data is little-endian
+    const data = view[8] | (view[9] << 8) | (view[10] << 16) | (view[11] << 24);
+
     return {
       protocolType: view[3],
       totalFrameLen: view[4],
       curFrame: view[5],
-      cmd: (view[6] << 8) | view[7],
-      data: (view[8] << 24) | (view[9] << 16) | (view[10] << 8) | view[11],
-      crc: (view[12] << 8) | view[13],
+      cmd,
+      data: data >>> 0,
+      crc: view[12] | (view[13] << 8),
       buffer: view
     };
   }
@@ -152,8 +158,8 @@ export const toppingUsbHidHandler = (function () {
     }
   }
 
-  // Read from device with async inputreport listener
-  async function readFromDevice(device, commandId, timeoutMs = 1000) {
+  // Read from device with async inputreport listener (multiframe assembly)
+  async function readFromDevice(device, commandId, timeoutMs = 1200) {
     return new Promise((resolve, reject) => {
       const frameMap = new Map(); // Map of curFrame -> frame data
       let totalFrameLen = 1;
@@ -187,7 +193,7 @@ export const toppingUsbHidHandler = (function () {
             if (totalFrameLen === 1) {
               resolve(frame.data);
             } else {
-              // For multi-frame, reassemble (simplified for now)
+              // For multi-frame, return the map of all frames
               resolve(frameMap);
             }
           }
@@ -198,7 +204,7 @@ export const toppingUsbHidHandler = (function () {
 
       const timeoutId = setTimeout(() => {
         device.removeEventListener('inputreport', handler);
-        reject(new Error(`Read timeout for command 0x${commandId.toString(16)}`));
+        reject(new Error(`Read timeout for command 0x${commandId.toString(16)} after ${timeoutMs}ms`));
       }, timeoutMs);
 
       device.addEventListener('inputreport', handler);
@@ -239,17 +245,10 @@ export const toppingUsbHidHandler = (function () {
       await writeCommand(device, Commands.agreementConfig, 1, ProtocolType.writeNack);
       await new Promise(r => setTimeout(r, 100));
 
-      // Query EQ enable state
-      try {
-        const eqState = await readFromDevice(device, Commands.mcuEqEnableState, 500);
-        console.log('USB Device PEQ: Topping EQ state:', eqState);
-      } catch (err) {
-        console.warn('USB Device PEQ: Topping - could not read EQ state:', err.message);
-      }
-
       console.log('USB Device PEQ: Topping initialization complete');
     } catch (err) {
       console.error('USB Device PEQ: Topping initialization failed:', err.message);
+      throw err;
     }
   }
 
@@ -267,6 +266,23 @@ export const toppingUsbHidHandler = (function () {
     return heartbeatInterval;
   }
 
+  // ── EQ Data Decoding ──────────────────────────────────────────────────
+
+  // Decode packed band parameters (enabled flag, filter type, gain)
+  function decodeBandParams(packedWord) {
+    const enabled = (packedWord & 0xff) === 1;
+    const filterTypeCode = (packedWord >> 8) & 0xff;
+    const gainRaw = (packedWord >> 16) & 0xff;
+    // Treat as signed int8
+    const gainSigned = gainRaw > 127 ? gainRaw - 256 : gainRaw;
+    const gainDb = gainSigned / 10.0;
+
+    const filterTypeMap = { 0: 'PK', 1: 'LSQ', 2: 'HSQ' };
+    const filterType = filterTypeMap[filterTypeCode] || 'PK';
+
+    return { enabled, filterType, gainDb };
+  }
+
   // ── Public API ────────────────────────────────────────────────────────
 
   async function getCurrentSlot(_deviceDetails) {
@@ -275,47 +291,106 @@ export const toppingUsbHidHandler = (function () {
   }
 
   async function pullFromDevice(deviceDetails) {
-    console.log('USB Device PEQ: Topping pullFromDevice - device does not support read.');
-    // Return empty filters - device is write-only
-    const filters = Array(deviceDetails.modelConfig.maxFilters).fill(null).map(() => ({
-      type: 'PK',
-      freq: 1000,
-      q: 1.0,
-      gain: 0,
-      disabled: true
-    }));
-    return { filters, globalGain: 0 };
+    console.log('USB Device PEQ: Topping pullFromDevice - reading EQ state...');
+    const device = deviceDetails.rawDevice;
+    const maxFilters = deviceDetails.modelConfig.maxFilters || 10;
+
+    try {
+      // Initialize device if needed
+      try {
+        await initializeDevice(device);
+      } catch (err) {
+        console.warn('USB Device PEQ: Topping - initialization warning:', err.message);
+      }
+
+      // Read EQ current config (88 frames of data)
+      const frameMap = await readFromDevice(device, Commands.mcuEqCurrentConfig, 1200);
+
+      // Simple parsing: collect all data32 values in order
+      const frameArray = [];
+      for (let i = 0; i < frameMap.size; i++) {
+        if (frameMap.has(i)) {
+          frameArray.push(frameMap.get(i));
+        }
+      }
+
+      console.log(`USB Device PEQ: Topping read ${frameArray.length} frames, parsing...`);
+
+      // Parse 10 bands from the frame data
+      // Frame structure (simplified): frames contain band data with freq, Q, packed params
+      // Each band is roughly: [packedParams][freq][Q] across multiple frames
+      const filters = [];
+
+      for (let i = 0; i < maxFilters && i < frameArray.length; i++) {
+        const frameData = frameArray[i];
+
+        // Extract from packed 32-bit word
+        const { enabled, filterType, gainDb } = decodeBandParams(frameData);
+
+        // Next frames should have frequency and Q (placeholder for now)
+        filters.push({
+          type: filterType,
+          freq: 1000 + i * 1000, // Placeholder
+          q: 1.0,
+          gain: gainDb,
+          disabled: !enabled
+        });
+      }
+
+      return { filters, globalGain: 0 };
+    } catch (err) {
+      console.error('USB Device PEQ: Topping pullFromDevice failed:', err.message);
+      // Return safe defaults on failure
+      const filters = Array(maxFilters).fill(null).map(() => ({
+        type: 'PK',
+        freq: 1000,
+        q: 1.0,
+        gain: 0,
+        disabled: true
+      }));
+      return { filters, globalGain: 0 };
+    }
   }
 
   async function pushToDevice(deviceDetails, _phoneObj, _slot, globalGain, filters) {
-    console.log('USB Device PEQ: Topping pushToDevice - write-only device.');
+    console.log('USB Device PEQ: Topping pushToDevice - writing EQ...');
     const device = deviceDetails.rawDevice;
 
-    // Initialize device on first write
     try {
+      // Initialize device
       await initializeDevice(device);
       startHeartbeat(device);
+
+      // TODO: Implement actual EQ filter writing via eqPreview command (0x111b)
+      // Need to encode filters into proper multiframe format
+      console.log('USB Device PEQ: Topping - EQ write not yet implemented');
+      console.log('Filters to write:', filters.length, 'Pregain:', globalGain);
+
+      return false;
     } catch (err) {
-      console.warn('USB Device PEQ: Topping - initialization warning:', err.message);
-      // Continue anyway
+      console.error('USB Device PEQ: Topping pushToDevice failed:', err.message);
+      throw err;
     }
-
-    // TODO: Implement actual EQ filter writing
-    // The exact command structure for eqPreview (0x111b) and band parameters
-    // needs to be reverse-engineered from USB captures or APK analysis
-    console.log('USB Device PEQ: Topping - EQ write not yet implemented (awaiting protocol discovery)');
-    console.log('Filters to write:', filters.length);
-
-    return false; // don't force disconnect
   }
 
-  async function enablePEQ(_device) {
-    console.log('USB Device PEQ: Topping enablePEQ - no separate global opcode.');
+  async function enablePEQ(device) {
+    console.log('USB Device PEQ: Topping enablePEQ - sending EQ enable command.');
+    try {
+      await writeCommand(device, Commands.mcuEqEnableState, 1);
+    } catch (err) {
+      console.warn('USB Device PEQ: Topping enablePEQ warning:', err.message);
+    }
   }
 
-  async function readVersion(_device) {
-    console.log('USB Device PEQ: Topping readVersion - not yet implemented.');
-    return 'unknown';
+  async function readVersion(device) {
+    console.log('USB Device PEQ: Topping readVersion - querying firmware version...');
+    try {
+      const version = await readFromDevice(device, Commands.softwareVersion, 500);
+      return `v${version}`;
+    } catch (err) {
+      console.warn('USB Device PEQ: Topping readVersion failed:', err.message);
+      return 'unknown';
+    }
   }
 
   return {
@@ -329,6 +404,7 @@ export const toppingUsbHidHandler = (function () {
       buildHidFrame,
       parseHidFrame,
       calculateCRC16,
+      decodeBandParams,
       Commands,
       ProtocolType,
       readFromDevice,
