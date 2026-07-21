@@ -28,6 +28,31 @@
       ],
       "deviceGroupNames": []
     },
+    "peq9Band12dBFullShelves": {
+      "description": "9-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
+      "peqConstraints": {
+        "minGain": -12,
+        "maxGain": 12,
+        "maxFilters": 9,
+        "supportsLSFilter": true,
+        "supportsHSFilter": true,
+        "deviceHandlesPregain": false,
+        "supportsManualGlobalGain": true,
+        "supportsLPFilter": false,
+        "supportsHPFilter": false,
+        "supportsBPFilter": false,
+        "supportsNotchFilter": false,
+        "supportsAllPassFilter": false,
+        "supportsBandStopFilter": false,
+        "supportsConstantQFilter": false,
+        "minQ": 0.1,
+        "maxQ": 10.0
+      },
+      "deviceNames": [
+        "Moondrop FreeDSP"
+      ],
+      "deviceGroupNames": []
+    },
     "peq10Band12dBFullShelves": {
       "description": "10-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
       "peqConstraints": {

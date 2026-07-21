@@ -3,6 +3,7 @@ const {fiioUsbHID} = await import('./fiioUsbHidHandler.js');
 const {walkplayUsbHID} = await import('./walkplayHidHandler.js');
 const {moondropUsbHidHandler} = await import('./moondropUsbHidHandler.js');
 const {moondropOldFashionedUsbHID} = await import('./moondropOldFashionedUsbHidHandler.js');
+const {conexantUsbHidHandler} = await import('./conexantUsbHidHandler.js');
 const {ktmicroUsbHidHandler} = await import('./ktmicroUsbHidHandler.js');
 const {toppingUsbHidHandler} = await import('./toppingUsbHidHandler.js');
 const {fosiAudioUsbHID} = await import('./fosiAudioUsbHidHandler.js');
@@ -850,6 +851,17 @@ export const usbHidDeviceHandlerConfig = ([
         handler: moondropUsbHidHandler,
         modelConfig: {
           peqConstraintsRef: "peq8Band12dBFullShelves"
+        }
+      },
+      "FreeDSP": {
+        manufacturer: "Moondrop",
+        handler: conexantUsbHidHandler,
+        modelConfig: {
+          peqConstraintsRef: "peq9Band12dBFullShelves",
+          supportsLSFilter: true,
+          supportsHSFilter: true,
+          deviceHandlesPregain: false,
+          maxFilters: 9
         }
       },
       "DAWN PRO2": {
