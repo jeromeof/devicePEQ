@@ -183,9 +183,21 @@ export const toppingUsbHidHandler = (function () {
     const device = deviceDetails.rawDevice;
     const filters = [];
     for (let i = 0; i < deviceDetails.modelConfig.maxFilters; i++) {
-      filters.push(await readFullFilter(device, i));
+      try {
+        filters.push(await readFullFilter(device, i));
+      } catch (err) {
+        console.warn(`USB Device PEQ: Topping - failed to read band ${i}:`, err.message);
+        // Return safe defaults on read failure
+        filters.push({ type: "PK", freq: 1000, q: 1.0, gain: 0, disabled: true });
+      }
     }
-    const globalGain = await readPregain(device);
+    let globalGain = 0;
+    try {
+      globalGain = await readPregain(device);
+    } catch (err) {
+      console.warn("USB Device PEQ: Topping - failed to read pregain:", err.message);
+      globalGain = 0; // Default to 0 dB
+    }
     return { filters, globalGain };
   }
 

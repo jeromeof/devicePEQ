@@ -1238,12 +1238,14 @@ export const usbHidDeviceHandlerConfig = ([
     deviceGroups: {
       "Topping": {
         // 0x8750 = DX1 II. Protocol in toppingUsbHidHandler.js is fully reverse-engineered
-        // with complete EQ read/write support. Add other Topping productIds here as identified.
+        // with complete EQ write support. Read operations require sending write commands
+        // which triggers WebHID permission errors in browser context, so marked as write-only.
         productIds: [0x8750],
         manufacturer: "Topping",
         handler: toppingUsbHidHandler,
         modelConfig: {
           peqConstraintsRef: "peq10Band12dBFullShelves",
+          peqConstraintsOverride: { supportsRead: false },
           firstWritableEQSlot: 0,
           maxWritableEQSlots: 1,
           disconnectOnSave: false,
