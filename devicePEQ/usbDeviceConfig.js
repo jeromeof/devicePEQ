@@ -879,6 +879,14 @@ export const usbHidDeviceHandlerConfig = ([
           peqConstraintsOverride: { supportsLSFilter: false, supportsHSFilter: false }
         }
       },
+      "ECHO-B": {
+        manufacturer: "Moondrop",
+        handler: moondropUsbHidHandler,
+        modelConfig: {
+          peqConstraintsRef: "peq8Band12dBFullShelves",
+          peqConstraintsOverride: { supportsLSFilter: false, supportsHSFilter: false, supportsRead: false }
+        }
+      },
       "AG Rays": {
         manufacturer: "Moondrop",
         handler: moondropUsbHidHandler,

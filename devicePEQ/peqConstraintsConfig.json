@@ -649,6 +649,7 @@
         "supportsManualGlobalGain": true,
         "supportsRead": true,
         "supportsLPFilter": false,
+        "supportsLPFilter": false,
         "supportsHPFilter": false,
         "supportsBPFilter": false,
         "supportsNotchFilter": false,
