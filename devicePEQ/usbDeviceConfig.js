@@ -1237,9 +1237,9 @@ export const usbHidDeviceHandlerConfig = ([
     // (via deviceGroups) so they don't fall through to the Fosi Audio defaults/handler.
     deviceGroups: {
       "Topping": {
-        // 0x8750 = DX1 II. Protocol in toppingUsbHidHandler.js is fully reverse-engineered
-        // with complete EQ write support. Read operations require sending write commands
-        // which triggers WebHID permission errors in browser context, so marked as write-only.
+        // 0x8750 = DX1 II. Uses frame-based protocol with async inputreport listeners.
+        // Core protocol reverse-engineered from official web app. EQ write mechanism
+        // (eqPreview command 0x111b) requires USB capture to determine band encoding.
         productIds: [0x8750],
         manufacturer: "Topping",
         handler: toppingUsbHidHandler,
