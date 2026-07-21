@@ -363,6 +363,7 @@ async function initializeDeviceEqPlugin(context) {
       this.connectionType = connectionType;
       window.peqDeviceModelConfig = device.modelConfig || null;
       const peqConstraints = resolveConstraints(device.modelConfig);
+      const supportsRead = peqConstraints?.supportsRead !== false;  // default true
 
       // Build extras if the connector hasn't already attached them (e.g. non-USB connectors).
       if (!device.extras) device.extras = buildExtras(device.handler, device);
@@ -372,19 +373,21 @@ async function initializeDeviceEqPlugin(context) {
       console.log(
         `[peqConstraints] connected: "${device.model}"${idStr ? ` (${idStr})` : ''}` +
         ` ref=${device.modelConfig?.peqConstraintsRef ?? 'inline'}` +
-        ` bands=${peqConstraints?.maxFilters} gain=${peqConstraints?.minGain}/${peqConstraints?.maxGain}dB`
+        ` bands=${peqConstraints?.maxFilters} gain=${peqConstraints?.minGain}/${peqConstraints?.maxGain}dB` +
+        (supportsRead ? '' : ' [write-only]')
       );
       emitDeviceEvent('PeqDeviceModelConfigChanged', window.peqDeviceModelConfig);
       emitDeviceEvent('PeqDeviceExtrasChanged', window.peqDeviceExtras);
       // Fire immediately so host integrations can react before the async pull completes.
       emitWindowDeviceEvent('devicePEQ.deviceConnected', {
         device,
-        connectionType
+        connectionType,
+        supportsRead
       });
 
       this.populatePeqDropdown(availableSlots, currentSlot);
       this.setPillState('connected', device.model);
-      this.pullButton.hidden = false;
+      this.pullButton.hidden = !supportsRead;  // Hide pull button for write-only devices
       this.pushButton.hidden = false;
       this.pullButton.textContent = context?.config?.pullLabel ?? `Load from ${device.model}`;
       this.pushButton.textContent = context?.config?.pushLabel ?? `Save to ${device.model}`;
@@ -2014,11 +2017,16 @@ async function initializeDeviceEqPlugin(context) {
                 return;
               }
               if (device) {
+                // Check if device supports reading
+                const peqConstraints_network = resolveConstraints(device.modelConfig);
+                const supportsRead_network = peqConstraints_network?.supportsRead !== false;  // default true
+                const currentSlot_network = supportsRead_network ? await NetworkDeviceConnector.getCurrentSlot(device) : -1;
+
                 await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await NetworkDeviceConnector.getAvailableSlots(device),
-                  await NetworkDeviceConnector.getCurrentSlot(device)
+                  currentSlot_network
                 );
 
                 // Check if device supports fewer filters than currently in context
@@ -2062,11 +2070,16 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
+                // Check if device supports reading
+                const peqConstraints = resolveConstraints(device.modelConfig);
+                const supportsRead = peqConstraints?.supportsRead !== false;  // default true
+                const currentSlot = supportsRead ? await UsbHIDConnector.getCurrentSlot(device) : -1;
+
                 await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await UsbHIDConnector.getAvailableSlots(device),
-                  await UsbHIDConnector.getCurrentSlot(device)
+                  currentSlot
                 );
 
                 // Check if device supports fewer filters than currently in context
@@ -2114,11 +2127,16 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
+                // Check if device supports reading
+                const peqConstraints_serial = resolveConstraints(device.modelConfig);
+                const supportsRead_serial = peqConstraints_serial?.supportsRead !== false;  // default true
+                const currentSlot_serial = supportsRead_serial ? await UsbSerialConnector.getCurrentSlot(device) : -1;
+
                 await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await UsbSerialConnector.getAvailableSlots(device),
-                  await UsbSerialConnector.getCurrentSlot(device)
+                  currentSlot_serial
                 );
 
                 // Check if device supports fewer filters than currently in context
@@ -2161,11 +2179,16 @@ async function initializeDeviceEqPlugin(context) {
                   }
                 }
 
+                // Check if device supports reading
+                const peqConstraints_ble = resolveConstraints(device.modelConfig);
+                const supportsRead_ble = peqConstraints_ble?.supportsRead !== false;  // default true
+                const currentSlot_ble = supportsRead_ble ? await BluetoothBleConnector.getCurrentSlot(device) : -1;
+
                 await deviceEqUI.showConnectedState(
                   device,
                   selection.connectionType,
                   await BluetoothBleConnector.getAvailableSlots(device),
-                  await BluetoothBleConnector.getCurrentSlot(device)
+                  currentSlot_ble
                 );
 
                 const currentFilters = context.elemToFilters(true);
