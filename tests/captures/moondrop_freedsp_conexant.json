@@ -1,0 +1,101 @@
+{
+  "_comment": "Capture from Moondrop FreeDSP (Conexant Freeman DSP, conexantUsbHidHandler, vendorId=0x35D8, productId=0x1496) — write-only protocol. Report ID 0x01. Sends 2 filters with all 4 sample-rate variants + mode. No device responses (write-only).",
+  "device": {
+    "vendorId": 13784,
+    "productId": 5270,
+    "productName": "Moondrop FreeDSP"
+  },
+  "capturedAt": "2026-07-21",
+  "_writeOnlyDevice": true,
+  "_comment_sequence": "Packets sent (no responses expected for write-only device): config1, biquad1_44k1, biquad1_48k, biquad1_96k, biquad1_192k, config2, biquad2_44k1, biquad2_48k, biquad2_96k, biquad2_192k, mode_activate",
+  "exchanges": [
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 6, 0, 220, 0, 176, 179, 7, 0, 0, 0, 0, 100, 0, 0, 230, 0, 0, 0, 0, 0, 0, 896, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Config frame: band 1, freq 100 Hz, Q=0.9, gain=3.5dB, type=PK"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 4, 0, 0, 1, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 1, sample rate 44.1kHz (0x04), coefficients quantized at 2^30"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 5, 0, 0, 1, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 1, sample rate 48kHz (0x05)"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 6, 0, 0, 1, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 1, sample rate 96kHz (0x06)"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 7, 0, 0, 1, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 1, sample rate 192kHz (0x07)"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 6, 0, 220, 0, 176, 179, 7, 0, 0, 0, 0, 250, 0, 0, 307, 0, 0, 0, 0, -512, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Config frame: band 2, freq 250 Hz, Q=1.2, gain=-2dB, type=LSQ"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 4, 0, 0, 2, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 2, sample rate 44.1kHz"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 5, 0, 0, 2, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 2, sample rate 48kHz"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 6, 0, 0, 2, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 2, sample rate 96kHz"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 8, 0, 220, 0, 176, 179, 7, 0, 7, 0, 0, 2, 0, 0, 3, 0, 0, 1073741824, 0, 0, -2147483648, 0, 0, 1073741824, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Biquad frame: band 2, sample rate 192kHz"
+    },
+    {
+      "send": {
+        "reportId": 1,
+        "data": [1, 1, 0, 2, 0, 90, 0, 176, 179, 7, 0, 90, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "responses": [],
+      "description": "Mode frame: activate EQ (mode index = 1)"
+    }
+  ]
+}
