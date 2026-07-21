@@ -354,29 +354,20 @@ export const walkplayUsbHID = (function () {
     const type = convertToFilterType(packet[33]);
 
     // Check if metadata is corrupted (all 0xFF bytes = unset marker)
+    // When metadata is 0xff, the filter slot has never been written to (device uninitialized memory)
+    // Don't try to extract from biquad coefficients in this case—they're also garbage
     const metadataCorrupted = freq === 65535 && qRaw === 65535 && gainRaw === -1;
 
     if (metadataCorrupted) {
-      // Metadata is corrupted, try to extract from biquad coefficients instead
-      try {
-        const biquadBytes = packet.slice(7, 27); // Extract 20-byte biquad section (bytes 7-26)
-        const extracted = extractFilterFromBiquadBytes(biquadBytes);
-
-        if (!extracted.disabled) {
-          console.log(`USB Device PEQ: Walkplay extracted filter ${filterIndex} from biquad (metadata was corrupted):`, extracted);
-          return {
-            filterIndex,
-            freq: extracted.freq,
-            q: extracted.q,
-            gain: extracted.gain,
-            type,
-            disabled: false,
-            recoveredFromBiquad: true
-          };
-        }
-      } catch (err) {
-        console.warn(`USB Device PEQ: Walkplay failed to extract from biquad: ${err.message}`);
-      }
+      console.log(`USB Device PEQ: Walkplay filter ${filterIndex} metadata is all 0xff (unset/uninitialized)`);
+      return {
+        filterIndex,
+        freq: 0,
+        q: 0,
+        gain: 0,
+        type,
+        disabled: true
+      };
     }
 
     // Mark as disabled if: freq is 0 or 0xFFFF (unset marker), or all values are 0
