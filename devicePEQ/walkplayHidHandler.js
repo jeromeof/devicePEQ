@@ -62,6 +62,7 @@
 //
 
 import { logHidTx, logHidRx } from './deviceDebugLog.js';
+import { extractFilterFromBiquadBytes } from './biquadReverseEngineer.js';
 
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;
@@ -331,6 +332,7 @@ export const walkplayUsbHID = (function () {
 
     const filterIndex = packet[4];
 
+    // Try to read metadata (freq, Q, gain, type from packet bytes)
     // Frequency (little-endian 16-bit)
     const freq = packet[27] | (packet[28] << 8);
 
@@ -343,8 +345,34 @@ export const walkplayUsbHID = (function () {
     if (gainRaw > 32767) gainRaw -= 65536;
     const gain = Math.round((gainRaw / 256) * 100) / 100;
 
-    // Filter type —
+    // Filter type
     const type = convertToFilterType(packet[33]);
+
+    // Check if metadata is corrupted (all 0xFF bytes = unset marker)
+    const metadataCorrupted = freq === 65535 && qRaw === 65535 && gainRaw === -1;
+
+    if (metadataCorrupted) {
+      // Metadata is corrupted, try to extract from biquad coefficients instead
+      try {
+        const biquadBytes = packet.slice(6, 26); // Extract 20-byte biquad section
+        const extracted = extractFilterFromBiquadBytes(biquadBytes);
+
+        if (!extracted.disabled) {
+          console.log(`USB Device PEQ: Walkplay extracted filter ${filterIndex} from biquad (metadata was corrupted):`, extracted);
+          return {
+            filterIndex,
+            freq: extracted.freq,
+            q: extracted.q,
+            gain: extracted.gain,
+            type,
+            disabled: false,
+            recoveredFromBiquad: true
+          };
+        }
+      } catch (err) {
+        console.warn(`USB Device PEQ: Walkplay failed to extract from biquad: ${err.message}`);
+      }
+    }
 
     // Mark as disabled if: freq is 0 or 0xFFFF (unset marker), or all values are 0
     const valid = !(freq === 65535 || freq === 0 || q === 0 || (freq === 0 && q === 0 && gain === 0));
