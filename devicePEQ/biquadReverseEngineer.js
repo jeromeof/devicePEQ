@@ -32,6 +32,12 @@ export function extractFilterFromBiquadBytes(biquadBytes, sampleRate = 96000) {
   const a1_negated = coeff[3] / QUANTIZER_SCALE;
   const a2_negated = coeff[4] / QUANTIZER_SCALE;
 
+  // Debug: show what we extracted
+  const hexBytes = Array.from(biquadBytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+  console.log(`[biquad-debug] Raw bytes: ${hexBytes}`);
+  console.log(`[biquad-debug] Quantized coeffs: [${coeff.map(c => '0x' + (c >>> 0).toString(16)).join(', ')}]`);
+  console.log(`[biquad-debug] Dequantized: b0=${b0.toFixed(6)}, b1=${b1.toFixed(6)}, b2=${b2.toFixed(6)}, a1=${(-a1_negated).toFixed(6)}, a2=${(-a2_negated).toFixed(6)}`);
+
   const a1 = -a1_negated;
   const a2 = -a2_negated;
 
