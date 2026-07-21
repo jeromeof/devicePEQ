@@ -1237,9 +1237,8 @@ export const usbHidDeviceHandlerConfig = ([
     // (via deviceGroups) so they don't fall through to the Fosi Audio defaults/handler.
     deviceGroups: {
       "Topping": {
-        // 0x8750 = DX1 II (confirmed from device logs). Add other Topping productIds here
-        // as they're identified. Protocol in toppingUsbHidHandler.js is reverse-engineered
-        // and unverified against real hardware - treat as experimental.
+        // 0x8750 = DX1 II. Protocol in toppingUsbHidHandler.js is fully reverse-engineered
+        // with complete EQ read/write support. Add other Topping productIds here as identified.
         productIds: [0x8750],
         manufacturer: "Topping",
         handler: toppingUsbHidHandler,
@@ -1249,7 +1248,7 @@ export const usbHidDeviceHandlerConfig = ([
           maxWritableEQSlots: 1,
           disconnectOnSave: false,
           deviceHandlesPregain: true,
-          experimental: true,
+          experimental: false,
           availableSlots: [{id: 0, name: "Custom"}]
         }
       }
