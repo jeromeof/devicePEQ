@@ -143,6 +143,11 @@ export const walkplayUsbHID = (function () {
         ? new Array(20).fill(0)
         : computeIIRFilter(i, filterToWrite.freq, filterToWrite.gain, filterToWrite.q);
 
+      // Debug: log what we're writing
+      const hexBytes = Array.from(bArr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.log(`[write-debug] Filter ${i}: freq=${filterToWrite.freq} gain=${filterToWrite.gain} q=${filterToWrite.q}`);
+      console.log(`[write-debug] Biquad bytes: ${hexBytes}`);
+
       const packet = [
         WRITE, CMD.PEQ_VALUES, 0x18, 0x00, i, 0x00, 0x00,
         ...bArr,
