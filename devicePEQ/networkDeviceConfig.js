@@ -21,10 +21,15 @@ export const networkDeviceHandlerConfig = {
   // Known network devices keyed by selection value used in the UI
   devices: {
     // WiiM devices accessed via Linkplay HTTP API over HTTPS
+    // NOTE: Effectively write-only — pullFromDevice fails due to CORS/mixed-content
+    // restrictions when served over HTTPS. Requires local HTTP proxy to read.
     "WiiM": {
       manufacturer: "WiiM",
       model: "WiiM Network Device",
-      modelConfig: { peqConstraintsRef: "peq10Band12dBFullShelves" }
+      modelConfig: {
+        peqConstraintsRef: "peq10Band12dBFullShelves",
+        peqConstraintsOverride: { supportsRead: false }
+      }
     },
 
     // Luxsin X9 device, plain HTTP with custom encoded payloads
