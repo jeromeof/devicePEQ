@@ -387,7 +387,17 @@ async function initializeDeviceEqPlugin(context) {
 
       this.populatePeqDropdown(availableSlots, currentSlot);
       this.setPillState('connected', device.model);
-      this.pullButton.hidden = !supportsRead;  // Hide pull button for write-only devices
+
+      // Disable pull button for write-only devices
+      if (!supportsRead) {
+        this.pullButton.disabled = true;
+        this.pullButton.title = `${device.model} does not support reading current EQ settings (write-only device)`;
+      } else {
+        this.pullButton.disabled = false;
+        this.pullButton.title = '';
+      }
+
+      this.pullButton.hidden = false;
       this.pushButton.hidden = false;
       this.pullButton.textContent = context?.config?.pullLabel ?? `Load from ${device.model}`;
       this.pushButton.textContent = context?.config?.pushLabel ?? `Save to ${device.model}`;
@@ -482,6 +492,8 @@ async function initializeDeviceEqPlugin(context) {
       this.setPillState('disconnected');
       this.peqDropdown.innerHTML = '<option value="-1">PEQ Disabled</option>';
       this.pullButton.hidden = true;
+      this.pullButton.disabled = false;  // Reset to enabled for next connection
+      this.pullButton.title = '';  // Clear any tooltip
       this.pushButton.hidden = true;
       this.pullButton.textContent = context?.config?.pullLabel ?? 'Load from Device';
       this.pushButton.textContent = context?.config?.pushLabel ?? 'Save to Device';
