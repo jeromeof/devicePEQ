@@ -19,7 +19,6 @@ function makeDetails(mock, overrides = {}) {
       schemeNo: 16,
       maxFilters: 10,
       deviceHandlesPregain: false,
-      globalGainBuffer: -5,
       availableSlots: [{ id: 101, name: 'Custom' }],
       ...overrides
     }
@@ -285,47 +284,42 @@ export async function test_setOutputGain_sendsZeroGain(assert) {
   assert.ok(mock.wasSent([0x01, 0x03, 0x02, 0x00, 0]), 'should send WRITE GLOBAL_GAIN 0');
 }
 
-// ── globalGainBuffer logic ────────────────────────────────────────────────────
+// ── Global gain register write (CMD 0x03) ──────────────────────────────────────
+// Written directly as the computed preamp — no buffer/offset math (see
+// walkplayHidHandler.js header comment for the vendor-app evidence).
 
-export async function test_pushToDevice_skipsGainWithinBuffer(assert) {
+export async function test_pushToDevice_writesSmallPreampDirectly(assert) {
   const mock = await (async () => {
     const { loadCapture } = await import('../MockHIDDevice.js');
     return loadCapture('../captures/walkplay_schemeno16_protocol_max.json');
   })();
   await mock.open();
-  const details = makeDetails(mock, { deviceHandlesPregain: false, globalGainBuffer: -5 });
+  const details = makeDetails(mock, { deviceHandlesPregain: false });
   const pulled = await walkplayUsbHID.pullFromDevice(details, 101);
   mock.resetHistory();
   const filters = (pulled.filters || []).filter(f => f !== undefined);
-  // preamp of -3 dB is within the -5 dB buffer — global gain register should be written as 0
   await walkplayUsbHID.pushToDevice(details, null, 101, -3, filters);
   const gainWrites = mock.sentBytes.filter(b => b[0] === 0x01 && b[1] === 0x03);
-  if (gainWrites.length > 0) {
-    assert.equal(gainWrites[0][4], 0, 'within-buffer preamp should write 0 to gain register');
-  } else {
-    assert.ok(true, 'no gain write sent (device handles pregain)');
-  }
+  assert.ok(gainWrites.length > 0, 'gain register should be written');
+  const gainByte = gainWrites[0][4];
+  const signed = gainByte > 127 ? gainByte - 256 : gainByte;
+  assert.equal(signed, -3, 'preamp of -3 dB should be written directly as -3');
 }
 
-export async function test_pushToDevice_writesGainBeyondBuffer(assert) {
+export async function test_pushToDevice_writesLargePreampDirectly(assert) {
   const mock = await (async () => {
     const { loadCapture } = await import('../MockHIDDevice.js');
     return loadCapture('../captures/walkplay_schemeno16_protocol_max.json');
   })();
   await mock.open();
-  const details = makeDetails(mock, { deviceHandlesPregain: false, globalGainBuffer: -5 });
+  const details = makeDetails(mock, { deviceHandlesPregain: false });
   const pulled = await walkplayUsbHID.pullFromDevice(details, 101);
   mock.resetHistory();
   const filters = (pulled.filters || []).filter(f => f !== undefined);
-  // preamp of -8 dB exceeds the -5 dB buffer — delta = -8 - (-5) = -3 should be written
   await walkplayUsbHID.pushToDevice(details, null, 101, -8, filters);
   const gainWrites = mock.sentBytes.filter(b => b[0] === 0x01 && b[1] === 0x03);
-  if (gainWrites.length > 0) {
-    // gain byte is signed; -3 written as 0xFD = 253 when treated as unsigned
-    const gainByte = gainWrites[0][4];
-    const signed = gainByte > 127 ? gainByte - 256 : gainByte;
-    assert.equal(signed, -3, 'beyond-buffer preamp should write delta -3 to gain register');
-  } else {
-    assert.ok(true, 'no gain write sent (device handles pregain)');
-  }
+  assert.ok(gainWrites.length > 0, 'gain register should be written');
+  const gainByte = gainWrites[0][4];
+  const signed = gainByte > 127 ? gainByte - 256 : gainByte;
+  assert.equal(signed, -8, 'preamp of -8 dB should be written directly as -8');
 }

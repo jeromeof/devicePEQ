@@ -191,20 +191,50 @@ export const moondropUsbHidHandler = (function () {
     return [v & 0xff, (v >> 8) & 0xff];
   }
 
-  function encodeBiquad(freq, gain, q) {
+  // type defaults to 'PK' for back-compat with any caller still passing 3 args.
+  // LSQ/HSQ previously fell through to this same peaking formula regardless
+  // of type — that was a bug: shelf filters need their own coefficients, not
+  // a peaking filter tagged with a shelf type byte. See walkplayHidHandler.js's
+  // computeIIRFilter() for the full writeup of the shelf-alpha fix applied here
+  // (verified against a real WebAudio BiquadFilterNode on real device captures).
+  function encodeBiquad(freq, gain, q, type = 'PK') {
     const A = Math.pow(10, gain / 40);
     const w0 = (2 * Math.PI * freq) / 96000;
-    const alpha = Math.sin(w0) / (2 * q);
+    const sinW0 = Math.sin(w0);
     const cosW0 = Math.cos(w0);
-    const norm = 1 + alpha / A;
+    const alpha = sinW0 / (2 * q); // peaking-EQ alpha — correct for PK, NOT for LSQ/HSQ
 
-    const b0 = (1 + alpha * A) / norm;
-    const b1 = (-2 * cosW0) / norm;
-    const b2 = (1 - alpha * A) / norm;
-    const a1 = -b1;
-    const a2 = (1 - alpha / A) / norm;
+    let a0, a1, a2, b0, b1, b2;
 
-    return [b0, b1, b2, a1, -a2].map(c => Math.round(c * 1073741824));
+    if (type === 'LSQ' || type === 'HSQ') {
+      const shelfAlpha = (sinW0 / 2) * Math.sqrt((A + 1 / A) * (1 / q - 1) + 2);
+      const s = 2 * Math.sqrt(A) * shelfAlpha;
+      if (type === 'LSQ') {
+        b0 =    A * ((A + 1) - (A - 1) * cosW0 + s);
+        b1 =  2*A * ((A - 1) - (A + 1) * cosW0);
+        b2 =    A * ((A + 1) - (A - 1) * cosW0 - s);
+        a0 =         (A + 1) + (A - 1) * cosW0 + s;
+        a1 =    -2 * ((A - 1) + (A + 1) * cosW0);
+        a2 =         (A + 1) + (A - 1) * cosW0 - s;
+      } else { // HSQ
+        b0 =     A * ((A + 1) + (A - 1) * cosW0 + s);
+        b1 =  -2*A * ((A - 1) + (A + 1) * cosW0);
+        b2 =     A * ((A + 1) + (A - 1) * cosW0 - s);
+        a0 =          (A + 1) - (A - 1) * cosW0 + s;
+        a1 =      2 * ((A - 1) - (A + 1) * cosW0);
+        a2 =          (A + 1) - (A - 1) * cosW0 - s;
+      }
+    } else { // PK (default) — original formula, unchanged
+      b0 = 1 + alpha * A;
+      b1 = -2 * cosW0;
+      b2 = 1 - alpha * A;
+      a0 = 1 + alpha / A;
+      a1 = -2 * cosW0;
+      a2 = 1 - alpha / A;
+    }
+
+    const nb0 = b0 / a0, nb1 = b1 / a0, nb2 = b2 / a0, na1 = a1 / a0, na2 = a2 / a0;
+    return [nb0, nb1, nb2, -na1, -na2].map(c => Math.round(c * 1073741824));
   }
 
   // Alternate coefficient formula seen in a different vendor's reversed web tool (used there
@@ -212,6 +242,10 @@ export const moondropUsbHidHandler = (function () {
   // A = 10^(gain/20) instead of 10^(gain/40). NOT wired up anywhere yet - modelConfig.biquadFormula
   // must be explicitly set to "savitechStyle" to opt in, and nothing does that today. Exists so
   // it can be A/B tested against the default formula above without touching working devices.
+  // NOTE: peaking-only, same as encodeBiquad() was before its LSQ/HSQ fix above — if this is
+  // ever wired up for a device that also uses shelf filters, it needs the same fix, but nothing
+  // does today so it's untouched (no real capture data exists to verify a shelf fix against this
+  // formula's different A=10^(gain/20) convention).
   function encodeBiquadSavitechStyle(freq, gain, q) {
     const A = Math.pow(10, gain / 20);
     const w0 = (2 * Math.PI * freq) / 96000;
@@ -231,10 +265,10 @@ export const moondropUsbHidHandler = (function () {
     return [b0, b1, b2, a1, a2].map(c => Math.round(c * 1073741824));
   }
 
-  function encodeBiquadForModel(freq, gain, q, modelConfig) {
+  function encodeBiquadForModel(freq, gain, q, type, modelConfig) {
     return modelConfig?.biquadFormula === "savitechStyle"
       ? encodeBiquadSavitechStyle(freq, gain, q)
-      : encodeBiquad(freq, gain, q);
+      : encodeBiquad(freq, gain, q, type);
   }
 
   function encodeToByteArray(coeffs) {
@@ -259,7 +293,7 @@ export const moondropUsbHidHandler = (function () {
     packet[5] = 0x00;
     packet[6] = 0x00;
 
-    const coeffs = encodeToByteArray(encodeBiquadForModel(freq, gain, q, modelConfig));
+    const coeffs = encodeToByteArray(encodeBiquadForModel(freq, gain, q, type, modelConfig));
     packet.set(coeffs, 7);
 
     packet[27] = freq & 0xff;

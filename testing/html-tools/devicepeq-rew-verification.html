@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevicePEQ ⇄ REW Verification Bench</title>
+<style>
+  :root {
+    --background-color: #252526;
+    --background-color-contrast-more: #3c3c3c;
+    --font-color-primary: #d4d4d4;
+    --accent-color: #4ec9b0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Consolas', 'Monaco', monospace;
+    margin: 0;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  h1 { color: #4ec9b0; border-bottom: 2px solid #4ec9b0; padding-bottom: 10px; }
+  h2 { color: #569cd6; margin-top: 0; }
+  h3 { color: #9cdcfe; margin: 16px 0 8px; }
+  section {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .banner {
+    background: #3a2a00;
+    border: 1px solid #dcdcaa;
+    color: #dcdcaa;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  .banner strong { color: #f0c040; }
+  button {
+    background: #0e639c;
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 4px 4px 4px 0;
+    font-family: inherit;
+  }
+  button:hover:not(:disabled) { background: #1177bb; }
+  button:disabled { background: #3c3c3c; cursor: not-allowed; color: #888; }
+  button.secondary { background: #3c3c3c; }
+  button.secondary:hover:not(:disabled) { background: #4c4c4c; }
+  button.danger { background: #7a2b2b; }
+  button.danger:hover:not(:disabled) { background: #9a3535; }
+  input[type=number], input[type=text], select {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  label { font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  th, td { border: 1px solid #3c3c3c; padding: 5px 8px; text-align: left; }
+  th { background: #2d2d30; color: #9cdcfe; position: sticky; top: 0; }
+  tr.status-pass td.status { color: #4ec9b0; font-weight: bold; }
+  tr.status-fail td.status { color: #f48771; font-weight: bold; }
+  tr.status-error td.status { color: #f48771; font-style: italic; }
+  tr.status-recorded td.status { color: #dcdcaa; }
+  tr.status-running td { background: #2a3a2a; }
+  tr.status-skipped td { opacity: 0.5; }
+  .status-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    background: #3c3c3c; color: #d4d4d4;
+  }
+  .pill-connected { background: #1e4620; color: #4ec9b0; }
+  .pill-disconnected { background: #4a1e1e; color: #f48771; }
+  .info-box {
+    background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 4px;
+    padding: 10px 14px; margin: 8px 0; white-space: pre-wrap; font-size: 12.5px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .checklist label { display: block; margin: 4px 0; }
+  details { margin: 8px 0; }
+  summary { cursor: pointer; color: #4ec9b0; font-weight: bold; }
+  code { background: #1e1e1e; padding: 1px 5px; border-radius: 3px; color: #ce9178; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
+  .kv div:nth-child(odd) { color: #9cdcfe; }
+  .table-wrap { max-height: 480px; overflow: auto; }
+  .plan-input { width: 68px; }
+  .small { font-size: 11.5px; color: #9d9d9d; }
+  .info-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; background: #3c3c3c; color: #9cdcfe;
+    font-size: 10.5px; font-style: italic; font-family: Georgia, serif; cursor: help;
+    vertical-align: middle;
+  }
+  .info-icon:hover { background: #4c4c4c; }
+  .flex { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #manualTriggerBanner {
+    display: none; background: #2a3a4a; border: 1px solid #569cd6; color: #cfe8ff;
+    border-radius: 6px; padding: 12px 16px; margin: 10px 0;
+  }
+  .explain-btn {
+    background: #3c3c3c; color: #dcdcaa; border: 1px solid #5a5a3a; padding: 3px 8px;
+    font-size: 11px; border-radius: 4px; cursor: pointer; margin: 0;
+  }
+  .explain-btn:hover { background: #4c4c4c; }
+  .failure-chart-panel {
+    margin-top: 14px; padding: 14px 16px; background: #1e1e1e; border: 1px solid #4ec9b0;
+    border-radius: 6px;
+  }
+  .failure-chart-panel .stat-row { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; margin: 8px 0 4px; }
+  .failure-chart-panel .stat-row .stat { color: #9d9d9d; }
+  .failure-chart-panel .stat-row .stat b { color: #d4d4d4; font-weight: 600; }
+  .failure-chart-panel .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+  .failure-chart-panel .badge.fail { background: rgba(244,135,113,0.16); color: #f48771; }
+  .chart-wrap { position: relative; }
+  .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .fc-gridline { stroke: #3c3c3c; stroke-width: 1; }
+  .fc-baseline-axis { stroke: #5a5a5a; stroke-width: 1; }
+  .fc-tick-label { fill: #9d9d9d; font-size: 10.5px; font-family: inherit; }
+  .fc-axis-title { fill: #9cdcfe; font-size: 11px; font-family: inherit; }
+  .fc-band-fill { fill: rgba(157,157,157,0.14); }
+  .fc-zero-line { stroke: #5a5a5a; stroke-width: 1; stroke-dasharray: 2 3; }
+  .fc-series-line { fill: none; stroke-width: 2; }
+  .fc-s1 { stroke: #3987e5; } /* measured */
+  .fc-s2 { stroke: #d95926; } /* theoretical @ requested Q */
+  .fc-s3 { stroke: #199e70; } /* theoretical @ effective Q */
+  .fc-crosshair { stroke: #9d9d9d; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+  .fc-hover-dot { pointer-events: none; }
+  .failure-chart-panel .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 2px 0; font-size: 12px; color: #9d9d9d; }
+  .failure-chart-panel .legend-item { display: flex; align-items: center; gap: 6px; }
+  .failure-chart-panel .swatch { width: 14px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+  .failure-chart-panel .swatch.s1 { background: #3987e5; }
+  .failure-chart-panel .swatch.s2 { background: #d95926; }
+  .failure-chart-panel .swatch.s3 { background: #199e70; }
+  .failure-chart-panel .band-swatch { width: 14px; height: 10px; border-radius: 2px; background: rgba(157,157,157,0.14); flex-shrink: 0; }
+  .fc-tooltip {
+    position: absolute; pointer-events: none; display: none;
+    background: #252526; border: 1px solid #3c3c3c; border-radius: 6px;
+    padding: 7px 9px; font-size: 11.5px; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    min-width: 160px; z-index: 5; color: #d4d4d4;
+  }
+  .fc-tooltip .fc-freq { font-weight: 600; margin-bottom: 3px; color: #4ec9b0; }
+  .fc-tooltip .fc-row { display: flex; justify-content: space-between; gap: 12px; }
+  .fc-tooltip .fc-row .fc-k { color: #9d9d9d; }
+  .fc-tooltip .fc-row .fc-v { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎛️ DevicePEQ ⇄ REW Verification Bench</h1>
+
+  <div class="banner">
+    ⚠️ <strong>Localhost-only tool.</strong> This page talks directly (no auth) to a REW API server on
+    <code>http://127.0.0.1:4735</code>. Only run this page on the <strong>same machine</strong> that is
+    running REW, with the device under test already <strong>paired / connected to that machine</strong>.
+    Do not expose the REW API port to a network, and don't open this page from a remote host.
+  </div>
+
+  <section>
+    <h2>Step 0 — REW Setup</h2>
+    <p>This bench triggers REW sweeps and reads back frequency-response data via REW's built-in HTTP API.
+       Do the following once, before using this page:</p>
+    <div class="checklist">
+      <label><input type="checkbox"> Install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</label>
+      <label><input type="checkbox"> Launch REW with the API enabled, or enable it in <code>Preferences → API</code> → check "Enable API". Default port is <code>4735</code> (this page assumes the default — change <code>REW_BASE</code> in <code>rew-client.mjs</code> if you customized it with <code>-port</code>).</label>
+      <label><input type="checkbox"> Set REW's measurement <strong>Input</strong> to your measurement mic / analyzer input, and <strong>Output</strong> to the interface feeding the device under test. Set levels once and don't touch them again during the run — every filter in this test is judged as a <em>relative</em> dB change against your baseline sweep.</label>
+      <label><input type="checkbox"> Connect / pair the device under test on this machine (USB, Bluetooth SPP, BLE, or network — same as normal DevicePEQ usage).</label>
+      <label><input type="checkbox"> (Recommended) Have a <strong>REW Pro</strong> license active — it lets this page trigger sweeps directly via <code>POST /measure/command</code>. Without Pro, reading measurements still works fine; you'll just be prompted to click "Start Measurement" in the REW GUI yourself for each test.</label>
+    </div>
+    <details>
+      <summary>Launch commands / troubleshooting</summary>
+      <div class="info-box">macOS:
+  open -a REW.app --args -api
+
+Windows:
+  "C:\Program Files\REW\roomeqwizard.exe" -api
+
+If the API isn't reachable, check Preferences &gt; API &gt; "Enable API" is ticked and that
+nothing else is bound to port 4735. REW sends Access-Control-Allow-Origin: * on every
+endpoint this page needs (including preflight for POST/PUT), so no proxy is required —
+this page's fetch() calls go straight to http://127.0.0.1:4735.
+
+This page uses ES module imports, which browsers block under file:// — serve it from a
+local static server instead of double-clicking the file, e.g. from the repo root:
+  python3 -m http.server 8000
+then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.html</div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Step 1 — Connect the Device Under Test</h2>
+    <div class="extra-eq"></div>
+    <div id="constraintsPanel" class="info-box">Connect a device above to see its resolved PEQ constraints here.</div>
+  </section>
+
+  <section>
+    <h2>Step 2 — Check the REW API</h2>
+    <div class="flex">
+      <button id="checkRewBtn">🔌 Check REW API</button>
+      <span id="rewStatus" class="status-pill">not checked</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Step 3 — Baseline Measurement</h2>
+    <p>This is the reference every test below is measured against. Click below to have this page push
+       <strong>every filter band, set to 0 dB gain and disabled</strong>, to the connected device, then
+       trigger a REW sweep automatically (or prompt you to start it manually if REW Pro isn't active) and
+       adopt that sweep as the baseline (renamed to <code>PEQTEST-BASELINE</code>, frequency response cached
+       in this page).</p>
+    <div class="flex">
+      <button id="resetAndCaptureBaselineBtn">🧹 Reset Device to 0dB &amp; Capture Baseline</button>
+      <span id="baselineStatus" class="status-pill">no baseline</span>
+    </div>
+    <p class="small">Prefer to set the device up yourself instead (e.g. picking a dedicated "PEQ disabled"
+      preset in the device's own app)? Run that sweep in REW manually, then use the fallback below to adopt
+      whatever measurement is already sitting at the top of REW's list, without this page touching the device.</p>
+    <div class="flex">
+      <button id="captureBaselineBtn" class="secondary">📏 Use Latest REW Measurement as Baseline (manual)</button>
+    </div>
+    <div id="baselineInfo" class="info-box" style="display:none;"></div>
+  </section>
+
+  <section>
+    <h2>Step 4 — Build the Test Plan</h2>
+    <p>Test cases are generated from the connected device's resolved PEQ constraints (min/max gain, min/max Q,
+       supported filter types). Each case applies a single isolated filter, pushes it to the device, triggers a
+       REW sweep, and compares the <strong>whole measured frequency-response curve</strong> against the
+       theoretical biquad shape (log-spaced points across 20Hz–20kHz, not just one frequency) for any filter
+       type with an RBJ model — PK/LSQ/HSQ plus LPF/HPF/BPF/NOTCH/BSF/APF/CQ. Many devices automatically
+       reduce overall output level ("pregain") when a boost filter is applied, to protect headroom — that
+       shows up as a constant broadband offset, not a shape error. This bench detects that offset (median
+       residual across the whole curve), subtracts it out, and reports it separately from the actual
+       filter-shape fit. Any type code without a theoretical model falls back to a single-point measurement
+       and is always record-only.</p>
+    <div class="grid-2">
+      <div>
+        <h3>Test groups</h3>
+        <div class="checklist">
+          <label><input type="checkbox" id="grpTypes" checked> Filter type coverage (PK, LSQ, HSQ)</label>
+          <label><input type="checkbox" id="grpGain" checked> Gain sweep (min → max, PK @ 1 kHz)</label>
+          <label><input type="checkbox" id="grpQ" checked> Q sweep (min → max, PK @ 1 kHz)</label>
+          <label><input type="checkbox" id="grpFreq" checked> Frequency sweep (100 Hz – 10 kHz, PK)</label>
+          <label><input type="checkbox" id="grpShelf" checked> Shelf gain extremes (LSQ/HSQ @ min &amp; max gain)</label>
+          <label><input type="checkbox" id="grpOther"> Other supported filter types (LP/HP/BP/Notch/AllPass/BandStop/ConstantQ) — shape-fit against a textbook RBJ model (edit the type code if it doesn't match your device's protocol; see note below)</label>
+        </div>
+      </div>
+      <div>
+        <h3>Run parameters</h3>
+        <div class="kv">
+          <div>Settle time after push</div><div><input type="number" id="settleMs" value="1500" step="100" class="plan-input"> ms</div>
+          <div>Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
+          <div>Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
+          <div>Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz</div>
+        </div>
+        <p id="disconnectWarning" class="small" style="display:none; color: var(--warn-color, #d95926); font-weight: 600;"></p>
+        <p class="small">Shape fit tolerance is the max allowed RMSE (dB) between the measured and theoretical
+        curves; default 0.3dB leaves margin above real noise while still catching real filter defects.
+        "Effective Q" (on failing rows) is the Q that would best explain the measured curve, when that's a
+        meaningful finding and not just search noise.
+        <span class="info-icon" title="Shape fit tolerance is the max allowed RMSE (dB) between the pregain-compensated measured curve and the theoretical biquad curve. Default is deliberately tight (0.3dB) &#8212; on a clean measurement rig, a correctly-implemented filter fits its own theoretical curve to within ~0.05&#8211;0.12dB RMSE (observed on a real device capture), so 0.3dB still leaves comfortable margin above real noise while catching the kind of defect a badly-implemented filter is likely to produce: e.g. a device that rounds/quantizes Q to a coarse lookup table. On the same real capture, a ~15&#8211;20% Q error (device reports Q&#8776;5.1 but actually implements something closer to Q&#8776;6) crosses this tolerance; the old default (1.5dB) didn't catch anything short of a ~75% Q error. If your setup is noisier (different mic, room, or a device with more measurement jitter), loosen this until known-good filters stop false-failing &#8212; check the &quot;Measured &#916; (raw)&quot; and &quot;Shape RMSE&quot; columns after a run to see where your noise floor actually sits before deciding.&#10;&#10;Any row that fails also gets an &quot;Effective Q&quot; column: the Q value that would best explain the measured curve, holding freq/gain fixed at what was actually requested &#8212; turns an opaque RMSE into &quot;this device's real Q is closer to X than what you asked for&quot;. Only shown when the search found a real, meaningful improvement over the requested Q (both a large absolute RMSE drop and a large relative one) &#8212; a raw least-squares search always returns SOME &quot;best&quot; Q even when the fit was already close, so an unguarded result could show a nonsensical number like &quot;3000% of requested&quot; for a filter that barely failed tolerance; that row shows &#8212; instead.&#10;&#10;History: a real Protocol Max run first showed every LSQ/HSQ shelf test failing with effective Q landing at a tight ~0.70-0.80 cluster, which looked like a real firmware characteristic &#8212; it wasn't. Cross-checking against a WebAudio BiquadFilterNode showed the shelf model here was using the wrong alpha formula; fixing it made those same captures pass outright with effective Q &#8776; 1.0. If you see a cluster like that on a device of your own, don't assume it's the device &#8212; check the theoretical model against an independent reference first.&#10;&#10;Applies to Filter Types / Gain / Q / Frequency / Shelf groups (PK/LSQ/HSQ &#8212; these mirror an actual handler's math) and, more loosely, to &quot;Other filter types&quot; (LPF/HPF/BPF/NOTCH/BSF/APF/CQ &#8212; these are plain textbook RBJ shapes with no specific device handler to mirror, so a poor fit there may just mean the device implements that filter type differently &#8212; different order, different Q convention &#8212; rather than a bug; consider loosening tolerance for that group or treating it as informational). Any type code not in that list still falls back to a single-point delta check and is always record-only. Sample rate is an assumption used only to compute the theoretical curve (affects accuracy near high frequencies / Nyquist) &#8212; set it to match the device's actual internal DSP rate if known; it does not change what's sent to the device.">ⓘ</span></p>
+      </div>
+    </div>
+    <div class="flex">
+      <button id="genPlanBtn">🧩 Generate Test Plan</button>
+      <span id="planCount" class="small"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="planTable" style="display:none;">
+        <thead>
+          <tr><th></th><th>Group</th><th>Type</th><th>Freq (Hz)</th><th>Gain (dB)</th><th>Q</th><th>Measure @ Hz</th><th>Expected Δ</th><th>Check method</th><th>Label</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Step 5 — Run</h2>
+    <div class="flex">
+      <button id="runBtn" disabled>▶️ Run Test Plan</button>
+      <button id="stopBtn" class="danger" disabled>⏹ Stop After Current Test</button>
+      <span id="runStatus" class="small"></span>
+    </div>
+    <div id="manualTriggerBanner">
+      REW Pro sweep trigger isn't available — start the sweep yourself in REW now (click <strong>Start Measurement</strong>
+      in the REW window), then click Continue below once it finishes.
+      <div class="flex" style="margin-top:8px;">
+        <button id="manualContinueBtn">✅ Continue</button>
+        <button id="manualSkipBtn" class="secondary">Skip this test</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="resultsTable" style="display:none;">
+        <thead>
+          <tr><th>#</th><th>Group</th><th>Label</th><th>Expected Δ</th><th>Measured Δ (raw)</th><th>Pregain</th><th>Shape RMSE</th><th>Max Err</th><th>Corr</th><th>Effective Q</th><th class="status">Status</th><th>REW id</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="failureChartPanel" class="failure-chart-panel" style="display:none;">
+      <div class="flex" style="justify-content:space-between;">
+        <h3 id="failureChartTitle" style="margin:0;"></h3>
+        <button id="closeFailureChartBtn" class="secondary">✕ Close</button>
+      </div>
+      <div id="failureChartStats" class="stat-row"></div>
+      <div class="chart-wrap" id="failureChartWrap"></div>
+      <div class="legend" id="failureChartLegend"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Step 6 — Summary &amp; Export</h2>
+    <div id="summaryBox" class="info-box">Run the test plan to see a summary here.</div>
+    <div class="flex">
+      <button id="exportJsonBtn" class="secondary" disabled>⬇️ Export JSON</button>
+      <button id="exportCsvBtn" class="secondary" disabled>⬇️ Export CSV</button>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import initializeDeviceEqPlugin from '../../devicePEQ/plugin.js';
+import { resolveConstraints } from '../../devicePEQ/peqConstraints.js';
+import {
+  checkRewReachable,
+  listMeasurementIds,
+  renameMeasurement,
+  triggerSweepCommand,
+  waitForNewMeasurement,
+  getFrequencyResponse,
+  magnitudeAt,
+} from '../rew-peq-capability-test/rew-client.mjs';
+import {
+  compareToTheoretical,
+  compensateForPregain,
+  judgeFit,
+  logSpacedFrequencies,
+  estimateEffectiveQ,
+  theoreticalMagnitudeDb,
+  MODELED_FILTER_TYPES,
+} from '../rew-peq-capability-test/filter-response.mjs';
+
+// Filter types with a theoretical RBJ-biquad model in filter-response.mjs get
+// a full-curve pregain-compensated shape fit. PK/LSQ/HSQ mirror an actual
+// handler's math; LPF/HPF/BPF/NOTCH/BSF/APF/CQ are plain textbook RBJ shapes
+// (no real device handler to mirror), so treat their fit as an approximate
+// reference — a poor fit there may mean "different filter order/Q convention"
+// as much as "bug". Anything not in this list falls back to the single-point
+// delta check, always record-only.
+const hasModel = (type) => MODELED_FILTER_TYPES.includes((type || '').toUpperCase());
+
+// compareToTheoretical()'s own default (60 log-spaced points) under-samples
+// sharp/high-Q peaks — confirmed in filter-response.test.js, where a Q=8
+// peak needed ~400 points before quantization error stopped masquerading as
+// a shape mismatch. 200 points is a reasonable middle ground for the bench
+// (denser than default, not so dense it noticeably slows the comparison).
+const EVAL_FREQS = logSpacedFrequencies(20, 20000, 200);
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let filtersState = [];        // filter array handed to the device on push
+let connectedDevice = null;   // { model, modelConfig, ... } from devicePEQ.deviceConnected
+let constraints = null;       // resolveConstraints(connectedDevice.modelConfig)
+let baseline = null;          // { id, fr }
+let testPlan = [];
+let running = false;
+let stopRequested = false;
+let manualResolve = null;     // resolves the "Continue"/"Skip" promise during manual-trigger fallback
+
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const clampFreq = (f) => clamp(f, 20, 20000);
+const round1 = (v) => Math.round(v * 10) / 10;
+const uniq = (arr) => [...new Set(arr.map((v) => round1(v)))];
+
+// ---------------------------------------------------------------------------
+// devicePEQ plugin integration — minimal host context, no visual EQ graph.
+// filtersState is the single source of truth; the plugin's own "Save to
+// Device" button reads it via elemToFilters() when clicked.
+// ---------------------------------------------------------------------------
+const context = {
+  elemToFilters: () => filtersState.map((f) => ({ ...f })),
+  filtersToElem: (filters) => { filtersState = (filters || []).map((f) => ({ ...f })); },
+  applyEQ: () => {},
+  calcEqDevPreamp: () => 0, // isolated single-filter tests — no global preamp needed
+  config: {
+    advanced: true,
+    showExtras: false,
+    showSuccessToasts: false,
+    peqConstraintsUrl: '../../devicePEQ/peqConstraintsConfig.json',
+    devicePEQAnchorDiv: '.extra-eq',
+    devicePEQPlacement: 'afterend',
+  },
+};
+
+initializeDeviceEqPlugin(context).catch((e) => console.error('devicePEQ plugin failed to init:', e));
+
+// Some handlers (e.g. KT Micro devices with disconnectOnSave, FiiO JA11) drop
+// the connection after every single filter write as part of their normal save
+// flow. An automated multi-test-case run needs many sequential pushes with no
+// human in the loop to reconnect — that's fundamentally incompatible with a
+// device that disconnects on every one of them, so this is a hard block with
+// an explanation rather than an override checkbox. (A prior version of this
+// bench let you force-suppress the disconnect, but that just hides the real
+// device behavior without making unattended looping actually work.)
+let deviceRequiresDisconnect = false;
+
+window.addEventListener('devicePEQ.deviceConnected', (e) => {
+  connectedDevice = e.detail.device;
+  constraints = resolveConstraints(connectedDevice.modelConfig);
+  deviceRequiresDisconnect = !!connectedDevice.modelConfig?.disconnectOnSave;
+  renderConstraints();
+  updateRunButtons();
+});
+window.addEventListener('devicePEQ.deviceDisconnected', () => {
+  connectedDevice = null;
+  constraints = null;
+  deviceRequiresDisconnect = false;
+  renderConstraints();
+  updateRunButtons();
+});
+
+function renderConstraints() {
+  const el = $('constraintsPanel');
+  if (!connectedDevice || !constraints) {
+    el.textContent = 'Connect a device above to see its resolved PEQ constraints here.';
+    return;
+  }
+  const c = constraints;
+  const types = ['PK'];
+  if (c.supportsLSFilter) types.push('LSQ');
+  if (c.supportsHSFilter) types.push('HSQ');
+  if (c.supportsLPFilter) types.push('LP');
+  if (c.supportsHPFilter) types.push('HP');
+  if (c.supportsBPFilter) types.push('BP');
+  if (c.supportsNotchFilter) types.push('Notch');
+  if (c.supportsAllPassFilter) types.push('AllPass');
+  if (c.supportsBandStopFilter) types.push('BandStop');
+  if (c.supportsConstantQFilter) types.push('ConstantQ');
+  el.innerHTML =
+    `<span class="status-pill pill-connected">Connected: ${connectedDevice.model}</span>\n\n` +
+    `Gain range:    ${c.minGain} dB … ${c.maxGain} dB\n` +
+    `Q range:       ${c.minQ} … ${c.maxQ}\n` +
+    `Max filters:   ${c.maxFilters}\n` +
+    `Supported types: ${types.join(', ')}\n` +
+    `Manual global gain: ${c.supportsManualGlobalGain ? 'yes' : 'no'}    Device handles pregain: ${c.deviceHandlesPregain ? 'yes' : 'no'}`;
+
+  const warn = $('disconnectWarning');
+  if (deviceRequiresDisconnect) {
+    warn.textContent = `⚠ ${connectedDevice.model} disconnects after every filter write (its normal save behavior). ` +
+      `Automated REW verification needs many sequential pushes with no reconnect in between, so this bench can't run a test plan on this device — Run is disabled below.`;
+    warn.style.display = '';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// REW connectivity
+// ---------------------------------------------------------------------------
+$('checkRewBtn').addEventListener('click', async () => {
+  const status = $('rewStatus');
+  status.textContent = 'checking…';
+  status.className = 'status-pill';
+  try {
+    const msg = await checkRewReachable();
+    status.textContent = `reachable — ${msg}`;
+    status.className = 'status-pill pill-connected';
+  } catch (e) {
+    status.textContent = e.message;
+    status.className = 'status-pill pill-disconnected';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Baseline
+// ---------------------------------------------------------------------------
+$('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
+  const status = $('baselineStatus');
+  const info = $('baselineInfo');
+  if (!connectedDevice) { alert('Connect a device first.'); return; }
+  status.textContent = 'resetting device…';
+  status.className = 'status-pill';
+  try {
+    await checkRewReachable();
+    await pushFlatFilters();
+    const settleMs = Number($('settleMs').value) || 1500;
+    await sleep(settleMs);
+
+    status.textContent = 'capturing sweep…';
+    const timeoutMs = Number($('timeoutMs').value) || 40000;
+    const captured = await triggerAndCaptureSweep(timeoutMs);
+    if (!captured) { status.textContent = 'baseline capture skipped'; status.className = 'status-pill pill-disconnected'; return; }
+
+    await renameMeasurement(captured.id, 'PEQTEST-BASELINE');
+    baseline = { id: captured.id, fr: captured.fr };
+    status.textContent = `baseline = measurement #${captured.id} (device reset to 0dB)`;
+    status.className = 'status-pill pill-connected';
+    info.style.display = 'block';
+    info.textContent =
+      `Baseline measurement id: ${captured.id} (renamed to "PEQTEST-BASELINE" in REW)\n` +
+      `Device was reset to all filters @ 0dB/disabled immediately before this sweep.\n` +
+      `Frequency response: ${captured.fr.magnitude.length} points, ${captured.fr.startFreq.toFixed(1)} Hz start, ${captured.fr.freqStep.toFixed(3)} Hz/step\n` +
+      `Sample @ 1000 Hz: ${magnitudeAt(captured.fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat)`;
+    updateRunButtons();
+  } catch (e) {
+    status.textContent = e.message;
+    status.className = 'status-pill pill-disconnected';
+  }
+});
+
+$('captureBaselineBtn').addEventListener('click', async () => {
+  const status = $('baselineStatus');
+  const info = $('baselineInfo');
+  status.textContent = 'capturing…';
+  status.className = 'status-pill';
+  try {
+    await checkRewReachable();
+    const ids = await listMeasurementIds();
+    if (!ids.length) throw new Error('No measurements found in REW yet — run the flat/0dB sweep first.');
+    const id = ids.map(Number).sort((a, b) => a - b).pop().toString();
+    await renameMeasurement(id, 'PEQTEST-BASELINE');
+    const fr = await getFrequencyResponse(id);
+    baseline = { id, fr };
+    status.textContent = `baseline = measurement #${id}`;
+    status.className = 'status-pill pill-connected';
+    info.style.display = 'block';
+    info.textContent =
+      `Baseline measurement id: ${id} (renamed to "PEQTEST-BASELINE" in REW)\n` +
+      `Frequency response: ${fr.magnitude.length} points, ${fr.startFreq.toFixed(1)} Hz start, ${fr.freqStep.toFixed(3)} Hz/step\n` +
+      `Sample @ 1000 Hz: ${magnitudeAt(fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat/PEQ-off)`;
+    updateRunButtons();
+  } catch (e) {
+    status.textContent = e.message;
+    status.className = 'status-pill pill-disconnected';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test plan generation
+// ---------------------------------------------------------------------------
+let planIdCounter = 0;
+
+function makeCase(group, type, freq, gain, q, measureFreq, expectedDelta) {
+  return {
+    id: ++planIdCounter,
+    group, type,
+    freq: round1(freq), gain: round1(gain), q: Math.round(q * 100) / 100,
+    measureFreq: Math.round(clampFreq(measureFreq)),
+    expectedDelta: expectedDelta == null ? null : round1(expectedDelta),
+    include: true,
+    status: 'pending',
+    measuredDelta: null, diff: null, measurementId: null, error: null,
+    pregainDb: null, shapeRmse: null, shapeMaxErr: null, correlation: null, judgeReason: null,
+    estimatedQ: null, qRatio: null, qRmseAtEstimate: null,
+  };
+}
+
+function labelFor(tc) {
+  return `${tc.type} @ ${tc.freq}Hz, ${tc.gain >= 0 ? '+' : ''}${tc.gain}dB, Q${tc.q}`;
+}
+
+function generatePlan() {
+  if (!constraints) { alert('Connect a device first — the plan is built from its resolved constraints.'); return; }
+  const c = constraints;
+  const minG = c.minGain, maxG = c.maxGain;
+  const minQ = c.minQ ?? 0.1, maxQ = c.maxQ ?? 10;
+  const stdGain = clamp(6, minG, maxG);
+  const stdQ = clamp(1.0, minQ, maxQ);
+  const plan = [];
+
+  if ($('grpTypes').checked) {
+    plan.push(makeCase('Filter Types', 'PK', 1000, stdGain, stdQ, 1000, stdGain));
+    if (c.supportsLSFilter) {
+      const f = 200;
+      plan.push(makeCase('Filter Types', 'LSQ', f, stdGain, stdQ, f / 8, stdGain));
+    }
+    if (c.supportsHSFilter) {
+      const f = 8000;
+      plan.push(makeCase('Filter Types', 'HSQ', f, stdGain, stdQ, f * 8, stdGain));
+    }
+  }
+
+  if ($('grpGain').checked) {
+    const gains = uniq([minG, minG / 2, maxG / 2, maxG]).filter((g) => g !== 0 && g >= minG && g <= maxG);
+    for (const g of gains) plan.push(makeCase('Gain Sweep', 'PK', 1000, g, stdQ, 1000, g));
+  }
+
+  if ($('grpQ').checked) {
+    const qs = uniq([minQ, (minQ + maxQ) / 2, maxQ]);
+    for (const q of qs) plan.push(makeCase('Q Sweep', 'PK', 1000, stdGain, q, 1000, stdGain));
+  }
+
+  if ($('grpFreq').checked) {
+    const freqs = [100, 1000, 5000, 10000].map(clampFreq);
+    for (const f of freqs) plan.push(makeCase('Frequency Sweep', 'PK', f, stdGain, stdQ, f, stdGain));
+  }
+
+  if ($('grpShelf').checked) {
+    if (c.supportsLSFilter) {
+      const f = 100;
+      plan.push(makeCase('Shelf Extremes', 'LSQ', f, maxG, stdQ, f / 8, maxG));
+      plan.push(makeCase('Shelf Extremes', 'LSQ', f, minG, stdQ, f / 8, minG));
+    }
+    if (c.supportsHSFilter) {
+      const f = 10000;
+      plan.push(makeCase('Shelf Extremes', 'HSQ', f, maxG, stdQ, f * 8, maxG));
+      plan.push(makeCase('Shelf Extremes', 'HSQ', f, minG, stdQ, f * 8, minG));
+    }
+  }
+
+  if ($('grpOther').checked) {
+    // LPF/HPF/BPF/NOTCH/BSF/APF have no gain concept in the RBJ cookbook —
+    // gain=0 avoids sending a value some devices might reject or misinterpret
+    // for a filter type that isn't a peak/shelf. CQ (constant-Q peaking) does
+    // have a real gain, so it keeps stdGain like PK.
+    const others = [
+      { flag: 'supportsLPFilter', code: 'LPF', freq: 2000, gain: 0 },
+      { flag: 'supportsHPFilter', code: 'HPF', freq: 200, gain: 0 },
+      { flag: 'supportsBPFilter', code: 'BPF', freq: 1000, gain: 0 },
+      { flag: 'supportsNotchFilter', code: 'NOTCH', freq: 1000, gain: 0 },
+      { flag: 'supportsAllPassFilter', code: 'APF', freq: 1000, gain: 0 },
+      { flag: 'supportsBandStopFilter', code: 'BSF', freq: 1000, gain: 0 },
+      { flag: 'supportsConstantQFilter', code: 'CQ', freq: 1000, gain: stdGain },
+    ];
+    for (const o of others) {
+      if (c[o.flag]) plan.push(makeCase('Other Filter Types', o.code, o.freq, o.gain, stdQ, o.freq, null));
+    }
+  }
+
+  testPlan = plan;
+  renderPlan();
+  updateRunButtons();
+}
+$('genPlanBtn').addEventListener('click', generatePlan);
+
+function renderPlan() {
+  const table = $('planTable');
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+  for (const tc of testPlan) {
+    const tr = document.createElement('tr');
+    tr.dataset.id = tc.id;
+    tr.innerHTML = `
+      <td><input type="checkbox" ${tc.include ? 'checked' : ''} data-field="include"></td>
+      <td>${tc.group}</td>
+      <td><input type="text" class="plan-input" style="width:56px" value="${tc.type}" data-field="type"></td>
+      <td><input type="number" class="plan-input" value="${tc.freq}" data-field="freq"></td>
+      <td><input type="number" class="plan-input" value="${tc.gain}" data-field="gain" step="0.5"></td>
+      <td><input type="number" class="plan-input" value="${tc.q}" data-field="q" step="0.1"></td>
+      <td><input type="number" class="plan-input" value="${tc.measureFreq}" data-field="measureFreq"></td>
+      <td>${tc.expectedDelta == null ? 'record only' : (tc.expectedDelta >= 0 ? '+' : '') + tc.expectedDelta + ' dB'}</td>
+      <td class="small">${hasModel(tc.type) ? 'shape fit (pregain-compensated)' : (tc.expectedDelta == null ? 'record only' : 'single-point')}</td>
+      <td class="small">${labelFor(tc)}</td>
+    `;
+    tr.querySelectorAll('input').forEach((input) => {
+      input.addEventListener('change', () => {
+        const field = input.dataset.field;
+        const tc2 = testPlan.find((t) => t.id === Number(tr.dataset.id));
+        if (!tc2) return;
+        if (field === 'include') tc2.include = input.checked;
+        else if (field === 'type') tc2.type = input.value.trim();
+        else if (field === 'freq' || field === 'gain' || field === 'q' || field === 'measureFreq') {
+          tc2[field] = Number(input.value);
+        }
+      });
+    });
+    tbody.appendChild(tr);
+  }
+  table.style.display = testPlan.length ? '' : 'none';
+  $('planCount').textContent = `${testPlan.length} test case(s) generated`;
+}
+
+// ---------------------------------------------------------------------------
+// Manual-trigger fallback (no REW Pro): show a banner, wait for the user.
+// ---------------------------------------------------------------------------
+function waitForManualContinue() {
+  const banner = $('manualTriggerBanner');
+  banner.style.display = 'block';
+  return new Promise((resolve) => {
+    manualResolve = resolve;
+  }).finally(() => { banner.style.display = 'none'; });
+}
+$('manualContinueBtn').addEventListener('click', () => manualResolve && manualResolve(true));
+$('manualSkipBtn').addEventListener('click', () => manualResolve && manualResolve(false));
+
+// ---------------------------------------------------------------------------
+// Shared REW sweep trigger: try the Pro auto-trigger, fall back to asking the
+// user to start it in the REW GUI themselves. Returns { id, fr } or null if
+// the user chose to skip during the manual fallback. Used by both baseline
+// capture and the per-test-case runner so the two stay in sync.
+// ---------------------------------------------------------------------------
+async function triggerAndCaptureSweep(timeoutMs) {
+  const before = await listMeasurementIds();
+  const auto = await triggerSweepCommand();
+  if (!auto) {
+    const proceed = await waitForManualContinue();
+    if (!proceed) return null;
+  }
+  const id = await waitForNewMeasurement(before, { timeoutMs });
+  const fr = await getFrequencyResponse(id);
+  return { id, fr };
+}
+
+// Pushes every filter band, gain=0 and disabled, to the connected device —
+// the flat/no-PEQ reference state the baseline sweep should be measured
+// against. Mirrors the {disabled:true} flat-filters convention already used
+// by run-capability-test.js / webharness.html.
+// "Flat" means 0dB gain — it does NOT mean inventing new freq/Q values or
+// marking bands disabled. Found on a real Tanchjim OLA II (an unlisted
+// device running on a generic vendor-default fallback profile, since it has
+// no explicit entry in usbDeviceConfig.js): resetting used to write the same
+// manufactured freq=1000Hz/Q=1.0 to every band and mark them disabled, and
+// the device came back reading 0Hz/Q0 for every band and went silent. Since
+// 0dB gain is acoustically a no-op regardless of what freq/Q/enabled state a
+// band has, there's no reason to touch those fields at all — every degree
+// of freedom we don't change is one less thing an unverified device's
+// firmware can mishandle.
+async function pushFlatFilters() {
+  const pushBtn = document.querySelector('.push-filters-todevice');
+  if (!pushBtn || pushBtn.hidden) throw new Error('no device connected');
+  const maxFilters = constraints?.maxFilters ?? connectedDevice?.modelConfig?.maxFilters ?? 10;
+
+  // Best-effort: pull the device's CURRENT filters first so real freq/Q can
+  // be reused below instead of falling back to manufactured defaults. This
+  // page has no direct handle on the pull button's async completion (it's
+  // all inside the plugin), so this is a fixed settle delay, not a promise.
+  const supportsRead = constraints?.supportsRead !== false;
+  const pullBtn = document.querySelector('.pull-filters-fromdevice');
+  if (supportsRead && pullBtn && !pullBtn.hidden && !pullBtn.disabled) {
+    try {
+      pullBtn.click();
+      await sleep(Number($('settleMs')?.value) || 1500);
+    } catch (e) { /* fall through to defaults below */ }
+  }
+
+  // Never write the exact same manufactured frequency to every band — no
+  // normal EQ setup would ever produce that pattern, and it's more likely
+  // to be mishandled by firmware that's never seen it. Used only for
+  // whichever bands the pull above didn't give us a real value for.
+  const DEFAULT_FREQS = [100, 200, 500, 1000, 2000, 4000, 8000, 12000, 16000, 18000];
+  const priorFilters = filtersState;
+  filtersState = Array.from({ length: maxFilters }, (_, i) => {
+    const prior = priorFilters[i];
+    return {
+      freq: prior?.freq ?? DEFAULT_FREQS[i % DEFAULT_FREQS.length],
+      gain: 0,
+      q: prior?.q ?? 1.0,
+      type: prior?.type ?? 'PK',
+      // Deliberately NOT disabled: true — 0dB gain already makes a band a
+      // no-op acoustically; the `disabled` flag is what most plausibly
+      // triggered the device-side "clear this slot" behavior on OLA II.
+      disabled: false,
+    };
+  });
+  pushBtn.click();
+}
+
+// ---------------------------------------------------------------------------
+// Results table
+// ---------------------------------------------------------------------------
+function renderResultRow(tc) {
+  const table = $('resultsTable');
+  table.style.display = '';
+  const tbody = table.querySelector('tbody');
+  let tr = tbody.querySelector(`tr[data-id="${tc.id}"]`);
+  if (!tr) {
+    tr = document.createElement('tr');
+    tr.dataset.id = tc.id;
+    tbody.appendChild(tr);
+  }
+  tr.className = `status-${tc.status}`;
+  const expected = tc.expectedDelta == null ? 'record only' : `${tc.expectedDelta >= 0 ? '+' : ''}${tc.expectedDelta} dB`;
+  const measured = tc.measuredDelta == null ? '—' : `${tc.measuredDelta.toFixed(2)} dB`;
+  const pregain = tc.pregainDb == null ? '—' : `${tc.pregainDb.toFixed(2)} dB`;
+  const shapeRmse = tc.shapeRmse == null ? '—' : `${tc.shapeRmse.toFixed(2)} dB`;
+  const shapeMaxErr = tc.shapeMaxErr == null ? '—' : `${tc.shapeMaxErr.toFixed(2)} dB`;
+  const corr = tc.correlation == null ? '—' : tc.correlation.toFixed(2);
+  const effectiveQ = tc.estimatedQ == null ? '—' : `${tc.estimatedQ.toFixed(2)} (${(tc.qRatio * 100).toFixed(0)}% of requested)`;
+  const canExplain = tc.status === 'fail' && hasModel(tc.type) && tc.fr && tc.usedFilterSpec;
+  tr.innerHTML = `
+    <td>${tc.id}</td>
+    <td>${tc.group}</td>
+    <td>${labelFor(tc)}</td>
+    <td>${expected}</td>
+    <td>${measured}</td>
+    <td>${pregain}</td>
+    <td>${shapeRmse}</td>
+    <td>${shapeMaxErr}</td>
+    <td>${corr}</td>
+    <td title="${tc.qRmseAtEstimate != null ? 'RMSE at this Q: ' + tc.qRmseAtEstimate.toFixed(3) + 'dB' : ''}">${effectiveQ}</td>
+    <td class="status" title="${tc.judgeReason ?? ''}">${tc.status}${tc.error ? ` (${tc.error})` : ''}</td>
+    <td>${tc.measurementId ?? '—'}</td>
+    <td>${canExplain ? `<button class="explain-btn" data-explain-id="${tc.id}">📉 Explain</button>` : ''}</td>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Failure chart — "why did this fail?" visualization for a single failed
+// PK/LSQ/HSQ test case: measured (pregain-compensated) vs theoretical @
+// requested Q vs theoretical @ effective Q, plus a residual-vs-tolerance
+// view. Recomputed on demand from the stored raw curves rather than kept
+// around for every test case, so passing runs don't carry the extra memory.
+// ---------------------------------------------------------------------------
+function niceNum(x) {
+  const exp = Math.floor(Math.log10(x));
+  const f = x / Math.pow(10, exp);
+  let nf;
+  if (f < 1.5) nf = 1; else if (f < 3) nf = 2; else if (f < 7) nf = 5; else nf = 10;
+  return nf * Math.pow(10, exp);
+}
+function niceTicks(min, max, count) {
+  const step = niceNum((max - min) / (count - 1));
+  const start = Math.ceil(min / step) * step;
+  const out = [];
+  for (let v = start; v <= max + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function fmtDbSigned(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' dB'; }
+function fmtFreqLabel(f) {
+  return f >= 1000 ? (f / 1000).toFixed(f >= 10000 ? 1 : 2) + 'k Hz' : Math.round(f) + ' Hz';
+}
+
+const FC_FREQ_MIN = 20, FC_FREQ_MAX = 20000;
+const FC_LOG_MIN = Math.log10(FC_FREQ_MIN), FC_LOG_SPAN = Math.log10(FC_FREQ_MAX) - FC_LOG_MIN;
+const FC_FREQ_TICKS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const FC_W = 780;
+const FC_MARGIN = { left: 52, right: 14 };
+const FC_PLOT_W = FC_W - FC_MARGIN.left - FC_MARGIN.right;
+const FC_MAIN_H = 220, FC_GAP = 24, FC_RES_H = 96, FC_AXIS_H = 24;
+const FC_TOTAL_H = FC_MAIN_H + FC_GAP + FC_RES_H + FC_AXIS_H + 6;
+
+function fcXPixel(freq) {
+  return FC_MARGIN.left + (Math.log10(freq) - FC_LOG_MIN) / FC_LOG_SPAN * FC_PLOT_W;
+}
+function fcYPixelFactory(domainMin, domainMax, plotTop, plotH) {
+  return (v) => plotTop + (domainMax - v) / (domainMax - domainMin) * plotH;
+}
+function fcPathFor(points, yFn, key) {
+  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${fcXPixel(p.freq).toFixed(2)},${yFn(typeof key === 'function' ? key(p) : p[key]).toFixed(2)}`).join(' ');
+}
+
+function renderFailureChart(tc) {
+  const filterSpec = tc.usedFilterSpec;
+  const sampleRateUsed = tc.usedSampleRate;
+  const toleranceUsed = tc.usedToleranceDb;
+
+  const comparison = compareToTheoretical(baseline.fr, tc.fr, filterSpec, { magnitudeAt, fs: sampleRateUsed, evalFreqs: EVAL_FREQS });
+  const { compensated } = compensateForPregain(comparison);
+  const estimatedQ = tc.estimatedQ ?? filterSpec.q;
+
+  const points = compensated.points.map((p) => ({
+    freq: p.freq,
+    measured: p.measuredDelta,
+    theoreticalRequested: p.expectedDelta,
+    theoreticalBestFit: theoreticalMagnitudeDb({ ...filterSpec, q: estimatedQ }, p.freq, sampleRateUsed),
+  }));
+
+  const mainVals = points.flatMap((p) => [p.measured, p.theoreticalRequested, p.theoreticalBestFit]);
+  const mainMin = Math.min(...mainVals), mainMax = Math.max(...mainVals);
+  const pad = Math.max(0.3, (mainMax - mainMin) * 0.08);
+  const mainDomain = [Math.floor((mainMin - pad) * 2) / 2, Math.ceil((mainMax + pad) * 2) / 2];
+
+  const resVals = points.map((p) => p.measured - p.theoreticalRequested);
+  const resAbsMax = Math.max(0.6, ...resVals.map(Math.abs)) * 1.15;
+  const resDomain = [-resAbsMax, resAbsMax];
+
+  const mainTop = 6;
+  const resTop = mainTop + FC_MAIN_H + FC_GAP;
+  const yMain = fcYPixelFactory(mainDomain[0], mainDomain[1], mainTop, FC_MAIN_H);
+  const yRes = fcYPixelFactory(resDomain[0], resDomain[1], resTop, FC_RES_H);
+  const mainYTicks = niceTicks(mainDomain[0], mainDomain[1], 5);
+  const resYTicks = niceTicks(resDomain[0], resDomain[1], 5);
+
+  const svg = `
+    <svg viewBox="0 0 ${FC_W} ${FC_TOTAL_H}" preserveAspectRatio="xMidYMid meet">
+      ${FC_FREQ_TICKS.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f)}" x2="${fcXPixel(f)}" y1="${mainTop}" y2="${mainTop + FC_MAIN_H}" />`).join('')}
+      ${mainYTicks.map((v) => `<line class="fc-gridline" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yMain(v)}" y2="${yMain(v)}" />`).join('')}
+      ${mainYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yMain(v) + 3}" text-anchor="end">${v}</text>`).join('')}
+      <text class="fc-axis-title" x="${FC_MARGIN.left}" y="${mainTop - 2}" text-anchor="start">dB (rel. baseline)</text>
+      <line class="fc-baseline-axis" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left}" y1="${mainTop}" y2="${mainTop + FC_MAIN_H}" />
+      <path class="fc-series-line fc-s2" d="${fcPathFor(points, yMain, 'theoreticalRequested')}" />
+      <path class="fc-series-line fc-s3" d="${fcPathFor(points, yMain, 'theoreticalBestFit')}" />
+      <path class="fc-series-line fc-s1" d="${fcPathFor(points, yMain, 'measured')}" />
+
+      <rect class="fc-band-fill" x="${FC_MARGIN.left}" y="${yRes(toleranceUsed)}" width="${FC_PLOT_W}" height="${yRes(-toleranceUsed) - yRes(toleranceUsed)}" />
+      ${FC_FREQ_TICKS.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f)}" x2="${fcXPixel(f)}" y1="${resTop}" y2="${resTop + FC_RES_H}" />`).join('')}
+      ${resYTicks.map((v) => `<line class="fc-gridline" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yRes(v)}" y2="${yRes(v)}" />`).join('')}
+      ${resYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yRes(v) + 3}" text-anchor="end">${v}</text>`).join('')}
+      <text class="fc-axis-title" x="${FC_MARGIN.left}" y="${resTop - 2}" text-anchor="start">measured − theoretical (Q=${filterSpec.q})</text>
+      <line class="fc-zero-line" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yRes(0)}" y2="${yRes(0)}" />
+      <line class="fc-baseline-axis" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left}" y1="${resTop}" y2="${resTop + FC_RES_H}" />
+      <path class="fc-series-line fc-s1" d="${fcPathFor(points, yRes, (p) => p.measured - p.theoreticalRequested)}" />
+
+      ${FC_FREQ_TICKS.map((f) => `<text class="fc-tick-label" x="${fcXPixel(f)}" y="${resTop + FC_RES_H + 16}" text-anchor="middle">${fmtFreqLabel(f)}</text>`).join('')}
+
+      <line class="fc-crosshair" id="fc-crosshair" x1="0" x2="0" y1="${mainTop}" y2="${resTop + FC_RES_H}" style="display:none" />
+      <circle class="fc-hover-dot" id="fc-dot-measured" r="3.5" fill="#3987e5" style="display:none" />
+      <circle class="fc-hover-dot" id="fc-dot-req" r="3.5" fill="#d95926" style="display:none" />
+      <circle class="fc-hover-dot" id="fc-dot-best" r="3.5" fill="#199e70" style="display:none" />
+      <circle class="fc-hover-dot" id="fc-dot-res" r="3.5" fill="#3987e5" style="display:none" />
+      <rect id="fc-hover-rect" x="${FC_MARGIN.left}" y="${mainTop}" width="${FC_PLOT_W}" height="${resTop + FC_RES_H - mainTop}" fill="transparent" />
+    </svg>
+  `;
+
+  $('failureChartTitle').textContent =
+    `#${tc.id} ${filterSpec.type} @ ${filterSpec.freq}Hz, ${filterSpec.gain >= 0 ? '+' : ''}${filterSpec.gain}dB, requested Q ${filterSpec.q}`;
+  $('failureChartStats').innerHTML = `
+    <span class="badge fail">✕ fail — RMSE ${tc.shapeRmse.toFixed(2)}dB (tol ${toleranceUsed}dB)</span>
+    <span class="stat">pregain <b>${fmtDbSigned(tc.pregainDb)}</b></span>
+    <span class="stat">effective Q <b>${estimatedQ.toFixed(2)} (${((tc.qRatio ?? estimatedQ / filterSpec.q) * 100).toFixed(0)}% of requested)</b></span>
+    <span class="stat">RMSE @ effective Q <b>${(tc.qRmseAtEstimate ?? 0).toFixed(3)}dB</b></span>
+  `;
+  $('failureChartWrap').innerHTML = svg + '<div class="fc-tooltip" id="fc-tooltip"></div>';
+  $('failureChartLegend').innerHTML = `
+    <div class="legend-item"><span class="swatch s1"></span>Measured (pregain-compensated)</div>
+    <div class="legend-item"><span class="swatch s2"></span>Theoretical @ requested Q=${filterSpec.q}</div>
+    <div class="legend-item"><span class="swatch s3"></span>Theoretical @ effective Q=${estimatedQ.toFixed(2)}</div>
+    <div class="legend-item"><span class="band-swatch"></span>±${toleranceUsed}dB tolerance band</div>
+  `;
+
+  const panel = $('failureChartPanel');
+  panel.style.display = '';
+  const svgEl = panel.querySelector('svg');
+  const rectEl = $('fc-hover-rect');
+  const tooltipEl = $('fc-tooltip');
+  const crosshairEl = $('fc-crosshair');
+  const dotMeasured = $('fc-dot-measured'), dotReq = $('fc-dot-req'), dotBest = $('fc-dot-best'), dotRes = $('fc-dot-res');
+
+  function handleMove(evt) {
+    const bbox = svgEl.getBoundingClientRect();
+    const scale = FC_W / bbox.width;
+    const mouseX = (evt.clientX - bbox.left) * scale;
+    const clampedX = Math.min(Math.max(mouseX, FC_MARGIN.left), FC_MARGIN.left + FC_PLOT_W);
+    const t = (clampedX - FC_MARGIN.left) / FC_PLOT_W;
+    const freq = Math.pow(10, FC_LOG_MIN + t * FC_LOG_SPAN);
+    let idx = Math.round((Math.log10(freq) - FC_LOG_MIN) / FC_LOG_SPAN * (points.length - 1));
+    idx = Math.min(Math.max(idx, 0), points.length - 1);
+    const p = points[idx];
+    const px = fcXPixel(p.freq);
+    const residual = p.measured - p.theoreticalRequested;
+
+    crosshairEl.setAttribute('x1', px); crosshairEl.setAttribute('x2', px); crosshairEl.style.display = '';
+    dotMeasured.setAttribute('cx', px); dotMeasured.setAttribute('cy', yMain(p.measured)); dotMeasured.style.display = '';
+    dotReq.setAttribute('cx', px); dotReq.setAttribute('cy', yMain(p.theoreticalRequested)); dotReq.style.display = '';
+    dotBest.setAttribute('cx', px); dotBest.setAttribute('cy', yMain(p.theoreticalBestFit)); dotBest.style.display = '';
+    dotRes.setAttribute('cx', px); dotRes.setAttribute('cy', yRes(residual)); dotRes.style.display = '';
+
+    tooltipEl.innerHTML = `
+      <div class="fc-freq">${fmtFreqLabel(p.freq)}</div>
+      <div class="fc-row"><span class="fc-k">Measured</span><span class="fc-v">${fmtDbSigned(p.measured)}</span></div>
+      <div class="fc-row"><span class="fc-k">Theoretical (Q=${filterSpec.q})</span><span class="fc-v">${fmtDbSigned(p.theoreticalRequested)}</span></div>
+      <div class="fc-row"><span class="fc-k">Theoretical (Q=${estimatedQ.toFixed(2)})</span><span class="fc-v">${fmtDbSigned(p.theoreticalBestFit)}</span></div>
+      <div class="fc-row"><span class="fc-k">Residual</span><span class="fc-v">${fmtDbSigned(residual)}</span></div>
+    `;
+    tooltipEl.style.display = 'block';
+    const wrapBbox = $('failureChartWrap').getBoundingClientRect();
+    let left = (px / FC_W) * wrapBbox.width + 12;
+    if (left + 175 > wrapBbox.width) left = (px / FC_W) * wrapBbox.width - 185;
+    tooltipEl.style.left = left + 'px';
+    tooltipEl.style.top = '4px';
+  }
+  function handleLeave() {
+    tooltipEl.style.display = 'none';
+    crosshairEl.style.display = 'none';
+    [dotMeasured, dotReq, dotBest, dotRes].forEach((d) => (d.style.display = 'none'));
+  }
+  rectEl.addEventListener('mousemove', handleMove);
+  rectEl.addEventListener('mouseleave', handleLeave);
+  rectEl.addEventListener('touchmove', (e) => { handleMove(e.touches[0]); e.preventDefault(); }, { passive: false });
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+$('resultsTable').querySelector('tbody').addEventListener('click', (e) => {
+  const btn = e.target.closest('.explain-btn');
+  if (!btn) return;
+  const id = Number(btn.dataset.explainId);
+  const tc = testPlan.find((t) => t.id === id);
+  if (tc) renderFailureChart(tc);
+});
+$('closeFailureChartBtn').addEventListener('click', () => { $('failureChartPanel').style.display = 'none'; });
+
+function renderSummary() {
+  const box = $('summaryBox');
+  const done = testPlan.filter((t) => ['pass', 'fail', 'error', 'recorded'].includes(t.status));
+  const pass = testPlan.filter((t) => t.status === 'pass').length;
+  const fail = testPlan.filter((t) => t.status === 'fail').length;
+  const err = testPlan.filter((t) => t.status === 'error').length;
+  const rec = testPlan.filter((t) => t.status === 'recorded').length;
+  const skipped = testPlan.filter((t) => t.status === 'skipped').length;
+  if (!done.length) { box.textContent = 'Run the test plan to see a summary here.'; return; }
+  const byGroup = {};
+  for (const t of testPlan) {
+    byGroup[t.group] = byGroup[t.group] || { pass: 0, fail: 0, total: 0 };
+    if (t.status === 'pending') continue;
+    byGroup[t.group].total++;
+    if (t.status === 'pass') byGroup[t.group].pass++;
+    if (t.status === 'fail') byGroup[t.group].fail++;
+  }
+  let text = `Device: ${connectedDevice?.model ?? 'unknown'}   Baseline: measurement #${baseline?.id ?? '—'}\n`;
+  text += `${pass} passed, ${fail} failed, ${err} errored, ${rec} recorded-only, ${skipped} skipped\n\n`;
+  for (const [group, s] of Object.entries(byGroup)) {
+    if (s.total === 0) continue;
+    text += `${group.padEnd(22)} ${s.pass}/${s.total} passed\n`;
+  }
+  const pregains = testPlan.map((t) => t.pregainDb).filter((v) => v != null);
+  if (pregains.length) {
+    const avgPregain = pregains.reduce((s, v) => s + v, 0) / pregains.length;
+    const worst = Math.min(...pregains);
+    text += `\nAverage pregain across shape-fit tests: ${avgPregain.toFixed(2)} dB (most negative: ${worst.toFixed(2)} dB)\n`;
+    text += `Negative pregain = device backed off its overall level when a boost filter was applied (normal headroom protection).\n`;
+    if (avgPregain > 0.5) text += `⚠️ Average pregain is POSITIVE — device measured more broadband gain than requested; check for clipping/overshoot.\n`;
+  }
+  box.textContent = text;
+  $('exportJsonBtn').disabled = false;
+  $('exportCsvBtn').disabled = false;
+}
+
+// ---------------------------------------------------------------------------
+// Runner
+// ---------------------------------------------------------------------------
+function updateRunButtons() {
+  $('runBtn').disabled = running || !connectedDevice || !baseline || !testPlan.length || deviceRequiresDisconnect;
+  $('runBtn').title = deviceRequiresDisconnect
+    ? 'This device disconnects after every filter write — automated verification is not supported for it.'
+    : '';
+  $('stopBtn').disabled = !running;
+}
+
+$('runBtn').addEventListener('click', async () => {
+  running = true; stopRequested = false;
+  updateRunButtons();
+  $('runStatus').textContent = 'running…';
+
+  const settleMs = Number($('settleMs').value) || 1500;
+  const toleranceDb = Number($('toleranceDb').value) || 0.3;
+  const timeoutMs = Number($('timeoutMs').value) || 40000;
+  const sampleRate = Number($('sampleRate').value) || 44100;
+
+  for (const tc of testPlan) {
+    if (!tc.include) { tc.status = 'skipped'; renderResultRow(tc); continue; }
+    if (stopRequested) break;
+
+    tc.status = 'running'; renderResultRow(tc);
+    $('runStatus').textContent = `pushing: ${labelFor(tc)}`;
+
+    const pushBtn = document.querySelector('.push-filters-todevice');
+    if (!pushBtn || pushBtn.hidden) {
+      tc.status = 'error'; tc.error = 'no device connected'; renderResultRow(tc); continue;
+    }
+
+    filtersState = [{ freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type, disabled: false }];
+    try {
+      pushBtn.click();
+    } catch (e) {
+      tc.status = 'error'; tc.error = e.message; renderResultRow(tc); continue;
+    }
+
+    await sleep(settleMs);
+    $('runStatus').textContent = `measuring: ${labelFor(tc)}`;
+
+    try {
+      const captured = await triggerAndCaptureSweep(timeoutMs);
+      if (!captured) { tc.status = 'skipped'; renderResultRow(tc); continue; }
+      const { id, fr } = captured;
+      await renameMeasurement(id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}`.slice(0, 60));
+      const baseMag = magnitudeAt(baseline.fr, tc.measureFreq);
+      const testMag = magnitudeAt(fr, tc.measureFreq);
+      tc.measuredDelta = testMag - baseMag;
+      tc.measurementId = id;
+      // Keep the raw curve (plain array, not Float32Array — JSON.stringify
+      // silently drops TypedArray contents) so the JSON export can double as
+      // a fixture file for filter-response.test.js, not just a results log.
+      tc.fr = { startFreq: fr.startFreq, freqStep: fr.freqStep, magnitude: Array.from(fr.magnitude) };
+
+      if (hasModel(tc.type)) {
+        // Full-curve fit: compare the whole measured delta curve against the
+        // theoretical biquad shape, detect+remove any constant broadband
+        // pregain offset, then judge the pregain-COMPENSATED fit.
+        const filterSpec = { freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type.toUpperCase() };
+        const comparison = compareToTheoretical(baseline.fr, fr, filterSpec, { magnitudeAt, fs: sampleRate, evalFreqs: EVAL_FREQS });
+        const { pregainDb, compensated } = compensateForPregain(comparison);
+        const judged = judgeFit(compensated, { rmseToleranceDb: toleranceDb });
+        tc.pregainDb = pregainDb;
+        tc.shapeRmse = compensated.inBandStats?.rmse ?? null;
+        tc.shapeMaxErr = compensated.inBandStats?.maxAbsError ?? null;
+        tc.correlation = compensated.inBandStats?.correlation ?? null;
+        tc.judgeReason = judged.reason;
+        tc.status = judged.pass ? 'pass' : 'fail';
+        // Snapshot exactly what was judged — sampleRate/toleranceDb read from
+        // the UI fields could change before the user clicks "Explain" on an
+        // older row, and the chart needs to reconstruct the SAME comparison,
+        // not whatever those fields say right now.
+        tc.usedFilterSpec = filterSpec;
+        tc.usedSampleRate = sampleRate;
+        tc.usedToleranceDb = toleranceDb;
+
+        // On a failed shape fit, "what Q would explain this curve?" turns an
+        // opaque RMSE into an actionable number. Before trusting a consistent
+        // non-1.0 ratio as "this device's real Q", cross-check the model
+        // itself against an independent reference (e.g. a WebAudio
+        // BiquadFilterNode) — a real Protocol Max run first looked like a
+        // ~0.7-0.8x firmware characteristic and turned out to be a wrong
+        // alpha formula in our own model (see filter-response.real.test.js).
+        // Skipped on a pass since there's nothing to explain. Also gated on
+        // `significant` — the search always returns SOME best-fit Q even
+        // when the fit was already close (small RMSE, high correlation), so
+        // an unguarded result could show a nonsensical ratio like "3000%"
+        // for a filter that barely failed tolerance. Only shown when the
+        // search found a real, meaningful improvement over the requested Q.
+        if (!judged.pass) {
+          const qEstimate = estimateEffectiveQ(baseline.fr, fr, filterSpec, { magnitudeAt, fs: sampleRate, evalFreqs: EVAL_FREQS });
+          if (qEstimate.significant) {
+            tc.estimatedQ = qEstimate.estimatedQ;
+            tc.qRatio = qEstimate.ratio;
+            tc.qRmseAtEstimate = qEstimate.rmseAtEstimatedQ;
+          }
+        }
+      } else if (tc.expectedDelta == null) {
+        tc.status = 'recorded';
+      } else {
+        tc.diff = Math.abs(tc.measuredDelta - tc.expectedDelta);
+        tc.status = tc.diff <= toleranceDb ? 'pass' : 'fail';
+      }
+    } catch (e) {
+      tc.status = 'error'; tc.error = e.message;
+    }
+    renderResultRow(tc);
+  }
+
+  $('runStatus').textContent = 'restoring device to flat (0dB)…';
+  try { await pushFlatFilters(); } catch (e) { console.warn('Could not reset device to flat after run:', e); }
+
+  running = false;
+  $('runStatus').textContent = stopRequested ? 'stopped' : 'done';
+  updateRunButtons();
+  renderSummary();
+});
+
+$('stopBtn').addEventListener('click', () => { stopRequested = true; $('runStatus').textContent = 'stopping after current test…'; });
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+function download(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+$('exportJsonBtn').addEventListener('click', () => {
+  const payload = {
+    device: connectedDevice?.model ?? null,
+    constraints,
+    sampleRate: Number($('sampleRate').value) || 44100,
+    // Includes the raw baseline + per-test frequency-response curves (not
+    // just measurement IDs/summary stats), so this file can also be dropped
+    // in as a real-capture fixture for filter-response.test.js.
+    baseline: baseline ? { id: baseline.id, fr: { startFreq: baseline.fr.startFreq, freqStep: baseline.fr.freqStep, magnitude: Array.from(baseline.fr.magnitude) } } : null,
+    results: testPlan,
+    exportedAt: new Date().toISOString(),
+  };
+  download('devicepeq-rew-verification.json', JSON.stringify(payload, null, 2), 'application/json');
+});
+
+$('exportCsvBtn').addEventListener('click', () => {
+  const cols = ['id', 'group', 'type', 'freq', 'gain', 'q', 'measureFreq', 'expectedDelta', 'measuredDelta', 'pregainDb', 'shapeRmse', 'shapeMaxErr', 'correlation', 'estimatedQ', 'qRatio', 'diff', 'status', 'measurementId', 'error'];
+  const rows = [cols.join(',')];
+  for (const tc of testPlan) {
+    rows.push(cols.map((c) => JSON.stringify(tc[c] ?? '')).join(','));
+  }
+  download('devicepeq-rew-verification.csv', rows.join('\n'), 'text/csv');
+});
+</script>
+</body>
+</html>

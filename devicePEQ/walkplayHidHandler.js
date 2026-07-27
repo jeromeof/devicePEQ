@@ -54,11 +54,11 @@
 //   0x1D dacWorkMode     ALL          DAC operational mode: 0=Class AB, 1=Class H.
 //                                     setDacWorkMode(deviceDetails, mode) / readDacWorkMode(deviceDetails)
 //
-// ── globalGainBuffer ──────────────────────────────────────────────────────────
-// Walkplay hardware applies a fixed -5 dB offset at the DAC stage (modelConfig
-// globalGainBuffer: -5). During pushToDevice the gain register receives only the
-// delta beyond this buffer: Math.min(0, preamp - buffer). So a -3 dB preamp
-// writes 0 (hardware covers it), a -7 dB preamp writes -2 (hardware -5 + reg -2).
+// ── Global gain (CMD 0x03 / "offset") ──────────────────────────────────────────
+// Written directly as the computed preamp value — no hardware buffer/offset is
+// applied on top of it. Confirmed against the official WalkPlay web app source
+// (walkplayJS/walkplay-online.js): the "offset" register is a plain user/preset
+// value, default 0 in every stock preset, with no auto-gain or fixed attenuation.
 //
 
 import { logHidTx, logHidRx } from './deviceDebugLog.js';
@@ -141,7 +141,7 @@ export const walkplayUsbHID = (function () {
       const filterToWrite = normalizeFilterForWrite(filter);
       const bArr = filter.disabled
         ? new Array(20).fill(0)
-        : computeIIRFilter(i, filterToWrite.freq, filterToWrite.gain, filterToWrite.q);
+        : computeIIRFilter(i, filterToWrite.freq, filterToWrite.gain, filterToWrite.q, filterToWrite.type);
 
       // Debug: log what we're writing
       const hexBytes = Array.from(bArr).map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -168,12 +168,8 @@ export const walkplayUsbHID = (function () {
     await delay(100);
 
     if (deviceDetails.modelConfig.deviceHandlesPregain === false) {
-      const buffer = deviceDetails.modelConfig.globalGainBuffer ?? null;
-      // When a fixed hardware buffer exists, write only the delta beyond it (clamped to 0).
-      // e.g. preamp=-7dB, buffer=-5dB → write -2dB; preamp=-3dB → write 0 (hardware covers it).
-      const gainToWrite = buffer !== null ? Math.min(0, globalGain - buffer) : globalGain;
-      await writeGlobalGain(device, gainToWrite);
-      console.log(`USB Device PEQ: Walkplay set global gain register to ${gainToWrite} dB (preamp ${globalGain} dB, hardware buffer ${buffer} dB)`);
+      await writeGlobalGain(device, globalGain);
+      console.log(`USB Device PEQ: Walkplay set global gain register to ${globalGain} dB`);
       await delay(50);
     }
 
@@ -685,17 +681,76 @@ async function waitForFilters(condition, device, timeout, callback) {
 
 
 // Compute IIR filter
-function computeIIRFilter(i, freq, gain, q) {
+// Standard RBJ Audio EQ Cookbook biquads, Q-parametrized. PK path is the
+// original formula unchanged (A=10^(gain/40), alpha=sin(w0)/(2Q)); LSQ/HSQ
+// previously fell through to this same peaking formula regardless of type
+// (the caller passed no type at all) — that was a bug: shelf filters need
+// their own coefficients, not a peaking filter tagged with a shelf type byte.
+function computeIIRFilter(i, freq, gain, q, type = 'PK') {
   let bArr = new Array(20).fill(0);
-  let sqrt = Math.sqrt(Math.pow(10, gain / 20));
-  let d3 = (freq * 6.283185307179586) / 96000;
-  let sin = Math.sin(d3) / (2 * q);
-  let d4 = sin * sqrt;
-  let d5 = sin / sqrt;
-  let d6 = d5 + 1;
+  const A = Math.sqrt(Math.pow(10, gain / 20)); // 10^(gain/40)
+  const w0 = (freq * 6.283185307179586) / 96000;
+  const sinw0 = Math.sin(w0);
+  const alpha = sinw0 / (2 * q); // peaking-EQ alpha — correct for PK, NOT for LSQ/HSQ (see below)
+  const cosw0 = Math.cos(w0);
+
+  let a0, a1, a2, b0, b1, b2;
+
+  if (type === 'LSQ' || type === 'HSQ') {
+    // Proper RBJ/WebAudio shelf-Q alpha — NOT the peaking-EQ alpha above.
+    // Correctness fix with LIKELY NO AUDIBLE EFFECT — read this before
+    // assuming it changes device behavior:
+    //
+    // A real Protocol Max run's LSQ/HSQ acoustic response was measured
+    // against the theoretical models in filter-response.js and initially
+    // looked like a ~70-80%-of-requested-Q firmware quirk. Cross-checking
+    // against a real WebAudio BiquadFilterNode showed the ROOT CAUSE was
+    // that filter-response.js's shelf model used this same peaking-style
+    // alpha instead of the proper shelf alpha — fixing the model there made
+    // the real captures match at effective Q≈1.0.
+    //
+    // That means the device's ACTUAL Q behavior was already correct — the
+    // bug was in the JS-side verification model, not here. And this
+    // function's own bArr almost certainly isn't what drives that behavior
+    // in the first place: pushToDevice() sends freq/Q/gain/type as their own
+    // fields in the same packet (see below), and parseFilterPacket() reads
+    // freq/Q/gain back from those raw fields, never from bArr — strong
+    // evidence the firmware computes its own coefficients on-chip from
+    // freq/Q/gain/type and bArr is unused (possibly legacy/vestigial).
+    //
+    // Fixed anyway, for internal correctness/consistency and in case any
+    // firmware path does consult bArr — but don't expect measurements to
+    // change. See testing/rew-peq-capability-test/filter-response.real.test.js
+    // for the actual measurements this whole investigation is based on.
+    const shelfAlpha = (sinw0 / 2) * Math.sqrt((A + 1 / A) * (1 / q - 1) + 2);
+    const sqrtA2alpha = 2 * Math.sqrt(A) * shelfAlpha;
+    if (type === 'LSQ') {
+      b0 =    A * ((A + 1) - (A - 1) * cosw0 + sqrtA2alpha);
+      b1 =  2*A * ((A - 1) - (A + 1) * cosw0);
+      b2 =    A * ((A + 1) - (A - 1) * cosw0 - sqrtA2alpha);
+      a0 =         (A + 1) + (A - 1) * cosw0 + sqrtA2alpha;
+      a1 =    -2 * ((A - 1) + (A + 1) * cosw0);
+      a2 =         (A + 1) + (A - 1) * cosw0 - sqrtA2alpha;
+    } else { // HSQ
+      b0 =     A * ((A + 1) + (A - 1) * cosw0 + sqrtA2alpha);
+      b1 =  -2*A * ((A - 1) + (A + 1) * cosw0);
+      b2 =     A * ((A + 1) + (A - 1) * cosw0 - sqrtA2alpha);
+      a0 =          (A + 1) - (A - 1) * cosw0 + sqrtA2alpha;
+      a1 =      2 * ((A - 1) - (A + 1) * cosw0);
+      a2 =          (A + 1) - (A - 1) * cosw0 - sqrtA2alpha;
+    }
+  } else { // PK (default) — original formula, unchanged
+    b0 = 1 + alpha * A;
+    b1 = -2 * cosw0;
+    b2 = 1 - alpha * A;
+    a0 = 1 + alpha / A;
+    a1 = -2 * cosw0;
+    a2 = 1 - alpha / A;
+  }
+
   let quantizerData = quantizer(
-    [1, (Math.cos(d3) * -2) / d6, (1 - d5) / d6],
-    [(d4 + 1) / d6, (Math.cos(d3) * -2) / d6, (1 - d4) / d6]
+    [1, a1 / a0, a2 / a0],
+    [b0 / a0, b1 / a0, b2 / a0]
   );
 
   let index = 0;

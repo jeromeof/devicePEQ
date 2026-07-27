@@ -158,6 +158,10 @@ async function loadSuites() {
     // run without real vendor HID collections on the mock device object.
     { name: 'FIIO EH13 (fiioBle BLE)', url: './handlers/fiio_eh13_ble.test.js' },
     { name: 'Audeze Maxwell (airohaBle BLE)', url: './handlers/audeze_maxwell_ble.test.js' },
+    { name: 'Moondrop FreeDSP (conexantUsbHidHandler)', url: './handlers/conexant_moondrop_freedsp.test.js' },
+    { name: 'Moondrop FreeDSP (conexant, capture-based)', url: './handlers/conexant_moondrop_freedsp_capture.test.js' },
+    { name: 'Moondrop ECHO-B (conexant, capture-based)', url: './handlers/conexant_moondrop_echob_capture.test.js' },
+    { name: 'Moondrop FreeDSP Pro (moondropUsbHidHandler shelf biquads)', url: './handlers/moondrop_freedsp_shelf_biquad.test.js' },
     // ── Network handlers (mocked fetch) ──────────────────────────────────────────
     { name: 'WiiM (network, mocked fetch)', url: './handlers/wiim_network.test.js' },
     { name: 'Luxsin X9 (network, mocked fetch)', url: './handlers/luxsin_x9_network.test.js' },

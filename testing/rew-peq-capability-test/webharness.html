@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REW PEQ Capability Test Harness</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 1000px; margin: 2em auto; padding: 0 1em; }
+  button { padding: 0.5em 1em; margin: 0.25em; cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  #status { padding: 0.75em; border-radius: 6px; background: #eee; margin: 1em 0; }
+  #status.connected { background: #d4edda; }
+  #status.disconnected { background: #f8d7da; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.9em; }
+  th, td { border: 1px solid #ccc; padding: 0.4em 0.6em; text-align: left; }
+  th { background: #f5f5f5; }
+  .pass { color: #1a7a1a; }
+  .fail { color: #b00; }
+  #log { background: #111; color: #ddd; font-family: monospace; font-size: 0.8em; padding: 1em; height: 300px; overflow-y: scroll; white-space: pre-wrap; border-radius: 6px; }
+  fieldset { margin: 1em 0; }
+  label { display: inline-block; min-width: 90px; }
+  input[type=number] { width: 6em; }
+</style>
+</head>
+<body>
+
+<h2>REW PEQ Capability Test Harness</h2>
+<p>
+  Self-contained: connects to a USB HID device via WebHID and drives REW's
+  HTTP API directly from this page (no Node/Playwright driver needed).
+  Must be served over http (not <code>file://</code>) — see
+  <code>static-server.js</code>. Open once via
+  <code>http://127.0.0.1:5183/testing/rew-peq-capability-test/webharness.html</code>.
+</p>
+
+<div id="status" class="disconnected">Not connected. Click "Pair / Reconnect Device".</div>
+<button id="pairBtn">Pair / Reconnect Device</button>
+<button id="rewCheckBtn">Check REW API</button>
+
+<fieldset>
+  <legend>Manual filter push</legend>
+  <label>Type</label>
+  <select id="fType"><option>PK</option><option>LSQ</option><option>HSQ</option></select><br>
+  <label>Freq (Hz)</label><input id="fFreq" type="number" value="1000"><br>
+  <label>Gain (dB)</label><input id="fGain" type="number" value="6" step="0.5"><br>
+  <label>Q</label><input id="fQ" type="number" value="1" step="0.1"><br>
+  <button id="pushBtn">Push to band 0</button>
+  <button id="pullBtn">Read current state</button>
+  <button id="flattenBtn">Flatten (No PEQ)</button>
+</fieldset>
+
+<fieldset>
+  <legend>Automated capability test</legend>
+  <button id="runSuiteBtn">Run Full Bracketed Capability Test</button>
+  <button id="stopBtn" disabled>Stop</button>
+  <button id="exportBtn" disabled>Export Results JSON</button>
+  <p style="font-size:0.85em; color:#555;">
+    For each supported filter type (PK always; LSQ/HSQ if the device's
+    peqConstraints profile flags them), pushes maxGain/minGain/maxQ test
+    cases, brackets each with a fresh flat baseline immediately before and
+    after (to surface measurement drift rather than let it contaminate
+    results), and statistically compares the measured response against the
+    theoretical filter shape.
+  </p>
+</fieldset>
+
+<table id="resultsTable" style="display:none">
+  <thead><tr>
+    <th>Case</th><th>Readback</th><th>Pregain</th><th>Shape RMSE</th><th>Max Err</th><th>Corr</th><th>Drift</th><th>Verdict</th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+<p style="font-size:0.85em; color:#555;">
+  <strong>Pregain</strong> is the median broadband offset between the measured and theoretical
+  delta curves — most devices back off their overall gain automatically when a boost filter is
+  applied (headroom protection), which shows up as a constant negative offset across the whole
+  band, not just at the filter's own frequency. It's subtracted out before <strong>Shape RMSE</strong>
+  / <strong>Max Err</strong> / <strong>Corr</strong> are computed, so those three describe how well the
+  filter's actual *shape* matches the theoretical biquad once the pregain is accounted for — the
+  real acoustic pass/fail criterion.
+</p>
+
+<div id="log"></div>
+
+<script>
+  window.DEVICEPEQ_CONFIG_BASE_URL = '/devicePEQ/';
+</script>
+<script type="module">
+  import { usbHidDeviceHandlerConfig } from '/devicePEQ/usbDeviceConfig.js';
+  import { resolveConstraints, loadPeqConstraintsConfig } from '/devicePEQ/peqConstraints.js';
+  import { buildExtras } from '/devicePEQ/deviceExtras.js';
+  import { UsbHIDConnector as UsbHIDConnectorPromise } from '/devicePEQ/usbHidConnector.js';
+  import * as rew from './rew-client.mjs';
+  import * as fr from './filter-response.mjs';
+
+  const UsbHIDConnector = await UsbHIDConnectorPromise;
+
+  const logEl = document.getElementById('log');
+  const statusEl = document.getElementById('status');
+  const tableEl = document.getElementById('resultsTable');
+  const tableBody = tableEl.querySelector('tbody');
+
+  function log(msg) {
+    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logEl.textContent += line + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+    console.log(msg);
+  }
+
+  let device = null;
+  let stopRequested = false;
+  let lastResults = null;
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = cls;
+  }
+
+  async function buildDeviceFromRaw(rawDevice) {
+    const vendorConfig = usbHidDeviceHandlerConfig.find((entry) => entry.vendorIds.includes(rawDevice.vendorId));
+    if (!vendorConfig) throw new Error(`No configuration found for vendor 0x${rawDevice.vendorId.toString(16)}`);
+
+    const model = rawDevice.productName;
+    let deviceDetails = vendorConfig.devices?.[model];
+    if (!deviceDetails && vendorConfig.deviceGroups) {
+      for (const groupConfig of Object.values(vendorConfig.deviceGroups)) {
+        if (Array.isArray(groupConfig.productIds) && groupConfig.productIds.includes(rawDevice.productId)) {
+          deviceDetails = groupConfig;
+          break;
+        }
+      }
+    }
+    deviceDetails = deviceDetails || {};
+
+    const modelConfig = Object.assign({}, vendorConfig.defaultModelConfig || {}, deviceDetails.modelConfig || {});
+    await loadPeqConstraintsConfig().catch(() => {});
+    const resolvedConstraints = resolveConstraints(modelConfig);
+    if (resolvedConstraints) Object.assign(modelConfig, resolvedConstraints);
+
+    const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
+    const handler = deviceDetails.handler || vendorConfig.handler;
+    if (!rawDevice.opened) await rawDevice.open();
+
+    const built = { rawDevice, manufacturer, model, modelConfig, handler };
+    built.extras = buildExtras(handler, built);
+    return built;
+  }
+
+  async function silentConnect() {
+    try {
+      const rawDevices = await navigator.hid.getDevices();
+      const rawDevice = rawDevices.find((d) => usbHidDeviceHandlerConfig.some((entry) => entry.vendorIds.includes(d.vendorId)));
+      if (!rawDevice) return false;
+      device = await buildDeviceFromRaw(rawDevice);
+      return true;
+    } catch (err) {
+      log(`silentConnect failed: ${err.message}`);
+      return false;
+    }
+  }
+
+  // Manual (re)connect — must be triggered by a real user gesture. WebHID
+  // seems to require this explicit handshake again after a browser restart
+  // or the physical device being unplugged/replugged, even for a device the
+  // browser already lists as "Paired" — confirmed by the official WalkPlay
+  // web app (peq.szwalkplay.com) showing the same native chooser every time.
+  async function pairDevice() {
+    device = await UsbHIDConnector.getDeviceConnected();
+    return !!device?.model;
+  }
+
+  document.getElementById('pairBtn').addEventListener('click', async () => {
+    log('Attempting silent reconnect...');
+    let ok = await silentConnect();
+    if (!ok) {
+      log('No active device — opening chooser (pick your device)...');
+      ok = await pairDevice();
+    }
+    if (ok) {
+      setStatus(`Connected: ${device.manufacturer} ${device.model}`, 'connected');
+      log(`Connected: ${device.manufacturer} ${device.model}`);
+      log(`modelConfig: ${JSON.stringify(device.modelConfig)}`);
+    } else {
+      setStatus('Connection failed or cancelled', 'disconnected');
+    }
+  });
+
+  document.getElementById('rewCheckBtn').addEventListener('click', async () => {
+    try {
+      const msg = await rew.checkRewReachable();
+      log(`REW API OK: ${msg}`);
+    } catch (err) {
+      log(`REW API check failed: ${err.message}`);
+    }
+  });
+
+  function requireDevice() {
+    if (!device) throw new Error('Not connected — click "Pair / Reconnect Device" first.');
+    return device;
+  }
+
+  function currentSlot() {
+    const d = requireDevice();
+    return d.modelConfig.firstWritableEQSlot ?? d.modelConfig.availableSlots?.[0]?.id;
+  }
+
+  function buildFilters(maxFilters, testBand) {
+    const filters = new Array(maxFilters).fill(null).map(() => ({ disabled: true }));
+    if (testBand) filters[0] = { ...testBand, disabled: false };
+    return filters;
+  }
+
+  function verifyReadback(pushed, readBack, tolerances = { freqPct: 0.05, gainDb: 0.5, q: 0.5 }) {
+    if (!readBack || !Array.isArray(readBack.filters) || !readBack.filters[0]) {
+      return { ok: false, reason: 'pullFromDevice returned no band 0 filter' };
+    }
+    const got = readBack.filters[0];
+    if (pushed === null) return { ok: !!got.disabled, pushed: null, readBack: got };
+    const freqOk = Math.abs(got.freq - pushed.freq) <= pushed.freq * tolerances.freqPct;
+    const gainOk = Math.abs(got.gain - pushed.gain) <= tolerances.gainDb;
+    const qOk = Math.abs(got.q - pushed.q) <= tolerances.q;
+    const typeOk = !got.type || got.type === pushed.type;
+    return { ok: freqOk && gainOk && qOk && typeOk, pushed, readBack: got, freqOk, gainOk, qOk, typeOk };
+  }
+
+  // Pushes testBand to band 0 (or all-disabled if null) and verifies via
+  // pullFromDevice, retrying a few times — individual PEQ_VALUES read
+  // requests have been observed to drop ~10-20% of the time on real hardware.
+  async function pushAndVerify(testBand, { maxAttempts = 4, retryDelayMs = 1500 } = {}) {
+    const d = requireDevice();
+    const slot = currentSlot();
+    const maxFilters = d.modelConfig.maxFilters ?? 10;
+    const filters = buildFilters(maxFilters, testBand);
+    let check;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await UsbHIDConnector.enablePEQ(d, testBand !== null, slot);
+      await UsbHIDConnector.pushToDevice(d, null, slot, 0, filters);
+      await new Promise((r) => setTimeout(r, retryDelayMs));
+      const readBack = await UsbHIDConnector.pullFromDevice(d, slot);
+      check = verifyReadback(testBand, readBack);
+      if (check.ok) return check;
+      log(`  readback ${testBand ? JSON.stringify(testBand) : 'all-disabled'} mismatch on attempt ${attempt}/${maxAttempts}, retrying...`);
+    }
+    return check;
+  }
+
+  document.getElementById('pushBtn').addEventListener('click', async () => {
+    const testBand = {
+      type: document.getElementById('fType').value,
+      freq: Number(document.getElementById('fFreq').value),
+      gain: Number(document.getElementById('fGain').value),
+      q: Number(document.getElementById('fQ').value),
+    };
+    log(`Pushing ${JSON.stringify(testBand)}...`);
+    const check = await pushAndVerify(testBand);
+    log(check.ok ? 'Push verified OK.' : `Push MISMATCH: got ${JSON.stringify(check.readBack)}`);
+  });
+
+  document.getElementById('pullBtn').addEventListener('click', async () => {
+    const d = requireDevice();
+    const r = await UsbHIDConnector.pullFromDevice(d, currentSlot());
+    log(`Current band0: ${JSON.stringify(r.filters?.[0])}, globalGain=${r.globalGain}`);
+  });
+
+  document.getElementById('flattenBtn').addEventListener('click', async () => {
+    log('Flattening (all bands disabled)...');
+    const check = await pushAndVerify(null);
+    log(check.ok ? 'Flattened OK.' : `Flatten MISMATCH: got ${JSON.stringify(check.readBack)}`);
+  });
+
+  // ── Automated capability test ────────────────────────────────────────────
+
+  const TEST_FREQ_BY_TYPE = {
+    PK:  { filterFreq: 1000, checkFreq: 1000, toleranceDb: 1.0 },
+    LSQ: { filterFreq: 1000, checkFreq: 50,   toleranceDb: 2.0 },
+    HSQ: { filterFreq: 1000, checkFreq: 12000, toleranceDb: 2.0 },
+  };
+
+  function buildTestPlan(modelConfig) {
+    const types = ['PK'];
+    if (modelConfig.supportsLSFilter) types.push('LSQ');
+    if (modelConfig.supportsHSFilter) types.push('HSQ');
+    const plan = [];
+    for (const type of types) {
+      const { filterFreq, checkFreq, toleranceDb } = TEST_FREQ_BY_TYPE[type];
+      const cases = [
+        { gain: modelConfig.maxGain, q: 1.0, constraintField: 'maxGain', tag: 'maxGain_Q1' },
+        { gain: modelConfig.minGain, q: 1.0, constraintField: 'minGain', tag: 'minGain_Q1' },
+        { gain: modelConfig.maxGain, q: modelConfig.maxQ, constraintField: 'maxQ', tag: 'maxGain_maxQ' },
+      ];
+      for (const c of cases) plan.push({ type, filterFreq, checkFreq, toleranceDb, ...c, label: `${type} @ ${c.gain}dB Q=${c.q}` });
+    }
+    return plan;
+  }
+
+  async function takeMeasurement(name) {
+    const id = await rew.triggerMeasurement();
+    await rew.renameMeasurement(id, name);
+    const frData = await rew.getFrequencyResponse(id);
+    return { id, fr: frData };
+  }
+
+  function addResultRow(r) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${r.label}</td>
+      <td class="${r.readbackOk ? 'pass' : 'fail'}">${r.readbackOk ? 'OK' : 'MISMATCH'}</td>
+      <td>${r.pregainDb.toFixed(2)}dB</td>
+      <td>${r.shapeRmse == null ? '—' : r.shapeRmse.toFixed(2) + 'dB'}</td>
+      <td>${r.shapeMaxErr == null ? '—' : r.shapeMaxErr.toFixed(2) + 'dB'}</td>
+      <td>${r.correlation == null ? '—' : r.correlation.toFixed(2)}</td>
+      <td>${r.drift.toFixed(2)}dB</td>
+      <td class="${r.acousticPass ? 'pass' : 'fail'}" title="${r.judgeReason ?? ''}">${r.acousticPass ? 'PASS' : 'FAIL'}</td>
+    `;
+    tableBody.appendChild(row);
+  }
+
+  document.getElementById('runSuiteBtn').addEventListener('click', async () => {
+    const runBtn = document.getElementById('runSuiteBtn');
+    const stopBtnEl = document.getElementById('stopBtn');
+    runBtn.disabled = true;
+    stopBtnEl.disabled = false;
+    stopRequested = false;
+    tableBody.innerHTML = '';
+    tableEl.style.display = '';
+
+    try {
+      const d = requireDevice();
+      log(`REW check: ${await rew.checkRewReachable()}`);
+      const plan = buildTestPlan(d.modelConfig);
+      log(`Test plan: ${plan.length} cases, each bracketed by before/after baselines.`);
+
+      const results = [];
+      for (let i = 0; i < plan.length; i++) {
+        if (stopRequested) { log('Stopped by user.'); break; }
+        const testCase = plan[i];
+        const testBand = { freq: testCase.filterFreq, gain: testCase.gain, q: testCase.q, type: testCase.type };
+        const tag = `${String(i + 1).padStart(2, '0')}_${testCase.type}_${testCase.tag}_f${testCase.filterFreq}`;
+        log(`\n[${testCase.label}] bracketed run starting...`);
+
+        log(`[${testCase.label}] Flattening for baseline-before...`);
+        await pushAndVerify(null);
+        const before = await takeMeasurement(`${tag}_baselineBefore`);
+
+        log(`[${testCase.label}] Pushing ${JSON.stringify(testBand)}...`);
+        const readbackCheck = await pushAndVerify(testBand);
+        const test = await takeMeasurement(`${tag}_test`);
+
+        log(`[${testCase.label}] Flattening for baseline-after...`);
+        await pushAndVerify(null);
+        const after = await takeMeasurement(`${tag}_baselineAfter`);
+
+        const drift = rew.magnitudeAt(after.fr, testCase.checkFreq) - rew.magnitudeAt(before.fr, testCase.checkFreq);
+
+        // Average the two bracketing baselines point-by-point (same REW sweep
+        // config before/after, so grids line up) into a single reference
+        // curve, then fit the whole measured delta curve against the
+        // theoretical biquad shape rather than reading one frequency.
+        const avgBaselineFr = {
+          startFreq: before.fr.startFreq,
+          freqStep: before.fr.freqStep,
+          magnitude: before.fr.magnitude.map((v, i) => (v + after.fr.magnitude[i]) / 2),
+        };
+        const filterSpec = { freq: testCase.filterFreq, gain: testCase.gain, q: testCase.q, type: testCase.type };
+        const comparison = fr.compareToTheoretical(avgBaselineFr, test.fr, filterSpec, { magnitudeAt: rew.magnitudeAt });
+        const { pregainDb, compensated } = fr.compensateForPregain(comparison);
+        const judged = fr.judgeFit(compensated, { rmseToleranceDb: testCase.toleranceDb });
+        const measuredDelta = rew.magnitudeAt(test.fr, testCase.checkFreq) - rew.magnitudeAt(avgBaselineFr, testCase.checkFreq);
+
+        const result = {
+          label: testCase.label, type: testCase.type, constraintField: testCase.constraintField,
+          expectedDelta: testCase.gain, measuredDelta, tolerance: testCase.toleranceDb,
+          pregainDb, shapeRmse: compensated.inBandStats?.rmse ?? null,
+          shapeMaxErr: compensated.inBandStats?.maxAbsError ?? null,
+          correlation: compensated.inBandStats?.correlation ?? null,
+          acousticPass: judged.pass, judgeReason: judged.reason,
+          drift, readbackOk: readbackCheck.ok,
+          measurementIds: { before: before.id, test: test.id, after: after.id },
+        };
+        results.push(result);
+        addResultRow(result);
+        log(`[${testCase.label}] raw measured@checkFreq=${measuredDelta.toFixed(2)}dB pregain=${pregainDb.toFixed(2)}dB shapeRmse=${result.shapeRmse?.toFixed(2)}dB corr=${result.correlation?.toFixed(2)} drift=${drift.toFixed(2)}dB -> ${judged.pass ? 'PASS' : 'FAIL'} (${judged.reason})`);
+      }
+
+      log('\nRestoring No PEQ...');
+      await pushAndVerify(null);
+
+      lastResults = { modelConfig: d.modelConfig, results };
+      document.getElementById('exportBtn').disabled = false;
+
+      const overDelivered = results.filter((r) => r.pregainDb > 0.5);
+      log(`\n${overDelivered.length ? '⚠️ ' + overDelivered.length + ' case(s) measured MORE broadband gain than requested (positive pregain — check for clipping/overshoot)' : '✅ No case measured more broadband gain than requested — pregain is consistently ≤0 (device backs off or matches, never overshoots)'}`);
+    } catch (err) {
+      log(`FATAL: ${err.message}`);
+    } finally {
+      runBtn.disabled = false;
+      stopBtnEl.disabled = true;
+    }
+  });
+
+  document.getElementById('stopBtn').addEventListener('click', () => { stopRequested = true; });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (!lastResults) return;
+    const blob = new Blob([JSON.stringify(lastResults, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `peq-capability-results-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Try a silent reconnect on load, purely for convenience — safe since this
+  // page is opened directly by a human, not driven by an automation script.
+  (async () => {
+    if (await silentConnect()) {
+      setStatus(`Connected: ${device.manufacturer} ${device.model}`, 'connected');
+      log(`Silently reconnected: ${device.manufacturer} ${device.model}`);
+    }
+  })();
+</script>
+</body>
+</html>

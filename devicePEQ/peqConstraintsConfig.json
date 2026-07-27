@@ -80,7 +80,25 @@
         "Element IV",
         "WiiM"
       ],
-      "deviceGroupNames": []
+      "deviceGroupNames": [],
+      "extras": {
+        "dacFilter": {
+          "supported": true,
+          "options": [
+            "F-1: Sharp Roll-Off",
+            "F-2: Slow Roll-Off",
+            "F-3: SD Sharp Roll-Off",
+            "F-4: SD Slow Roll-Off",
+            "F-5: Super Slow Roll-Off",
+            "F-6: LD Short Delay"
+          ],
+          "note": "Topping DX1 II only - options list from the official app; other devices sharing this profile do not implement dacFilter"
+        },
+        "gainMode": {
+          "supported": true,
+          "note": "Topping DX1 II only - high/low output gain toggle; other devices sharing this profile do not implement gainMode"
+        }
+      }
     },
     "peq31Band12dBFullShelves": {
       "description": "31-band PEQ, \u00b112 dB, low-shelf + high-shelf, pregain",
@@ -794,10 +812,10 @@
       "deviceGroupNames": []
     },
     "peq5Band12dBFullShelvesNoPregain": {
-      "description": "5-band PEQ, \u00b112 dB, low-shelf + high-shelf, no pregain",
+      "description": "5-band PEQ, \u00b110 dB, Q 0.1-5.0, low-shelf + high-shelf, no pregain (KT Micro chip limits)",
       "peqConstraints": {
-        "minGain": -12,
-        "maxGain": 12,
+        "minGain": -10,
+        "maxGain": 10,
         "maxFilters": 5,
         "supportsLSFilter": true,
         "supportsHSFilter": true,
@@ -811,7 +829,7 @@
         "supportsBandStopFilter": false,
         "supportsConstantQFilter": false,
         "minQ": 0.1,
-        "maxQ": 10.0
+        "maxQ": 5.0
       },
       "deviceNames": [
         "Kiwi Ears-Allegro PRO",

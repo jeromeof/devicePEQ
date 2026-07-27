@@ -1,0 +1,7 @@
+{
+  "name": "rew-peq-capability-test",
+  "private": true,
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}

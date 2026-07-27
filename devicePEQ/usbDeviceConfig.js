@@ -59,7 +59,6 @@ export const usbHidDeviceHandlerConfig = ([
           disconnectOnSave: false,
           defaultResetFiltersValues: [{gain: 0, freq: 100, q: 1, filterType: "PK"}],
           deviceHandlesPregain: false,
-          globalGainBuffer: -5,
           experimental: false,
           availableSlots: [{id: 101, name: "Custom"}],
           dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] }
@@ -682,10 +681,6 @@ export const usbHidDeviceHandlerConfig = ([
       disconnectOnSave: false,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
       deviceHandlesPregain: false,
-      // Walkplay UI and hardware default to -5 dB global gain as a headroom buffer.
-      // The handler will only write the global gain when the required preamp is lower
-      // than this value (i.e. more negative). Set to null to always write.
-      globalGainBuffer: -5,
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}],
       // Display config for extras UI — handler-agnostic labels for dacWorkMode
@@ -769,6 +764,18 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "walkplayPeq10Band10dBPkOnly",
           schemeNo: 16,
+          deviceHandlesPregain: false
+        }
+      },
+      "TANCHJIM-OLA II DSP": {
+        // Matches the walkplayPeq8Band10dBPkOnly SchemeNo10/21 productId group like other
+        // devices on this chip, but the Tanchjim app itself caps Q at 5.00 (not seen in any
+        // other WalkPlay app) — likely a hardware limit specific to this model, so it's
+        // overridden here rather than lowering maxQ for the whole shared scheme.
+        manufacturer: "Tanchjim",
+        modelConfig: {
+          peqConstraintsRef: "walkplayPeq8Band10dBPkOnly",
+          peqConstraintsOverride: { maxQ: 5.0 },
           deviceHandlesPregain: false
         }
       },
@@ -927,8 +934,12 @@ export const usbHidDeviceHandlerConfig = ([
         manufacturer: "CrinEar",
         modelConfig: {
           peqConstraintsRef: "peq10Band10dBFullShelves",
-          schemeNo: 16,
-          deviceHandlesPregain: true
+          schemeNo: 16
+          // deviceHandlesPregain intentionally omitted — falls back to the SchemeNo16
+          // group default (false). The official WalkPlay app writes CMD 0x03 (offset)
+          // directly with no built-in hardware buffer (confirmed from walkplayJS/walkplay-online.js:
+          // Q2.setDacOffset(h.value.offset) — a plain user/preset value, default 0, no auto-gain).
+          // Host must compute and write pregain like every other WalkPlay CB-chip device.
         }
       },
       "Octave": {
@@ -1233,27 +1244,9 @@ export const usbHidDeviceHandlerConfig = ([
         {id: 11, name: "Custom 5"}
       ]
     },
-    // vendorId 0x152A is shared with Topping. Devices below are matched by productId
-    // (via deviceGroups) so they don't fall through to the Fosi Audio defaults/handler.
-    deviceGroups: {
-      "Topping": {
-        // 0x8750 = DX1 II. Uses frame-based protocol with async inputreport listeners.
-        // Reads EQ state via mcuEqCurrentConfig (0x1116) - 88 frame multiframe response.
-        // Writes via eqPreview command (0x111b) - band encoding pending (see TOPPING_EQ_READ_PROTOCOL_REPORT.md).
-        productIds: [0x8750],
-        manufacturer: "Topping",
-        handler: toppingUsbHidHandler,
-        modelConfig: {
-          peqConstraintsRef: "peq10Band12dBFullShelves",
-          firstWritableEQSlot: 0,
-          maxWritableEQSlots: 1,
-          disconnectOnSave: false,
-          deviceHandlesPregain: true,
-          experimental: false,
-          availableSlots: [{id: 0, name: "Custom"}]
-        }
-      }
-    },
+    // Topping USB detection disabled for this release (vendorId 0x152A is shared with
+    // Topping's 0x8750 DX1 II). The handler (toppingUsbHidHandler.js) is kept in the
+    // codebase, but no deviceGroups entry matches it, so it will no longer be detected.
     devices: {
       "Fosi Audio DS3": {
         modelConfig: {

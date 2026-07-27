@@ -257,10 +257,14 @@ export async function test_packetStructure_encodesBiquadCoefficients(assert) {
   assert.equal(bandNum, 1, `band number should be 1, got ${bandNum}`);
   assert.equal(biquadMarker, 3, `biquad marker should be 3, got ${biquadMarker}`);
 
-  // Biquad coefficients should be reasonable magnitude (for flat response they'd be close to 0 or 1<<30)
-  assert.ok(Math.abs(b0) < (2 << 30), `b0 coefficient magnitude should be reasonable, got ${b0}`);
-  assert.ok(Math.abs(b1) < (2 << 30), `b1 coefficient magnitude should be reasonable, got ${b1}`);
-  assert.ok(Math.abs(b2) < (2 << 30), `b2 coefficient magnitude should be reasonable, got ${b2}`);
+  // Biquad coefficients should be reasonable magnitude (for flat response they'd be close to 0 or 1<<30).
+  // NOTE: `2 << 30` overflows 32-bit signed int arithmetic in JS (wraps to
+  // -2147483648), which made this assertion always false regardless of the
+  // actual value — use `2 * 2**30` instead.
+  const REASONABLE_MAGNITUDE = 2 * 2 ** 30;
+  assert.ok(Math.abs(b0) < REASONABLE_MAGNITUDE, `b0 coefficient magnitude should be reasonable, got ${b0}`);
+  assert.ok(Math.abs(b1) < REASONABLE_MAGNITUDE, `b1 coefficient magnitude should be reasonable, got ${b1}`);
+  assert.ok(Math.abs(b2) < REASONABLE_MAGNITUDE, `b2 coefficient magnitude should be reasonable, got ${b2}`);
 }
 
 /**

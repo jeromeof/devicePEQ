@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REW PEQ Capability Test Harness</title>
+</head>
+<body>
+<h3>REW PEQ Capability Test Harness</h3>
+<p>
+  This page is driven by <code>run-capability-test.js</code> via Playwright.
+  It is only meant to be opened manually ONCE, to grant WebHID permission for
+  the target device (native browser chooser can't be automated). After that,
+  the script reconnects silently via <code>navigator.hid.getDevices()</code>.
+</p>
+<button id="pairBtn">Pair Device (manual, one-time)</button>
+<pre id="status">not connected</pre>
+
+<script>
+  // Must be set before peqConstraints.js is imported, since it fetches
+  // peqConstraintsConfig.json relative to this URL.
+  window.DEVICEPEQ_CONFIG_BASE_URL = '/devicePEQ/';
+</script>
+<script type="module">
+  import { usbHidDeviceHandlerConfig } from '/devicePEQ/usbDeviceConfig.js';
+  import { resolveConstraints, loadPeqConstraintsConfig } from '/devicePEQ/peqConstraints.js';
+  import { buildExtras } from '/devicePEQ/deviceExtras.js';
+  import { UsbHIDConnector as UsbHIDConnectorPromise } from '/devicePEQ/usbHidConnector.js';
+
+  // usbHidConnector.js exports an async-IIFE result, i.e. a Promise — must await it
+  // once to get the actual {getDeviceConnected, pushToDevice, ...} methods object.
+  const UsbHIDConnector = await UsbHIDConnectorPromise;
+
+  const statusEl = document.getElementById('status');
+  const setStatus = (obj) => { statusEl.textContent = JSON.stringify(obj, null, 2); };
+
+  let device = null;
+
+  // Build the same {rawDevice, manufacturer, model, modelConfig, handler} shape
+  // that usbHidConnector's getDeviceConnected() builds, but from a raw HIDDevice
+  // we already have permission for (skips the chooser).
+  async function buildDeviceFromRaw(rawDevice) {
+    const vendorConfig = usbHidDeviceHandlerConfig.find(entry =>
+      entry.vendorIds.includes(rawDevice.vendorId)
+    );
+    if (!vendorConfig) throw new Error(`No configuration found for vendor 0x${rawDevice.vendorId.toString(16)}`);
+
+    const model = rawDevice.productName;
+    let deviceDetails = vendorConfig.devices?.[model];
+    if (!deviceDetails && vendorConfig.deviceGroups) {
+      for (const groupConfig of Object.values(vendorConfig.deviceGroups)) {
+        if (Array.isArray(groupConfig.productIds) && groupConfig.productIds.includes(rawDevice.productId)) {
+          deviceDetails = groupConfig;
+          break;
+        }
+      }
+    }
+    deviceDetails = deviceDetails || {};
+
+    const modelConfig = Object.assign(
+      {},
+      vendorConfig.defaultModelConfig || {},
+      deviceDetails.modelConfig || {}
+    );
+
+    await loadPeqConstraintsConfig().catch(() => {});
+    const resolvedConstraints = resolveConstraints(modelConfig);
+    if (resolvedConstraints) Object.assign(modelConfig, resolvedConstraints);
+
+    const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
+    const handler = deviceDetails.handler || vendorConfig.handler;
+
+    if (!rawDevice.opened) await rawDevice.open();
+
+    const built = { rawDevice, manufacturer, model, modelConfig, handler };
+    built.extras = buildExtras(handler, built);
+    return built;
+  }
+
+  window.harness = {
+    // Manual (re)connect — must be triggered by a real user gesture (click).
+    // Even for a device the browser already lists as "Paired", WebHID seems to
+    // require this explicit requestDevice() handshake again after: a Chrome
+    // restart, or the physical device being unplugged/replugged — confirmed by
+    // the official WalkPlay web app (peq.szwalkplay.com) showing this exact
+    // native chooser every time, even though it lists the device as "Paired".
+    // So this is a NORMAL, expected step to re-run periodically, not a one-off.
+    async pairDevice() {
+      device = await UsbHIDConnector.getDeviceConnected();
+      setStatus({ paired: true, model: device?.model, manufacturer: device?.manufacturer });
+      return { model: device?.model, manufacturer: device?.manufacturer, modelConfig: device?.modelConfig };
+    },
+
+    // Silent reconnect using devices already granted in a previous session —
+    // no chooser, safe to call from an automated script. Returns null (never
+    // throws) whenever it can't fully reconnect — including when the device
+    // is *listed* as granted but opening it fails (e.g. stale handle after an
+    // unplug/replug) — so callers can uniformly fall back to pairDevice().
+    async silentConnect() {
+      try {
+        const rawDevices = await navigator.hid.getDevices();
+        if (!rawDevices.length) {
+          setStatus({ paired: false, reason: 'no previously-granted devices' });
+          return null;
+        }
+        // Prefer a device whose vendorId matches a known config.
+        let rawDevice = rawDevices.find(d =>
+          usbHidDeviceHandlerConfig.some(entry => entry.vendorIds.includes(d.vendorId))
+        );
+        if (!rawDevice) {
+          setStatus({ paired: false, reason: 'granted device(s) not in usbDeviceConfig', found: rawDevices.map(d => ({ vendorId: d.vendorId, productId: d.productId, productName: d.productName })) });
+          return null;
+        }
+        device = await buildDeviceFromRaw(rawDevice);
+      } catch (err) {
+        setStatus({ paired: false, reason: `silent reconnect failed: ${err.message}` });
+        return null;
+      }
+      setStatus({ connected: true, model: device.model, manufacturer: device.manufacturer });
+      return { model: device.model, manufacturer: device.manufacturer, modelConfig: device.modelConfig };
+    },
+
+    getModelConfig() {
+      return device?.modelConfig ?? null;
+    },
+
+    async pushFilters(filters, globalGain, slot) {
+      if (!device) throw new Error('not connected');
+      return await UsbHIDConnector.pushToDevice(device, null, slot, globalGain, filters);
+    },
+
+    async enablePEQ(enable, slot) {
+      if (!device) throw new Error('not connected');
+      return await UsbHIDConnector.enablePEQ(device, enable, slot);
+    },
+
+    // Explicitly release the OS-level HID claim. Scripts should call this
+    // before closing the browser — an abrupt browser teardown (killed process,
+    // slow context.close()) doesn't reliably do this itself, and macOS can be
+    // left holding an exclusive claim on the device until it's power-cycled.
+    async disconnect() {
+      if (device?.rawDevice?.opened) {
+        await device.rawDevice.close();
+      }
+      device = null;
+      setStatus({ disconnected: true });
+    },
+
+    async pullFromDevice(slot) {
+      if (!device) throw new Error('not connected');
+      return await UsbHIDConnector.pullFromDevice(device, slot);
+    },
+
+    // Generic passthrough for handler methods beyond the core PEQ API (e.g.
+    // WalkPlay's readGainMode/setGainMode extras) — diagnostic use only.
+    async callHandlerMethod(methodName, ...args) {
+      if (!device) throw new Error('not connected');
+      if (typeof device.handler[methodName] !== 'function') {
+        throw new Error(`handler has no method "${methodName}"`);
+      }
+      return await device.handler[methodName](device, ...args);
+    },
+
+    // True only if we currently hold a live, open handle to the device — does
+    // NOT try to reconnect. Use this to check whether an audio-playing REW
+    // measurement (through the same physical DAC) knocked the WebHID
+    // connection loose, before trusting the next write to it.
+    isConnected() {
+      return !!(device?.rawDevice?.opened);
+    }
+  };
+
+  document.getElementById('pairBtn').addEventListener('click', () => {
+    window.harness.pairDevice().catch(err => setStatus({ error: err.message }));
+  });
+
+  // NOTE: deliberately no auto-connect-on-load here — callers (Node scripts)
+  // control exactly when silentConnect()/pairDevice() run, so nothing races
+  // against the script's own connection attempt.
+</script>
+</body>
+</html>

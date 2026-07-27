@@ -186,40 +186,54 @@ export const conexantUsbHidHandler = (function () {
     const w0 = (2 * Math.PI * freq) / sampleRate;
     const sin_w0 = Math.sin(w0);
     const cos_w0 = Math.cos(w0);
-    const alpha = sin_w0 / (2 * q);
+    const alpha = sin_w0 / (2 * q); // peaking-EQ alpha — correct for PK, NOT for LSQ/HSQ (see below)
 
-    let b0, b1, b2, a1, a2;
+    let a0, a1, a2, b0, b1, b2;
 
     switch (type) {
       case 'PK':  // Peak filter
         b0 = 1 + alpha * A;
         b1 = -2 * cos_w0;
         b2 = 1 - alpha * A;
+        a0 = 1 + alpha / A;
         a1 = -2 * cos_w0;
         a2 = 1 - alpha / A;
         break;
 
       case 'LSQ':  // Low shelf
         {
+          // Proper RBJ/WebAudio shelf-Q alpha — NOT the peaking-EQ alpha
+          // above. Verified against a real WebAudio OfflineAudioContext
+          // BiquadFilterNode on real device captures (see
+          // walkplayHidHandler.js's computeIIRFilter() for the full writeup;
+          // same fix applied here). This function also previously had two
+          // more bugs, now fixed alongside this one: a0 was never computed
+          // for shelf types (normalization below reused the peaking a0
+          // instead), and a2's cos_w0 term had the wrong sign.
+          const shelf_alpha = (sin_w0 / 2) * Math.sqrt((A + 1 / A) * (1 / q - 1) + 2);
           const sqrt_A = Math.sqrt(A);
-          const two_sqrt_A_alpha = 2 * sqrt_A * alpha;
+          const two_sqrt_A_alpha = 2 * sqrt_A * shelf_alpha;
           b0 = A * ((A + 1) - (A - 1) * cos_w0 + two_sqrt_A_alpha);
           b1 = 2 * A * ((A - 1) - (A + 1) * cos_w0);
           b2 = A * ((A + 1) - (A - 1) * cos_w0 - two_sqrt_A_alpha);
+          a0 = (A + 1) + (A - 1) * cos_w0 + two_sqrt_A_alpha;
           a1 = -2 * ((A - 1) + (A + 1) * cos_w0);
-          a2 = (A + 1) - (A - 1) * cos_w0 - two_sqrt_A_alpha;
+          a2 = (A + 1) + (A - 1) * cos_w0 - two_sqrt_A_alpha;
         }
         break;
 
       case 'HSQ':  // High shelf
         {
+          // Same three fixes as LSQ above (proper shelf alpha, own a0, a2 sign).
+          const shelf_alpha = (sin_w0 / 2) * Math.sqrt((A + 1 / A) * (1 / q - 1) + 2);
           const sqrt_A = Math.sqrt(A);
-          const two_sqrt_A_alpha = 2 * sqrt_A * alpha;
+          const two_sqrt_A_alpha = 2 * sqrt_A * shelf_alpha;
           b0 = A * ((A + 1) + (A - 1) * cos_w0 + two_sqrt_A_alpha);
           b1 = -2 * A * ((A - 1) + (A + 1) * cos_w0);
           b2 = A * ((A + 1) + (A - 1) * cos_w0 - two_sqrt_A_alpha);
+          a0 = (A + 1) - (A - 1) * cos_w0 + two_sqrt_A_alpha;
           a1 = 2 * ((A - 1) - (A + 1) * cos_w0);
-          a2 = (A + 1) + (A - 1) * cos_w0 - two_sqrt_A_alpha;
+          a2 = (A + 1) - (A - 1) * cos_w0 - two_sqrt_A_alpha;
         }
         break;
 
@@ -227,12 +241,14 @@ export const conexantUsbHidHandler = (function () {
         b0 = 1;
         b1 = 0;
         b2 = 0;
+        a0 = 1;
         a1 = 0;
         a2 = 0;
     }
 
-    // Normalize by a0 (which is always 1 + alpha / A for peak)
-    const a0_norm = 1 + alpha / A;
+    // Normalize by each type's own a0 (previously always reused the
+    // peaking filter's a0 = 1 + alpha/A, even for shelf types).
+    const a0_norm = a0;
     b0 /= a0_norm;
     b1 /= a0_norm;
     b2 /= a0_norm;
