@@ -1107,6 +1107,31 @@ export const usbHidDeviceHandlerConfig = ([
           baseRegisterOffset: 0x26
         }
       },
+      // UNVERIFIED — "Space Gaming IEM" (0x31B2/0x0001) does not answer the KT Micro
+      // register protocol (reportId 0x4B, "<reg> 00 00 00 <cmd>"); reads time out.
+      // The AuraPEQ web tool drives all 0x31B2 devices with the FiiO/JadeAudio framed
+      // protocol (reportId 2, "AA 0A 00 00 <reg> <len> ... EE"), but it writes
+      // fire-and-forget: its capture on this device shows TX only, never a single RX,
+      // and it prints "Sync Complete" unconditionally. So JA11 is a guess-by-vendor-ID,
+      // not a confirmed protocol. Kept experimental until a device response is observed
+      // or an audible EQ change confirms writes land. Note the FiiO handler scales
+      // pre-gain x10; AuraPEQ's JA11 path uses x2560 — unresolved, reg 0x17 never replied.
+      "Space Gaming IEM": {
+        manufacturer: "KT Micro",
+        handler: fiioUsbHID,
+        modelConfig: {
+          peqConstraintsRef: "peq5Band12dBFullShelves",
+          firstWritableEQSlot: 3,
+          maxWritableEQSlots: 1,
+          disconnectOnSave: true,
+          disabledPresetId: 4,
+          reportId: 2,
+          experimental: true,
+          availableSlots: [
+            {id: 0, name: "Vocal"}, {id: 1, name: "Classic"}, {id: 2, name: "Bass"}, {id: 3, name: "USER1"}
+          ]
+        }
+      },
       "KT02H20 HIFI Audio": {
         manufacturer: "JCally",
         modelConfig: {

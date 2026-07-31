@@ -62,7 +62,6 @@
 //
 
 import { logHidTx, logHidRx } from './deviceDebugLog.js';
-import { extractFilterFromBiquadBytes } from './biquadReverseEngineer.js';
 
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;

@@ -121,6 +121,12 @@
   .failure-chart-panel .stat-row .stat b { color: #d4d4d4; font-weight: 600; }
   .failure-chart-panel .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
   .failure-chart-panel .badge.fail { background: rgba(244,135,113,0.16); color: #f48771; }
+  .fc-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 10px 0 4px; }
+  .fc-controls label { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #9d9d9d; }
+  .fc-controls input[type=range] { width: 116px; accent-color: #4ec9b0; }
+  .fc-controls button { padding: 3px 9px; font-size: 11.5px; }
+  .fc-readout { font-size: 11.5px; color: #9d9d9d; margin: 0 0 6px; }
+  .fc-readout b { color: #4ec9b0; }
   .chart-wrap { position: relative; }
   .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
   .fc-gridline { stroke: #3c3c3c; stroke-width: 1; }
@@ -152,6 +158,35 @@
   .fc-tooltip .fc-row { display: flex; justify-content: space-between; gap: 12px; }
   .fc-tooltip .fc-row .fc-k { color: #9d9d9d; }
   .fc-tooltip .fc-row .fc-v { font-weight: 600; }
+  .insights-panel {
+    margin-top: 14px; border: 1px solid #3c3c3c; border-radius: 8px;
+    padding: 12px 14px; background: #1e1e1e;
+  }
+  .insight {
+    border-left: 3px solid #5a5a5a; padding: 8px 0 8px 12px; margin: 12px 0;
+  }
+  .insight.sev-high { border-left-color: #f48771; }
+  .insight.sev-med { border-left-color: #f0c040; }
+  .insight.sev-info { border-left-color: #3987e5; }
+  .insight.sev-ok { border-left-color: #4ec9b0; }
+  .insight h4 { margin: 0 0 5px; font-size: 13.5px; }
+  .insight .finding { font-size: 12.5px; line-height: 1.55; }
+  .insight .math {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: #9cdcfe; background: #252526;
+    border-radius: 4px; padding: 6px 8px; margin: 6px 0; white-space: pre-wrap;
+  }
+  .insight .caveat { font-size: 11.5px; color: #f0c040; margin-top: 5px; }
+  .insight .next { font-size: 11.5px; color: #9d9d9d; margin-top: 5px; }
+  .insight .next b { color: #d4d4d4; font-weight: 600; }
+  .insights-panel .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .insights-panel .badge.high { background: rgba(244,135,113,0.16); color: #f48771; }
+  .insights-panel .badge.med { background: rgba(240,192,64,0.16); color: #f0c040; }
+  .insights-panel .badge.info { background: rgba(57,135,229,0.16); color: #6fb0f0; }
+  .insights-panel .badge.ok { background: rgba(78,201,176,0.16); color: #4ec9b0; }
+  .insights-panel table.tiny { font-size: 11.5px; margin: 6px 0; }
+  .insights-panel table.tiny th, .insights-panel table.tiny td { padding: 2px 8px 2px 0; text-align: right; }
+  .insights-panel table.tiny th:first-child, .insights-panel table.tiny td:first-child { text-align: left; }
 </style>
 </head>
 <body>
@@ -247,8 +282,8 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
         <h3>Test groups</h3>
         <div class="checklist">
           <label><input type="checkbox" id="grpTypes" checked> Filter type coverage (PK, LSQ, HSQ)</label>
-          <label><input type="checkbox" id="grpGain" checked> Gain sweep (min → max, PK @ 1 kHz)</label>
-          <label><input type="checkbox" id="grpQ" checked> Q sweep (min → max, PK @ 1 kHz)</label>
+          <label><input type="checkbox" id="grpGain" checked> Gain sweep (min → max, PK) — at each sweep frequency below</label>
+          <label><input type="checkbox" id="grpQ" checked> Q sweep (min → max, PK) — at each sweep frequency below</label>
           <label><input type="checkbox" id="grpFreq" checked> Frequency sweep (100 Hz – 10 kHz, PK)</label>
           <label><input type="checkbox" id="grpShelf" checked> Shelf gain extremes (LSQ/HSQ @ min &amp; max gain)</label>
           <label><input type="checkbox" id="grpOther"> Other supported filter types (LP/HP/BP/Notch/AllPass/BandStop/ConstantQ) — shape-fit against a textbook RBJ model (edit the type code if it doesn't match your device's protocol; see note below)</label>
@@ -261,6 +296,8 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
           <div>Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
           <div>Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
           <div>Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz</div>
+          <div>Gain/Q sweep frequencies</div><div><input type="text" id="sweepFreqs" value="100, 1000, 8000" style="width:130px"> Hz
+            <span class="info-icon" title="The Gain sweep and Q sweep are run once at EACH of these frequencies, so a gain or Q error can be told apart from a frequency-dependent one.&#10;&#10;Why it matters: with every Gain/Q case pinned at a single frequency, Insights has only one distinct frequency to regress against, so its frequency-trend fits cannot run at all and a real frequency error can be misread as a Q or gain problem (or missed entirely). Three widely-spaced points — low, mid, high — are the minimum that supports a straight-line fit; the error being visible at 1 kHz but twice as large at 8 kHz is exactly the pattern this catches.&#10;&#10;Cost: case count multiplies by the number of frequencies, and every case is one REW sweep. Enter a single value (e.g. 1000) to restore the old single-frequency behaviour, or add more points for a stronger fit. Values are clamped to 20 Hz-20 kHz and de-duplicated.">ⓘ</span></div>
         </div>
         <p id="disconnectWarning" class="small" style="display:none; color: var(--warn-color, #d95926); font-weight: 600;"></p>
         <p class="small">Shape fit tolerance is the max allowed RMSE (dB) between the measured and theoretical
@@ -314,6 +351,15 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
         <button id="closeFailureChartBtn" class="secondary">✕ Close</button>
       </div>
       <div id="failureChartStats" class="stat-row"></div>
+      <div class="fc-controls">
+        <label>Freq span<input type="range" id="fcSpan" min="0.1" max="4.99" step="0.01" value="4.99"></label>
+        <label>Centre<input type="range" id="fcCentre" min="4.32" max="14.29" step="0.01" value="9.97"></label>
+        <label>Main dB<input type="range" id="fcMainZoom" min="1" max="25" step="0.1" value="1"></label>
+        <label>Residual dB<input type="range" id="fcResZoom" min="1" max="25" step="0.1" value="1"></label>
+        <button id="fcZoomF0" class="secondary">⤢ Zoom to f0</button>
+        <button id="fcResetView" class="secondary">↺ Reset view</button>
+      </div>
+      <div id="fcViewReadout" class="fc-readout"></div>
       <div class="chart-wrap" id="failureChartWrap"></div>
       <div class="legend" id="failureChartLegend"></div>
     </div>
@@ -323,8 +369,24 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     <h2>Step 6 — Summary &amp; Export</h2>
     <div id="summaryBox" class="info-box">Run the test plan to see a summary here.</div>
     <div class="flex">
+      <button id="insightsBtn" disabled>🔍 Insights</button>
       <button id="exportJsonBtn" class="secondary" disabled>⬇️ Export JSON</button>
       <button id="exportCsvBtn" class="secondary" disabled>⬇️ Export CSV</button>
+      <span class="small">Insights looks for a <em>systematic</em> cause across every measured
+        case — a constant level offset, a gain/Q/frequency scale factor, or an error that
+        trends with frequency — and works out the numbers behind it.</span>
+    </div>
+
+    <div id="insightsPanel" class="insights-panel" style="display:none;">
+      <div class="flex" style="justify-content:space-between;">
+        <h3 id="insightsTitle" style="margin:0;">Insights</h3>
+        <button id="closeInsightsBtn" class="secondary">✕ Close</button>
+      </div>
+      <div id="insightsBody"></div>
+      <div class="flex" id="insightsActions" style="margin-top:12px; display:none;">
+        <button id="addSuggestedBtn">➕ Add suggested follow-up tests to the plan</button>
+        <span class="small" id="addSuggestedNote"></span>
+      </div>
     </div>
   </section>
 </div>
@@ -573,6 +635,17 @@ function labelFor(tc) {
   return `${tc.type} @ ${tc.freq}Hz, ${tc.gain >= 0 ? '+' : ''}${tc.gain}dB, Q${tc.q}`;
 }
 
+// Frequencies the Gain and Q sweeps are each replicated across. Falls back to a
+// low/mid/high default rather than a single frequency, because one frequency
+// silently disables every frequency-trend fit in Insights.
+const DEFAULT_SWEEP_FREQS = [100, 1000, 8000];
+function parseSweepFreqs() {
+  const raw = ($('sweepFreqs')?.value ?? '').split(/[,;\s]+/).filter(Boolean).map(Number);
+  const valid = raw.filter((f) => Number.isFinite(f) && f > 0).map(clampFreq).map((f) => Math.round(f));
+  const list = [...new Set(valid)].sort((a, b) => a - b);
+  return list.length ? list : DEFAULT_SWEEP_FREQS;
+}
+
 function generatePlan() {
   if (!constraints) { alert('Connect a device first — the plan is built from its resolved constraints.'); return; }
   const c = constraints;
@@ -594,14 +667,26 @@ function generatePlan() {
     }
   }
 
+  // Gain and Q sweeps run at EVERY sweep frequency, not just 1 kHz. Pinning them
+  // to a single frequency leaves Insights with one distinct frequency to regress
+  // against, which disables its frequency-trend fits entirely — and that is not
+  // hypothetical: a real Q-sweep run (all three cases at 1000 Hz) failed on a
+  // ~1.3% centre-frequency offset and was reported as "centre frequency placement
+  // is accurate", because there was no second frequency to establish otherwise.
+  const sweepFreqs = parseSweepFreqs();
+
   if ($('grpGain').checked) {
     const gains = uniq([minG, minG / 2, maxG / 2, maxG]).filter((g) => g !== 0 && g >= minG && g <= maxG);
-    for (const g of gains) plan.push(makeCase('Gain Sweep', 'PK', 1000, g, stdQ, 1000, g));
+    for (const f of sweepFreqs) {
+      for (const g of gains) plan.push(makeCase('Gain Sweep', 'PK', f, g, stdQ, f, g));
+    }
   }
 
   if ($('grpQ').checked) {
     const qs = uniq([minQ, (minQ + maxQ) / 2, maxQ]);
-    for (const q of qs) plan.push(makeCase('Q Sweep', 'PK', 1000, stdGain, q, 1000, stdGain));
+    for (const f of sweepFreqs) {
+      for (const q of qs) plan.push(makeCase('Q Sweep', 'PK', f, stdGain, q, f, stdGain));
+    }
   }
 
   if ($('grpFreq').checked) {
@@ -681,7 +766,19 @@ function renderPlan() {
     tbody.appendChild(tr);
   }
   table.style.display = testPlan.length ? '' : 'none';
-  $('planCount').textContent = `${testPlan.length} test case(s) generated`;
+
+  // Surface the sweep cost and, more importantly, warn when the plan has too few
+  // distinct frequencies for Insights to fit a frequency trend at all — that
+  // silent limitation is what let a real 1.3% frequency offset be reported as
+  // "placement is accurate".
+  const distinctFreqs = new Set(testPlan.filter((t) => t.include).map((t) => t.freq));
+  const included = testPlan.filter((t) => t.include).length;
+  let note = `${testPlan.length} test case(s) generated`;
+  if (included) note += ` — ${included} ticked, ${distinctFreqs.size} distinct frequency(ies), ≈1 REW sweep each`;
+  if (distinctFreqs.size < 3) {
+    note += `. ⚠️ Fewer than 3 distinct frequencies: Insights cannot fit a frequency trend, so a frequency-dependent error may be misattributed to gain or Q. Add more values to "Gain/Q sweep frequencies" and regenerate.`;
+  }
+  $('planCount').textContent = note;
 }
 
 // ---------------------------------------------------------------------------
@@ -835,22 +932,69 @@ function fmtFreqLabel(f) {
 }
 
 const FC_FREQ_MIN = 20, FC_FREQ_MAX = 20000;
-const FC_LOG_MIN = Math.log10(FC_FREQ_MIN), FC_LOG_SPAN = Math.log10(FC_FREQ_MAX) - FC_LOG_MIN;
-const FC_FREQ_TICKS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const FC_OCT_MIN = Math.log2(FC_FREQ_MIN), FC_OCT_MAX = Math.log2(FC_FREQ_MAX);
+const FC_OCT_FULL = FC_OCT_MAX - FC_OCT_MIN; // ~9.97 octaves
 const FC_W = 780;
 const FC_MARGIN = { left: 52, right: 14 };
 const FC_PLOT_W = FC_W - FC_MARGIN.left - FC_MARGIN.right;
 const FC_MAIN_H = 220, FC_GAP = 24, FC_RES_H = 96, FC_AXIS_H = 24;
 const FC_TOTAL_H = FC_MAIN_H + FC_GAP + FC_RES_H + FC_AXIS_H + 6;
+// Curve resolution INSIDE the visible window. The stored comparison uses
+// EVAL_FREQS (200 points across the whole 20Hz-20kHz span), which is far too
+// coarse once zoomed — a 0.3-octave window would contain about 6 of them and
+// render as a jagged polyline pretending to be a curve. Every redraw therefore
+// re-samples the measured and theoretical curves across the visible range only.
+const FC_DRAW_POINTS = 420;
 
-function fcXPixel(freq) {
-  return FC_MARGIN.left + (Math.log10(freq) - FC_LOG_MIN) / FC_LOG_SPAN * FC_PLOT_W;
+// X mapping is view-dependent (log2 so the zoom slider reads in octaves).
+function fcXPixel(freq, view) {
+  return FC_MARGIN.left + ((Math.log2(freq) - view.octLo) / (view.octHi - view.octLo)) * FC_PLOT_W;
 }
 function fcYPixelFactory(domainMin, domainMax, plotTop, plotH) {
   return (v) => plotTop + (domainMax - v) / (domainMax - domainMin) * plotH;
 }
-function fcPathFor(points, yFn, key) {
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${fcXPixel(p.freq).toFixed(2)},${yFn(typeof key === 'function' ? key(p) : p[key]).toFixed(2)}`).join(' ');
+function fcPathFor(points, yFn, key, view) {
+  return points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${fcXPixel(p.freq, view).toFixed(2)},${yFn(typeof key === 'function' ? key(p) : p[key]).toFixed(2)}`)
+    .join(' ');
+}
+
+// Frequency gridlines for whatever range is visible. The old fixed
+// 20/50/100/…/20k list degenerates when zoomed: a 900-1100Hz window would show
+// exactly one gridline. Walks from roundest to finest tick set and takes the
+// first that yields enough lines.
+function fcFreqTicks(loHz, hiHz) {
+  // Relative epsilon, not a bare >=: the window bounds come back through
+  // Math.pow(2, Math.log2(f)), so the full-band low edge is 20.000000000000004
+  // and the high edge 19999.999999999996. An exact comparison silently drops the
+  // 20 Hz and 20 kHz gridlines at the default zoom.
+  const tickLo = loHz * (1 - 1e-9), tickHi = hiHz * (1 + 1e-9);
+  const tiers = [[1, 2, 5], [1, 1.5, 2, 3, 5, 7], [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8]];
+  for (const mults of tiers) {
+    const out = [];
+    for (let d = 0; d <= 5; d++) {
+      for (const m of mults) {
+        const v = m * Math.pow(10, d);
+        if (v >= tickLo && v <= tickHi) out.push(v);
+      }
+    }
+    if (out.length >= 4) {
+      const stride = Math.ceil(out.length / 12);
+      return stride > 1 ? out.filter((_, i) => i % stride === 0) : out;
+    }
+  }
+  // Very narrow window — no "nice" value lands inside it, so fall back to
+  // evenly log-spaced ticks and let the labels carry the precision.
+  const lo = Math.log2(loHz), hi = Math.log2(hiHz);
+  return Array.from({ length: 7 }, (_, i) => Math.pow(2, lo + ((hi - lo) * i) / 6));
+}
+
+// Label precision has to follow the zoom: "1.00k" is useless in a window only a
+// few Hz wide.
+function fcFreqLabel(f, spanOct) {
+  if (spanOct > 2) return fmtFreqLabel(f);
+  if (spanOct > 0.5) return f >= 1000 ? (f / 1000).toFixed(2) + 'k' : f.toFixed(0);
+  return f >= 1000 ? (f / 1000).toFixed(3) + 'k' : f.toFixed(1);
 }
 
 function renderFailureChart(tc) {
@@ -862,79 +1006,200 @@ function renderFailureChart(tc) {
   const { compensated } = compensateForPregain(comparison);
   const estimatedQ = tc.estimatedQ ?? filterSpec.q;
 
-  const points = compensated.points.map((p) => ({
-    freq: p.freq,
-    measured: p.measuredDelta,
-    theoreticalRequested: p.expectedDelta,
-    theoreticalBestFit: theoreticalMagnitudeDb({ ...filterSpec, q: estimatedQ }, p.freq, sampleRateUsed),
-  }));
+  // The third curve used to be hard-wired to "theoretical @ best-fit Q", which
+  // makes this chart actively unhelpful whenever Q is not what's wrong: on a
+  // case failing from a small centre-frequency offset, the best-fit Q comes back
+  // at ~100% of requested and the curve lands exactly on top of the requested
+  // one, showing nothing. Ask the attribution which parameter actually explains
+  // the residual and plot THAT hypothesis instead.
+  const metrics = caseMetrics(tc, sampleRateUsed);
+  const dominant = metrics?.dominant ?? null;
+  let bestFitSpec = { ...filterSpec, q: estimatedQ };
+  let bestFitLabel = `best-fit Q=${estimatedQ.toFixed(2)}`;
+  if (dominant) {
+    if (dominant.param === 'freq') {
+      bestFitSpec = { ...filterSpec, freq: filterSpec.freq * dominant.mult };
+      bestFitLabel = `best-fit frequency=${(filterSpec.freq * dominant.mult).toFixed(0)}Hz (${dominant.mult.toFixed(4)}x)`;
+    } else if (dominant.param === 'gain') {
+      bestFitSpec = { ...filterSpec, gain: filterSpec.gain * dominant.mult };
+      bestFitLabel = `best-fit gain=${fmtDbSigned(filterSpec.gain * dominant.mult)} (${dominant.mult.toFixed(4)}x)`;
+    } else {
+      bestFitSpec = { ...filterSpec, q: filterSpec.q * dominant.mult };
+      bestFitLabel = `best-fit Q=${(filterSpec.q * dominant.mult).toFixed(3)} (${dominant.mult.toFixed(4)}x)`;
+    }
+  }
 
+  // Everything above is expensive (caseMetrics runs three grid searches), so it
+  // happens once per Explain click. The zoom sliders only re-run drawFailureChart().
+  fcState = {
+    tc, filterSpec, bestFitSpec, bestFitLabel, sampleRateUsed, toleranceUsed,
+    pregainDb: tc.pregainDb ?? 0,
+    metrics, dominant,
+  };
+  fcView = {
+    centreOct: Math.log2(clampFreq(filterSpec.freq)),
+    halfSpanOct: FC_OCT_FULL / 2, // start at the full band, as before
+    mainZoom: 1,
+    resZoom: 1,
+  };
+  syncFcControls();
+
+  $('failureChartTitle').textContent =
+    `#${tc.id} ${filterSpec.type} @ ${filterSpec.freq}Hz, ${filterSpec.gain >= 0 ? '+' : ''}${filterSpec.gain}dB, requested Q ${filterSpec.q}`;
+  const attributionStats = metrics
+    ? `<span class="stat">dominant cause <b>${dominant ? PARAM_LABEL[dominant.param] + ' ' + dominant.mult.toFixed(4) + 'x' : 'no single parameter'}</b></span>
+       <span class="stat">residual explained — freq <b>${(metrics.attribution.freq.explained * 100).toFixed(0)}%</b>,
+         gain <b>${metrics.attribution.gain.explained != null ? (metrics.attribution.gain.explained * 100).toFixed(0) + '%' : '—'}</b>,
+         Q <b>${(metrics.attribution.q.explained * 100).toFixed(0)}%</b></span>`
+    : '';
+  $('failureChartStats').innerHTML = `
+    <span class="badge fail">✕ fail — RMSE ${tc.shapeRmse.toFixed(2)}dB (tol ${toleranceUsed}dB)</span>
+    <span class="stat">pregain <b>${fmtDbSigned(tc.pregainDb)}</b></span>
+    ${attributionStats}
+  `;
+  $('failureChartLegend').innerHTML = `
+    <div class="legend-item"><span class="swatch s1"></span>Measured (pregain-compensated)</div>
+    <div class="legend-item"><span class="swatch s2"></span>Theoretical as requested (${filterSpec.freq}Hz, ${fmtDbSigned(filterSpec.gain)}, Q${filterSpec.q})</div>
+    <div class="legend-item"><span class="swatch s3"></span>Theoretical @ ${bestFitLabel}</div>
+    <div class="legend-item"><span class="band-swatch"></span>±${toleranceUsed}dB tolerance band</div>
+  `;
+
+  const panel = $('failureChartPanel');
+  panel.style.display = '';
+  drawFailureChart();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ---------------------------------------------------------------------------
+// Zoomable redraw. Cheap by design — no fits, no grid searches — so the sliders
+// stay responsive; it only re-samples curves and rebuilds the SVG.
+// ---------------------------------------------------------------------------
+let fcState = null;
+let fcView = { centreOct: Math.log2(1000), halfSpanOct: FC_OCT_FULL / 2, mainZoom: 1, resZoom: 1 };
+
+// Resolve the view into a concrete window, keeping it inside 20Hz-20kHz. Pushing
+// the window against an edge slides it rather than shrinking it, so the span
+// slider always means what it says.
+function fcWindow(view) {
+  const half = Math.min(view.halfSpanOct, FC_OCT_FULL / 2);
+  let octLo = view.centreOct - half, octHi = view.centreOct + half;
+  if (octLo < FC_OCT_MIN) { octLo = FC_OCT_MIN; octHi = Math.min(FC_OCT_MAX, octLo + 2 * half); }
+  if (octHi > FC_OCT_MAX) { octHi = FC_OCT_MAX; octLo = Math.max(FC_OCT_MIN, octHi - 2 * half); }
+  return { octLo, octHi, loHz: Math.pow(2, octLo), hiHz: Math.pow(2, octHi), spanOct: octHi - octLo };
+}
+
+// Re-sample measured + both theoretical curves across the visible window.
+// The pregain offset is the one taken from the FULL-curve fit and is NOT
+// re-estimated here: re-fitting it on a zoomed window would shift the measured
+// curve every time the view changed, which would look like the zoom altering
+// the data.
+function fcPoints(view) {
+  const { octLo, octHi } = fcWindow(view);
+  const { filterSpec, bestFitSpec, sampleRateUsed, pregainDb, tc } = fcState;
+  const out = [];
+  for (let i = 0; i < FC_DRAW_POINTS; i++) {
+    const freq = Math.pow(2, octLo + ((octHi - octLo) * i) / (FC_DRAW_POINTS - 1));
+    const measured = magnitudeAt(tc.fr, freq) - magnitudeAt(baseline.fr, freq) - pregainDb;
+    out.push({
+      freq,
+      measured,
+      theoreticalRequested: theoreticalMagnitudeDb(filterSpec, freq, sampleRateUsed),
+      theoreticalBestFit: theoreticalMagnitudeDb(bestFitSpec, freq, sampleRateUsed),
+    });
+  }
+  return out;
+}
+
+function drawFailureChart() {
+  if (!fcState) return;
+  const { filterSpec, toleranceUsed } = fcState;
+  const view = fcView;
+  const win = fcWindow(view);
+  const points = fcPoints(view);
+
+  // Y domains auto-fit the VISIBLE data, then the zoom multiplier tightens them
+  // about the same centre — so zooming X already rescales Y usefully, and the Y
+  // slider is a further magnification on top rather than a fight with autoscale.
   const mainVals = points.flatMap((p) => [p.measured, p.theoreticalRequested, p.theoreticalBestFit]);
   const mainMin = Math.min(...mainVals), mainMax = Math.max(...mainVals);
-  const pad = Math.max(0.3, (mainMax - mainMin) * 0.08);
-  const mainDomain = [Math.floor((mainMin - pad) * 2) / 2, Math.ceil((mainMax + pad) * 2) / 2];
+  const mainMid = (mainMin + mainMax) / 2;
+  const mainHalf = Math.max(0.15, ((mainMax - mainMin) / 2) * 1.08) / view.mainZoom;
+  const mainDomain = [mainMid - mainHalf, mainMid + mainHalf];
 
   const resVals = points.map((p) => p.measured - p.theoreticalRequested);
-  const resAbsMax = Math.max(0.6, ...resVals.map(Math.abs)) * 1.15;
+  const resAbsMax = Math.max(0.05, Math.max(...resVals.map(Math.abs)) * 1.15) / view.resZoom;
   const resDomain = [-resAbsMax, resAbsMax];
 
   const mainTop = 6;
   const resTop = mainTop + FC_MAIN_H + FC_GAP;
   const yMain = fcYPixelFactory(mainDomain[0], mainDomain[1], mainTop, FC_MAIN_H);
   const yRes = fcYPixelFactory(resDomain[0], resDomain[1], resTop, FC_RES_H);
-  const mainYTicks = niceTicks(mainDomain[0], mainDomain[1], 5);
-  const resYTicks = niceTicks(resDomain[0], resDomain[1], 5);
+  const mainYTicks = niceTicks(mainDomain[0], mainDomain[1], 5).filter((v) => v >= mainDomain[0] && v <= mainDomain[1]);
+  const resYTicks = niceTicks(resDomain[0], resDomain[1], 5).filter((v) => v >= resDomain[0] && v <= resDomain[1]);
+  const dbLabel = (v) => (Math.abs(v) < 0.995 ? v.toFixed(2) : v.toFixed(mainHalf < 2 ? 2 : 1));
+  const freqTicks = fcFreqTicks(win.loHz, win.hiHz);
 
+  // Zoomed views push curves outside the plot box, so both plots get clipped.
   const svg = `
     <svg viewBox="0 0 ${FC_W} ${FC_TOTAL_H}" preserveAspectRatio="xMidYMid meet">
-      ${FC_FREQ_TICKS.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f)}" x2="${fcXPixel(f)}" y1="${mainTop}" y2="${mainTop + FC_MAIN_H}" />`).join('')}
+      <defs>
+        <clipPath id="fc-clip-main"><rect x="${FC_MARGIN.left}" y="${mainTop}" width="${FC_PLOT_W}" height="${FC_MAIN_H}" /></clipPath>
+        <clipPath id="fc-clip-res"><rect x="${FC_MARGIN.left}" y="${resTop}" width="${FC_PLOT_W}" height="${FC_RES_H}" /></clipPath>
+      </defs>
+      ${freqTicks.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f, win)}" x2="${fcXPixel(f, win)}" y1="${mainTop}" y2="${mainTop + FC_MAIN_H}" />`).join('')}
       ${mainYTicks.map((v) => `<line class="fc-gridline" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yMain(v)}" y2="${yMain(v)}" />`).join('')}
-      ${mainYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yMain(v) + 3}" text-anchor="end">${v}</text>`).join('')}
+      ${mainYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yMain(v) + 3}" text-anchor="end">${dbLabel(v)}</text>`).join('')}
       <text class="fc-axis-title" x="${FC_MARGIN.left}" y="${mainTop - 2}" text-anchor="start">dB (rel. baseline)</text>
       <line class="fc-baseline-axis" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left}" y1="${mainTop}" y2="${mainTop + FC_MAIN_H}" />
-      <path class="fc-series-line fc-s2" d="${fcPathFor(points, yMain, 'theoreticalRequested')}" />
-      <path class="fc-series-line fc-s3" d="${fcPathFor(points, yMain, 'theoreticalBestFit')}" />
-      <path class="fc-series-line fc-s1" d="${fcPathFor(points, yMain, 'measured')}" />
+      <g clip-path="url(#fc-clip-main)">
+        <path class="fc-series-line fc-s2" d="${fcPathFor(points, yMain, 'theoreticalRequested', win)}" />
+        <path class="fc-series-line fc-s3" d="${fcPathFor(points, yMain, 'theoreticalBestFit', win)}" />
+        <path class="fc-series-line fc-s1" d="${fcPathFor(points, yMain, 'measured', win)}" />
+      </g>
 
-      <rect class="fc-band-fill" x="${FC_MARGIN.left}" y="${yRes(toleranceUsed)}" width="${FC_PLOT_W}" height="${yRes(-toleranceUsed) - yRes(toleranceUsed)}" />
-      ${FC_FREQ_TICKS.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f)}" x2="${fcXPixel(f)}" y1="${resTop}" y2="${resTop + FC_RES_H}" />`).join('')}
+      <rect class="fc-band-fill" x="${FC_MARGIN.left}" y="${Math.max(resTop, yRes(toleranceUsed))}" width="${FC_PLOT_W}" height="${Math.max(0, Math.min(resTop + FC_RES_H, yRes(-toleranceUsed)) - Math.max(resTop, yRes(toleranceUsed)))}" />
+      ${freqTicks.map((f) => `<line class="fc-gridline" x1="${fcXPixel(f, win)}" x2="${fcXPixel(f, win)}" y1="${resTop}" y2="${resTop + FC_RES_H}" />`).join('')}
       ${resYTicks.map((v) => `<line class="fc-gridline" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yRes(v)}" y2="${yRes(v)}" />`).join('')}
-      ${resYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yRes(v) + 3}" text-anchor="end">${v}</text>`).join('')}
-      <text class="fc-axis-title" x="${FC_MARGIN.left}" y="${resTop - 2}" text-anchor="start">measured − theoretical (Q=${filterSpec.q})</text>
+      ${resYTicks.map((v) => `<text class="fc-tick-label" x="${FC_MARGIN.left - 8}" y="${yRes(v) + 3}" text-anchor="end">${v.toFixed(resAbsMax < 0.5 ? 3 : 2)}</text>`).join('')}
+      <text class="fc-axis-title" x="${FC_MARGIN.left}" y="${resTop - 2}" text-anchor="start">measured − theoretical (as requested)</text>
       <line class="fc-zero-line" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left + FC_PLOT_W}" y1="${yRes(0)}" y2="${yRes(0)}" />
       <line class="fc-baseline-axis" x1="${FC_MARGIN.left}" x2="${FC_MARGIN.left}" y1="${resTop}" y2="${resTop + FC_RES_H}" />
-      <path class="fc-series-line fc-s1" d="${fcPathFor(points, yRes, (p) => p.measured - p.theoreticalRequested)}" />
+      <g clip-path="url(#fc-clip-res)">
+        <path class="fc-series-line fc-s1" d="${fcPathFor(points, yRes, (p) => p.measured - p.theoreticalRequested, win)}" />
+      </g>
 
-      ${FC_FREQ_TICKS.map((f) => `<text class="fc-tick-label" x="${fcXPixel(f)}" y="${resTop + FC_RES_H + 16}" text-anchor="middle">${fmtFreqLabel(f)}</text>`).join('')}
+      ${freqTicks.map((f) => `<text class="fc-tick-label" x="${fcXPixel(f, win)}" y="${resTop + FC_RES_H + 16}" text-anchor="middle">${fcFreqLabel(f, win.spanOct)}</text>`).join('')}
 
       <line class="fc-crosshair" id="fc-crosshair" x1="0" x2="0" y1="${mainTop}" y2="${resTop + FC_RES_H}" style="display:none" />
-      <circle class="fc-hover-dot" id="fc-dot-measured" r="3.5" fill="#3987e5" style="display:none" />
-      <circle class="fc-hover-dot" id="fc-dot-req" r="3.5" fill="#d95926" style="display:none" />
-      <circle class="fc-hover-dot" id="fc-dot-best" r="3.5" fill="#199e70" style="display:none" />
-      <circle class="fc-hover-dot" id="fc-dot-res" r="3.5" fill="#3987e5" style="display:none" />
+      <g clip-path="url(#fc-clip-main)">
+        <circle class="fc-hover-dot" id="fc-dot-measured" r="3.5" fill="#3987e5" style="display:none" />
+        <circle class="fc-hover-dot" id="fc-dot-req" r="3.5" fill="#d95926" style="display:none" />
+        <circle class="fc-hover-dot" id="fc-dot-best" r="3.5" fill="#199e70" style="display:none" />
+      </g>
+      <g clip-path="url(#fc-clip-res)">
+        <circle class="fc-hover-dot" id="fc-dot-res" r="3.5" fill="#3987e5" style="display:none" />
+      </g>
       <rect id="fc-hover-rect" x="${FC_MARGIN.left}" y="${mainTop}" width="${FC_PLOT_W}" height="${resTop + FC_RES_H - mainTop}" fill="transparent" />
     </svg>
   `;
-
-  $('failureChartTitle').textContent =
-    `#${tc.id} ${filterSpec.type} @ ${filterSpec.freq}Hz, ${filterSpec.gain >= 0 ? '+' : ''}${filterSpec.gain}dB, requested Q ${filterSpec.q}`;
-  $('failureChartStats').innerHTML = `
-    <span class="badge fail">✕ fail — RMSE ${tc.shapeRmse.toFixed(2)}dB (tol ${toleranceUsed}dB)</span>
-    <span class="stat">pregain <b>${fmtDbSigned(tc.pregainDb)}</b></span>
-    <span class="stat">effective Q <b>${estimatedQ.toFixed(2)} (${((tc.qRatio ?? estimatedQ / filterSpec.q) * 100).toFixed(0)}% of requested)</b></span>
-    <span class="stat">RMSE @ effective Q <b>${(tc.qRmseAtEstimate ?? 0).toFixed(3)}dB</b></span>
-  `;
   $('failureChartWrap').innerHTML = svg + '<div class="fc-tooltip" id="fc-tooltip"></div>';
-  $('failureChartLegend').innerHTML = `
-    <div class="legend-item"><span class="swatch s1"></span>Measured (pregain-compensated)</div>
-    <div class="legend-item"><span class="swatch s2"></span>Theoretical @ requested Q=${filterSpec.q}</div>
-    <div class="legend-item"><span class="swatch s3"></span>Theoretical @ effective Q=${estimatedQ.toFixed(2)}</div>
-    <div class="legend-item"><span class="band-swatch"></span>±${toleranceUsed}dB tolerance band</div>
-  `;
 
-  const panel = $('failureChartPanel');
-  panel.style.display = '';
-  const svgEl = panel.querySelector('svg');
+  // Readout, including an honest note when the zoom has gone finer than the
+  // measurement itself — past that point the "detail" is REW's interpolation
+  // between bins, not resolved data.
+  const binsInView = (win.hiHz - win.loHz) / (fcState.tc.fr.freqStep || 1);
+  $('fcViewReadout').innerHTML =
+    `<b>${fcFreqLabel(win.loHz, win.spanOct)} – ${fcFreqLabel(win.hiHz, win.spanOct)} Hz</b> `
+    + `(${win.spanOct.toFixed(2)} oct) &nbsp;·&nbsp; main ±${mainHalf.toFixed(2)} dB &nbsp;·&nbsp; residual ±${resAbsMax.toFixed(3)} dB`
+    + (binsInView < 40
+      ? ` &nbsp;·&nbsp; <span style="color:#f0c040">⚠️ only ~${Math.max(1, Math.round(binsInView))} measured bin(s) in view (${(fcState.tc.fr.freqStep || 1).toFixed(2)} Hz resolution) — finer detail is interpolation, not data</span>`
+      : '');
+
+  wireFailureChartHover(points, yMain, yRes, win, mainTop, resTop);
+}
+
+function wireFailureChartHover(points, yMain, yRes, win, mainTop, resTop) {
+  const svgEl = $('failureChartWrap').querySelector('svg');
   const rectEl = $('fc-hover-rect');
   const tooltipEl = $('fc-tooltip');
   const crosshairEl = $('fc-crosshair');
@@ -946,11 +1211,10 @@ function renderFailureChart(tc) {
     const mouseX = (evt.clientX - bbox.left) * scale;
     const clampedX = Math.min(Math.max(mouseX, FC_MARGIN.left), FC_MARGIN.left + FC_PLOT_W);
     const t = (clampedX - FC_MARGIN.left) / FC_PLOT_W;
-    const freq = Math.pow(10, FC_LOG_MIN + t * FC_LOG_SPAN);
-    let idx = Math.round((Math.log10(freq) - FC_LOG_MIN) / FC_LOG_SPAN * (points.length - 1));
+    let idx = Math.round(t * (points.length - 1));
     idx = Math.min(Math.max(idx, 0), points.length - 1);
     const p = points[idx];
-    const px = fcXPixel(p.freq);
+    const px = fcXPixel(p.freq, win);
     const residual = p.measured - p.theoreticalRequested;
 
     crosshairEl.setAttribute('x1', px); crosshairEl.setAttribute('x2', px); crosshairEl.style.display = '';
@@ -960,10 +1224,10 @@ function renderFailureChart(tc) {
     dotRes.setAttribute('cx', px); dotRes.setAttribute('cy', yRes(residual)); dotRes.style.display = '';
 
     tooltipEl.innerHTML = `
-      <div class="fc-freq">${fmtFreqLabel(p.freq)}</div>
+      <div class="fc-freq">${win.spanOct > 1 ? fmtFreqLabel(p.freq) : p.freq.toFixed(1) + ' Hz'}</div>
       <div class="fc-row"><span class="fc-k">Measured</span><span class="fc-v">${fmtDbSigned(p.measured)}</span></div>
-      <div class="fc-row"><span class="fc-k">Theoretical (Q=${filterSpec.q})</span><span class="fc-v">${fmtDbSigned(p.theoreticalRequested)}</span></div>
-      <div class="fc-row"><span class="fc-k">Theoretical (Q=${estimatedQ.toFixed(2)})</span><span class="fc-v">${fmtDbSigned(p.theoreticalBestFit)}</span></div>
+      <div class="fc-row"><span class="fc-k">As requested</span><span class="fc-v">${fmtDbSigned(p.theoreticalRequested)}</span></div>
+      <div class="fc-row"><span class="fc-k">Best fit</span><span class="fc-v">${fmtDbSigned(p.theoreticalBestFit)}</span></div>
       <div class="fc-row"><span class="fc-k">Residual</span><span class="fc-v">${fmtDbSigned(residual)}</span></div>
     `;
     tooltipEl.style.display = 'block';
@@ -981,9 +1245,40 @@ function renderFailureChart(tc) {
   rectEl.addEventListener('mousemove', handleMove);
   rectEl.addEventListener('mouseleave', handleLeave);
   rectEl.addEventListener('touchmove', (e) => { handleMove(e.touches[0]); e.preventDefault(); }, { passive: false });
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
+
+// Controls are static markup wired once; only their values change per case.
+function syncFcControls() {
+  $('fcSpan').value = String(fcView.halfSpanOct);
+  $('fcCentre').value = String(fcView.centreOct);
+  $('fcMainZoom').value = String(fcView.mainZoom);
+  $('fcResZoom').value = String(fcView.resZoom);
+}
+['fcSpan', 'fcCentre', 'fcMainZoom', 'fcResZoom'].forEach((id) => {
+  $(id).addEventListener('input', () => {
+    fcView = {
+      halfSpanOct: Number($('fcSpan').value),
+      centreOct: Number($('fcCentre').value),
+      mainZoom: Number($('fcMainZoom').value),
+      resZoom: Number($('fcResZoom').value),
+    };
+    drawFailureChart();
+  });
+});
+$('fcResetView').addEventListener('click', () => {
+  if (!fcState) return;
+  fcView = { centreOct: Math.log2(clampFreq(fcState.filterSpec.freq)), halfSpanOct: FC_OCT_FULL / 2, mainZoom: 1, resZoom: 1 };
+  syncFcControls();
+  drawFailureChart();
+});
+// The one zoom you almost always want on a failing case: tight around f0, where
+// a frequency/Q/gain error actually shows.
+$('fcZoomF0').addEventListener('click', () => {
+  if (!fcState) return;
+  fcView = { centreOct: Math.log2(clampFreq(fcState.filterSpec.freq)), halfSpanOct: 1, mainZoom: 1, resZoom: 1 };
+  syncFcControls();
+  drawFailureChart();
+});
 
 $('resultsTable').querySelector('tbody').addEventListener('click', (e) => {
   const btn = e.target.closest('.explain-btn');
@@ -1028,6 +1323,13 @@ function renderSummary() {
   box.textContent = text;
   $('exportJsonBtn').disabled = false;
   $('exportCsvBtn').disabled = false;
+  // Insights needs 2+ completed shape-fit cases with stored curves to have
+  // anything to regress across — a single case can't show a systematic pattern.
+  const analysable = testPlan.filter((t) => ['pass', 'fail'].includes(t.status) && hasModel(t.type) && t.fr && t.usedFilterSpec);
+  $('insightsBtn').disabled = analysable.length < 2;
+  $('insightsBtn').title = analysable.length < 2
+    ? 'Needs at least 2 completed shape-fit (PK/LSQ/HSQ/…) cases to look for a systematic cause'
+    : `Analyse ${analysable.length} measured cases for a common cause`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1152,6 +1454,706 @@ $('runBtn').addEventListener('click', async () => {
 });
 
 $('stopBtn').addEventListener('click', () => { stopRequested = true; $('runStatus').textContent = 'stopping after current test…'; });
+
+// ---------------------------------------------------------------------------
+// Insights — cross-test-case diagnosis
+//
+// The per-row "Explain" chart answers "why did THIS case fail?". This answers
+// the different question: "is there one systematic cause behind ALL of them?"
+// A single case failing by 3dB is ambiguous; the same case failing by exactly
+// half the requested gain at every gain, or drifting steadily with frequency,
+// names the bug. Everything here is derived on demand from the stored raw
+// curves (tc.fr + baseline.fr), so nothing extra is kept per test case.
+//
+// Deliberately does NOT reuse per-row tc.estimatedQ/tc.pregainDb: those are
+// only populated for FAILED cases (and Q only when `significant`), whereas a
+// trend needs the passing cases too — they're the points that anchor the
+// regression at ratio ≈ 1.
+// ---------------------------------------------------------------------------
+const SR_CANDIDATES = [44100, 48000, 88200, 96000, 176400, 192000];
+
+function medianOf(vals) {
+  const s = [...vals].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+// Median absolute deviation — spread measure that a single wild outlier can't
+// inflate the way a standard deviation can. Used to decide whether a set of
+// per-case estimates is a tight cluster (systematic) or scatter (noise).
+function madOf(vals) {
+  const m = medianOf(vals);
+  return medianOf(vals.map((v) => Math.abs(v - m)));
+}
+
+// Ordinary least squares y = slope*x + intercept, plus r² so a "trend" can be
+// distinguished from a cloud. Returns null when x has no spread (e.g. every
+// case used the same frequency — nothing to regress against).
+function linearFit(xs, ys) {
+  const n = xs.length;
+  if (n < 3) return null;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx, dy = ys[i] - my;
+    sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+  }
+  if (sxx <= 1e-12) return null;
+  const slope = sxy / sxx;
+  return {
+    slope, intercept: my - slope * mx, n,
+    r2: syy > 1e-12 ? (sxy * sxy) / (sxx * syy) : 1,
+  };
+}
+
+// RMSE of `points` against `spec` AFTER removing the best-fit constant level
+// offset for that particular spec — i.e. "how well does this hypothesis explain
+// the shape, ignoring overall level?".
+//
+// Fitting the offset per candidate (rather than compensating once up front
+// against the requested spec) is what makes these searches unbiased, and it is
+// not a nicety: compensateForPregain() estimates the offset as the median
+// residual, and with a broad filter more than half the evaluation points carry
+// real residual, so part of a genuine GAIN error gets absorbed into the
+// "pregain" and the gain search then inflates to compensate. Measured on a
+// synthetic device applying exactly 0.5x gain: compensate-first recovered
+// 0.53x (and invented a -0.28dB pregain that did not exist); fitting offset
+// and gain jointly recovers 0.500x. Same correction applies to the frequency
+// and Q searches below.
+// Is a fitted slope a real trend, or scatter? Compares the change the slope
+// predicts ACROSS THE MEASURED SPAN against the residual scatter about the line.
+//
+// Thresholding on |slope| alone is wrong for the same reason thresholding on a
+// ratio's size is wrong: the same slope means very different things over 1
+// octave and over 7, and a hand-picked magnitude floor hides exactly the
+// small-but-consistent drifts worth finding. An earlier version of this file
+// required |slope| >= 0.02 per octave and therefore reported a real 1%-per-octave
+// frequency drift as a constant offset.
+function trendIsReal(fit, xs, ys, minSpanChange) {
+  if (!fit || fit.r2 < 0.6) return null;
+  const span = Math.max(...xs) - Math.min(...xs);
+  if (span < 1.5) return null; // need a couple of octaves before claiming a slope
+  const predictedChange = Math.abs(fit.slope) * span;
+  if (predictedChange < minSpanChange) return null;
+  const resid = ys.map((y, i) => y - (fit.intercept + fit.slope * xs[i]));
+  const scatter = Math.max(madOf(resid), 1e-9);
+  if (predictedChange < 3 * scatter) return null; // slope smaller than the noise it sits in
+  return { span, predictedChange, scatter };
+}
+
+function rmseWithBestOffset(points, spec, fs) {
+  const residuals = points.map((p) => p.measuredDelta - theoreticalMagnitudeDb(spec, p.freq, fs));
+  const offset = medianOf(residuals);
+  let sum = 0;
+  for (const r of residuals) { const e = r - offset; sum += e * e; }
+  return Math.sqrt(sum / residuals.length);
+}
+
+// Coarse log-spaced pass, then repeated refinement windows around the winner —
+// far cheaper than one dense grid, which matters because this runs several
+// searches per test case. Three refinement passes take the resolution to
+// ~0.01%, which a single 44-step pass (7.6% per step) nowhere near reaches;
+// sub-1% frequency errors are exactly what a high-Q filter fails on, so the
+// extra precision is load-bearing, not decoration.
+function searchMultiplier(evalRmse, lo, hi, coarseSteps = 44, refineSteps = 24, refinePasses = 3) {
+  let logLo = Math.log(lo), logHi = Math.log(hi), steps = coarseSteps;
+  let best = null;
+  for (let pass = 0; pass <= refinePasses; pass++) {
+    for (let i = 0; i <= steps; i++) {
+      const mult = Math.exp(logLo + ((logHi - logLo) * i) / steps);
+      const rmse = evalRmse(mult);
+      if (!best || rmse < best.rmse) best = { mult, rmse };
+    }
+    const window = (logHi - logLo) / steps;
+    logLo = Math.log(best.mult) - window;
+    logHi = Math.log(best.mult) + window;
+    steps = refineSteps;
+  }
+  return best;
+}
+
+// Per-case measurements the findings below are built from. All three estimates
+// hold the other two parameters at what was actually requested — they are
+// "what single wrong parameter would explain this curve?", not a joint fit.
+function caseMetrics(tc, fs) {
+  const spec = tc.usedFilterSpec;
+  if (!spec || !tc.fr || !baseline?.fr) return null;
+
+  const comparison = compareToTheoretical(baseline.fr, tc.fr, spec, { magnitudeAt, fs, evalFreqs: EVAL_FREQS });
+  const { pregainDb, compensated } = compensateForPregain(comparison);
+  const threshold = compensated.inBandThresholdDb ?? 0.5;
+  const inBand = compensated.points.filter((p) => Math.abs(p.expectedDelta) >= threshold);
+  if (inBand.length < 5) return null; // filter barely does anything — nothing to diagnose
+
+  // All searches run on the RAW (uncompensated) delta curve over the whole
+  // 20Hz-20kHz span, each fitting its own level offset via rmseWithBestOffset.
+  // Whole-curve rather than in-band-only matters for the frequency search in
+  // particular: if the real f0 is an octave off, the in-band window picked at
+  // the REQUESTED f0 doesn't even contain the actual peak.
+  const rawPts = comparison.points;
+  const rmseAtRequested = rmseWithBestOffset(rawPts, spec, fs);
+
+  // A grid search always returns SOME best multiplier, even when every
+  // candidate fits equally badly. Accept an estimate only when it is either a
+  // small deviation (near ratio 1, so it cannot be wild noise-chasing) or it
+  // bought a genuine improvement; otherwise the case contributes nothing but
+  // scatter to the regressions and is excluded from them.
+  const accept = (best) => Math.abs(Math.log2(best.mult)) < 0.08
+    || (rmseAtRequested - best.rmse >= 0.1 && best.rmse <= rmseAtRequested * 0.85);
+
+  const gainBest = spec.gain !== 0
+    ? searchMultiplier((mult) => rmseWithBestOffset(rawPts, { ...spec, gain: spec.gain * mult }, fs), 0.1, 3)
+    : null;
+  const freqBest = searchMultiplier((mult) => rmseWithBestOffset(rawPts, { ...spec, freq: spec.freq * mult }, fs), 0.2, 5);
+  const qBest = searchMultiplier((mult) => rmseWithBestOffset(rawPts, { ...spec, q: spec.q * mult }, fs), 0.15, 6);
+
+  // Attribution: how much of the whole-curve residual does each single-parameter
+  // hypothesis remove? rmseAtRequested is already offset-fitted, so it IS the
+  // "nothing wrong but the level" hypothesis, which makes it the denominator.
+  //
+  // This is the number that actually names a failure, and thresholding on it
+  // rather than on the SIZE of a ratio is the whole point: a 1.3% frequency
+  // error explains ~98% of the residual whether the filter is Q=0.1 or Q=10,
+  // while the absolute RMSE it produces differs by 5x between them. An earlier
+  // version of this file flagged frequency errors only above 2%, and therefore
+  // reported "centre frequency placement is accurate" for a real high-Q case
+  // whose residual was a textbook frequency-offset dipole.
+  const explains = (best) => (best && rmseAtRequested > 1e-9 ? 1 - best.rmse / rmseAtRequested : 0);
+  const attribution = {
+    rmseAtRequested,
+    gain: { mult: gainBest?.mult ?? null, rmse: gainBest?.rmse ?? null, explained: explains(gainBest) },
+    freq: { mult: freqBest.mult, rmse: freqBest.rmse, explained: explains(freqBest) },
+    q: { mult: qBest.mult, rmse: qBest.rmse, explained: explains(qBest) },
+  };
+  // Winner = the hypothesis that removes the most residual, but only if it
+  // removes a real share of it; otherwise the failure is not a single
+  // mis-encoded parameter at all (noise, or a shape the model doesn't cover).
+  const ranked = [
+    { param: 'freq', ...attribution.freq },
+    { param: 'gain', ...attribution.gain },
+    { param: 'q', ...attribution.q },
+  ].filter((h) => h.rmse != null).sort((a, b) => b.explained - a.explained);
+  const dominant = ranked[0] && ranked[0].explained >= 0.3 ? ranked[0] : null;
+
+  const qRatio = qBest.mult;
+  return {
+    tc, spec, pregainDb,
+    inBandCount: inBand.length,
+    rmse: compensated.inBandStats?.rmse ?? null,
+    meanResidual: compensated.inBandStats?.meanError ?? null,
+    tolerance: tc.usedToleranceDb ?? 0.3,
+    attribution, ranked, dominant,
+    gainScale: gainBest ? gainBest.mult : null,
+    gainReliable: !!gainBest && accept(gainBest),
+    effectiveGain: gainBest ? gainBest.mult * spec.gain : null,
+    freqRatio: freqBest.mult, freqReliable: accept(freqBest),
+    freqExplained: attribution.freq.explained,
+    // Sane-band guard on top: the known failure mode is a razor-thin high-Q
+    // spike spuriously out-fitting ordinary broadband ripple.
+    qRatio, estimatedQ: qBest.mult * spec.q,
+    qReliable: inBand.length >= 8 && qRatio > 0.2 && qRatio < 5 && accept(qBest),
+  };
+}
+
+const pctSigned = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
+const dbSigned = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} dB`;
+// Is x within tol (relative) of target? Used to name round-number scale
+// factors — 0.5x/2x point at a value-encoding bug, not a DSP subtlety.
+const nearRatio = (x, target, tol = 0.06) => Math.abs(x / target - 1) <= tol;
+
+// --- individual analysers: each returns a finding object or null -----------
+
+// Runs FIRST, and is the analyser that names a failure rather than describing
+// it. For every case it asks which single mis-applied parameter best explains
+// the residual, and how much of it that removes. This is what a shape RMSE on
+// its own cannot tell you: "RMSE 0.51 dB" is opaque, "a +1.3% frequency offset
+// explains 98% of it" is a bug report.
+const PARAM_LABEL = { freq: 'centre frequency', gain: 'gain', q: 'Q' };
+function analyseResidualAttribution(ms) {
+  const failing = ms.filter((m) => m.rmse != null && m.rmse > m.tolerance);
+  if (!failing.length) {
+    return { severity: 'ok', title: 'No case exceeds its shape tolerance', finding: `All ${ms.length} analysed cases fit within their configured tolerance — there is no residual to attribute.` };
+  }
+
+  let table = '<table class="tiny"><thead><tr><th>case</th><th>RMSE</th>'
+    + '<th>freq</th><th>expl.</th><th>gain</th><th>expl.</th><th>Q</th><th>expl.</th><th>dominant</th></tr></thead><tbody>';
+  for (const m of failing) {
+    const a = m.attribution;
+    const cell = (h) => (h.mult == null ? '<td>—</td><td>—</td>' : `<td>${h.mult.toFixed(4)}x</td><td>${(h.explained * 100).toFixed(0)}%</td>`);
+    table += `<tr><td>#${m.tc.id} ${labelFor(m.tc)}</td><td>${m.rmse.toFixed(3)} dB</td>`
+      + `${cell(a.freq)}${cell(a.gain)}${cell(a.q)}`
+      + `<td><b>${m.dominant ? PARAM_LABEL[m.dominant.param] : 'none'}</b></td></tr>`;
+  }
+  table += '</tbody></table>';
+
+  const withDominant = failing.filter((m) => m.dominant);
+  if (!withDominant.length) {
+    return {
+      severity: 'med', title: `${failing.length} case(s) fail, but no single parameter explains it`,
+      finding: `For every failing case, adjusting frequency, gain or Q on its own removes less than 30% of the residual. That points away from a mis-encoded parameter and towards measurement noise, a filter shape our model does not cover, or the device combining bands differently than one biquad each.`,
+      html: table,
+      next: 'Run the repeatability repeats below first — if RMSE varies as much between repeats of the same case as it does between cases, this is noise.',
+    };
+  }
+
+  // Group by winning parameter to see whether it's one consistent cause.
+  const byParam = {};
+  for (const m of withDominant) (byParam[m.dominant.param] ??= []).push(m);
+  const [topParam, group] = Object.entries(byParam).sort((a, b) => b[1].length - a[1].length)[0];
+  const mults = group.map((m) => m.dominant.mult);
+  const medMult = medianOf(mults), spreadMult = madOf(mults);
+  const medExplained = medianOf(group.map((m) => m.dominant.explained));
+
+  let math = `residual attribution over ${failing.length} failing case(s):\n`;
+  for (const m of failing) {
+    math += `  #${String(m.tc.id).padEnd(3)} ${labelFor(m.tc).padEnd(30)} RMSE ${m.rmse.toFixed(3)} dB`
+      + `  ->  freq ${(m.attribution.freq.explained * 100).toFixed(0)}%`
+      + `  gain ${m.attribution.gain.explained != null ? (m.attribution.gain.explained * 100).toFixed(0) + '%' : ' -- '}`
+      + `  Q ${(m.attribution.q.explained * 100).toFixed(0)}%\n`;
+  }
+  math += `\ndominant = ${topParam} in ${group.length}/${failing.length} case(s)`
+    + `\n  median multiplier ${medMult.toFixed(4)}x (${pctSigned(medMult - 1)}), MAD ${spreadMult.toFixed(4)}`
+    + `\n  median residual explained ${(medExplained * 100).toFixed(0)}%`;
+
+  const consistent = group.length >= Math.max(2, failing.length * 0.6) && spreadMult < 0.05;
+  let finding = `In ${group.length} of ${failing.length} failing case(s) the residual is best explained by the ${PARAM_LABEL[topParam]} being wrong, not by the other two: a ${medMult.toFixed(4)}x multiplier (${pctSigned(medMult - 1)}) removes a median ${(medExplained * 100).toFixed(0)}% of the residual.`;
+  if (topParam === 'freq') {
+    finding += ` A frequency offset produces a very recognisable residual — antisymmetric about the centre frequency, positive on one side and negative on the other, crossing zero at f0 — so open <b>Explain</b> on one of these rows and check the lower trace against that description. Note this is invisible to a Q search: at a wrong centre frequency the best-fit Q comes back at ~100% of requested, which is exactly why an "effective Q 100%" reading next to a failing RMSE means "the problem is not Q".`;
+  } else if (topParam === 'gain') {
+    finding += ` A gain error scales the residual with the filter's own shape — same sign throughout, largest at the centre frequency.`;
+  } else {
+    finding += ` A Q error shows as a residual that is symmetric about the centre frequency but changes sign between the peak and the skirts.`;
+  }
+  if (!consistent) {
+    finding += ` The multiplier is not consistent across those cases (MAD ${spreadMult.toFixed(4)}), so treat the direction as established but the exact figure as provisional.`;
+  }
+
+  return {
+    severity: consistent ? 'high' : 'med',
+    title: `Dominant cause: ${PARAM_LABEL[topParam]} (${group.length}/${failing.length} failing cases)`,
+    finding, html: table, math,
+    next: topParam === 'freq'
+      ? `Work out what ${medMult.toFixed(4)}x means in this device's frequency encoding — check the register step size and any rounding in the handler's frequency conversion. Then add the suggested frequency sweep below to see whether the multiplier is constant or drifts across the band.`
+      : topParam === 'gain'
+        ? 'See the gain-accuracy finding below for the scale-vs-offset breakdown.'
+        : 'See the Q-accuracy finding below, and read its caveat about our own model before changing a handler.',
+  };
+}
+
+function analyseLevelOffset(ms) {
+  const pregains = ms.map((m) => m.pregainDb);
+  if (pregains.length < 2) return null;
+  const med = medianOf(pregains), spread = madOf(pregains);
+  const gains = ms.map((m) => m.spec.gain);
+  const vsGain = linearFit(gains, pregains);
+
+  // A pregain that tracks requested boost is normal headroom protection; one
+  // that's constant regardless of boost is a fixed level error instead.
+  const tracksGain = vsGain && vsGain.r2 >= 0.7 && Math.abs(vsGain.slope) >= 0.1;
+  if (Math.abs(med) < 0.15 && !tracksGain) {
+    return {
+      severity: 'ok', title: 'Broadband level (SPL) is consistent',
+      finding: `Median broadband offset across ${pregains.length} cases is ${dbSigned(med)} (MAD ${spread.toFixed(2)} dB) — no systematic level error.`,
+    };
+  }
+
+  let finding, math, next, severity = 'med';
+  math = `median broadband offset = ${dbSigned(med)}   (MAD ${spread.toFixed(2)} dB, n=${pregains.length})`;
+  if (tracksGain) {
+    math += `\noffset vs requested gain: offset = ${vsGain.slope.toFixed(3)}·G ${vsGain.intercept >= 0 ? '+' : '−'} ${Math.abs(vsGain.intercept).toFixed(2)}   (r² ${vsGain.r2.toFixed(3)})`;
+    if (nearRatio(vsGain.slope, -1, 0.15)) {
+      severity = 'info';
+      finding = `The device backs its overall level off by almost exactly the boost it was asked for (slope ${vsGain.slope.toFixed(2)} dB per dB). That is textbook auto-pregain headroom protection, not an error — but it means the device is quietly undoing your boost, so the net SPL barely changes.`;
+      next = 'If you want the boost to be audible rather than level-compensated, check whether the handler exposes a pregain/preamp control this bench is leaving at its default.';
+    } else {
+      finding = `The broadband offset scales with the requested gain at ${vsGain.slope.toFixed(2)} dB per dB (r² ${vsGain.r2.toFixed(2)}) — partial auto-pregain. It is removed before judging shape, so it does not by itself cause a shape failure.`;
+    }
+  } else if (spread <= 0.2) {
+    finding = `Every case is offset by the same ${dbSigned(med)} broadband, independent of the filter requested (MAD only ${spread.toFixed(2)} dB). A gain-independent constant offset is usually NOT the PEQ — the most common causes are the measurement level drifting between the baseline sweep and the test sweeps (mic moved, IEM reseated, volume touched) or a device-wide output/preamp step.`;
+    next = 'Re-capture the baseline and immediately re-run one already-measured case. If the offset is gone, the baseline had drifted; if it is still there, it is in the device.';
+  } else {
+    severity = 'high';
+    finding = `Broadband offset is large AND inconsistent: median ${dbSigned(med)} but MAD ${spread.toFixed(2)} dB across ${pregains.length} cases. Scatter this wide is a measurement-stability problem, and it undermines every other number on this page.`;
+    next = 'Fix repeatability before reading anything else here — see the repeatability check below.';
+  }
+  return { severity, title: 'Broadband level (SPL) offset', finding, math, next };
+}
+
+function analyseGainAccuracy(ms) {
+  const usable = ms.filter((m) => m.gainScale != null && m.gainReliable && Math.abs(m.spec.gain) >= 0.5);
+  const distinct = new Set(usable.map((m) => m.spec.gain));
+  if (usable.length < 2) return null;
+
+  const scales = usable.map((m) => m.gainScale);
+  const medScale = medianOf(scales), spread = madOf(scales);
+
+  // With ≥3 distinct requested gains, separate a SCALE error (slope ≠ 1, e.g.
+  // a x10-vs-x20 encoding mistake) from a fixed dB OFFSET (intercept ≠ 0).
+  // They look identical at a single gain and completely different across three.
+  const fit = distinct.size >= 3
+    ? linearFit(usable.map((m) => m.spec.gain), usable.map((m) => m.effectiveGain))
+    : null;
+
+  let math = `applied/requested gain scale: median ${medScale.toFixed(3)}x (MAD ${spread.toFixed(3)}, n=${usable.length})`;
+  for (const m of usable) {
+    math += `\n  ${labelFor(m.tc).padEnd(34)} requested ${dbSigned(m.spec.gain)} -> applied ${dbSigned(m.effectiveGain)}  (${m.gainScale.toFixed(3)}x)`;
+  }
+  if (fit) {
+    math += `\napplied = ${fit.slope.toFixed(4)}·requested ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(3)} dB   (r² ${fit.r2.toFixed(4)}, ${fit.n} pts)`;
+  }
+
+  if (nearRatio(medScale, 1, 0.04) && spread < 0.04 && (!fit || Math.abs(fit.intercept) < 0.25)) {
+    return { severity: 'ok', title: 'Gain is applied accurately', finding: `Applied gain tracks requested gain at ${medScale.toFixed(3)}x with tight agreement (MAD ${spread.toFixed(3)}).`, math };
+  }
+
+  let severity = 'high', finding, next;
+  const named = [0.5, 2, 0.25, 4].find((t) => nearRatio(medScale, t, 0.05));
+  if (named && spread < 0.06) {
+    finding = `The device applies a consistent ${medScale.toFixed(3)}x of the gain it is asked for — essentially exactly ${named}x, at every gain tested. A clean round-number scale factor like this is a value-encoding bug, not a DSP characteristic: the classic cause is the handler multiplying dB by the wrong constant (e.g. x10 where the device wants x20, or writing half-dB steps as whole dB).`;
+    next = `Check the gain encoding in this device's handler — look for the ${named === 0.5 ? 'x10 that should be x20 (or a /2 the device does not expect)' : named === 2 ? 'x20 that should be x10' : 'scale constant'} on the gain bytes.`;
+  } else if (fit && nearRatio(fit.slope, 1, 0.05) && Math.abs(fit.intercept) >= 0.25) {
+    finding = `Gain SCALE is correct (slope ${fit.slope.toFixed(3)}) but there is a fixed ${dbSigned(fit.intercept)} offset on top of it, at every gain. Because the slope is right, this is not a scaling bug — a constant dB adder points at either an off-by-one in the gain byte or an unrequested pregain the device is adding.`;
+    next = 'Push gain = 0 and re-measure: a genuine constant adder will still show the offset with no filter gain requested at all.';
+  } else if (spread >= 0.08) {
+    severity = 'high';
+    finding = `Applied/requested gain ratio is inconsistent across cases: median ${medScale.toFixed(3)}x but MAD ${spread.toFixed(3)}. Since it is not one clean factor, suspect either gain-dependent clipping/limiting at the extremes or plain measurement noise.`;
+    next = 'Sort the per-case list above by requested gain — if the ratio collapses only at the largest boosts, the device is limiting rather than mis-scaling.';
+  } else {
+    severity = 'med';
+    finding = `Applied gain is a consistent but wrong ${medScale.toFixed(3)}x of requested (MAD ${spread.toFixed(3)}) — an unexplained ${pctSigned(medScale - 1)} error that is stable across cases, so it is systematic rather than noise.`;
+  }
+  if (distinct.size < 3) {
+    next = `${next ? next + ' ' : ''}Only ${distinct.size} distinct gain value(s) measured — a scale error and a fixed offset are indistinguishable until there are 3+. Add the suggested gain sweep below.`;
+  }
+  return { severity, title: 'Gain accuracy (scale vs offset)', finding, math, next };
+}
+
+function analyseQAccuracy(ms) {
+  const usable = ms.filter((m) => m.qReliable);
+  const excluded = ms.length - usable.length;
+  if (usable.length < 2) {
+    return excluded > 0
+      ? { severity: 'info', title: 'Q accuracy — not enough reliable estimates', finding: `${excluded} of ${ms.length} cases gave no trustworthy effective-Q estimate (too few in-band points, or the best-fit Q was not a meaningful improvement over the requested one). No Q conclusion can be drawn.`, next: 'Raise the test gain so more of the curve clears the in-band threshold, then re-run.' }
+      : null;
+  }
+
+  const ratios = usable.map((m) => m.qRatio);
+  const medRatio = medianOf(ratios), spread = madOf(ratios);
+  const distinctQ = new Set(usable.map((m) => m.spec.q));
+  const fit = distinctQ.size >= 3
+    ? linearFit(usable.map((m) => Math.log2(m.spec.q)), usable.map((m) => Math.log2(m.estimatedQ)))
+    : null;
+
+  let math = `effective/requested Q: median ${medRatio.toFixed(3)}x (MAD ${spread.toFixed(3)}, n=${usable.length}${excluded ? `, ${excluded} excluded as unreliable` : ''})`;
+  for (const m of usable) {
+    math += `\n  ${labelFor(m.tc).padEnd(34)} requested Q ${m.spec.q} -> effective Q ${m.estimatedQ.toFixed(3)}  (${m.qRatio.toFixed(3)}x)`;
+  }
+  if (fit) {
+    math += `\nlog2(effective Q) = ${fit.slope.toFixed(3)}·log2(requested Q) ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(3)}   (r² ${fit.r2.toFixed(3)})`;
+    math += `\n  slope 1 = constant ratio at every Q; slope != 1 = the error itself depends on Q`;
+  }
+
+  if (nearRatio(medRatio, 1, 0.06) && spread < 0.08) {
+    return { severity: 'ok', title: 'Q is applied accurately', finding: `Effective Q matches requested Q at ${medRatio.toFixed(3)}x (MAD ${spread.toFixed(3)}).`, math };
+  }
+
+  const caveat = 'A tight, consistent Q ratio looks exactly the same whether the device has a real Q convention difference or OUR biquad model has the wrong alpha formula. This has already happened once in this repo: a WalkPlay Protocol Max run produced a convincing 0.70–0.79 cluster across 6 captures that turned out to be our own shelf-Q formula, not the device (see filter-response.real.test.js). Verify the model against an independent implementation — e.g. a WebAudio BiquadFilterNode — before changing any handler. Note these figures can differ slightly from the per-row “Effective Q” column: that column estimates the level offset once at the requested Q, whereas Insights fits offset and Q together, which removes a several-percent bias.';
+
+  let finding;
+  if (spread < 0.08 && fit && Math.abs(fit.slope - 1) > 0.12) {
+    finding = `Effective Q is off by ${pctSigned(medRatio - 1)} on average, and the error is not a constant ratio — the log-log slope is ${fit.slope.toFixed(2)} rather than 1, so the discrepancy grows as requested Q rises. That pattern fits a Q↔bandwidth conversion (bandwidth in octaves is not proportional to Q) more than a plain scale factor.`;
+  } else if (spread < 0.08) {
+    const bwHint = nearRatio(medRatio, 1 / Math.sqrt(2), 0.08) || nearRatio(medRatio, Math.sqrt(2), 0.08)
+      ? ' A ratio near √2 or 1/√2 specifically suggests a −3 dB-bandwidth vs half-gain-bandwidth definition mismatch.' : '';
+    finding = `Every reliable case lands on the same ${medRatio.toFixed(3)}x Q ratio (MAD only ${spread.toFixed(3)}) — the device's filters are consistently ${medRatio < 1 ? 'wider/gentler' : 'narrower/sharper'} than requested by ${pctSigned(medRatio - 1)}.${bwHint}`;
+  } else {
+    finding = `Effective Q differs from requested by a median ${pctSigned(medRatio - 1)}, but scattered (MAD ${spread.toFixed(3)}) — not one clean factor, so treat this as weak evidence.`;
+  }
+  return { severity: spread < 0.08 ? 'high' : 'med', title: 'Q accuracy', finding, math, caveat, next: distinctQ.size < 3 ? `Only ${distinctQ.size} distinct Q value(s) measured — add the suggested Q sweep below to separate "constant ratio" from "Q-dependent".` : undefined };
+}
+
+// The headline "is it a trend?" analyser: regress each error quantity against
+// log2(frequency) so "1% out at 1kHz but 2% out at 2kHz" becomes a slope with
+// an r², plus a predicted-error table at anchor frequencies.
+function analyseFrequencyTrends(ms, fs) {
+  const findings = [];
+  const anchors = [100, 1000, 10000];
+
+  // (a) centre-frequency placement
+  const freqUsable = ms.filter((m) => m.freqReliable);
+  if (freqUsable.length >= 2) {
+    const ratios = freqUsable.map((m) => m.freqRatio);
+    const medRatio = medianOf(ratios), spread = madOf(ratios);
+    const distinctF = new Set(freqUsable.map((m) => m.spec.freq));
+    const xs = freqUsable.map((m) => Math.log2(m.spec.freq / 1000));
+    const ys = freqUsable.map((m) => Math.log2(m.freqRatio));
+    const fit = distinctF.size >= 3 ? linearFit(xs, ys) : null;
+    // 0.012 in log2 units ≈ 0.85% of total drift across the measured span.
+    const trend = trendIsReal(fit, xs, ys, 0.012);
+
+    let math = `actual/requested centre frequency: median ${medRatio.toFixed(4)}x (${pctSigned(medRatio - 1)}, MAD ${spread.toFixed(4)}, n=${freqUsable.length})`;
+    for (const m of freqUsable) {
+      math += `\n  requested ${String(m.spec.freq).padStart(6)} Hz -> actual ~${(m.spec.freq * m.freqRatio).toFixed(0).padStart(6)} Hz  (${pctSigned(m.freqRatio - 1)})`;
+    }
+
+    if (nearRatio(medRatio, 2, 0.06) || nearRatio(medRatio, 0.5, 0.06)) {
+      findings.push({
+        severity: 'high', title: `Centre frequency is ${medRatio > 1 ? 'double' : 'half'} what was requested`, math,
+        finding: `Every reliable case places the filter at ${medRatio.toFixed(3)}x the requested frequency. An exact factor of ${medRatio > 1 ? '2' : '0.5'} is a frequency-encoding bug, and this codebase has a known family of them: the compensate2X flag in usbDeviceConfig.js exists precisely because some devices interpret the frequency register at half/double scale.`,
+        next: `Check this device's compensate2X setting — it is most likely ${medRatio > 1 ? 'missing (should be true)' : 'set when it should not be'}.`,
+      });
+    } else if (trend) {
+      // A frequency-dependent frequency error: the ratio itself drifts with frequency.
+      let table = '<table class="tiny"><thead><tr><th>requested</th><th>predicted actual</th><th>error</th></tr></thead><tbody>';
+      for (const f of anchors) {
+        const r = Math.pow(2, fit.intercept + fit.slope * Math.log2(f / 1000));
+        table += `<tr><td>${fmtFreqLabel(f)}</td><td>${(f * r).toFixed(0)} Hz</td><td>${pctSigned(r - 1)}</td></tr>`;
+      }
+      table += '</tbody></table>';
+      findings.push({
+        severity: 'high', title: 'Centre-frequency error TRENDS with frequency',
+        finding: `The frequency error is not constant — it grows steadily across the spectrum. Fitting log2(actual/requested) against log2(frequency) gives a slope of ${fit.slope.toFixed(4)} per octave (r² ${fit.r2.toFixed(3)}), i.e. roughly ${pctSigned(Math.pow(2, fit.slope) - 1)} of additional error per octave, accumulating to ${pctSigned(Math.pow(2, trend.predictedChange) - 1)} across the ${trend.span.toFixed(1)} octaves measured — about ${(trend.predictedChange / trend.scatter).toFixed(0)}x the scatter about the line, so it is a slope and not noise. An error that scales with frequency rather than sitting constant points at a resolution/quantisation limit in the frequency register, or at the wrong sample rate being assumed (see the sample-rate check).`,
+        math: `${math}\nlog2(actual/requested) = ${fit.slope.toFixed(4)}·log2(f/1000) ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(4)}   (r² ${fit.r2.toFixed(3)}, ${fit.n} pts)`
+          + `\n  drift across the ${trend.span.toFixed(2)} octaves measured: ${trend.predictedChange.toFixed(4)} log2 units vs scatter ${trend.scatter.toFixed(4)} (ratio ${(trend.predictedChange / trend.scatter).toFixed(1)}x)`,
+        html: table,
+        next: 'Add the suggested frequency sweep below — a trend claimed from 3–4 frequencies is a guess; 7+ points spanning 50 Hz–10 kHz either straightens the line or kills it.',
+      });
+    } else {
+      // Gate on how much of the residual the frequency hypothesis actually
+      // removes, NOT on the size of the ratio. A fixed "flag above 2%" floor is
+      // wrong in both directions: it hides a 1.3% error that explains 98% of a
+      // high-Q case's residual, and it would shout about a 3% error on a Q=0.1
+      // filter where the same offset is acoustically nothing. Only cases that
+      // are actually failing their tolerance count towards the decision.
+      const failingFreq = freqUsable.filter((m) => m.rmse != null && m.rmse > m.tolerance);
+      const explanatory = failingFreq.filter((m) => m.freqExplained >= 0.3);
+      const medExplained = explanatory.length ? medianOf(explanatory.map((m) => m.freqExplained)) : 0;
+      math += `\nresidual explained by a frequency-only correction: ${freqUsable.map((m) => `#${m.tc.id} ${(m.freqExplained * 100).toFixed(0)}%`).join(', ')}`;
+
+      if (explanatory.length && explanatory.length >= Math.max(1, failingFreq.length * 0.5)) {
+        findings.push({
+          severity: 'high', title: `Centre frequency is offset by ${pctSigned(medRatio - 1)}`, math,
+          finding: `Filters land ${pctSigned(medRatio - 1)} away from where they were asked for (MAD ${spread.toFixed(4)}), and correcting only the frequency removes a median ${(medExplained * 100).toFixed(0)}% of the residual in ${explanatory.length} of ${failingFreq.length} failing case(s) — so this is the cause of those failures, not a side effect. The offset is small in percentage terms but that is not the same as harmless: the sharper the filter, the more a small misplacement costs, which is why it shows up on high-Q cases first.`,
+          next: `Constant relative error like this is normally frequency-register rounding or a step-size mismatch in the handler's frequency conversion rather than a per-band bug.${distinctF.size < 3 ? ` Only ${distinctF.size} distinct frequency(ies) measured — add the suggested frequency sweep to see whether the offset is constant or drifts across the band.` : ''}`,
+        });
+      } else if (Math.abs(medRatio - 1) >= 0.02 && spread < 0.03) {
+        findings.push({
+          severity: 'med', title: 'Centre frequency is consistently offset', math,
+          finding: `Filters land ${pctSigned(medRatio - 1)} away from the requested frequency, consistently (MAD ${spread.toFixed(4)}) — but correcting the frequency does not remove much of any failing case's residual, so it is a real offset that is not currently costing accuracy. Worth fixing; not the explanation for a failure.`,
+          next: distinctF.size < 3 ? `Only ${distinctF.size} distinct frequency(ies) measured — add the suggested frequency sweep to see whether this is constant or trending.` : undefined,
+        });
+      } else {
+        findings.push({ severity: 'ok', title: 'Centre frequency placement is accurate', finding: `Median actual/requested frequency ${medRatio.toFixed(4)}x (${pctSigned(medRatio - 1)}), MAD ${spread.toFixed(4)} — no systematic frequency error, and no failing case is explained by one.`, math });
+      }
+    }
+  }
+
+  // (b) does the applied GAIN drift with frequency? (the user's "1% at 1k, 2% at 2k")
+  const gainUsable = ms.filter((m) => m.gainScale != null && Math.abs(m.spec.gain) >= 0.5);
+  const distinctGF = new Set(gainUsable.map((m) => m.spec.freq));
+  if (distinctGF.size >= 3) {
+    const gxs = gainUsable.map((m) => Math.log2(m.spec.freq / 1000));
+    const gys = gainUsable.map((m) => m.gainScale);
+    const fit = linearFit(gxs, gys);
+    // 0.015 = 1.5 percentage points of gain scale accumulated across the span.
+    if (trendIsReal(fit, gxs, gys, 0.015)) {
+      let table = '<table class="tiny"><thead><tr><th>frequency</th><th>predicted gain scale</th><th>error</th></tr></thead><tbody>';
+      for (const f of anchors) {
+        const s = fit.intercept + fit.slope * Math.log2(f / 1000);
+        table += `<tr><td>${fmtFreqLabel(f)}</td><td>${s.toFixed(4)}x</td><td>${pctSigned(s - 1)}</td></tr>`;
+      }
+      table += '</tbody></table>';
+      findings.push({
+        severity: 'high', title: 'Applied GAIN drifts with frequency',
+        finding: `How much of the requested gain actually arrives depends on where in the spectrum it is asked for: the gain scale changes by ${(fit.slope * 100).toFixed(2)} percentage points per octave (r² ${fit.r2.toFixed(3)}). This is the pattern you described — a small error low down that compounds higher up. Because a correct biquad's peak gain is frequency-independent, a real trend here means the coefficient maths is drifting, which is what an incorrect assumed sample rate does (the bilinear warping error grows towards Nyquist).`,
+        math: `gain scale = ${fit.slope.toFixed(5)}·log2(f/1000) ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(4)}   (r² ${fit.r2.toFixed(3)}, ${fit.n} pts)`,
+        html: table,
+        next: 'Check the sample-rate finding below first — it is the cheapest explanation. Then add the suggested frequency sweep to confirm the slope holds beyond these points.',
+      });
+    }
+  }
+
+  // (c) does the residual shape error simply get worse with frequency?
+  const rmseUsable = ms.filter((m) => m.rmse != null);
+  const distinctRF = new Set(rmseUsable.map((m) => m.spec.freq));
+  if (distinctRF.size >= 3) {
+    const rxs = rmseUsable.map((m) => Math.log2(m.spec.freq / 1000));
+    const rys = rmseUsable.map((m) => m.rmse);
+    const fit = linearFit(rxs, rys);
+    // 0.08 dB of RMSE growth accumulated across the span, and rising not falling.
+    if (fit && fit.slope > 0 && trendIsReal(fit, rxs, rys, 0.08)) {
+      findings.push({
+        severity: 'med', title: 'Shape error grows towards high frequency',
+        finding: `In-band RMSE rises by ${fit.slope.toFixed(3)} dB per octave (r² ${fit.r2.toFixed(3)}). Independent of any single parameter being wrong, the fit simply degrades as frequency climbs — consistent with an assumed-sample-rate error, with coefficient quantisation in the device, or simply with the acoustic measurement getting noisier at HF.`,
+        math: `in-band RMSE = ${fit.slope.toFixed(4)}·log2(f/1000) + ${fit.intercept.toFixed(4)} dB   (r² ${fit.r2.toFixed(3)}, ${fit.n} pts)`,
+        next: 'Repeat one high-frequency case 3x (suggested below). If RMSE scatters widely between repeats, this is measurement noise, not the device.',
+      });
+    }
+  }
+
+  return findings;
+}
+
+// Cheap, high-value check: the bench asks the user for a sample rate, and an
+// assumed-fs error mimics a device bug (errors growing towards Nyquist). If a
+// different fs explains every case markedly better, the config is wrong — not
+// the handler.
+function analyseSampleRate(ms, configuredFs) {
+  if (ms.length < 2) return null;
+  const totalRmseAt = (fs) => {
+    let sumSq = 0, n = 0;
+    for (const m of ms) {
+      const comparison = compareToTheoretical(baseline.fr, m.tc.fr, m.spec, { magnitudeAt, fs, evalFreqs: EVAL_FREQS });
+      const { compensated } = compensateForPregain(comparison);
+      const r = compensated.inBandStats?.rmse;
+      if (r != null) { sumSq += r * r; n++; }
+    }
+    return n ? Math.sqrt(sumSq / n) : null;
+  };
+  const scored = SR_CANDIDATES.map((fs) => ({ fs, rmse: totalRmseAt(fs) })).filter((s) => s.rmse != null);
+  if (!scored.length) return null;
+  const best = scored.reduce((a, b) => (b.rmse < a.rmse ? b : a));
+  const current = scored.find((s) => s.fs === configuredFs) ?? { fs: configuredFs, rmse: totalRmseAt(configuredFs) };
+
+  const math = scored.map((s) => `  ${String(s.fs).padStart(6)} Hz -> aggregate in-band RMSE ${s.rmse.toFixed(4)} dB${s.fs === configuredFs ? '   <- configured' : ''}${s.fs === best.fs ? '   <- best fit' : ''}`).join('\n');
+  if (best.fs !== configuredFs && current.rmse != null && best.rmse <= current.rmse * 0.8) {
+    return {
+      severity: 'high', title: `Sample rate looks wrong — ${best.fs} Hz fits far better than the configured ${configuredFs} Hz`,
+      finding: `Re-fitting every case at ${best.fs} Hz drops aggregate in-band RMSE from ${current.rmse.toFixed(3)} dB to ${best.rmse.toFixed(3)} dB (${((1 - best.rmse / current.rmse) * 100).toFixed(0)}% better). The sample rate only enters through the bilinear warping in our theoretical model, so this is almost certainly the bench's assumed rate being wrong rather than a device fault — and a wrong rate mimics a real device bug by producing errors that grow towards high frequency.`,
+      math,
+      next: `Set the sample-rate field to ${best.fs} and re-open Insights before acting on any other finding here.`,
+    };
+  }
+  return { severity: 'ok', title: 'Sample-rate assumption is consistent', finding: `The configured ${configuredFs} Hz fits the measurements as well as any candidate rate — no evidence of a sample-rate mismatch.`, math };
+}
+
+// ---------------------------------------------------------------------------
+// Suggested follow-up test cases. A trend read off 3 points is a guess; these
+// are the extra measurements that would confirm or kill each finding, built
+// with the same makeCase() the normal plan generator uses.
+// ---------------------------------------------------------------------------
+function buildSuggestions(findings, ms) {
+  const suggestions = [];
+  const c = constraints ?? {};
+  const stdGain = clamp(6, c.minGain ?? -12, c.maxGain ?? 12);
+  const stdQ = clamp(1.0, c.minQ ?? 0.1, c.maxQ ?? 10);
+  const titles = findings.map((f) => f.title).join(' | ');
+  const has = (s) => titles.includes(s);
+
+  if (/frequency|GAIN drifts|high frequency/i.test(titles)) {
+    // 8 points over ~7.6 octaves — enough to tell a straight line from a kink.
+    for (const f of [50, 100, 250, 500, 1000, 2500, 5000, 10000]) {
+      suggestions.push({ reason: 'frequency trend', tc: makeCase('Insight: Freq Trend', 'PK', clampFreq(f), stdGain, stdQ, clampFreq(f), stdGain) });
+    }
+  }
+  if (/Gain accuracy|level|SPL/i.test(titles)) {
+    const lo = c.minGain ?? -12, hi = c.maxGain ?? 12;
+    for (const g of uniq([hi, hi * 0.75, hi * 0.5, hi * 0.25, lo * 0.25, lo * 0.5, lo * 0.75, lo]).filter((g) => g !== 0)) {
+      suggestions.push({ reason: 'gain linearity (separates scale error from fixed offset)', tc: makeCase('Insight: Gain Linearity', 'PK', 1000, g, stdQ, 1000, g) });
+    }
+  }
+  if (has('Q accuracy')) {
+    const minQ = c.minQ ?? 0.1, maxQ = c.maxQ ?? 10;
+    for (const q of uniq([minQ, minQ * 2, 0.7, 1.0, 2.0, maxQ / 2, maxQ]).filter((q) => q >= minQ && q <= maxQ)) {
+      suggestions.push({ reason: 'Q sweep (separates constant ratio from Q-dependent error)', tc: makeCase('Insight: Q Sweep', 'PK', 1000, stdGain, q, 1000, stdGain) });
+    }
+  }
+  // Always offer repeatability: every trend above is only meaningful if it is
+  // bigger than the run-to-run noise, and nothing else on this page measures that.
+  const worst = [...ms].sort((a, b) => (b.rmse ?? 0) - (a.rmse ?? 0))[0];
+  if (worst) {
+    for (let i = 0; i < 3; i++) {
+      suggestions.push({ reason: 'repeatability — establishes the measurement noise floor to compare every trend against', tc: makeCase('Insight: Repeatability', worst.spec.type, worst.spec.freq, worst.spec.gain, worst.spec.q, worst.tc.measureFreq, worst.tc.expectedDelta) });
+    }
+  }
+  return suggestions;
+}
+
+let pendingSuggestions = [];
+
+async function runInsights() {
+  const panel = $('insightsPanel'), body = $('insightsBody');
+  panel.style.display = '';
+  body.innerHTML = '<p class="small">Re-fitting every measured curve… (grid searches over frequency and Q)</p>';
+  $('insightsActions').style.display = 'none';
+  await sleep(0); // let the "working" message paint before the synchronous fits
+
+  const fs = Number($('sampleRate').value) || 44100;
+  const candidates = testPlan.filter((t) => ['pass', 'fail'].includes(t.status) && hasModel(t.type) && t.fr && t.usedFilterSpec);
+  if (candidates.length < 2) {
+    body.innerHTML = `<p class="finding">Insights needs at least 2 completed shape-fit cases (PK/LSQ/HSQ/etc. with a stored curve) to look for a systematic cause — found ${candidates.length}. Run more of the plan first.</p>`;
+    return;
+  }
+
+  const ms = [];
+  for (const tc of candidates) {
+    const m = caseMetrics(tc, fs);
+    if (m) ms.push(m);
+    await sleep(0); // keep the page responsive across the per-case searches
+  }
+  if (ms.length < 2) {
+    body.innerHTML = `<p class="finding">Only ${ms.length} case(s) had enough in-band signal to analyse (the filter needs to move the response by more than ${0.5} dB across a reasonable span). Try a larger test gain.</p>`;
+    return;
+  }
+
+  const findings = [
+    analyseResidualAttribution(ms),
+    analyseSampleRate(ms, fs),
+    analyseLevelOffset(ms),
+    analyseGainAccuracy(ms),
+    analyseQAccuracy(ms),
+    ...analyseFrequencyTrends(ms, fs),
+  ].filter(Boolean);
+
+  const order = { high: 0, med: 1, info: 2, ok: 3 };
+  findings.sort((a, b) => order[a.severity] - order[b.severity]);
+
+  const problems = findings.filter((f) => f.severity !== 'ok');
+  $('insightsTitle').textContent = `Insights — ${problems.length ? `${problems.length} systematic finding(s)` : 'no systematic error found'} across ${ms.length} cases`;
+
+  let html = '';
+  if (!problems.length) {
+    html += `<p class="finding">Nothing systematic stands out: level, gain, Q and frequency all track what was requested across ${ms.length} cases. Any individual failures are more likely per-case noise — use <b>Explain</b> on the specific row.</p>`;
+  }
+  const badgeLabel = { high: 'likely bug', med: 'worth checking', info: 'context', ok: 'ok' };
+  for (const f of findings) {
+    html += `<div class="insight sev-${f.severity}">
+      <h4><span class="badge ${f.severity}">${badgeLabel[f.severity]}</span> &nbsp;${f.title}</h4>
+      <div class="finding">${f.finding}</div>
+      ${f.html ?? ''}
+      ${f.math ? `<div class="math">${f.math.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>` : ''}
+      ${f.caveat ? `<div class="caveat">⚠️ ${f.caveat}</div>` : ''}
+      ${f.next ? `<div class="next"><b>Next:</b> ${f.next}</div>` : ''}
+    </div>`;
+  }
+  body.innerHTML = html;
+
+  pendingSuggestions = problems.length ? buildSuggestions(problems, ms) : [];
+  if (pendingSuggestions.length) {
+    const reasons = [...new Set(pendingSuggestions.map((s) => s.reason))];
+    $('insightsActions').style.display = 'flex';
+    $('addSuggestedBtn').textContent = `➕ Add ${pendingSuggestions.length} suggested follow-up tests to the plan`;
+    $('addSuggestedNote').innerHTML = `Covers: ${reasons.join('; ')}. Already-completed cases will be un-ticked so a re-run measures only the new ones.`;
+  }
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+$('insightsBtn').addEventListener('click', () => { runInsights().catch((e) => { $('insightsBody').innerHTML = `<p class="finding">Insights failed: ${e.message}</p>`; console.error(e); }); });
+$('closeInsightsBtn').addEventListener('click', () => { $('insightsPanel').style.display = 'none'; });
+$('addSuggestedBtn').addEventListener('click', () => {
+  if (!pendingSuggestions.length) return;
+  // Un-tick everything already measured: the point of these extra cases is to
+  // add points to a regression, and re-measuring the old ones just costs sweeps.
+  for (const t of testPlan) if (t.status !== 'pending') t.include = false;
+  for (const s of pendingSuggestions) testPlan.push(s.tc);
+  const added = pendingSuggestions.length;
+  pendingSuggestions = [];
+  renderPlan();
+  updateRunButtons();
+  $('insightsActions').style.display = 'none';
+  $('runStatus').textContent = `${added} follow-up case(s) added to the plan — press Run to measure them`;
+  $('planTable').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
 
 // ---------------------------------------------------------------------------
 // Export
