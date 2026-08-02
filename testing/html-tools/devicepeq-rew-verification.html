@@ -30,15 +30,6 @@
     padding: 18px 20px;
     margin-bottom: 20px;
   }
-  .banner {
-    background: #3a2a00;
-    border: 1px solid #dcdcaa;
-    color: #dcdcaa;
-    border-radius: 6px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-  }
-  .banner strong { color: #f0c040; }
   /* Active compensations. Deliberately loud when something is being corrected:
      a reader who misses this will over-credit the device for the handler's
      work. Muted when nothing is active, so the common case stays quiet. */
@@ -307,7 +298,7 @@
     }
     body { font-size: 10.5pt; }
     .no-print, button, input, select, textarea,
-    .banner, #failureChartPanel, #insightsPanel { display: none !important; }
+    #failureChartPanel, #insightsPanel { display: none !important; }
     /* The steps that PRODUCED the report are not the report. Tagged by class,
        not nth-of-type: adding a section shifted those indices silently. */
     section.workflow-step { display: none !important; }
@@ -465,20 +456,15 @@
   <h1>🎛️ DevicePEQ ⇄ REW Verification Tool</h1>
   <!-- Screen-hidden, print-only cover line: a printed report has to say what it
        is about on its own, without the surrounding UI to give it context. -->
-  <div id="printHeader" class="print-only">
+  <div class="print-only">
     <div id="printHeaderTitle"></div>
     <div id="printHeaderMeta"></div>
   </div>
 
-  <div class="banner">
-    ⚠️ <strong>Localhost-only tool.</strong> This page talks directly (no auth) to a REW API server on
-    <code>http://127.0.0.1:4735</code>. Only run this page on the <strong>same machine</strong> that is
-    running REW, with the device under test already <strong>paired / connected to that machine</strong>.
-    Do not expose the REW API port to a network, and don't open this page from a remote host.
-  </div>
-
   <section class="workflow-step">
-    <details id="setupSection" class="collapsible-step">
+    <!-- open by default: matches the first-visit state, so restoring a remembered
+         state never has to fight a toggle event it cannot distinguish from a click -->
+    <details id="setupSection" class="collapsible-step" open>
     <summary>
       <h2>Step 0 — REW Setup</h2>
       <span class="optional-tag">one-time setup</span>
@@ -626,7 +612,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
   </section>
 
   <section class="workflow-step">
-    <details id="manualSection" class="collapsible-step">
+    <details class="collapsible-step">
     <summary>
       <h2>Step 4b — Measure a filter set by another tool</h2>
       <span class="optional-tag">optional</span>
@@ -740,23 +726,105 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 
 <script type="module">
 // ═══════════════════════════════════════════════════════════════════════════
-//  DEPLOYMENT PATHS — the only two lines to change when relocating this page
+//  DEPLOYMENT PATHS — read from config.json, NOT edited in this file
 // ═══════════════════════════════════════════════════════════════════════════
-// Both are resolved relative to this HTML file, and both accept absolute URLs
+// config.json sits next to this page and names the two folders it loads from.
+// Keeping them out of the HTML is what lets this file be copied verbatim
+// between the repo and the website: only the config differs, so a copy is a
+// plain overwrite with nothing to re-edit and nothing to forget.
+//
+//   devicePEQBase — the devicePEQ folder: plugin.js, peqConstraints.js, the
+//                   connectors/handlers they pull in, and
+//                   peqConstraintsConfig.json.
+//   rewLibBase    — this tool's own two modules: rew-client.mjs (REW's HTTP
+//                   API) and filter-response.mjs (the biquad model and fits).
+//   gaMeasurementId — optional. When present, loads Google Analytics. Omit it
+//                   (as the in-repo config does) and no third-party script is
+//                   requested at all.
+//
+// Both resolve relative to this HTML file and both accept absolute URLs
 // (e.g. 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/').
 // Trailing slash required.
 //
-//   DEVICEPEQ_BASE — the devicePEQ folder: plugin.js, peqConstraints.js, the
-//                    connectors/handlers they pull in, and
-//                    peqConstraintsConfig.json.
-//   REWLIB_BASE    — this tool's own two modules: rew-client.mjs (REW's HTTP
-//                    API) and filter-response.mjs (the biquad model and fits).
-//
-// Point DEVICEPEQ_BASE at the SAME devicePEQ build the site serves to users —
+// Point devicePEQBase at the SAME devicePEQ build the site serves to users —
 // verifying a stale copy produces confident verdicts about code nobody is
 // running.
-const DEVICEPEQ_BASE = '../../devicePEQ/';
-const REWLIB_BASE    = '../rew-peq-capability-test/';
+const PATH_DEFAULTS = {
+  devicePEQBase: '../../devicePEQ/',
+  rewLibBase:    '../rew-peq-capability-test/',
+};
+
+// Defaults are the in-repo layout, so the tool still runs from a fresh checkout
+// with no config.json at all. A DEPLOYED copy always needs one — and if it is
+// missing there, these defaults point at folders that do not exist, so the
+// import below fails loudly rather than quietly loading the wrong devicePEQ.
+async function loadPathConfig() {
+  const url = new URL('./config.json', location.href).href;
+  let raw;
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      console.warn(`[config] ${url} -> ${res.status}; using built-in repo-relative defaults. ` +
+        `A deployed copy of this page needs its own config.json.`);
+      return PATH_DEFAULTS;
+    }
+    raw = await res.json();
+  } catch (e) {
+    console.warn(`[config] could not read ${url} (${e.message}); using built-in defaults.`);
+    return PATH_DEFAULTS;
+  }
+  const cfg = { ...PATH_DEFAULTS, gaMeasurementId: raw?.gaMeasurementId ?? null };
+  for (const key of ['devicePEQBase', 'rewLibBase']) {
+    const v = raw?.[key];
+    if (v === undefined) continue;
+    if (typeof v !== 'string' || !v) {
+      console.warn(`[config] ${key} must be a non-empty string, got ${JSON.stringify(v)} — keeping default.`);
+      continue;
+    }
+    // A missing trailing slash silently resolves one directory too high, which
+    // shows up as a confusing 404 on plugin.js rather than as a config mistake.
+    cfg[key] = v.endsWith('/') ? v : `${v}/`;
+    if (!v.endsWith('/')) console.warn(`[config] ${key} had no trailing slash; treating it as "${cfg[key]}".`);
+  }
+  console.log(`[config] devicePEQBase=${cfg.devicePEQBase}  rewLibBase=${cfg.rewLibBase}`);
+  return cfg;
+}
+
+const PATHS = await loadPathConfig();
+const DEVICEPEQ_BASE = PATHS.devicePEQBase;
+const REWLIB_BASE    = PATHS.rewLibBase;
+
+// ── Optional analytics ─────────────────────────────────────────────────────
+// Off unless config.json names a measurement id, so the in-repo copy loads no
+// third-party script at all and a local run stays entirely local. The deployed
+// copy on pragmaticaudio.com sets it; that is the only difference.
+//
+// Deliberately fire-and-forget: analytics must never be able to break the tool.
+// A blocked request (ad blocker, offline, no network at all — this page's real
+// job only needs localhost) is caught and logged, and gtag() stays callable
+// either way because dataLayer is a plain array that nothing ever drains.
+function initAnalytics(measurementId) {
+  if (!measurementId) return;
+  if (!/^(G|UA|GT)-[A-Za-z0-9-]+$/.test(measurementId)) {
+    console.warn(`[analytics] ignoring malformed measurement id ${JSON.stringify(measurementId)}`);
+    return;
+  }
+  try {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function gtag() { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', measurementId);
+    const tag = document.createElement('script');
+    tag.async = true;
+    tag.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+    tag.onerror = () => console.warn('[analytics] gtag.js did not load (blocked or offline) — the tool is unaffected.');
+    document.head.appendChild(tag);
+    console.log(`[analytics] enabled (${measurementId})`);
+  } catch (e) {
+    console.warn(`[analytics] disabled after an error: ${e.message} — the tool is unaffected.`);
+  }
+}
+initAnalytics(PATHS.gaMeasurementId);
 
 // Dynamic import() rather than `import ... from`: a static specifier has to be
 // a string literal, so it cannot reference the constants above. Costs a
@@ -782,7 +850,6 @@ const {
   getSampleRate,
   magnitudeAt,
   rewInFlight,
-  RewTimeoutError,
 } = await import(`${REWLIB_BASE}rew-client.mjs`);
 const {
   compareToTheoretical,
@@ -1101,10 +1168,46 @@ function renderConstraints() {
 // is a real cost for a string nobody ever sees.
 const SETUP_STATE_KEY = 'devicepeq-rew-bench:setupOpen:v1';
 
-function applySetupState() {
-  const stored = localStorage.getItem(SETUP_STATE_KEY);
-  $('setupSection').open = stored === null ? true : stored === 'true';
+// <details> fires 'toggle' ASYNCHRONOUSLY and identically for a click and for a
+// scripted `.open = x`, so neither a suppression flag nor listener ordering can
+// separate them — both were tried and both still recorded the restore as a user
+// choice. What does work: ship the markup already `open`, i.e. matching a first
+// visit. Then the common paths change nothing and fire nothing, and the one
+// case that does fire (closing it because 'false' was remembered) simply writes
+// back the value it just read.
+function setSetupOpen(open) {
+  const el = $('setupSection');
+  if (el.open !== open) el.open = open;
 }
+
+// Anything that only succeeds once REW and the device are genuinely working is
+// proof the one-time setup is done: the "Check REW" button, a captured
+// baseline, or simply starting a run. Hooking several of them matters because
+// going straight to connect-and-Run is a normal path, and used to leave Step 0
+// expanded forever since nothing had ever marked it done.
+//
+// Storage only — deliberately no DOM change. Collapsing Step 0 out from under
+// someone who has just pressed Run is startling, and if they had opened it on
+// purpose it also discards that choice. It takes effect from the NEXT load,
+// which is exactly "remember the first time, hide it the second time".
+//
+// Only writes when nothing is stored yet: once the user has expanded or
+// collapsed it themselves, that preference wins and is never overwritten here.
+function markSetupDone() {
+  try {
+    if (localStorage.getItem(SETUP_STATE_KEY) === null) {
+      localStorage.setItem(SETUP_STATE_KEY, 'false');
+    }
+  } catch { /* quota / private mode — nothing to remember, no harm done */ }
+}
+
+function applySetupState() {
+  let stored = null;
+  try { stored = localStorage.getItem(SETUP_STATE_KEY); } catch { /* private mode */ }
+  setSetupOpen(stored === null ? true : stored === 'true');
+}
+
+// Order matters: apply first, listen second.
 applySetupState();
 $('setupSection').addEventListener('toggle', () => {
   try { localStorage.setItem(SETUP_STATE_KEY, String($('setupSection').open)); } catch { /* quota */ }
@@ -1149,13 +1252,15 @@ $('checkRewBtn').addEventListener('click', async () => {
     status.textContent = `reachable — ${msg}`;
     status.className = 'status-pill pill-connected';
     // Setup is demonstrably done — fold it away, and remember that.
-    $('setupSection').open = false;
+    setSetupOpen(false);
     // Cheap, and removes the single most common source of false shape failures.
     await syncSampleRateFromRew({ quiet: true });
   } catch (e) {
     status.textContent = e.message;
     status.className = 'status-pill pill-disconnected';
-    $('setupSection').open = true;
+    // Re-open on failure whatever the remembered state: this is exactly when
+    // the instructions are wanted again.
+    setSetupOpen(true);
   }
 });
 
@@ -1177,6 +1282,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
     status.textContent = 'capturing sweep…';
     const timeoutMs = Number($('timeoutMs').value) || 40000;
     const captured = await triggerAndCaptureSweep(timeoutMs, { what: 'capturing baseline sweep' });
+    if (captured) markSetupDone();   // a real sweep came back: setup works
     if (!captured) { status.textContent = 'baseline capture skipped'; status.className = 'status-pill pill-disconnected'; return; }
 
     await renameMeasurement(captured.id, 'PEQTEST-BASELINE');
@@ -2239,6 +2345,7 @@ function updateRunButtons() {
 
 $('runBtn').addEventListener('click', async () => {
   running = true; stopRequested = false;
+  markSetupDone();
   updateRunButtons();
   $('runStatus').textContent = 'running…';
 
