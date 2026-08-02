@@ -10,7 +10,31 @@
 //
 //   qCompensation: { model: 'rbjGain' }                  // ratio = 1/A(gain)
 //   qCompensation: { model: 'constant', ratio: 0.701 }   // flat scale
+//   qCompensation: { model: 'cosNyquist', designFs: 49152 }  // ratio = cos(pi*f/designFs)
 //   (absent)                                             // no compensation
+//
+// 'cosNyquist' has no fitted constants — it is  ratio = cos(pi*f/fs)  and drops
+// out of one arithmetic slip. RBJ's peaking alpha is sin(w0)/(2Q); a device that
+// computes sin(w0/2)/Q instead — the same value if you forget that sin(w0) is
+// 2*sin(w0/2)*cos(w0/2) — realises
+//
+//   Q_realised / Q_requested = sin(w0) / (2*sin(w0/2)) = cos(w0/2)
+//
+// which is 1.0 at DC, still 0.998 at 1 kHz, and falls away only as the filter
+// approaches Nyquist: 0.87 at 8 kHz, 0.72 at 12 kHz, 0.52 at 16 kHz. That is the
+// shape measured on WalkPlay SchemeNo11 parts, and fitting a free constant and
+// exponent to those measurements judged no better than the plain law.
+//
+// `designFs` is the rate the device's OWN FIRMWARE designs its biquads at — a
+// fixed property of the part, not the rate being streamed and not the rate any
+// test happened to run at. w0 above is the device's internal digital frequency,
+// 2*pi*(frequency written)/designFs, so the law needs only the number actually
+// sent on the wire and this one device constant. Nothing here tracks the stream.
+//
+// On SchemeNo11 designFs is ~49152 (a 49.152 MHz clock domain) while the part
+// runs at 48000, and that same mismatch is what produces the flat centre-
+// frequency offset these devices also need: 48000/49152 = 0.9766, measured
+// 0.9775. One device trait, two visible symptoms, neither tied to the test.
 //
 // The ratio is always expressed as REALISED / REQUESTED, i.e. what a
 // measurement reports, never its reciprocal. A device whose filters come out
@@ -109,9 +133,34 @@ export function resolveQCompensation(modelConfig, { ignoreGlobalSwitch = false }
       }
       return ratio === NO_COMPENSATION ? null : { model: 'constant', ratio };
     }
+    if (spec.model === 'cosNyquist') {
+      const designFs = Number(spec.designFs);
+      if (!Number.isFinite(designFs) || designFs <= 0) {
+        console.warn(
+          `USB Device PEQ: qCompensation model 'cosNyquist' needs a positive designFs (the rate ` +
+          `the device's own firmware designs its biquads at — NOT the rate being streamed), got ` +
+          `${JSON.stringify(spec.designFs)} — compensation disabled.`);
+        return null;
+      }
+      // Both default to the plain law. They exist so a device that follows the
+      // same shape but not the same constants can be configured without a new
+      // model — not as knobs to reach for first. On the parts measured so far
+      // the defaults fit as well as a free fit, so leave them alone unless a
+      // measurement says otherwise.
+      const constant = spec.constant === undefined ? 1 : Number(spec.constant);
+      const exponent = spec.exponent === undefined ? 1 : Number(spec.exponent);
+      if (!Number.isFinite(constant) || constant <= 0 || !Number.isFinite(exponent)) {
+        console.warn(
+          `USB Device PEQ: qCompensation 'cosNyquist' constant must be positive and exponent ` +
+          `finite, got ${JSON.stringify({ constant: spec.constant, exponent: spec.exponent })} — ` +
+          `compensation disabled.`);
+        return null;
+      }
+      return { model: 'cosNyquist', constant, exponent, designFs };
+    }
     console.warn(
       `USB Device PEQ: unknown qCompensation model ${JSON.stringify(spec.model)} — ` +
-      `compensation disabled. Known models: 'rbjGain', 'constant'.`);
+      `compensation disabled. Known models: 'rbjGain', 'constant', 'cosNyquist'.`);
     return null;
   }
 
@@ -123,7 +172,15 @@ export function resolveQCompensation(modelConfig, { ignoreGlobalSwitch = false }
 
 // Realised / requested Q for this filter, or 1.0 when nothing applies.
 // `types` narrows which filter types the law is allowed to touch.
-export function qRealisedRatio(gainDb, filterType, modelConfig, { types } = {}) {
+//
+// `freq` is only read by frequency-dependent models, and for those it must be
+// the frequency actually being WRITTEN to the device (i.e. after any centre-
+// frequency compensation), because the law describes what the device's own
+// firmware does with the number it receives. It is optional so existing callers
+// keep working, but a frequency-dependent model with no freq to work from
+// cannot do its job — it says so rather than silently applying nothing and
+// looking like it worked.
+export function qRealisedRatio(gainDb, filterType, modelConfig, { types, freq } = {}) {
   const spec = resolveQCompensation(modelConfig);
   if (!spec) return NO_COMPENSATION;
   if (!appliesTo(filterType, types)) return NO_COMPENSATION;
@@ -132,6 +189,19 @@ export function qRealisedRatio(gainDb, filterType, modelConfig, { types } = {}) 
   if (spec.model === 'rbjGain') {
     const A = rbjA(gainDb);
     return A === 0 ? NO_COMPENSATION : 1 / A;
+  }
+  if (spec.model === 'cosNyquist') {
+    const f = Number(freq);
+    if (!Number.isFinite(f) || f <= 0) {
+      warnOnce('cosNyquist:nofreq',
+        `USB Device PEQ: qCompensation 'cosNyquist' needs the filter frequency being WRITTEN ` +
+        `(got ${JSON.stringify(freq)}) — Q compensation skipped for this filter.`);
+      return NO_COMPENSATION;
+    }
+    // cos() reaches 0 at the design Nyquist and goes negative past it; a filter
+    // there is not realisable, so clamp rather than return a negative ratio.
+    const x = Math.min(Math.max(f / spec.designFs, 0), 0.5 - 1e-9);
+    return spec.constant * Math.pow(Math.cos(Math.PI * x), spec.exponent);
   }
   return NO_COMPENSATION;
 }
@@ -143,8 +213,8 @@ export function qRealisedRatio(gainDb, filterType, modelConfig, { types } = {}) 
 // Warn with the width that will actually result rather than quietly delivering
 // a filter several times wider than asked for.
 export function compensateQForWrite(q, gainDb, filterType, modelConfig,
-                                    { label = 'Device', types } = {}) {
-  const ratio = qRealisedRatio(gainDb, filterType, modelConfig, { types });
+                                    { label = 'Device', types, freq } = {}) {
+  const ratio = qRealisedRatio(gainDb, filterType, modelConfig, { types, freq });
   if (ratio === NO_COMPENSATION) return q;
 
   const minQ = modelConfig?.minQ ?? 0.1;
@@ -167,16 +237,16 @@ export function compensateQForWrite(q, gainDb, filterType, modelConfig,
 // than this cannot succeed no matter what is written, so callers that generate
 // requests (test plans, UI sliders) should bound themselves by it rather than
 // producing a request that is guaranteed to clamp.
-export function maxRealisableQ(modelConfig, gainDb, { types } = {}) {
+export function maxRealisableQ(modelConfig, gainDb, { types, freq } = {}) {
   const maxQ = modelConfig?.maxQ ?? 10;
-  const ratio = qRealisedRatio(gainDb, 'PK', modelConfig, { types });
+  const ratio = qRealisedRatio(gainDb, 'PK', modelConfig, { types, freq });
   return ratio === NO_COMPENSATION ? maxQ : maxQ * ratio;
 }
 
 // Inverse, so a pull reports the Q that will actually be heard and a
 // pull -> push round trip is stable instead of compounding the factor.
-export function decompensateQFromRead(q, gainDb, filterType, modelConfig, { types } = {}) {
-  const ratio = qRealisedRatio(gainDb, filterType, modelConfig, { types });
+export function decompensateQFromRead(q, gainDb, filterType, modelConfig, { types, freq } = {}) {
+  const ratio = qRealisedRatio(gainDb, filterType, modelConfig, { types, freq });
   return ratio === NO_COMPENSATION ? q : q * ratio;
 }
 
@@ -379,19 +449,35 @@ export function shelfSRealised(qStored, gainDb) {
 // uninterpretable unless you know what was being corrected while it ran.
 //
 // Reads the config only — no device I/O — so it is safe to call from UI code.
+// One place that turns a resolved Q spec into a label, so a newly added model
+// cannot be silently mislabelled as an existing one. 'cosNyquist' was, and the
+// report claimed the RBJ gain law was running on a device that had no such
+// configuration — which reads exactly like the wrong config being loaded.
+function describeQ(q) {
+  if (q.model === 'constant') {
+    return { key: 'q', label: 'Q scaling',
+             detail: `constant ${q.ratio} realised/requested — Q sent is divided by ${q.ratio}` };
+  }
+  if (q.model === 'cosNyquist') {
+    const at = (f) => (q.constant * Math.pow(Math.cos(Math.PI * f / q.designFs), q.exponent)).toFixed(3);
+    const tweaked = q.constant !== 1 || q.exponent !== 1
+      ? ` (constant ${q.constant}, exponent ${q.exponent})` : '';
+    return { key: 'q', label: 'Q vs frequency',
+             detail: `cos(pi*f/${q.designFs}) of the frequency written${tweaked} — about ` +
+                     `${at(1000)}x at 1kHz, ${at(8000)}x at 8kHz, ${at(16000)}x at 16kHz; ` +
+                     `Q sent is divided by that` };
+  }
+  return { key: 'q', label: 'Q vs gain',
+           detail: 'RBJ gain law: realised Q = requested / 10^(|gain|/40), corrected on write' };
+}
+
 export function describeActiveCompensations(modelConfig, { ignoreGlobalSwitch = false } = {}) {
   const opts = { ignoreGlobalSwitch };
   const out = [];
   if (!modelConfig) return out;
 
   const q = resolveQCompensation(modelConfig, opts);
-  if (q) {
-    out.push(q.model === 'constant'
-      ? { key: 'q', label: 'Q scaling',
-          detail: `constant ${q.ratio} realised/requested — Q sent is divided by ${q.ratio}` }
-      : { key: 'q', label: 'Q vs gain',
-          detail: 'RBJ gain law: realised Q = requested / 10^(|gain|/40), corrected on write' });
-  }
+  if (q) out.push(describeQ(q));
 
   const sh = resolveShelfCompensation(modelConfig, opts);
   if (sh) {

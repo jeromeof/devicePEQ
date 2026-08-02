@@ -63,7 +63,8 @@
 
 import { logHidTx, logHidRx } from './deviceDebugLog.js';
 
-import { compensateFreqForWrite, decompensateFreqFromRead } from './compensation.js';
+import { compensateFreqForWrite, decompensateFreqFromRead,
+         compensateQForWrite, decompensateQFromRead } from './compensation.js';
 
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;
@@ -268,22 +269,36 @@ export const walkplayUsbHID = (function () {
   // The TP35 Pro (SchemeNo16) shows no such offset — its frequency sweep passed
   // at 100/1000/5000/10000 Hz — so this is not a WalkPlay-wide trait.
   //
-  // Note what this does NOT fix: the TP13's 8 kHz cases fail with a ~7% gain
-  // error and a poor shape fit (rmse 0.19-0.39 even with frequency and gain
-  // both free), so their apparent -0.85% frequency estimate is unreliable and
-  // the correction slightly worsens them. That is a separate defect.
+  // The same parts also realise a Q lower than requested, by a factor that
+  // deepens towards the device's design Nyquist (qCompensation 'cosNyquist').
+  //
+  // Order matters: the Q law describes what the device's firmware does with the
+  // number it RECEIVES, so it is keyed off the frequency-compensated value, not
+  // the one the user asked for. Doing it in this order means neither correction
+  // has to know the stream's sample rate — the frequency compensation absorbs
+  // the clock-vs-design-rate difference, and the Q law then works purely in the
+  // device's own digital domain.
   function normalizeFilterForWrite(filter = {}, modelConfig) {
     if (filter.disabled) {
       return { freq: 0, q: 0, gain: 0, type: "PK" };
     }
 
-    const freq = Number.isFinite(filter.freq) ? filter.freq : 0;
+    const requestedFreq = Number.isFinite(filter.freq) ? filter.freq : 0;
+    const gain = Number.isFinite(filter.gain) ? filter.gain : 0;
+    const q = Number.isFinite(filter.q) ? filter.q : 0;
+    const type = filter.type || filter.filterType || "PK";
+
+    const freqToSend = requestedFreq > 0
+      ? compensateFreqForWrite(requestedFreq, modelConfig, { label: 'WalkPlay' })
+      : requestedFreq;
 
     return {
-      freq: freq > 0 ? compensateFreqForWrite(freq, modelConfig, { label: 'WalkPlay' }) : freq,
-      q: Number.isFinite(filter.q) ? filter.q : 0,
-      gain: Number.isFinite(filter.gain) ? filter.gain : 0,
-      type: filter.type || filter.filterType || "PK"
+      freq: freqToSend,
+      q: q > 0
+        ? compensateQForWrite(q, gain, type, modelConfig, { label: 'WalkPlay', freq: freqToSend })
+        : q,
+      gain,
+      type
     };
   }
 
@@ -364,10 +379,6 @@ export const walkplayUsbHID = (function () {
     const freqRaw = packet[27] | (packet[28] << 8);
     const freq = freqRaw > 0 ? decompensateFreqFromRead(freqRaw, modelConfig) : freqRaw;
 
-    // Q factor (8.8 fixed-point)
-    const qRaw = packet[29] | (packet[30] << 8);
-    const q = Math.round((qRaw / 256) * 100) / 100;
-
     // Gain (8.8 fixed-point signed)
     let gainRaw = packet[31] | (packet[32] << 8);
     if (gainRaw > 32767) gainRaw -= 65536;
@@ -375,6 +386,16 @@ export const walkplayUsbHID = (function () {
 
     // Filter type
     const type = convertToFilterType(packet[33]);
+
+    // Q factor (8.8 fixed-point), then undone through the same law as the write
+    // so a pull reports the Q that will actually be heard. Keyed off freqRaw,
+    // the value the device is actually holding — that is the number its firmware
+    // designed the biquad from, and it mirrors the write exactly.
+    const qRaw = packet[29] | (packet[30] << 8);
+    const qStored = Math.round((qRaw / 256) * 100) / 100;
+    const q = qStored > 0
+      ? decompensateQFromRead(qStored, gain, type, modelConfig, { freq: freqRaw })
+      : qStored;
 
     // Check if metadata is corrupted (all 0xFF bytes = unset marker)
     // When metadata is 0xff, the filter slot has never been written to (device uninitialized memory)

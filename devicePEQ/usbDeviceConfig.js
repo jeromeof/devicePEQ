@@ -693,6 +693,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "walkplayPeq8Band10dBLsLowpass",
           freqCompensation: { model: 'ratio', factor: 0.9775 },
+          qCompensation: { model: 'cosNyquist', designFs: 49152 },
         }
       },
       "SchemeNo16": {

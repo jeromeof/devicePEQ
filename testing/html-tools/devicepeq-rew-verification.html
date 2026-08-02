@@ -170,6 +170,26 @@
     padding: 7px 9px; font-size: 11.5px; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,0.4);
     min-width: 160px; z-index: 5; color: #d4d4d4;
   }
+  /* Covers the page while a measurement is being captured. A click landing on
+     a control mid-capture (Push, Run, Reset) would change the device or the
+     plan underneath the sweep that is already running. Deliberately ABOVE the
+     device-info modal's z-index so it cannot be clicked through either. The
+     Stop button is lifted back above it — stopping is always allowed. */
+  #measureShield {
+    position: fixed; inset: 0; display: none; z-index: 9000;
+    align-items: flex-start; justify-content: center;
+    background: rgba(0,0,0,0.35); cursor: progress;
+    -webkit-backdrop-filter: saturate(0.6); backdrop-filter: saturate(0.6);
+  }
+  #measureShield .shield-box {
+    margin-top: 18vh; background: #252526; border: 1px solid #3c3c3c;
+    border-left: 3px solid #4ec9b0; border-radius: 8px; padding: 14px 18px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5); color: #d4d4d4; font-size: 13px;
+    max-width: 460px; text-align: center;
+  }
+  #measureShield .shield-what { color: #4ec9b0; font-weight: 600; }
+  #measureShield .shield-note { color: #9d9d9d; font-size: 11.5px; margin-top: 6px; line-height: 1.5; }
+  body.measuring #stopBtn { position: relative; z-index: 9001; }
   .fc-tooltip .fc-freq { font-weight: 600; margin-bottom: 3px; color: #4ec9b0; }
   .fc-tooltip .fc-row { display: flex; justify-content: space-between; gap: 12px; }
   .fc-tooltip .fc-row .fc-k { color: #9d9d9d; }
@@ -433,6 +453,14 @@
 </style>
 </head>
 <body>
+<div id="measureShield">
+  <div class="shield-box">
+    🎤 <span class="shield-what">measuring</span> — please don't touch the page
+    <div class="shield-note">A REW sweep is running and its result has not been fully read back yet.
+    Changing filters, re-pushing, or starting another run now would apply to the sweep already in flight.
+    This clears on its own. "Stop After Current Test" still works.</div>
+  </div>
+</div>
 <div class="wrap">
   <h1>🎛️ DevicePEQ ⇄ REW Verification Tool</h1>
   <!-- Screen-hidden, print-only cover line: a printed report has to say what it
@@ -544,7 +572,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
           <label><input type="checkbox" id="grpTypes" checked> Filter type coverage (PK, LSQ, HSQ)</label>
           <label><input type="checkbox" id="grpGain" checked> Gain sweep (min → max, PK) — at each sweep frequency below</label>
           <label><input type="checkbox" id="grpQ" checked> Q sweep (min → max, PK) — at each sweep frequency below</label>
-          <label><input type="checkbox" id="grpFreq" checked> Frequency sweep (100 Hz – 10 kHz, PK)</label>
+          <label><input type="checkbox" id="grpFreq" checked> Frequency sweep (100 Hz – 16 kHz, PK, 9 points)</label>
           <label><input type="checkbox" id="grpShelf" checked> Shelf gain extremes (LSQ/HSQ @ min &amp; max gain)</label>
           <label><input type="checkbox" id="grpOther"> Other supported filter types (LP/HP/BP/Notch/AllPass/BandStop/ConstantQ) — shape-fit against a textbook RBJ model (edit the type code if it doesn't match your device's protocol; see note below)</label>
         </div>
@@ -753,6 +781,8 @@ const {
   getFrequencyResponse,
   getSampleRate,
   magnitudeAt,
+  rewInFlight,
+  RewTimeoutError,
 } = await import(`${REWLIB_BASE}rew-client.mjs`);
 const {
   compareToTheoretical,
@@ -1146,7 +1176,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
 
     status.textContent = 'capturing sweep…';
     const timeoutMs = Number($('timeoutMs').value) || 40000;
-    const captured = await triggerAndCaptureSweep(timeoutMs);
+    const captured = await triggerAndCaptureSweep(timeoutMs, { what: 'capturing baseline sweep' });
     if (!captured) { status.textContent = 'baseline capture skipped'; status.className = 'status-pill pill-disconnected'; return; }
 
     await renameMeasurement(captured.id, 'PEQTEST-BASELINE');
@@ -1284,7 +1314,10 @@ function generatePlan() {
   }
 
   if ($('grpFreq').checked) {
-    const freqs = [100, 1000, 5000, 10000].map(clampFreq);
+    // Dense above 2 kHz: gain errors that grow with frequency are common, and
+    // four points cannot tell a smooth trend from a step at some threshold.
+    // Clamping to the device's range can collapse neighbours, so dedupe.
+    const freqs = [...new Set([100, 500, 1000, 2000, 3000, 5000, 8000, 12000, 16000].map(clampFreq))];
     for (const f of freqs) plan.push(makeCase('Frequency Sweep', 'PK', f, stdGain, stdQ, f, stdGain));
   }
 
@@ -1445,6 +1478,62 @@ function renderPlan() {
   renderGroupToggles();
 }
 
+// pushBtn.click() only STARTS the write. The plugin's save is async and, on a
+// device that writes band-by-band over HID, can outlast the settle delay — so
+// the sweep then measures the PREVIOUS case's filter. That shows up as a single
+// wildly wrong case (correlation ~0.4, peak at the previous case's frequency)
+// while everything around it passes, which reads as a device defect and is not.
+//
+// plugin.js emits PeqDeviceSaved when the write actually completes, so wait for
+// that instead of guessing. The listener must be attached BEFORE the click: a
+// fast device can finish before the next statement runs.
+function pushFiltersAndWait(pushBtn, timeoutMs = 20000) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (how) => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('PeqDeviceSaved', onSaved);
+      clearTimeout(timer);
+      resolve(how);
+    };
+    const onSaved = () => finish('saved');
+    const timer = setTimeout(() => finish('timeout'), timeoutMs);
+    document.addEventListener('PeqDeviceSaved', onSaved);
+    try { pushBtn.click(); } catch (e) { finish('error:' + e.message); }
+  });
+}
+
+// Does this measurement actually show the filter we asked for? A stale capture
+// is far better reported as an error than judged as a failure — a bogus "fail"
+// sends someone looking for a device defect that is not there.
+function measurementLooksStale(tc, fr) {
+  // PEAKING only. "The biggest change should be near the centre frequency" is
+  // true for a peak and false for everything else: a low shelf's largest delta
+  // sits in its plateau at the bottom of the band, not at its corner, so this
+  // test would flag every healthy shelf.
+  if ((tc.type || '').toUpperCase() !== 'PK') return null;
+  if (!baseline?.fr || !fr || Math.abs(tc.gain) < 3) return null;
+  let peak = { f: 0, d: 0 };
+  for (const f of EVAL_FREQS) {
+    const d = magnitudeAt(fr, f) - magnitudeAt(baseline.fr, f);
+    if (Math.abs(d) > Math.abs(peak.d)) peak = { f, d };
+  }
+  if (Math.abs(peak.d) < 1) return null;              // nothing measurable either way
+  const ratio = peak.f / tc.freq;
+  // Deliberately blunt thresholds. This is not a shape check — Insights already
+  // does that properly — it exists only to catch a capture of a DIFFERENT
+  // filter, which is off by an octave or more or has the opposite sign. A tight
+  // window would flag broad filters, whose peak position is barely defined: a
+  // Q=0.1 case measured 1.5x off its centre and is perfectly healthy.
+  const wrongPlace = (tc.q ?? 1) >= 0.5 && (ratio < 0.5 || ratio > 2);
+  const wrongSign = Math.sign(peak.d) !== Math.sign(tc.gain);
+  if (!wrongPlace && !wrongSign) return null;
+  return `measured curve peaks ${peak.d.toFixed(1)}dB at ${peak.f.toFixed(0)}Hz, but this case asked for `
+    + `${tc.gain}dB at ${tc.freq}Hz — the capture does not show the requested filter `
+    + `(usually the previous case's, i.e. the write had not landed when the sweep ran)`;
+}
+
 // ---------------------------------------------------------------------------
 // Manual-trigger fallback (no REW Pro): show a banner, wait for the user.
 // ---------------------------------------------------------------------------
@@ -1464,16 +1553,50 @@ $('manualSkipBtn').addEventListener('click', () => manualResolve && manualResolv
 // the user chose to skip during the manual fallback. Used by both baseline
 // capture and the per-test-case runner so the two stay in sync.
 // ---------------------------------------------------------------------------
-let triggerAndCaptureSweep = async function (timeoutMs) {
-  const before = await listMeasurementIds();
-  const auto = await triggerSweepCommand();
-  if (!auto) {
-    const proceed = await waitForManualContinue();
-    if (!proceed) return null;
+// A capture is a multi-step sequence — list ids, trigger, wait for exactly one
+// new id, fetch its curve — and it is only correct if it is the ONLY sequence
+// running. Two overlapping captures each see the other's measurement appear.
+// The client queue serialises individual HTTP calls; this guards the sequence.
+let captureInProgress = false;
+
+// Everything that must not be touched while a capture is mid-flight. Reading a
+// partially-returned measurement, re-pushing filters under it, or starting a
+// second run would all corrupt the capture in progress.
+function setMeasurementLock(locked, what) {
+  document.body.classList.toggle('measuring', locked);
+  const shield = $('measureShield');
+  if (shield) {
+    shield.style.display = locked ? 'flex' : 'none';
+    shield.querySelector('.shield-what').textContent = what || 'measuring';
   }
-  const id = await waitForNewMeasurement(before, { timeoutMs });
-  const fr = await getFrequencyResponse(id);
-  return { id, fr };
+}
+
+let triggerAndCaptureSweep = async function (timeoutMs, { what = 'measuring' } = {}) {
+  if (captureInProgress) {
+    throw new Error('A measurement capture is already in progress — refusing to start a second one. (This is the guard that stops two sweeps being attributed to the wrong test cases.)');
+  }
+  captureInProgress = true;
+  setMeasurementLock(true, what);
+  try {
+    const before = await listMeasurementIds();
+    const auto = await triggerSweepCommand({ timeoutMs });
+    if (!auto) {
+      // The manual fallback is the one point where the user MUST interact, so
+      // the shield comes down for it and goes back up once they continue.
+      setMeasurementLock(false);
+      const proceed = await waitForManualContinue();
+      setMeasurementLock(true, what);
+      if (!proceed) return null;
+    }
+    const id = await waitForNewMeasurement(before, { timeoutMs });
+    const fr = await getFrequencyResponse(id);
+    // Only release the lock once the curve is fully in hand: a caller that saw
+    // the id but not yet the magnitudes is holding a partial measurement.
+    return { id, fr };
+  } finally {
+    captureInProgress = false;
+    setMeasurementLock(false);
+  }
 }
 
 // Pushes every filter band, gain=0 and disabled, to the connected device —
@@ -2158,7 +2281,11 @@ $('runBtn').addEventListener('click', async () => {
     filtersState = [{ freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type, disabled: false }];
     try {
       markActivity(`case #${tc.id}: push filter to device`);
-      pushBtn.click();
+      const how = await pushFiltersAndWait(pushBtn);
+      if (how !== 'saved') {
+        console.warn(`[case #${tc.id}] push did not confirm (${how}) — measuring anyway, `
+          + `but a stale capture is possible`);
+      }
     } catch (e) {
       tc.status = 'error'; tc.error = e.message; renderResultRow(tc); continue;
     }
@@ -2169,15 +2296,53 @@ $('runBtn').addEventListener('click', async () => {
 
     try {
       markActivity(`case #${tc.id}: REW sweep + fetch FR`);
-      const captured = await triggerAndCaptureSweep(timeoutMs);
+      const captured = await triggerAndCaptureSweep(timeoutMs, { what: `measuring ${labelFor(tc)}` });
       if (!captured) { tc.status = 'skipped'; renderResultRow(tc); continue; }
-      const { id, fr } = captured;
+      let { id, fr } = captured;   // fr is reassigned if a stale capture has to be retried
       markActivity(`case #${tc.id}: rename measurement ${id}`);
       await renameMeasurement(id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}`.slice(0, 60));
+      // Record the id BEFORE anything can short-circuit, or a case that bails
+      // out below exports measurementId:null and looks like a capture failure
+      // when the capture was fine.
+      tc.measurementId = id;
+
+      // A capture showing the wrong filter is almost always the device not yet
+      // holding the new one — the write is confirmed by PeqDeviceSaved, but a
+      // WalkPlay part still needs a moment to commit and apply it. Retry once
+      // with a longer settle before giving up: a spurious error is nearly as
+      // misleading as a spurious failure, and one retry recovers it.
+      let fr2 = fr;
+      let stale = measurementLooksStale(tc, fr2);
+      if (stale) {
+        console.warn(`[case #${tc.id}] ${stale} — retrying once with a longer settle`);
+        markActivity(`case #${tc.id}: RETRY after stale capture`);
+        try {
+          filtersState = [{ freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type, disabled: false }];
+          await pushFiltersAndWait(pushBtn);
+          await sleep(Math.max(settleMs * 2, 2000));
+          const again = await triggerAndCaptureSweep(timeoutMs, { what: `re-measuring ${labelFor(tc)} after a stale capture` });
+          if (again) {
+            fr2 = again.fr;
+            tc.measurementId = again.id;
+            await renameMeasurement(again.id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}-retry`.slice(0, 60));
+            stale = measurementLooksStale(tc, fr2);
+            tc.retried = true;
+          }
+        } catch (e) {
+          console.warn(`[case #${tc.id}] retry failed: ${e.message}`);
+        }
+      }
+      if (stale) {
+        tc.status = 'error'; tc.error = stale; tc.fr = fr2;
+        console.warn(`[case #${tc.id}] still stale after retry — not judging this case`);
+        renderResultRow(tc); continue;
+      }
+      fr = fr2;
       const baseMag = magnitudeAt(baseline.fr, tc.measureFreq);
       const testMag = magnitudeAt(fr, tc.measureFreq);
       tc.measuredDelta = testMag - baseMag;
-      tc.measurementId = id;
+      // (measurementId was recorded above, and updated if a retry replaced the
+      // capture — do not reset it to the first attempt's id here.)
       // Keep the raw curve so the JSON export can double as a fixture file for
       // filter-response.test.js, not just a results log. Held as the original
       // Float32Array: JSON.stringify does silently drop TypedArray contents, but
@@ -2706,6 +2871,39 @@ function analyseLevelOffset(ms) {
   return { severity, title: 'Broadband level (SPL) offset', finding, math, next };
 }
 
+// Median gain ratio per frequency, then a fit against log10(f). Returns the
+// table unconditionally (it is worth showing even when flat) and isTrend only
+// when the swing is real, monotonic-ish and well fitted.
+function gainVsFrequency(usable) {
+  const byFreq = new Map();
+  for (const m of usable) {
+    if (!(m.spec.freq > 0)) continue;
+    if (!byFreq.has(m.spec.freq)) byFreq.set(m.spec.freq, []);
+    byFreq.get(m.spec.freq).push(m.gainScale);
+  }
+  if (byFreq.size < 3) return null;
+
+  const rows = [...byFreq.entries()]
+    .map(([freq, rs]) => ({ freq, ratio: medianOf(rs), spread: madOf(rs), n: rs.length }))
+    .sort((a, b) => a.freq - b.freq);
+
+  const fit = linearFit(rows.map((r) => Math.log10(r.freq)), rows.map((r) => r.ratio));
+  if (!fit) return null;
+  const lo = rows[0], hi = rows[rows.length - 1];
+  const swing = Math.max(...rows.map((r) => r.ratio)) - Math.min(...rows.map((r) => r.ratio));
+
+  let math = `applied/requested gain ratio by frequency (${rows.length} frequencies):`;
+  for (const r of rows) {
+    math += `\n  ${String(Math.round(r.freq)).padStart(6)} Hz   ${r.ratio.toFixed(3)}x   (${pctSigned(r.ratio - 1)}${r.n > 1 ? `, MAD ${r.spread.toFixed(3)}, n=${r.n}` : `, n=1`})`;
+  }
+  math += `\nratio = ${fit.slope.toFixed(4)}·log10(f) ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(4)}   (r² ${fit.r2.toFixed(4)}, ${fit.n} pts)`;
+
+  // 3% swing is well above measurement scatter; r² keeps a noisy scatter from
+  // being sold as a law.
+  const isTrend = swing >= 0.03 && fit.r2 >= 0.7;
+  return { rows, lo, hi, swing, slope: fit.slope, intercept: fit.intercept, r2: fit.r2, n: rows.length, isTrend, math };
+}
+
 function analyseGainAccuracy(ms) {
   // Pools every measured case. When one filter type misbehaves and the rest are
   // fine, that type is outvoted here — the shelf finding above is the one that
@@ -2736,8 +2934,25 @@ function analyseGainAccuracy(ms) {
     math += `\napplied = ${fit.slope.toFixed(4)}·requested ${fit.intercept >= 0 ? '+' : '−'} ${Math.abs(fit.intercept).toFixed(3)} dB   (r² ${fit.r2.toFixed(4)}, ${fit.n} pts)`;
   }
 
+  // Before calling an inconsistent ratio "noise or clipping", check whether it
+  // is actually tracking FREQUENCY. A gain error that grows towards the top of
+  // the band is a real DSP characteristic and is compensable; it is invisible
+  // to the gain-vs-gain fit above, which pools every frequency together.
+  const freqTrend = gainVsFrequency(usable);
+  if (freqTrend) math += `\n${freqTrend.math}`;
+
   if (nearRatio(medScale, 1, 0.04) && spread < 0.04 && (!fit || Math.abs(fit.intercept) < 0.25)) {
     return { severity: 'ok', title: 'Gain is applied accurately', finding: `Applied gain tracks requested gain at ${medScale.toFixed(3)}x with tight agreement (MAD ${spread.toFixed(3)}).`, math };
+  }
+
+  if (freqTrend && freqTrend.isTrend) {
+    return {
+      severity: 'high',
+      title: 'Gain error depends on FREQUENCY, not on gain',
+      finding: `The applied/requested gain ratio is not one number — it tracks frequency, from ${freqTrend.lo.ratio.toFixed(3)}x at ${Math.round(freqTrend.lo.freq)} Hz to ${freqTrend.hi.ratio.toFixed(3)}x at ${Math.round(freqTrend.hi.freq)} Hz (${freqTrend.n} frequencies, r² ${freqTrend.r2.toFixed(3)} against log frequency). Pooled across frequencies this looks like an inconsistent gain scale, but it is systematic: at any one frequency the ratio is stable regardless of how much gain was asked for.`,
+      math,
+      next: `This is a candidate for a frequency-dependent gain compensation on this device group. The fit above (ratio = ${freqTrend.slope.toFixed(4)}·log10(f) ${freqTrend.intercept >= 0 ? '+' : '−'} ${Math.abs(freqTrend.intercept).toFixed(4)}) is the law to encode; check r² and the per-frequency table to confirm it is a smooth trend rather than a step above some threshold.`,
+    };
   }
 
   let severity = 'high', finding, next;
@@ -3284,17 +3499,85 @@ function writeDiag(extra = {}) {
   } catch { /* private mode / quota — diagnostics must never break the run */ }
 }
 
+// ── Click-blocker detection ────────────────────────────────────────────────
+// A frozen main thread and a page whose clicks are being swallowed look
+// identical from outside — both leave the UI unresponsive — but they have
+// nothing in common as bugs. The live dot separates them: if it keeps ticking
+// while nothing responds, the thread is fine and something is COVERING the
+// page. This names that something instead of leaving it to guesswork.
+//
+// It works by asking the browser what element would actually receive a click at
+// the centre of a control we know is there. If the answer is not that control,
+// whatever came back is sitting on top of it.
+function describeEl(el) {
+  if (!el) return '(nothing)';
+  const id = el.id ? `#${el.id}` : '';
+  const cls = typeof el.className === 'string' && el.className
+    ? '.' + el.className.trim().split(/\s+/).join('.') : '';
+  return `${el.tagName.toLowerCase()}${id}${cls}`;
+}
+
+function findClickBlocker() {
+  const probes = ['genPlanBtn', 'insightsBtn', 'exportJsonBtn', 'runBtn']
+    .map((id) => $(id)).filter(Boolean);
+  for (const el of probes) {
+    const r = el.getBoundingClientRect();
+    // Skip anything not currently on screen — "can't be clicked because it is
+    // scrolled away" is not the fault we are looking for.
+    if (r.width === 0 || r.height === 0) continue;
+    if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (!top || top === el || el.contains(top) || top.contains(el)) continue;
+    return report(describeEl(el), top);
+  }
+
+  // Fall back to the viewport centre. Without this the check is useless in the
+  // exact situation it exists for: during a long run the page is usually
+  // scrolled to the results, every probe button is off-screen, and a
+  // full-viewport overlay would go unreported.
+  const mid = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+  for (let el = mid; el; el = el.parentElement) {
+    const cs = getComputedStyle(el);
+    if (cs.position !== 'fixed' || cs.pointerEvents === 'none') continue;
+    const r = el.getBoundingClientRect();
+    if (r.width >= innerWidth * 0.9 && r.height >= innerHeight * 0.9) {
+      return report('viewport centre', el);
+    }
+  }
+  return null;
+}
+
+function report(probe, top) {
+  const cs = getComputedStyle(top);
+  const tr = top.getBoundingClientRect();
+  return {
+    probe,
+    blocker: describeEl(top),
+    position: cs.position,
+    zIndex: cs.zIndex,
+    pointerEvents: cs.pointerEvents,
+    size: `${Math.round(tr.width)}x${Math.round(tr.height)}`,
+    coversViewport: tr.width >= innerWidth * 0.9 && tr.height >= innerHeight * 0.9,
+  };
+}
+
 const LIVE_FRAMES = ['◐', '◓', '◑', '◒'];
 (function watchForStalls() {
   const TICK = 1000, STALL = 3000;
   let expected = performance.now() + TICK;
   let beat = 0;
+  let blockerReported = false;
   setInterval(() => {
     const now = performance.now();
     const late = now - expected;
     if (late > STALL) {
       const trail = breadcrumbTrail();
-      const msg = `⚠️ main thread blocked for ~${(late / 1000).toFixed(1)}s during: ${lastActivity}`;
+      // A REW request outstanding at the moment of the stall is the single most
+      // useful fact here: it separates "our own code is grinding" from "we are
+      // waiting on REW", which have completely different fixes.
+      const pending = rewInFlight();
+      const msg = `⚠️ main thread blocked for ~${(late / 1000).toFixed(1)}s during: ${lastActivity}`
+        + (pending ? ` — REW request in flight at the time: ${pending}` : ' — no REW request was in flight');
       console.warn('[stall]', msg);
       // The trail is the actionable part — print it as a group so it can be
       // copied out whole rather than one interleaved line at a time.
@@ -3312,6 +3595,23 @@ const LIVE_FRAMES = ['◐', '◓', '◑', '◒'];
     beat = (beat + 1) % LIVE_FRAMES.length;
     const dot = $('liveDot');
     if (dot) dot.textContent = LIVE_FRAMES[beat];
+
+    // Report a blocker once when it appears and once when it clears, rather
+    // than every second — it can legitimately be present while a modal is open.
+    const blocker = findClickBlocker();
+    if (blocker && !blockerReported) {
+      blockerReported = true;
+      console.warn('[input] clicks are being intercepted — the page is NOT frozen, ' +
+        'something is covering it:', blocker);
+      const el = $('runStatus');
+      if (el) el.textContent =
+        `⚠️ clicks blocked by ${blocker.blocker} (${blocker.position}, z-index ${blocker.zIndex}, ` +
+        `${blocker.size}${blocker.coversViewport ? ', covers the viewport' : ''}) — see console`;
+      writeDiag({ clickBlocker: blocker });
+    } else if (!blocker && blockerReported) {
+      blockerReported = false;
+      console.log('[input] click interception cleared');
+    }
     expected = now + TICK;
   }, TICK);
 })();
@@ -3371,7 +3671,7 @@ async function captureManualMeasurement() {
   status.textContent = 'measuring…';
   $('manualMeasureBtn').disabled = true;
   try {
-    const captured = await triggerAndCaptureSweep(timeoutMs);
+    const captured = await triggerAndCaptureSweep(timeoutMs, { what: 'manual measurement' });
     if (!captured) { status.textContent = 'cancelled'; return; }
     const { id, fr } = captured;
 
@@ -3475,6 +3775,7 @@ window.__bench = {
   stubSweep(result) { triggerAndCaptureSweep = async () => result; },
   exportPayload() { return buildExportPayload(); },
   markActivity,
+  looksStale: (tc, fr) => measurementLooksStale(tc, fr),
   csvHead() {
     const impl = implementationFingerprint() ?? {};
     return ['handlerName', 'schemeNo', 'deviceGroup', 'peqConstraintsRef', 'vendorId', 'productId']
