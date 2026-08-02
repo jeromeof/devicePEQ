@@ -99,7 +99,7 @@ function biquadCoefficients(type, centerFreq, gainDb, q, fs) {
 }
 
 // Filter types this model can produce a theoretical curve for. Kept as a
-// single exported list so callers (e.g. the REW verification bench) can
+// single exported list so callers (e.g. the REW verification tool) can
 // decide "shape-fit vs single-point/record-only" without duplicating this
 // set themselves.
 export const MODELED_FILTER_TYPES = ['PK', 'LSQ', 'HSQ', 'LPF', 'HPF', 'BPF', 'NOTCH', 'BSF', 'APF', 'CQ'];
@@ -348,5 +348,146 @@ export function estimateEffectiveQ(baselineFr, measuredFr, filterSpec, {
     rmseAtRequestedQ,
     ratio: best.q / filterSpec.q,
     significant,
+  };
+}
+
+// ── Blind filter estimation ────────────────────────────────────────────────
+// "Something changed the response — what filter was it?" Given a measured delta
+// curve with NO known target, recover type/frequency/gain/Q.
+//
+// This exists for measurements taken through someone else's tool (a vendor web
+// app, a phone app): the device was configured outside this bench, so there is
+// no requested spec to compare against — only the acoustic result. Recovering
+// the parameters lets the same shape-fit machinery run on it, and lets a user
+// check whether what a vendor tool SAYS it applied is what it actually applied.
+//
+// Coordinate descent rather than a 3-D grid: a joint grid over freq x gain x Q at
+// useful resolution is millions of evaluations and would block the page for
+// seconds, while cycling 1-D refinements converges on this well-behaved surface
+// in a fraction of that. Each candidate fits its own level offset, so a broadband
+// level shift (device pregain) never leaks into the gain estimate.
+const EST_TYPES = ['PK', 'LSQ', 'HSQ'];
+
+function rmseWithOffset(points, spec, fs) {
+  const res = points.map((p) => p.delta - theoreticalMagnitudeDb(spec, p.freq, fs));
+  const sorted = [...res].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  const offset = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  let sum = 0;
+  for (const r of res) { const e = r - offset; sum += e * e; }
+  return { rmse: Math.sqrt(sum / res.length), offset };
+}
+
+// 1-D refine of a single field: coarse log sweep, then windows around the winner.
+function refineField(points, spec, field, lo, hi, fs, { steps = 28, passes = 3, log = true } = {}) {
+  let a = log ? Math.log(lo) : lo, b = log ? Math.log(hi) : hi;
+  let best = { value: spec[field], rmse: rmseWithOffset(points, spec, fs).rmse };
+  for (let pass = 0; pass <= passes; pass++) {
+    for (let i = 0; i <= steps; i++) {
+      const t = a + ((b - a) * i) / steps;
+      const value = log ? Math.exp(t) : t;
+      const { rmse } = rmseWithOffset(points, { ...spec, [field]: value }, fs);
+      if (rmse < best.rmse) best = { value, rmse };
+    }
+    const w = (b - a) / steps;
+    const c = log ? Math.log(best.value) : best.value;
+    a = c - w; b = c + w;
+    steps = 12;
+  }
+  return best.value;
+}
+
+// Seeds matter: coordinate descent finds a local optimum, and a peak seeded an
+// octave away can converge onto the wrong lobe. Seed from the curve's own shape.
+function seedFor(type, points) {
+  const sorted = [...points].sort((a, b) => a.freq - b.freq);
+  const lowAvg = sorted.slice(0, Math.max(1, Math.round(sorted.length * 0.08)))
+    .reduce((s, p) => s + p.delta, 0) / Math.max(1, Math.round(sorted.length * 0.08));
+  const highAvg = sorted.slice(-Math.max(1, Math.round(sorted.length * 0.08)))
+    .reduce((s, p) => s + p.delta, 0) / Math.max(1, Math.round(sorted.length * 0.08));
+  if (type === 'LSQ') return { type, freq: 200, gain: lowAvg - highAvg, q: 0.7 };
+  if (type === 'HSQ') return { type, freq: 4000, gain: highAvg - lowAvg, q: 0.7 };
+  // PK: strongest excursion from the curve's own baseline level.
+  const mid = (lowAvg + highAvg) / 2;
+  let peak = sorted[0], peakAbs = -1;
+  for (const p of sorted) {
+    const d = Math.abs(p.delta - mid);
+    if (d > peakAbs) { peakAbs = d; peak = p; }
+  }
+  return { type, freq: peak.freq, gain: peak.delta - mid, q: 1 };
+}
+
+/**
+ * points: [{ freq, delta }] — measured minus baseline, in dB.
+ * Returns the best-fitting spec plus every candidate, so callers can show how
+ * clearly the winner beat the alternatives instead of implying false certainty.
+ */
+export function estimateFilterFromDelta(points, { fs = 44100, types = EST_TYPES, minGainDb = 0.5 } = {}) {
+  const usable = points.filter((p) => Number.isFinite(p.delta) && Number.isFinite(p.freq));
+  if (usable.length < 20) return { ok: false, reason: `only ${usable.length} usable points` };
+
+  const deltas = usable.map((p) => p.delta);
+  const span = Math.max(...deltas) - Math.min(...deltas);
+  if (span < minGainDb) {
+    return { ok: false, reason: `curve is flat (${span.toFixed(2)} dB peak-to-peak) — no filter to identify` };
+  }
+
+  const candidates = [];
+  for (const type of types) {
+    let spec = seedFor(type, usable);
+    if (!Number.isFinite(spec.gain) || Math.abs(spec.gain) < 1e-3) spec.gain = span * (spec.gain < 0 ? -1 : 1);
+    for (let round = 0; round < 5; round++) {
+      spec = { ...spec, freq: refineField(usable, spec, 'freq', 20, 20000, fs) };
+      spec = { ...spec, q: refineField(usable, spec, 'q', 0.05, 20, fs) };
+      spec = { ...spec, gain: refineField(usable, spec, 'gain', Math.sign(spec.gain) * 0.1,
+        Math.sign(spec.gain) * 40, fs, { log: false }) };
+    }
+    const { rmse, offset } = rmseWithOffset(usable, spec, fs);
+    candidates.push({ ...spec, rmse, offsetDb: offset });
+  }
+
+  candidates.sort((a, b) => a.rmse - b.rmse);
+  let best = candidates[0];
+
+  // Shelf degeneracy. LSQ(+g) and HSQ(-g) at the same corner and Q differ by
+  // EXACTLY a constant g at every frequency (verified numerically: the
+  // difference is 6.0000 dB at all 12 probe points for a 6 dB pair). Since every
+  // candidate fits its own level offset, the two are indistinguishable by shape
+  // and their RMSEs are identical — the shape search alone can return either.
+  //
+  // What separates them is absolute level: a low shelf leaves the treble where
+  // it was, a high shelf leaves the bass where it was. So prefer the orientation
+  // needing the smaller level correction, and always report the twin, because
+  // a device pregain large enough to outweigh that reasoning would flip it.
+  let equivalent = null;
+  if (best.type === 'LSQ' || best.type === 'HSQ') {
+    const twinSpec = { ...best, type: best.type === 'LSQ' ? 'HSQ' : 'LSQ', gain: -best.gain };
+    const twinFit = rmseWithOffset(usable, twinSpec, fs);
+    const twin = { ...twinSpec, rmse: twinFit.rmse, offsetDb: twinFit.offset };
+    if (Math.abs(twin.offsetDb) < Math.abs(best.offsetDb)) {
+      equivalent = best;
+      best = twin;
+    } else {
+      equivalent = twin;
+    }
+  }
+
+  // A shelf and a very low-Q peak can also look alike over a limited span; say
+  // so rather than presenting the winner as settled.
+  const others = candidates.filter((c) => c.type !== best.type && c.type !== equivalent?.type);
+  const typeMargin = others.length ? Math.min(...others.map((c) => c.rmse)) - best.rmse : Infinity;
+  return {
+    ok: true,
+    type: best.type,
+    freq: best.freq,
+    gain: best.gain,
+    q: best.q,
+    offsetDb: best.offsetDb,
+    rmse: best.rmse,
+    typeConfident: typeMargin > Math.max(0.05, best.rmse * 0.25),
+    // Present when the result is a shelf: the equally-good opposite reading.
+    equivalent: equivalent && { type: equivalent.type, freq: equivalent.freq,
+      gain: equivalent.gain, q: equivalent.q, offsetDb: equivalent.offsetDb },
+    candidates,
   };
 }

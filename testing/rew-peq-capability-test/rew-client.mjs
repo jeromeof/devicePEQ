@@ -43,6 +43,16 @@ export async function checkRewReachable() {
   }
 }
 
+// The rate REW is actually playing at, which is the rate the device under test
+// is being fed — and therefore the rate its DSP is almost certainly running its
+// biquads at. Authoritative in a way the tool's own field is not: that field is
+// a hand-typed assumption used only to compute the theoretical curve, and a
+// wrong value there shows up as a shape mismatch that looks like a device bug.
+export async function getSampleRate() {
+  const r = await rewGet('/audio/samplerate');
+  return Number(r.value);
+}
+
 export async function listMeasurementIds() {
   const measurements = await rewGet('/measurements');
   return Object.keys(measurements);

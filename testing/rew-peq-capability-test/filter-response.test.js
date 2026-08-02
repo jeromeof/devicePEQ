@@ -24,7 +24,7 @@ const {
 } = require('./filter-response');
 const { magnitudeAt } = require('./rew-control');
 
-const SAMPLE_RATE = 44100; // matches the bench's current default device-fs assumption
+const SAMPLE_RATE = 44100; // matches the verification tool's current default device-fs assumption
 
 // Builds a synthetic REW-shaped {startFreq, freqStep, magnitude} object —
 // same shape getFrequencyResponse() returns — from a magnitude-in-dB
@@ -61,7 +61,7 @@ function withFilter(filterSpec, { offsetDb = 0, fs = SAMPLE_RATE } = {}) {
   return makeFr({ gen: (f) => theoreticalMagnitudeDb(filterSpec, f, fs) + offsetDb + noise(f) });
 }
 
-const DENSE_EVAL_FREQS = logSpacedFrequencies(20, 20000, 400); // finer than the bench's default 60 — needed to resolve sharp/high-Q peaks in these tests
+const DENSE_EVAL_FREQS = logSpacedFrequencies(20, 20000, 400); // finer than the tool's default 60 — needed to resolve sharp/high-Q peaks in these tests
 
 function fit(baseline, measured, filterSpec, opts = {}) {
   const comparison = compareToTheoretical(baseline, measured, filterSpec, {

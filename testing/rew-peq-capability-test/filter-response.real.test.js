@@ -13,11 +13,11 @@
 // Fixtures (both downsampled from raw ~0.336Hz-resolution REW exports — see
 // the comment on each fixture's use below for how much precision that costs):
 //   - protocol-max-q-sweep.json: flat 0dB baseline + three PK filters at
-//     Q 5.1/5.1/10 (the bench's "Q Sweep" test group).
+//     Q 5.1/5.1/10 (the verification tool's "Q Sweep" test group).
 //   - protocol-max-full-plan.json: a later, larger run — 18 measurements
 //     covering Filter Types / Gain Sweep / Q Sweep / Frequency Sweep / Shelf
 //     Extremes. This is the run that surfaced the LSQ/HSQ finding below.
-// Regenerate either by re-running the bench and re-exporting if they ever
+// Regenerate either by re-running the verification tool and re-exporting if they ever
 // need refreshing.
 //
 // Run with:  node --test testing/rew-peq-capability-test/filter-response.real.test.js
@@ -33,7 +33,7 @@ const { magnitudeAt } = require('./rew-control');
 const fixture = require('./captures/protocol-max-q-sweep.json');
 const fullPlanFixture = require('./captures/protocol-max-full-plan.json');
 
-// The bench's current defaults (devicepeq-rew-verification.html) — 200
+// The verification tool's current defaults (devicepeq-rew-verification.html) — 200
 // log-spaced eval points and a 0.3dB RMSE tolerance, tightened from the
 // original 60 points / 1.5dB specifically to catch moderate Q-implementation
 // defects (e.g. a device quantizing Q to a coarse lookup table) that the
@@ -60,11 +60,11 @@ test('fixture sanity: baseline and all three captures loaded with matching grids
 });
 
 for (const m of fixture.measurements) {
-  test(`real capture #${m.id} (${JSON.stringify(m.filterSpec)}): recomputed fit reproduces what the bench recorded live`, () => {
+  test(`real capture #${m.id} (${JSON.stringify(m.filterSpec)}): recomputed fit reproduces what the verification tool recorded live`, () => {
     const { pregainDb, compensated, judged } = recompute(m);
     const bench = m.recordedFromBench;
 
-    // The bench recorded "pass" on all three at capture time (full-resolution
+    // The tool recorded "pass" on all three at capture time (full-resolution
     // curve, live run) — recomputing from the ~6x downsampled fixture should
     // reach the same verdict...
     assert.equal(judged.pass, true, `expected pass, got fail: ${judged.reason}`);

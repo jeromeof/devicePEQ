@@ -39,6 +39,7 @@ const fs = require('fs');
 const { connectDevice, closeHarness } = require('./device-session');
 const rew = require('./rew-control');
 const fr = require('./filter-response');
+const { assertAudioPreflight } = require('./audio-preflight');
 
 // Corner/check frequencies chosen ~1+ decade apart from the shelf corner so the
 // shelf has mostly settled to its asymptotic gain by the check frequency. PK is
@@ -125,6 +126,11 @@ async function takeMeasurement(name) {
 async function main() {
   console.log(`Checking REW API...`);
   console.log(`  ${await rew.checkRewReachable()}`);
+
+  // Catch an audio format mismatch here rather than mid-sweep: REW's failure is
+  // a modal dialog, which blocks the run and can't be dismissed over the API.
+  console.log(`Checking audio formats...`);
+  await assertAudioPreflight();
 
   console.log(`Connecting to device...`);
   const { context, page, modelConfig } = await connectDevice();

@@ -12,6 +12,7 @@
 //       ...
 const http = require('http');
 const { connectDevice, closeHarness } = require('./device-session');
+const { checkAudioPreflight } = require('./audio-preflight');
 
 const CONTROL_PORT = 5190;
 
@@ -40,6 +41,11 @@ const routes = {
     const connected = await session.page.evaluate(() => window.harness.isConnected());
     return { started: true, connected, modelConfig: session.modelConfig };
   },
+
+  // Does REW's requested audio format still match what Core Audio is set to?
+  // Worth re-checking after any push that restarts the DAC, since the device
+  // re-enumerates and can come back at a different format.
+  'GET /audio-preflight': async () => checkAudioPreflight(),
 
   // Launches the browser (if not already) and tries silentConnect(). Does NOT
   // block waiting for a manual pairing click — check /status afterward, and

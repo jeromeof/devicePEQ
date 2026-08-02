@@ -285,6 +285,7 @@ export const ktmicroUsbHidHandler = (function () {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log(`USB Device PEQ: KTMicro successfully pushed ${filters.length} filters to device`);
+    console.log(`USB Device PEQ: KTMicro disconnectOnSave =`, deviceDetails.modelConfig.disconnectOnSave);
     if (deviceDetails.modelConfig.disconnectOnSave) {
       return true;    // Disconnect
     }

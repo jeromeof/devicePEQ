@@ -4,7 +4,10 @@
  * vendorId=0x152A  productId=0x88DB
  *
  * Protocol: Feature Reports (sendFeatureReport / receiveFeatureReport)
- * peq10Band12dBAllFiltersNoPregain — 10 bands, ±12 dB, all filter types, no pregain
+ * peq8Band12dBAllFiltersNoPregain — 8 bands, ±12 dB, all filter types, no pregain
+ *
+ * The DS3 exposes 8 bands (32 only on firmware >= 1.4.15, and factory presets
+ * are 8 regardless); it rejects any band index past that limit.
  */
 
 import { loadCapture } from '../MockHIDDevice.js';
@@ -16,8 +19,8 @@ function makeDeviceDetails(mock, overrides = {}) {
     model: mock.productName,
     manufacturer: 'Fosi Audio',
     modelConfig: {
-      peqConstraintsRef:   'peq10Band12dBAllFiltersNoPregain',
-      maxFilters:          10,
+      peqConstraintsRef:   'peq8Band12dBAllFiltersNoPregain',
+      maxFilters:          8,
       minGain:            -12,
       maxGain:             12,
       minQ:               0.1,
@@ -54,13 +57,13 @@ export async function test_pullFromDevice_returnsFilters(assert) {
   assert.ok(defined.length > 0, `should return at least one filter, got ${defined.length}`);
 }
 
-export async function test_pullFromDevice_returns10Bands(assert) {
+export async function test_pullFromDevice_returns8Bands(assert) {
   const mock = await loadCapture('../captures/fosi_audio_ds3.json');
   await mock.open();
   const details = makeDeviceDetails(mock);
 
   const result = await fosiAudioUsbHID.pullFromDevice(details, 7);
-  assert.equal(result.filters.length, 10, 'should return 10 filter slots');
+  assert.equal(result.filters.length, 8, 'should return 8 filter slots');
 }
 
 export async function test_pullFromDevice_activeBandsHaveValidTypes(assert) {

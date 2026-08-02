@@ -96,7 +96,7 @@ function biquadCoefficients(type, centerFreq, gainDb, q, fs) {
 }
 
 // Filter types this model can produce a theoretical curve for. Kept as a
-// single exported list so callers (e.g. the REW verification bench) can
+// single exported list so callers (e.g. the REW verification tool) can
 // decide "shape-fit vs single-point/record-only" without duplicating this
 // set themselves.
 const MODELED_FILTER_TYPES = ['PK', 'LSQ', 'HSQ', 'LPF', 'HPF', 'BPF', 'NOTCH', 'BSF', 'APF', 'CQ'];

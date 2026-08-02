@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevicePEQ ⇄ REW Verification Bench</title>
+<title>DevicePEQ ⇄ REW Verification Tool</title>
 <style>
   :root {
     --background-color: #252526;
@@ -39,6 +39,22 @@
     margin-bottom: 20px;
   }
   .banner strong { color: #f0c040; }
+  /* Active compensations. Deliberately loud when something is being corrected:
+     a reader who misses this will over-credit the device for the handler's
+     work. Muted when nothing is active, so the common case stays quiet. */
+  .compensation-panel.active {
+    border-left: 3px solid #f0c040;
+    background: #2b2517;
+    color: #e8dcc0;
+  }
+  .compensation-panel.active strong { color: #f0c040; }
+  .compensation-panel.none { color: #8a8a8a; font-size: 12.5px; }
+  .compensation-list { margin: 8px 0 0; padding-left: 18px; }
+  .compensation-list li { margin: 3px 0; font-size: 12.5px; }
+  .compensation-toggle { display: block; margin: 6px 0 12px; font-size: 12.5px; color: #b8b8b8; }
+  .compensation-panel.off { border-left: 3px solid #6fb0f0; background: #16202b; color: #cfe2f5; }
+  .compensation-panel.off strong { color: #6fb0f0; }
+  .comp-label { color: #dcdcaa; font-weight: bold; }
   button {
     background: #0e639c;
     color: white;
@@ -179,6 +195,21 @@
   .insight .caveat { font-size: 11.5px; color: #f0c040; margin-top: 5px; }
   .insight .next { font-size: 11.5px; color: #9d9d9d; margin-top: 5px; }
   .insight .next b { color: #d4d4d4; font-weight: 600; }
+  /* Each finding shows one sentence; everything else — the numbers it was
+     derived from, the caveats, and any reference to a specific device we
+     happened to test — sits behind this toggle. A device-specific anecdote is
+     useful provenance but reads as noise to someone verifying a different
+     device, so it must never be in the default view. */
+  .insight-toggle {
+    background: none; border: 1px solid #555; color: #9d9d9d;
+    border-radius: 50%; width: 18px; height: 18px; line-height: 1;
+    font-size: 11px; padding: 0; margin-left: 6px; cursor: pointer;
+    vertical-align: middle;
+  }
+  .insight-toggle:hover { color: #d4d4d4; border-color: #888; }
+  .insight-toggle[aria-expanded="true"] { background: #3a3a3a; color: #d4d4d4; }
+  .insight-detail[hidden] { display: none; }
+  .insight-detail { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #3a3a3a; }
   .insights-panel .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .insights-panel .badge.high { background: rgba(244,135,113,0.16); color: #f48771; }
   .insights-panel .badge.med { background: rgba(240,192,64,0.16); color: #f0c040; }
@@ -187,11 +218,229 @@
   .insights-panel table.tiny { font-size: 11.5px; margin: 6px 0; }
   .insights-panel table.tiny th, .insights-panel table.tiny td { padding: 2px 8px 2px 0; text-align: right; }
   .insights-panel table.tiny th:first-child, .insights-panel table.tiny td:first-child { text-align: left; }
+
+  /* ── Verdict banner ──────────────────────────────────────────────────────
+     Deliberately loud: the whole point of a run is the single question "can this
+     device be trusted to do what its constraints claim?", and that answer should
+     not have to be reconstructed from a table. */
+  .verdict {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 18px 20px; border-radius: 10px; margin: 0 0 14px 0;
+    border: 2px solid; background: rgba(255,255,255,0.02);
+  }
+  .verdict-mark { font-size: 40px; line-height: 1; flex: 0 0 auto; }
+  .verdict-body { flex: 1 1 auto; min-width: 0; }
+  .verdict-headline { font-size: 21px; font-weight: 700; letter-spacing: 0.2px; }
+  .verdict-sub { font-size: 13.5px; margin-top: 4px; opacity: 0.92; }
+  /* Caveats (skipped/pending/errored cases) sit INSIDE the banner rather than
+     below it, so a green headline can never be read without them. */
+  .verdict-caveat { font-size: 12.5px; margin-top: 8px; opacity: 0.85; }
+  .verdict-caveat:empty { display: none; }
+  .verdict.pass      { border-color: #4ec9b0; color: #4ec9b0; }
+  .verdict.fail      { border-color: #f48771; color: #f48771; }
+  .verdict.attention { border-color: #f0c040; color: #f0c040; }
+  .verdict.pass .verdict-sub, .verdict.pass .verdict-caveat,
+  .verdict.fail .verdict-sub, .verdict.fail .verdict-caveat,
+  .verdict.attention .verdict-sub, .verdict.attention .verdict-caveat { color: var(--fg, #ddd); }
+
+  /* ── Optional, collapsed-by-default step ────────────────────────────────
+     Native <details> rather than a scripted toggle: keyboard and screen-reader
+     behaviour come free, and the section still prints/finds correctly if the
+     browser expands it. The heading stays visible when collapsed so the step is
+     discoverable — what's hidden is the machinery, not its existence. */
+  .collapsible-step > summary {
+    cursor: pointer; list-style: none;
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  }
+  .collapsible-step > summary::-webkit-details-marker { display: none; }
+  /* Own disclosure triangle, so it sits with the heading rather than above it. */
+  .collapsible-step > summary::before {
+    content: '▸'; color: #888; font-size: 12px; transition: transform 0.12s ease;
+  }
+  .collapsible-step[open] > summary::before { content: '▾'; }
+  .collapsible-step > summary:hover::before { color: #d4d4d4; }
+  .collapsible-step > summary h2 { display: inline; margin: 0; }
+  .optional-tag {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: #9d9d9d; border: 1px solid #555; border-radius: 10px; padding: 1px 7px;
+  }
+
+  .group-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; padding: 2px 8px 2px 4px;
+    border: 1px solid #3a3a3a; border-radius: 12px; cursor: pointer;
+  }
+  .group-toggle:hover { border-color: #666; }
+
+  .print-only { display: none; }
+
+  /* ── Print / Save-as-PDF ─────────────────────────────────────────────────
+     Uses the browser's own print-to-PDF rather than bundling a PDF library:
+     no dependency to vendor or keep current, and it prints the real rendered
+     table rather than a second, drifting copy of the layout. What
+     gets printed is the REPORT — verdict, constraints, results, summary — not
+     the controls used to produce it. */
+  @media print {
+    @page { margin: 14mm; }
+    :root, body {
+      background: #fff !important; color: #111 !important;
+    }
+    body { font-size: 10.5pt; }
+    .no-print, button, input, select, textarea,
+    .banner, #failureChartPanel, #insightsPanel { display: none !important; }
+    /* The steps that PRODUCED the report are not the report. Tagged by class,
+       not nth-of-type: adding a section shifted those indices silently. */
+    section.workflow-step { display: none !important; }
+    .print-only { display: block; }
+    /* The screen theme is dark; every surface has to be repainted or the PDF
+       comes out white-on-black. printBackground honours these, so they must be
+       explicit rather than relying on the body rule cascading down. */
+    section, .info-box, table, thead, tbody, tr, th, td, .verdict, h2, .small, p, div, span {
+      background: transparent !important; color: #111 !important;
+      box-shadow: none !important;
+    }
+    section { background: #fff !important; }
+    h2 { color: #111 !important; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+    thead th { background: #eee !important; font-weight: 700; }
+    #printHeaderTitle { font-size: 15pt; font-weight: 700; }
+    #printHeaderMeta { font-size: 9.5pt; color: #444; margin-top: 2px;
+      border-bottom: 1px solid #bbb; padding-bottom: 8px; margin-bottom: 12px; }
+    h1 { display: none; }
+    h2 { font-size: 12pt; page-break-after: avoid; }
+    section { border: none !important; padding: 0 !important; margin: 0 0 10px 0 !important; }
+    .info-box { background: #f6f6f6 !important; color: #111 !important;
+      border: 1px solid #ddd; white-space: pre-wrap; }
+    /* The results table has more columns than fit A4 portrait, so let cells wrap
+       instead of letting the right-hand columns run off the page. */
+    table { width: 100%; border-collapse: collapse; font-size: 7pt; table-layout: fixed; }
+    th, td {
+      border: 1px solid #ccc !important; padding: 2px 3px !important; color: #111 !important;
+      overflow-wrap: anywhere; word-break: break-word; white-space: normal !important;
+    }
+    thead { display: table-header-group; }  /* repeat header on each page */
+    tr { page-break-inside: avoid; }
+    #resultsTable { display: table !important; }
+    /* On screen the results live in a 480px scrollbox. Printing a scroll
+       container only renders the visible slice, silently truncating the report
+       to whatever happened to be scrolled into view — so every clipping
+       container has to be released for print, not just this one. */
+    .table-wrap, .insights-panel, .failure-chart-panel, .chart-wrap {
+      max-height: none !important; overflow: visible !important;
+    }
+    /* Let a long results table flow across pages instead of being cut at the
+       first page boundary. */
+    #resultsTable, .table-wrap { page-break-inside: auto; }
+    #resultsTable tbody { display: table-row-group; }
+    /* Last column holds the Explain button — an empty stripe once buttons go. */
+    #resultsTable th:last-child, #resultsTable td:last-child { display: none; }
+    /* table-layout:fixed splits width evenly, which starves the two text columns
+       (Label, Effective Q) and makes them wrap to three lines — inflating every
+       row and costing a page. Size the columns to their actual content instead.
+       Order: # · Group · Label · Expected Δ · Measured Δ · Pregain · Shape RMSE ·
+       Max Err · Corr · Effective Q · Status · REW id */
+    #resultsTable th:nth-child(1),  #resultsTable td:nth-child(1)  { width: 3.5%; }
+    #resultsTable th:nth-child(2),  #resultsTable td:nth-child(2)  { width: 8%; }
+    #resultsTable th:nth-child(3),  #resultsTable td:nth-child(3)  { width: 17%; }
+    #resultsTable th:nth-child(4),  #resultsTable td:nth-child(4)  { width: 7%; }
+    #resultsTable th:nth-child(5),  #resultsTable td:nth-child(5)  { width: 8.5%; }
+    #resultsTable th:nth-child(6),  #resultsTable td:nth-child(6)  { width: 7%; }
+    #resultsTable th:nth-child(7),  #resultsTable td:nth-child(7)  { width: 7%; }
+    #resultsTable th:nth-child(8),  #resultsTable td:nth-child(8)  { width: 6.5%; }
+    #resultsTable th:nth-child(9),  #resultsTable td:nth-child(9)  { width: 5%; }
+    #resultsTable th:nth-child(10), #resultsTable td:nth-child(10) { width: 15%; }
+    #resultsTable th:nth-child(11), #resultsTable td:nth-child(11) { width: 7.5%; }
+    #resultsTable th:nth-child(12), #resultsTable td:nth-child(12) { width: 5%; }
+    /* Status must survive losing the background colours. */
+    tr.status-pass  td:first-child::before { content: '✔ '; color: #197a5f; }
+    tr.status-fail  td:first-child::before { content: '✕ '; color: #b3402c; }
+    tr.status-error td:first-child::before { content: '! '; }
+    .verdict { border-width: 2px; page-break-inside: avoid; background: #fff !important; }
+    /* These must come AFTER the blanket repaint above, and must name the inner
+       elements: the blanket rule matches div/span directly, so colouring only
+       the container would leave the headline black. */
+    .verdict.pass      { border-color: #197a5f !important; }
+    .verdict.fail      { border-color: #b3402c !important; }
+    .verdict.attention { border-color: #8a6d1f !important; }
+    .verdict.pass .verdict-mark, .verdict.pass .verdict-headline           { color: #197a5f !important; }
+    .verdict.fail .verdict-mark, .verdict.fail .verdict-headline           { color: #b3402c !important; }
+    .verdict.attention .verdict-mark, .verdict.attention .verdict-headline { color: #8a6d1f !important; }
+    .verdict-sub, .verdict-caveat { color: #111 !important; }
+  }
+
+  /* ── devicePEQ injected UI ──────────────────────────────────────────────
+     plugin.js ships its own CSS but styles most of its controls by class
+     only, leaving colour and padding to the host page. This page styles bare
+     `button` elements (dark blue, white text, 9px 16px) and sets a light body
+     colour for its dark theme, both of which leak straight into the plugin's
+     markup: the ℹ️ becomes a chunky blue rectangle, the modal's tab buttons
+     end up white-on-#eee (invisible), and the modal's white card inherits the
+     page's light grey text. These rules put that back. */
+
+  /* The info button is an icon, not a button-shaped thing. */
+  .peq-info-btn {
+    background: none;
+    border: none;
+    padding: 0 4px;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1;
+    color: inherit;
+    border-radius: 0;
+  }
+  .peq-info-btn:hover:not(:disabled) { background: none; filter: brightness(1.2); }
+
+  /* The modal is a light card, so it needs its own text colour rather than
+     inheriting this page's #d4d4d4. */
+  #deviceInfoModal .modal-content {
+    color: #1b1b1b;
+    max-width: 760px;
+    max-height: 82vh;
+    overflow-y: auto;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  #deviceInfoModal h3 { color: #111; margin-top: 0; }
+  #deviceInfoModal a { color: #0b63a8; }
+  #deviceInfoModal code, #deviceInfoModal kbd {
+    background: #f0f0f0; color: #333; padding: 1px 5px; border-radius: 3px;
+  }
+  #deviceInfoModal th, #deviceInfoModal td { border-color: #ddd; color: inherit; }
+
+  /* Tab buttons set their own background but not colour, so the page's white
+     text made them unreadable. */
+  #deviceInfoModal .tab-button,
+  #deviceInfoModal .sub-tab-button {
+    color: #333;
+    margin: 0;
+    font-family: inherit;
+  }
+  #deviceInfoModal .tab-button:hover:not(:disabled),
+  #deviceInfoModal .sub-tab-button:hover:not(:disabled) { background: #ddd; }
+  #deviceInfoModal .tab-button.active,
+  #deviceInfoModal .sub-tab-button.active { color: #000; background: #c8c8c8; }
+
+  /* The close control is a bare × glyph in the plugin's own styling. */
+  #deviceInfoModal .close {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: #666;
+    border-radius: 0;
+    line-height: 1;
+  }
+  #deviceInfoModal .close:hover:not(:disabled) { background: none; color: #000; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🎛️ DevicePEQ ⇄ REW Verification Bench</h1>
+  <h1>🎛️ DevicePEQ ⇄ REW Verification Tool</h1>
+  <!-- Screen-hidden, print-only cover line: a printed report has to say what it
+       is about on its own, without the surrounding UI to give it context. -->
+  <div id="printHeader" class="print-only">
+    <div id="printHeaderTitle"></div>
+    <div id="printHeaderMeta"></div>
+  </div>
 
   <div class="banner">
     ⚠️ <strong>Localhost-only tool.</strong> This page talks directly (no auth) to a REW API server on
@@ -200,9 +449,13 @@
     Do not expose the REW API port to a network, and don't open this page from a remote host.
   </div>
 
-  <section>
-    <h2>Step 0 — REW Setup</h2>
-    <p>This bench triggers REW sweeps and reads back frequency-response data via REW's built-in HTTP API.
+  <section class="workflow-step">
+    <details id="setupSection" class="collapsible-step">
+    <summary>
+      <h2>Step 0 — REW Setup</h2>
+      <span class="optional-tag">one-time setup</span>
+    </summary>
+    <p>This tool triggers REW sweeps and reads back frequency-response data via REW's built-in HTTP API.
        Do the following once, before using this page:</p>
     <div class="checklist">
       <label><input type="checkbox"> Install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</label>
@@ -229,15 +482,22 @@ local static server instead of double-clicking the file, e.g. from the repo root
   python3 -m http.server 8000
 then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.html</div>
     </details>
+    </details>
   </section>
 
-  <section>
+  <section class="workflow-step">
     <h2>Step 1 — Connect the Device Under Test</h2>
     <div class="extra-eq"></div>
     <div id="constraintsPanel" class="info-box">Connect a device above to see its resolved PEQ constraints here.</div>
+    <div id="compensationPanel" class="info-box compensation-panel" hidden></div>
+    <label id="compensationToggleRow" class="compensation-toggle" hidden>
+      <input type="checkbox" id="compensationEnabled" checked>
+      Apply devicePEQ compensation
+      <span class="info-icon" title="On by default. Uncheck to write filters exactly as requested, with every correction bypassed, so a run measures the DEVICE rather than the handler plus the device.&#10;&#10;Use it to derive a new compensation from raw behaviour, or to re-check an existing one after a firmware update — a device that has been fixed upstream will start failing WITH compensation on and passing with it off.">ⓘ</span>
+    </label>
   </section>
 
-  <section>
+  <section class="workflow-step">
     <h2>Step 2 — Check the REW API</h2>
     <div class="flex">
       <button id="checkRewBtn">🔌 Check REW API</button>
@@ -245,7 +505,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     </div>
   </section>
 
-  <section>
+  <section class="workflow-step">
     <h2>Step 3 — Baseline Measurement</h2>
     <p>This is the reference every test below is measured against. Click below to have this page push
        <strong>every filter band, set to 0 dB gain and disabled</strong>, to the connected device, then
@@ -265,7 +525,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     <div id="baselineInfo" class="info-box" style="display:none;"></div>
   </section>
 
-  <section>
+  <section class="workflow-step">
     <h2>Step 4 — Build the Test Plan</h2>
     <p>Test cases are generated from the connected device's resolved PEQ constraints (min/max gain, min/max Q,
        supported filter types). Each case applies a single isolated filter, pushes it to the device, triggers a
@@ -273,7 +533,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
        theoretical biquad shape (log-spaced points across 20Hz–20kHz, not just one frequency) for any filter
        type with an RBJ model — PK/LSQ/HSQ plus LPF/HPF/BPF/NOTCH/BSF/APF/CQ. Many devices automatically
        reduce overall output level ("pregain") when a boost filter is applied, to protect headroom — that
-       shows up as a constant broadband offset, not a shape error. This bench detects that offset (median
+       shows up as a constant broadband offset, not a shape error. This tool detects that offset (median
        residual across the whole curve), subtracts it out, and reports it separately from the actual
        filter-shape fit. Any type code without a theoretical model falls back to a single-point measurement
        and is always record-only.</p>
@@ -295,11 +555,25 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
           <div>Settle time after push</div><div><input type="number" id="settleMs" value="1500" step="100" class="plan-input"> ms</div>
           <div>Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
           <div>Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
-          <div>Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz</div>
+          <div>Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz
+            <button id="sampleRateFromRewBtn" class="secondary" type="button" title="Read the rate REW is playing at — that is the rate the device is being fed">↻ from REW</button>
+            <span id="sampleRateNote" class="small"></span></div>
           <div>Gain/Q sweep frequencies</div><div><input type="text" id="sweepFreqs" value="100, 1000, 8000" style="width:130px"> Hz
             <span class="info-icon" title="The Gain sweep and Q sweep are run once at EACH of these frequencies, so a gain or Q error can be told apart from a frequency-dependent one.&#10;&#10;Why it matters: with every Gain/Q case pinned at a single frequency, Insights has only one distinct frequency to regress against, so its frequency-trend fits cannot run at all and a real frequency error can be misread as a Q or gain problem (or missed entirely). Three widely-spaced points — low, mid, high — are the minimum that supports a straight-line fit; the error being visible at 1 kHz but twice as large at 8 kHz is exactly the pattern this catches.&#10;&#10;Cost: case count multiplies by the number of frequencies, and every case is one REW sweep. Enter a single value (e.g. 1000) to restore the old single-frequency behaviour, or add more points for a stronger fit. Values are clamped to 20 Hz-20 kHz and de-duplicated.">ⓘ</span></div>
         </div>
-        <p id="disconnectWarning" class="small" style="display:none; color: var(--warn-color, #d95926); font-weight: 600;"></p>
+        <div id="disconnectWarning" class="small" style="display:none; color: var(--warn-color, #d95926); font-weight: 600;">
+          <p id="disconnectWarningText" style="margin:0 0 6px 0;"></p>
+          <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="ignoreDisconnect">
+            Try anyway — treat this device as staying connected after a save
+          </label>
+          <p id="disconnectOverrideNote" class="small" style="margin:6px 0 0 0; font-weight:400; display:none;">
+            The device is now being pushed to without a forced disconnect. If it really does
+            drop the connection, the run will stop at the first push with “no device connected”
+            — which is itself the answer. If it keeps running, <code>disconnectOnSave</code> is
+            wrong for this model in <code>usbDeviceConfig.js</code> and should be set to false.
+          </p>
+        </div>
         <p class="small">Shape fit tolerance is the max allowed RMSE (dB) between the measured and theoretical
         curves; default 0.3dB leaves margin above real noise while still catching real filter defects.
         "Effective Q" (on failing rows) is the Q that would best explain the measured curve, when that's a
@@ -309,9 +583,11 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     </div>
     <div class="flex">
       <button id="genPlanBtn">🧩 Generate Test Plan</button>
+
       <span id="planCount" class="small"></span>
     </div>
     <div class="table-wrap">
+      <div id="groupToggles" class="flex" style="display:none;"></div>
       <table id="planTable" style="display:none;">
         <thead>
           <tr><th></th><th>Group</th><th>Type</th><th>Freq (Hz)</th><th>Gain (dB)</th><th>Q</th><th>Measure @ Hz</th><th>Expected Δ</th><th>Check method</th><th>Label</th></tr>
@@ -321,11 +597,45 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     </div>
   </section>
 
+  <section class="workflow-step">
+    <details id="manualSection" class="collapsible-step">
+    <summary>
+      <h2>Step 4b — Measure a filter set by another tool</h2>
+      <span class="optional-tag">optional</span>
+    </summary>
+    <p class="small">
+      For filters applied outside this tool — a vendor web app, a phone app, anything that
+      isn't the connected-device path above. Set <b>one</b> filter in that tool, capture a sweep
+      here, and the tool works out which filter actually reached the output.
+      Needs the Step&nbsp;3 baseline, measured with that tool's EQ off.
+    </p>
+    <div class="row">
+      <label>What you asked that tool for <span class="info-icon" title="Optional. Leave blank to only identify what the device produced — with nothing to compare against, the case is recorded rather than judged pass/fail, because a curve always matches its own best fit. Fill these in and the same shape-fit, Explain chart and Insights run against them exactly like an automated case.">ⓘ</span></label>
+      <select id="manualType">
+        <option value="">— not specified —</option>
+        <option value="PK">PK</option>
+        <option value="LSQ">LSQ (low shelf)</option>
+        <option value="HSQ">HSQ (high shelf)</option>
+      </select>
+      <input id="manualFreq" type="number" placeholder="freq Hz" style="width:100px">
+      <input id="manualGain" type="number" step="0.1" placeholder="gain dB" style="width:100px">
+      <input id="manualQ" type="number" step="0.01" placeholder="Q" style="width:80px">
+    </div>
+    <div class="flex">
+      <button id="manualMeasureBtn">🎚️ Capture &amp; identify filter</button>
+      <span id="manualStatus" class="small"></span>
+    </div>
+    <div id="manualResult" class="info-box" style="display:none;"></div>
+    </details>
+  </section>
+
   <section>
     <h2>Step 5 — Run</h2>
     <div class="flex">
       <button id="runBtn" disabled>▶️ Run Test Plan</button>
       <button id="stopBtn" class="danger" disabled>⏹ Stop After Current Test</button>
+      <span id="liveDot" title="Ticks once a second while the page's main thread is running. If it STOPS while the page won't respond, the thread is blocked (a modal dialog, or a long synchronous task). If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
+      <span id="liveDot" style="font-size:11px; color:#4ec9b0;" title="Ticks once a second while the main thread is running. If it STOPS while the page will not respond, the thread is blocked — a modal dialog or a long synchronous task. If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
       <span id="runStatus" class="small"></span>
     </div>
     <div id="manualTriggerBanner">
@@ -367,9 +677,18 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 
   <section>
     <h2>Step 6 — Summary &amp; Export</h2>
+    <div id="verdictBanner" class="verdict" style="display:none;">
+      <div class="verdict-mark" id="verdictMark"></div>
+      <div class="verdict-body">
+        <div class="verdict-headline" id="verdictHeadline"></div>
+        <div class="verdict-sub" id="verdictSub"></div>
+        <div class="verdict-caveat" id="verdictCaveat"></div>
+      </div>
+    </div>
     <div id="summaryBox" class="info-box">Run the test plan to see a summary here.</div>
-    <div class="flex">
+    <div class="flex no-print">
       <button id="insightsBtn" disabled>🔍 Insights</button>
+      <button id="exportPdfBtn" class="secondary" disabled>🖨️ Save as PDF</button>
       <button id="exportJsonBtn" class="secondary" disabled>⬇️ Export JSON</button>
       <button id="exportCsvBtn" class="secondary" disabled>⬇️ Export CSV</button>
       <span class="small">Insights looks for a <em>systematic</em> cause across every measured
@@ -392,26 +711,59 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 </div>
 
 <script type="module">
-import initializeDeviceEqPlugin from '../../devicePEQ/plugin.js';
-import { resolveConstraints } from '../../devicePEQ/peqConstraints.js';
-import {
+// ═══════════════════════════════════════════════════════════════════════════
+//  DEPLOYMENT PATHS — the only two lines to change when relocating this page
+// ═══════════════════════════════════════════════════════════════════════════
+// Both are resolved relative to this HTML file, and both accept absolute URLs
+// (e.g. 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/').
+// Trailing slash required.
+//
+//   DEVICEPEQ_BASE — the devicePEQ folder: plugin.js, peqConstraints.js, the
+//                    connectors/handlers they pull in, and
+//                    peqConstraintsConfig.json.
+//   REWLIB_BASE    — this tool's own two modules: rew-client.mjs (REW's HTTP
+//                    API) and filter-response.mjs (the biquad model and fits).
+//
+// Point DEVICEPEQ_BASE at the SAME devicePEQ build the site serves to users —
+// verifying a stale copy produces confident verdicts about code nobody is
+// running.
+const DEVICEPEQ_BASE = '../../devicePEQ/';
+const REWLIB_BASE    = '../rew-peq-capability-test/';
+
+// Dynamic import() rather than `import ... from`: a static specifier has to be
+// a string literal, so it cannot reference the constants above. Costs a
+// top-level await, which this module already relies on elsewhere.
+//
+// peqConstraints.js reads this global when it first evaluates in order to find
+// peqConstraintsConfig.json — so it must be set BEFORE the import below, not
+// after. Absolute, because that module resolves the config against the page
+// rather than against itself.
+window.DEVICEPEQ_CONFIG_BASE_URL = new URL(DEVICEPEQ_BASE, location.href).href;
+
+const { default: initializeDeviceEqPlugin } = await import(`${DEVICEPEQ_BASE}plugin.js`);
+const { describeActiveCompensations, describeConfiguredCompensations, setCompensationEnabledForVerification, isCompensationEnabled, maxRealisableQ } =
+  await import(`${DEVICEPEQ_BASE}compensation.js`);
+const { resolveConstraints } = await import(`${DEVICEPEQ_BASE}peqConstraints.js`);
+const {
   checkRewReachable,
   listMeasurementIds,
   renameMeasurement,
   triggerSweepCommand,
   waitForNewMeasurement,
   getFrequencyResponse,
+  getSampleRate,
   magnitudeAt,
-} from '../rew-peq-capability-test/rew-client.mjs';
-import {
+} = await import(`${REWLIB_BASE}rew-client.mjs`);
+const {
   compareToTheoretical,
   compensateForPregain,
   judgeFit,
   logSpacedFrequencies,
   estimateEffectiveQ,
+  estimateFilterFromDelta,
   theoreticalMagnitudeDb,
   MODELED_FILTER_TYPES,
-} from '../rew-peq-capability-test/filter-response.mjs';
+} = await import(`${REWLIB_BASE}filter-response.mjs`);
 
 // Filter types with a theoretical RBJ-biquad model in filter-response.mjs get
 // a full-curve pregain-compensated shape fit. PK/LSQ/HSQ mirror an actual
@@ -425,7 +777,7 @@ const hasModel = (type) => MODELED_FILTER_TYPES.includes((type || '').toUpperCas
 // compareToTheoretical()'s own default (60 log-spaced points) under-samples
 // sharp/high-Q peaks — confirmed in filter-response.test.js, where a Q=8
 // peak needed ~400 points before quantization error stopped masquerading as
-// a shape mismatch. 200 points is a reasonable middle ground for the bench
+// a shape mismatch. 200 points is a reasonable middle ground for this tool
 // (denser than default, not so dense it noticeably slows the comparison).
 const EVAL_FREQS = logSpacedFrequencies(20, 20000, 200);
 
@@ -437,6 +789,7 @@ let connectedDevice = null;   // { model, modelConfig, ... } from devicePEQ.devi
 let constraints = null;       // resolveConstraints(connectedDevice.modelConfig)
 let baseline = null;          // { id, fr }
 let testPlan = [];
+let qSweepCapNote = '';   // why the Q sweep stopped short of the device's maxQ
 let running = false;
 let stopRequested = false;
 let manualResolve = null;     // resolves the "Continue"/"Skip" promise during manual-trigger fallback
@@ -462,7 +815,9 @@ const context = {
     advanced: true,
     showExtras: false,
     showSuccessToasts: false,
-    peqConstraintsUrl: '../../devicePEQ/peqConstraintsConfig.json',
+    // Derived from DEVICEPEQ_BASE — a second hardcoded copy of this path is
+    // exactly the kind of thing that survives a move and 404s in production.
+    peqConstraintsUrl: `${DEVICEPEQ_BASE}peqConstraintsConfig.json`,
     devicePEQAnchorDiv: '.extra-eq',
     devicePEQPlacement: 'afterend',
   },
@@ -473,17 +828,51 @@ initializeDeviceEqPlugin(context).catch((e) => console.error('devicePEQ plugin f
 // Some handlers (e.g. KT Micro devices with disconnectOnSave, FiiO JA11) drop
 // the connection after every single filter write as part of their normal save
 // flow. An automated multi-test-case run needs many sequential pushes with no
-// human in the loop to reconnect — that's fundamentally incompatible with a
-// device that disconnects on every one of them, so this is a hard block with
-// an explanation rather than an override checkbox. (A prior version of this
-// bench let you force-suppress the disconnect, but that just hides the real
-// device behavior without making unattended looping actually work.)
+// human in the loop to reconnect, which such a device cannot support — so Run is
+// blocked by default with an explanation.
+//
+// It is blocked, not forbidden. disconnectOnSave is a CLAIM in usbDeviceConfig.js,
+// and the claim is sometimes wrong: a TANCHJIM FISSION was carrying it purely by
+// inheriting the KT Micro vendor default and turned out not to need it at all.
+// The only way to find that out is to try. So the override below does two things
+// together — it lifts the block AND stops our own code forcing the close (by
+// clearing disconnectOnSave on the live modelConfig for this session only), which
+// is what makes it a real test of the device rather than a way to hide the
+// behaviour. If the hardware genuinely re-enumerates, the run dies on the first
+// push and says so; nothing is silently papered over.
 let deviceRequiresDisconnect = false;
+let ignoreDisconnect = false;
+let savedDisconnectOnSave = null; // original flag, restored when the box is cleared
+
+function applyDisconnectOverride() {
+  const mc = connectedDevice?.modelConfig;
+  if (!mc) return;
+  if (ignoreDisconnect) {
+    if (savedDisconnectOnSave === null) savedDisconnectOnSave = mc.disconnectOnSave;
+    // Same object the handler is passed, so this reaches pushToDevice's return
+    // value — session-only, never written back to usbDeviceConfig.js.
+    mc.disconnectOnSave = false;
+  } else if (savedDisconnectOnSave !== null) {
+    mc.disconnectOnSave = savedDisconnectOnSave;
+    savedDisconnectOnSave = null;
+  }
+}
+
+$('ignoreDisconnect').addEventListener('change', (e) => {
+  ignoreDisconnect = e.target.checked;
+  applyDisconnectOverride();
+  $('disconnectOverrideNote').style.display = ignoreDisconnect ? '' : 'none';
+  updateRunButtons();
+});
 
 window.addEventListener('devicePEQ.deviceConnected', (e) => {
   connectedDevice = e.detail.device;
   constraints = resolveConstraints(connectedDevice.modelConfig);
   deviceRequiresDisconnect = !!connectedDevice.modelConfig?.disconnectOnSave;
+  // A new connection means a fresh modelConfig object, so any override from the
+  // previous device must be re-applied to this one rather than assumed to carry.
+  savedDisconnectOnSave = null;
+  applyDisconnectOverride();
   renderConstraints();
   updateRunButtons();
 });
@@ -491,9 +880,141 @@ window.addEventListener('devicePEQ.deviceDisconnected', () => {
   connectedDevice = null;
   constraints = null;
   deviceRequiresDisconnect = false;
+  savedDisconnectOnSave = null;
   renderConstraints();
   updateRunButtons();
 });
+
+// ── Implementation fingerprint ─────────────────────────────────────────────
+// A PEQ defect nearly always belongs to the protocol implementation rather than
+// to the individual product: the handler, its scheme/variant, and the register
+// layout that goes with them. Two devices sharing that combination usually
+// share the bug. So every failure this tool reports should carry enough
+// identity to be generalised to a device's siblings — and to be matched against
+// someone else's report of the same implementation.
+//
+// Deliberately built from the RESOLVED connection (handlerName and deviceGroup
+// come from the connector, which is the only place that knows which config
+// entry actually matched) rather than from the product name, which is the least
+// reliable identifier of the three.
+function implementationFingerprint(device = connectedDevice) {
+  if (!device) return null;
+  const mc = device.modelConfig ?? {};
+  const raw = device.rawDevice ?? {};
+  const hex = (v) => (typeof v === 'number' ? `0x${v.toString(16).toUpperCase().padStart(4, '0')}` : null);
+  const parts = [];
+  if (device.handlerName) parts.push(device.handlerName);
+  else if (device.manufacturer) parts.push(`${device.manufacturer} (handler unknown)`);
+  if (mc.schemeNo != null) parts.push(`schemeNo ${mc.schemeNo}`);
+  if (device.deviceGroup) parts.push(`group "${device.deviceGroup}"`);
+  if (mc.peqConstraintsRef) parts.push(mc.peqConstraintsRef);
+  if (mc.reportId != null) parts.push(`reportId ${mc.reportId}`);
+  const ids = [hex(raw.vendorId), hex(raw.productId)].filter(Boolean);
+  if (ids.length === 2) parts.push(`VID ${ids[0]} PID ${ids[1]}`);
+  return {
+    text: parts.join(' · '),
+    handlerName: device.handlerName ?? null,
+    schemeNo: mc.schemeNo ?? null,
+    deviceGroup: device.deviceGroup ?? null,
+    peqConstraintsRef: mc.peqConstraintsRef ?? null,
+    reportId: mc.reportId ?? null,
+    vendorId: hex(raw.vendorId),
+    productId: hex(raw.productId),
+    firmware: device.extras?.firmwareVersion ?? null,
+  };
+}
+
+// The one-line version used wherever a failure is reported, phrased so it reads
+// as "what else is likely affected" rather than as more device trivia.
+function implementationScopeNote() {
+  const f = implementationFingerprint();
+  if (!f || !f.text) return '';
+  const shared = [
+    f.handlerName,
+    f.schemeNo != null ? `schemeNo ${f.schemeNo}` : null,
+    f.deviceGroup ? `group "${f.deviceGroup}"` : null,
+  ].filter(Boolean).join(' / ');
+  return shared
+    ? `Implementation: ${f.text}. Any other device on ${shared} is likely to behave the same way.`
+    : `Implementation: ${f.text}.`;
+}
+
+// ---------------------------------------------------------------------------
+// Active compensations.
+//
+// A compensated run measures the handler AND the device together: if the tool
+// silently corrects a device's Q on the way in, a "Q accuracy: pass" says the
+// correction works, NOT that the device is accurate. That distinction has to be
+// visible wherever a result is, so this feeds the constraints panel, the
+// verdict, the printed header and both exports.
+// ---------------------------------------------------------------------------
+function activeCompensations() {
+  if (!connectedDevice?.modelConfig) return [];
+  try {
+    return describeActiveCompensations(connectedDevice.modelConfig) || [];
+  } catch (e) {
+    console.warn('could not describe compensations:', e);
+    return [];
+  }
+}
+
+// What the device is configured to correct, whether or not the switch is on.
+function configuredCompensations() {
+  if (!connectedDevice?.modelConfig) return [];
+  try {
+    return describeConfiguredCompensations(connectedDevice.modelConfig) || [];
+  } catch { return []; }
+}
+
+function compensationSummary() {
+  const configured = configuredCompensations();
+  if (!isCompensationEnabled()) {
+    // Say it even when nothing is configured: "compensation was off" is a fact
+    // about how the run was taken, and a reader comparing two exports needs it.
+    return configured.length
+      ? `DISABLED for this run — ${configured.length} available (${configured.map((c) => c.label).join(', ')}) but not applied`
+      : 'DISABLED for this run — none configured for this device anyway';
+  }
+  const list = activeCompensations();
+  if (!list.length) return null;
+  return `${list.length} active: ${list.map((c) => c.label).join(', ')}`;
+}
+
+function renderCompensations() {
+  const el = $('compensationPanel');
+  const row = $('compensationToggleRow');
+  if (!el) return;
+  if (!connectedDevice) { el.hidden = true; if (row) row.hidden = true; return; }
+  el.hidden = false;
+  const configured = configuredCompensations();
+  // Only offer the switch when there is something for it to switch off.
+  if (row) row.hidden = configured.length === 0;
+
+  if (!isCompensationEnabled()) {
+    el.className = 'info-box compensation-panel off';
+    el.innerHTML = configured.length
+      ? `<strong>Compensation OFF</strong> — filters are written exactly as requested, so this run measures the device itself. ` +
+        `${configured.length} correction${configured.length > 1 ? 's are' : ' is'} configured but bypassed:` +
+        `<ul class="compensation-list">` +
+        configured.map((c) => `<li><span class="comp-label">${c.label}</span> — ${c.detail}</li>`).join('') + `</ul>`
+      : `<strong>Compensation OFF</strong> — nothing is configured for this device, so this is the same as leaving it on.`;
+    return;
+  }
+
+  const list = activeCompensations();
+  if (!list.length) {
+    el.className = 'info-box compensation-panel none';
+    el.innerHTML = '<strong>No compensations active</strong> — filters are written to this device exactly as requested.';
+    return;
+  }
+  el.className = 'info-box compensation-panel active';
+  el.innerHTML =
+    `<strong>⚠ ${list.length} compensation${list.length > 1 ? 's' : ''} active</strong> — ` +
+    `results below measure the handler and the device together, not the device alone.` +
+    `<ul class="compensation-list">` +
+    list.map((c) => `<li><span class="comp-label">${c.label}</span> — ${c.detail}</li>`).join('') +
+    `</ul>`;
+}
 
 function renderConstraints() {
   const el = $('constraintsPanel');
@@ -518,12 +1039,18 @@ function renderConstraints() {
     `Q range:       ${c.minQ} … ${c.maxQ}\n` +
     `Max filters:   ${c.maxFilters}\n` +
     `Supported types: ${types.join(', ')}\n` +
-    `Manual global gain: ${c.supportsManualGlobalGain ? 'yes' : 'no'}    Device handles pregain: ${c.deviceHandlesPregain ? 'yes' : 'no'}`;
+    `Manual global gain: ${c.supportsManualGlobalGain ? 'yes' : 'no'}    Device handles pregain: ${c.deviceHandlesPregain ? 'yes' : 'no'}\n` +
+    `Implementation:  ${implementationFingerprint()?.text || '(not resolved)'}`;
+
+  renderCompensations();
 
   const warn = $('disconnectWarning');
   if (deviceRequiresDisconnect) {
-    warn.textContent = `⚠ ${connectedDevice.model} disconnects after every filter write (its normal save behavior). ` +
-      `Automated REW verification needs many sequential pushes with no reconnect in between, so this bench can't run a test plan on this device — Run is disabled below.`;
+    $('disconnectWarningText').textContent =
+      `⚠ ${connectedDevice.model} is configured as disconnecting after every filter write ` +
+      `(disconnectOnSave in usbDeviceConfig.js). Automated REW verification needs many ` +
+      `sequential pushes with no reconnect in between, so Run is disabled. If you think that ` +
+      `flag is wrong for this model, tick the box to find out.`;
     warn.style.display = '';
   } else {
     warn.style.display = 'none';
@@ -533,6 +1060,56 @@ function renderConstraints() {
 // ---------------------------------------------------------------------------
 // REW connectivity
 // ---------------------------------------------------------------------------
+// ── Step 0 visibility ──────────────────────────────────────────────────────
+// One-time setup: worth reading once, then just clutter above the part of the
+// page you use every session. Collapsed by default AFTER the first successful
+// REW check rather than immediately, so a first-time visitor still lands on the
+// instructions — and re-opened automatically whenever REW turns out to be
+// unreachable, which is exactly when those instructions are needed again.
+// Storage keys keep the older "bench" prefix on purpose: renaming them would
+// silently discard a user's remembered Step 0 state and group selection, which
+// is a real cost for a string nobody ever sees.
+const SETUP_STATE_KEY = 'devicepeq-rew-bench:setupOpen:v1';
+
+function applySetupState() {
+  const stored = localStorage.getItem(SETUP_STATE_KEY);
+  $('setupSection').open = stored === null ? true : stored === 'true';
+}
+applySetupState();
+$('setupSection').addEventListener('toggle', () => {
+  try { localStorage.setItem(SETUP_STATE_KEY, String($('setupSection').open)); } catch { /* quota */ }
+});
+
+// ── Sample rate ────────────────────────────────────────────────────────────
+// The "Device DSP sample rate" field is only ever used to compute the
+// theoretical curve, but getting it wrong shifts that curve near the top of the
+// band and shows up as a shape mismatch — i.e. it looks like a device fault.
+// REW knows the rate it is playing at, which is the rate the device is being
+// fed, so read it rather than leaving a default of 44100 to be discovered later
+// by Insights refitting every case.
+//
+// It is a strong default, not proof: a device is free to resample internally, so
+// Insights still fits the rate empirically and the two should be read together.
+async function syncSampleRateFromRew({ quiet = false } = {}) {
+  const note = $('sampleRateNote');
+  try {
+    const rate = await getSampleRate();
+    if (!Number.isFinite(rate) || rate <= 0) throw new Error(`REW reported "${rate}"`);
+    const current = Number($('sampleRate').value);
+    rewSampleRate = rate;
+    $('sampleRate').value = String(rate);
+    note.textContent = current === rate
+      ? `matches REW (${rate} Hz)`
+      : `set to ${rate} Hz from REW (was ${current})`;
+    note.style.color = current === rate ? '' : 'var(--warn-color, #f0c040)';
+    return rate;
+  } catch (e) {
+    if (!quiet) note.textContent = `could not read REW's rate: ${e.message}`;
+    return null;
+  }
+}
+$('sampleRateFromRewBtn').addEventListener('click', () => syncSampleRateFromRew());
+
 $('checkRewBtn').addEventListener('click', async () => {
   const status = $('rewStatus');
   status.textContent = 'checking…';
@@ -541,9 +1118,14 @@ $('checkRewBtn').addEventListener('click', async () => {
     const msg = await checkRewReachable();
     status.textContent = `reachable — ${msg}`;
     status.className = 'status-pill pill-connected';
+    // Setup is demonstrably done — fold it away, and remember that.
+    $('setupSection').open = false;
+    // Cheap, and removes the single most common source of false shape failures.
+    await syncSampleRateFromRew({ quiet: true });
   } catch (e) {
     status.textContent = e.message;
     status.className = 'status-pill pill-disconnected';
+    $('setupSection').open = true;
   }
 });
 
@@ -674,6 +1256,7 @@ function generatePlan() {
   // ~1.3% centre-frequency offset and was reported as "centre frequency placement
   // is accurate", because there was no second frequency to establish otherwise.
   const sweepFreqs = parseSweepFreqs();
+  qSweepCapNote = '';
 
   if ($('grpGain').checked) {
     const gains = uniq([minG, minG / 2, maxG / 2, maxG]).filter((g) => g !== 0 && g >= minG && g <= maxG);
@@ -683,9 +1266,20 @@ function generatePlan() {
   }
 
   if ($('grpQ').checked) {
-    const qs = uniq([minQ, (minQ + maxQ) / 2, maxQ]);
+    // Compensation needs headroom ABOVE the requested Q, so on a device with a
+    // gain-dependent law the top of the Q range cannot be delivered: asking for
+    // maxQ means writing maxQ x A, which the device will not store. Testing it
+    // anyway produces a case that fails on every run for a reason no fix can
+    // address, which is worse than not testing it — so the sweep tops out at
+    // what is actually reachable, and says so in the plan note.
+    const qCeiling = Math.min(maxQ, maxRealisableQ(connectedDevice?.modelConfig, stdGain));
+    const qTop = Math.max(minQ, round1(qCeiling));
+    const qs = uniq([minQ, (minQ + qTop) / 2, qTop]);
     for (const f of sweepFreqs) {
       for (const q of qs) plan.push(makeCase('Q Sweep', 'PK', f, stdGain, q, f, stdGain));
+    }
+    if (qTop < maxQ - 0.05) {
+      qSweepCapNote = `Q sweep capped at ${qTop} rather than the device's ${maxQ}: with compensation active at ${stdGain} dB, a requested Q above ${round1(qCeiling)} would need more than ${maxQ} written and cannot be realised.`;
     }
   }
 
@@ -727,10 +1321,74 @@ function generatePlan() {
   }
 
   testPlan = plan;
+  applyRememberedGroups();
   renderPlan();
   updateRunButtons();
 }
 $('genPlanBtn').addEventListener('click', generatePlan);
+
+// ── Remembered group selection ─────────────────────────────────────────────
+// Only the enabled GROUPS are remembered, not the plan or its results. The point
+// is narrow: when you are working through one area — "just LP/HP until it's
+// verified" — you shouldn't have to re-tick it on every reload. Everything else
+// (which cases exist, what they measured) is rebuilt by Generate Test Plan, so
+// storing it would only create a second source of truth that can go stale.
+const GROUP_STORE_KEY = 'devicepeq-rew-bench:groups:v1';
+
+function loadEnabledGroups() {
+  try {
+    const raw = localStorage.getItem(GROUP_STORE_KEY);
+    const list = raw ? JSON.parse(raw) : null;
+    return Array.isArray(list) ? list : null;   // null = nothing remembered yet
+  } catch { return null; }
+}
+
+function saveEnabledGroups() {
+  try {
+    const groups = [...new Set(testPlan.filter((t) => t.include).map((t) => t.group))];
+    localStorage.setItem(GROUP_STORE_KEY, JSON.stringify(groups));
+  } catch (e) {
+    console.warn('Could not remember group selection:', e.message);
+  }
+}
+
+// Applied after a plan is generated. A remembered group that this device's plan
+// doesn't contain is simply ignored rather than dropped from storage, so moving
+// between devices doesn't quietly erase the selection.
+function applyRememberedGroups() {
+  const remembered = loadEnabledGroups();
+  if (!remembered) return;
+  const present = new Set(testPlan.map((t) => t.group));
+  if (![...present].some((g) => remembered.includes(g))) return; // nothing in common — leave as generated
+  for (const tc of testPlan) tc.include = remembered.includes(tc.group);
+}
+
+function setGroupIncluded(group, on) {
+  for (const tc of testPlan) if (tc.group === group) tc.include = on;
+  renderPlan();
+  saveEnabledGroups();
+  updateRunButtons();
+}
+
+function renderGroupToggles() {
+  const box = $('groupToggles');
+  const groups = [...new Set(testPlan.map((t) => t.group))];
+  if (!groups.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = '<span class="small">Groups (remembered next time):</span>'
+    + groups.map((g) => {
+        const inGroup = testPlan.filter((t) => t.group === g);
+        const on = inGroup.filter((t) => t.include).length;
+        const state = on === inGroup.length ? 'checked' : (on ? 'data-partial="1"' : '');
+        return `<label class="group-toggle"><input type="checkbox" data-group="${g}" ${state}> `
+          + `${g} <span class="small">(${on}/${inGroup.length})</span></label>`;
+      }).join('');
+  box.querySelectorAll('input[data-group]').forEach((cb) => {
+    // A partly-ticked group shows as indeterminate and turns fully on when clicked.
+    if (cb.dataset.partial) cb.indeterminate = true;
+    cb.addEventListener('change', () => setGroupIncluded(cb.dataset.group, cb.checked));
+  });
+}
 
 function renderPlan() {
   const table = $('planTable');
@@ -761,6 +1419,7 @@ function renderPlan() {
         else if (field === 'freq' || field === 'gain' || field === 'q' || field === 'measureFreq') {
           tc2[field] = Number(input.value);
         }
+        if (field === 'include') { renderGroupToggles(); saveEnabledGroups(); updateRunButtons(); }
       });
     });
     tbody.appendChild(tr);
@@ -778,7 +1437,12 @@ function renderPlan() {
   if (distinctFreqs.size < 3) {
     note += `. ⚠️ Fewer than 3 distinct frequencies: Insights cannot fit a frequency trend, so a frequency-dependent error may be misattributed to gain or Q. Add more values to "Gain/Q sweep frequencies" and regenerate.`;
   }
+  // A capped Q sweep must explain itself, or the plan looks like it is quietly
+  // under-testing the device.
+  if (qSweepCapNote) note += `. ℹ️ ${qSweepCapNote}`;
   $('planCount').textContent = note;
+
+  renderGroupToggles();
 }
 
 // ---------------------------------------------------------------------------
@@ -800,7 +1464,7 @@ $('manualSkipBtn').addEventListener('click', () => manualResolve && manualResolv
 // the user chose to skip during the manual fallback. Used by both baseline
 // capture and the per-test-case runner so the two stay in sync.
 // ---------------------------------------------------------------------------
-async function triggerAndCaptureSweep(timeoutMs) {
+let triggerAndCaptureSweep = async function (timeoutMs) {
   const before = await listMeasurementIds();
   const auto = await triggerSweepCommand();
   if (!auto) {
@@ -887,7 +1551,10 @@ function renderResultRow(tc) {
   const shapeMaxErr = tc.shapeMaxErr == null ? '—' : `${tc.shapeMaxErr.toFixed(2)} dB`;
   const corr = tc.correlation == null ? '—' : tc.correlation.toFixed(2);
   const effectiveQ = tc.estimatedQ == null ? '—' : `${tc.estimatedQ.toFixed(2)} (${(tc.qRatio * 100).toFixed(0)}% of requested)`;
-  const canExplain = tc.status === 'fail' && hasModel(tc.type) && tc.fr && tc.usedFilterSpec;
+  // Manual cases are 'recorded' when no target was given, but the chart is the
+  // whole point of them — so gate on having something to draw, not on failure.
+  const canExplain = (tc.status === 'fail' || tc.manual)
+    && hasModel(tc.type) && tc.fr && tc.usedFilterSpec;
   tr.innerHTML = `
     <td>${tc.id}</td>
     <td>${tc.group}</td>
@@ -998,6 +1665,7 @@ function fcFreqLabel(f, spanOct) {
 }
 
 function renderFailureChart(tc) {
+  markActivity(`Explain on case #${tc.id} (${tc.type} ${tc.freq}Hz)`);
   const filterSpec = tc.usedFilterSpec;
   const sampleRateUsed = tc.usedSampleRate;
   const toleranceUsed = tc.usedToleranceDb;
@@ -1112,6 +1780,7 @@ function fcPoints(view) {
 
 function drawFailureChart() {
   if (!fcState) return;
+  markActivity('redrawing failure chart (zoom/pan)');
   const { filterSpec, toleranceUsed } = fcState;
   const view = fcView;
   const win = fcWindow(view);
@@ -1289,6 +1958,99 @@ $('resultsTable').querySelector('tbody').addEventListener('click', (e) => {
 });
 $('closeFailureChartBtn').addEventListener('click', () => { $('failureChartPanel').style.display = 'none'; });
 
+// The single question a run exists to answer. Deliberately conservative: an
+// error is NOT a pass (we don't know what that case would have done), and any
+// case that never ran is surfaced in the banner itself rather than left for the
+// reader to spot in the table — a green headline over a half-finished plan would
+// be worse than no headline at all.
+function computeVerdict() {
+  const c = { pass: 0, fail: 0, error: 0, recorded: 0, skipped: 0, pending: 0 };
+  for (const t of testPlan) if (c[t.status] !== undefined) c[t.status]++;
+  const measured = c.pass + c.fail + c.error;
+  if (!measured && !c.recorded) return null;
+
+  const caveats = [];
+  if (c.error) caveats.push(`${c.error} case${c.error > 1 ? 's' : ''} errored and could not be judged`);
+  if (c.pending) caveats.push(`${c.pending} case${c.pending > 1 ? 's' : ''} never ran`);
+  if (c.skipped) caveats.push(`${c.skipped} case${c.skipped > 1 ? 's' : ''} skipped`);
+  if (c.recorded) caveats.push(`${c.recorded} recorded-only (no pass/fail criterion)`);
+  let caveat = caveats.length ? `Not covered by this verdict: ${caveats.join('; ')}.` : '';
+  // A pass earned with compensation active is a pass for handler+device, not
+  // for the device. Say so in the verdict itself rather than only in a panel
+  // further up the page that a reader may never scroll back to.
+  const comp = compensationSummary();
+  if (comp) {
+    caveat = `${caveat}${caveat ? ' ' : ''}Compensation applied while measuring (${comp}) — this verifies the handler and device together.`;
+  }
+
+  const device = connectedDevice?.model ?? 'Device';
+  // Recorded-only cases have no pass/fail criterion, so a plan made entirely of
+  // them verifies nothing — saying "PASSED" there would be the most misleading
+  // thing this banner could do.
+  if (!measured) {
+    return { level: 'attention', mark: '~', counts: c,
+      headline: `${device} — nothing verified`,
+      sub: `All ${c.recorded} case${c.recorded > 1 ? 's were' : ' was'} recorded-only, with no pass/fail criterion to judge against.`,
+      caveat };
+  }
+  // A failure is far more useful when it names the implementation it belongs to
+  // — that is what makes it applicable to sibling devices rather than just this
+  // one unit.
+  const scope = implementationScopeNote();
+  if (c.fail > 0) {
+    return { level: 'fail', mark: '✕', counts: c,
+      headline: `${device} FAILED verification`,
+      sub: `${c.fail} of ${measured} judged case${measured > 1 ? 's' : ''} did not match the requested filter within tolerance.`,
+      caveat: [scope, caveat].filter(Boolean).join(' ') };
+  }
+  if (c.error > 0 && c.pass === 0) {
+    return { level: 'attention', mark: '!', counts: c,
+      headline: `${device} — no usable result`,
+      sub: `Every judged case errored, so nothing was actually verified.`, caveat };
+  }
+  if (c.error > 0 || c.pending > 0) {
+    return { level: 'attention', mark: '~', counts: c,
+      headline: `${device} passed every case that ran`,
+      sub: `${c.pass} of ${measured} judged case${measured > 1 ? 's' : ''} passed, but the plan did not complete cleanly.`,
+      caveat };
+  }
+  return { level: 'pass', mark: '✔', counts: c,
+    headline: `${device} PASSED verification`,
+    sub: `All ${c.pass} judged case${c.pass > 1 ? 's' : ''} matched the requested filter within tolerance.`,
+    caveat };
+}
+
+function renderVerdict() {
+  const banner = $('verdictBanner');
+  const v = computeVerdict();
+  if (!v) { banner.style.display = 'none'; return; }
+  banner.className = `verdict ${v.level}`;
+  banner.style.display = '';
+  $('verdictMark').textContent = v.mark;
+  $('verdictHeadline').textContent = v.headline;
+  $('verdictSub').textContent = v.sub;
+  $('verdictCaveat').textContent = v.caveat;
+}
+
+// A printed page has none of the surrounding UI, so it has to restate what it
+// is, what was tested and under which settings.
+function renderPrintHeader() {
+  $('printHeaderTitle').textContent =
+    `DevicePEQ ⇄ REW verification — ${connectedDevice?.model ?? 'unknown device'}`;
+  const c = constraints;
+  const bits = [new Date().toLocaleString()];
+  if (baseline?.id != null) bits.push(`baseline measurement #${baseline.id}`);
+  bits.push(`tolerance ${$('toleranceDb').value} dB`, `assumed fs ${$('sampleRate').value} Hz`);
+  if (c) {
+    bits.push(`claimed: ${c.maxFilters} bands, ${c.minGain}…${c.maxGain} dB, Q ${c.minQ}…${c.maxQ}`);
+  }
+  const impl = implementationFingerprint();
+  if (impl?.text) bits.push(impl.text);
+  const comp = compensationSummary();
+  bits.push(comp ? `compensation ${comp}` : 'no compensation');
+  $('printHeaderMeta').textContent = bits.join('  ·  ');
+}
+
 function renderSummary() {
   const box = $('summaryBox');
   const done = testPlan.filter((t) => ['pass', 'fail', 'error', 'recorded'].includes(t.status));
@@ -1297,6 +2059,7 @@ function renderSummary() {
   const err = testPlan.filter((t) => t.status === 'error').length;
   const rec = testPlan.filter((t) => t.status === 'recorded').length;
   const skipped = testPlan.filter((t) => t.status === 'skipped').length;
+  renderVerdict();
   if (!done.length) { box.textContent = 'Run the test plan to see a summary here.'; return; }
   const byGroup = {};
   for (const t of testPlan) {
@@ -1307,6 +2070,10 @@ function renderSummary() {
     if (t.status === 'fail') byGroup[t.group].fail++;
   }
   let text = `Device: ${connectedDevice?.model ?? 'unknown'}   Baseline: measurement #${baseline?.id ?? '—'}\n`;
+  const implNow = implementationFingerprint();
+  if (implNow?.text) text += `Implementation: ${implNow.text}\n`;
+  const compNow = compensationSummary();
+  if (compNow) text += `Compensation: ${compNow}\n`;
   text += `${pass} passed, ${fail} failed, ${err} errored, ${rec} recorded-only, ${skipped} skipped\n\n`;
   for (const [group, s] of Object.entries(byGroup)) {
     if (s.total === 0) continue;
@@ -1323,6 +2090,7 @@ function renderSummary() {
   box.textContent = text;
   $('exportJsonBtn').disabled = false;
   $('exportCsvBtn').disabled = false;
+  $('exportPdfBtn').disabled = false;
   // Insights needs 2+ completed shape-fit cases with stored curves to have
   // anything to regress across — a single case can't show a systematic pattern.
   const analysable = testPlan.filter((t) => ['pass', 'fail'].includes(t.status) && hasModel(t.type) && t.fr && t.usedFilterSpec);
@@ -1336,10 +2104,13 @@ function renderSummary() {
 // Runner
 // ---------------------------------------------------------------------------
 function updateRunButtons() {
-  $('runBtn').disabled = running || !connectedDevice || !baseline || !testPlan.length || deviceRequiresDisconnect;
-  $('runBtn').title = deviceRequiresDisconnect
-    ? 'This device disconnects after every filter write — automated verification is not supported for it.'
-    : '';
+  const blockedByDisconnect = deviceRequiresDisconnect && !ignoreDisconnect;
+  $('runBtn').disabled = running || !connectedDevice || !baseline || !testPlan.length || blockedByDisconnect;
+  $('runBtn').title = blockedByDisconnect
+    ? 'This device is configured to disconnect after every filter write — tick "Try anyway" above to test whether it actually does.'
+    : (deviceRequiresDisconnect
+      ? 'Running with the disconnect override on — the run will stop at the first push if the device really does drop.'
+      : '');
   $('stopBtn').disabled = !running;
 }
 
@@ -1353,7 +2124,14 @@ $('runBtn').addEventListener('click', async () => {
   const timeoutMs = Number($('timeoutMs').value) || 40000;
   const sampleRate = Number($('sampleRate').value) || 44100;
 
-  for (const tc of testPlan) {
+  // Snapshot before the loop: the deviceDisconnected event clears both of these,
+  // so reading them after a drop would always say "not an override run".
+  const isOverrideRun = ignoreDisconnect && deviceRequiresDisconnect;
+  const heapLog = [];
+  const deviceLabel = connectedDevice?.model ?? 'device';
+
+  for (const [i, tc] of testPlan.entries()) {
+    markActivity(`run loop: case #${tc.id}`);
     if (!tc.include) { tc.status = 'skipped'; renderResultRow(tc); continue; }
     if (stopRequested) break;
 
@@ -1362,38 +2140,59 @@ $('runBtn').addEventListener('click', async () => {
 
     const pushBtn = document.querySelector('.push-filters-todevice');
     if (!pushBtn || pushBtn.hidden) {
+      // With the override on, losing the device IS the result being tested for:
+      // report it once and stop, rather than marking every remaining case as an
+      // identical error and burying the finding.
+      if (isOverrideRun) {
+        tc.status = 'error';
+        tc.error = 'device disconnected after a push — disconnectOnSave is correct for this model';
+        renderResultRow(tc);
+        $('runStatus').textContent =
+          `stopped: ${deviceLabel} really does disconnect after a save, ` +
+          `so the disconnectOnSave flag is right and this tool cannot verify it. Reconnect to continue.`;
+        break;
+      }
       tc.status = 'error'; tc.error = 'no device connected'; renderResultRow(tc); continue;
     }
 
     filtersState = [{ freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type, disabled: false }];
     try {
+      markActivity(`case #${tc.id}: push filter to device`);
       pushBtn.click();
     } catch (e) {
       tc.status = 'error'; tc.error = e.message; renderResultRow(tc); continue;
     }
 
+    markActivity(`case #${tc.id}: settle ${settleMs}ms`);
     await sleep(settleMs);
     $('runStatus').textContent = `measuring: ${labelFor(tc)}`;
 
     try {
+      markActivity(`case #${tc.id}: REW sweep + fetch FR`);
       const captured = await triggerAndCaptureSweep(timeoutMs);
       if (!captured) { tc.status = 'skipped'; renderResultRow(tc); continue; }
       const { id, fr } = captured;
+      markActivity(`case #${tc.id}: rename measurement ${id}`);
       await renameMeasurement(id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}`.slice(0, 60));
       const baseMag = magnitudeAt(baseline.fr, tc.measureFreq);
       const testMag = magnitudeAt(fr, tc.measureFreq);
       tc.measuredDelta = testMag - baseMag;
       tc.measurementId = id;
-      // Keep the raw curve (plain array, not Float32Array — JSON.stringify
-      // silently drops TypedArray contents) so the JSON export can double as
-      // a fixture file for filter-response.test.js, not just a results log.
-      tc.fr = { startFreq: fr.startFreq, freqStep: fr.freqStep, magnitude: Array.from(fr.magnitude) };
+      // Keep the raw curve so the JSON export can double as a fixture file for
+      // filter-response.test.js, not just a results log. Held as the original
+      // Float32Array: JSON.stringify does silently drop TypedArray contents, but
+      // converting HERE pays for it on every measurement for the whole session
+      // (8 bytes/sample instead of 4, retained per test case, and a full plan can
+      // hold dozens of curves). The export converts instead — one-off, only when
+      // the button is actually clicked.
+      tc.fr = fr;
 
       if (hasModel(tc.type)) {
         // Full-curve fit: compare the whole measured delta curve against the
         // theoretical biquad shape, detect+remove any constant broadband
         // pregain offset, then judge the pregain-COMPENSATED fit.
         const filterSpec = { freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type.toUpperCase() };
+        markActivity(`case #${tc.id}: shape fit`);
         const comparison = compareToTheoretical(baseline.fr, fr, filterSpec, { magnitudeAt, fs: sampleRate, evalFreqs: EVAL_FREQS });
         const { pregainDb, compensated } = compensateForPregain(comparison);
         const judged = judgeFit(compensated, { rmseToleranceDb: toleranceDb });
@@ -1425,6 +2224,7 @@ $('runBtn').addEventListener('click', async () => {
         // for a filter that barely failed tolerance. Only shown when the
         // search found a real, meaningful improvement over the requested Q.
         if (!judged.pass) {
+          markActivity(`case #${tc.id}: estimate effective Q`);
           const qEstimate = estimateEffectiveQ(baseline.fr, fr, filterSpec, { magnitudeAt, fs: sampleRate, evalFreqs: EVAL_FREQS });
           if (qEstimate.significant) {
             tc.estimatedQ = qEstimate.estimatedQ;
@@ -1442,8 +2242,28 @@ $('runBtn').addEventListener('click', async () => {
       tc.status = 'error'; tc.error = e.message;
     }
     renderResultRow(tc);
+
+    // A renderer that dies mid-run leaves nothing behind, so record the heap as
+    // it goes. If usage climbs case-by-case rather than sitting flat, the crash
+    // is retention (each stored 55k-point curve is ~220KB) and the plan needs
+    // splitting into batches; if it is flat right up to the crash, it is not
+    // this page's memory and the WebHID/REW layer is the place to look.
+    if (performance.memory) {
+      const mb = (v) => (v / 1048576).toFixed(1);
+      const m = performance.memory;
+      const line = `case ${i + 1}/${testPlan.length} heap ${mb(m.usedJSHeapSize)}MB `
+        + `of ${mb(m.jsHeapSizeLimit)}MB limit`;
+      heapLog.push(line);
+      console.log('[heap]', line);
+      if (m.usedJSHeapSize > m.jsHeapSizeLimit * 0.8) {
+        $('runStatus').textContent = `⚠️ heap at ${mb(m.usedJSHeapSize)}MB of `
+          + `${mb(m.jsHeapSizeLimit)}MB — stop and run the rest as a second batch, `
+          + `the tab is close to being killed.`;
+      }
+    }
   }
 
+  window.__lastHeapLog = heapLog;
   $('runStatus').textContent = 'restoring device to flat (0dB)…';
   try { await pushFlatFilters(); } catch (e) { console.warn('Could not reset device to flat after run:', e); }
 
@@ -1655,7 +2475,16 @@ function caseMetrics(tc, fs) {
   };
 }
 
-const pctSigned = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
+// A percentage that rounds to zero must not be printed as "+0.0%" or "-0.0%":
+// a signed zero reads as a real-but-tiny effect when it is really "no effect
+// resolved". Show more precision instead, and drop the sign when it is nil.
+const pctSigned = (v) => {
+  const pct = v * 100;
+  if (Math.abs(pct) < 0.05) {
+    return Math.abs(pct) < 0.005 ? '0%' : `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(3)}%`;
+  }
+  return `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}%`;
+};
 const dbSigned = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} dB`;
 // Is x within tol (relative) of target? Used to name round-number scale
 // factors — 0.5x/2x point at a value-encoding bug, not a DSP subtlety.
@@ -1669,8 +2498,98 @@ const nearRatio = (x, target, tol = 0.06) => Math.abs(x / target - 1) <= tol;
 // its own cannot tell you: "RMSE 0.51 dB" is opaque, "a +1.3% frequency offset
 // explains 98% of it" is a bug report.
 const PARAM_LABEL = { freq: 'centre frequency', gain: 'gain', q: 'Q' };
+// ── Shelf behaviour ────────────────────────────────────────────────────────
+// Shelves and peaking filters can fail for completely different reasons, and
+// pooling them hides both. A device whose peaking filters are perfect while
+// every shelf fails is not "a device with a gain error" — it is a device with a
+// shelf implementation problem, and the numbers only make sense once the two
+// populations are separated.
+//
+// Both known shelf defects come from the RBJ shelf formula:
+//   * plateau gain uses A = 10^(g/20) instead of 10^(g/40), which doubles the
+//     shelf in dB (ask for +6, get +12);
+//   * the slope uses the peaking alpha sin(w0)/(2Q) instead of the shelf alpha
+//     (sin(w0)/2)*sqrt((A+1/A)(1/S-1)+2), which makes the realised slope
+//         S = 1 / (1 + (1/Q^2 - 2)/(A + 1/A))
+//     rather than the S that was asked for.
+// They are independent — a device can have either, both, or neither.
+function shelfSlopeFromPeakingAlpha(qRequested, aUsedByDevice) {
+  const k = aUsedByDevice + 1 / aUsedByDevice;
+  const denom = 1 + (1 / (qRequested * qRequested) - 2) / k;
+  return denom > 0 ? 1 / denom : null;
+}
+
+function analyseShelfBehaviour(ms) {
+  const shelves = ms.filter((m) => ['LSQ', 'HSQ'].includes((m.spec.type || '').toUpperCase()));
+  const peaks = ms.filter((m) => (m.spec.type || '').toUpperCase() === 'PK');
+  if (shelves.length < 2) return null;
+
+  const failing = (list) => list.filter((m) => m.rmse != null && m.rmse > m.tolerance).length;
+  const shelfFail = failing(shelves), peakFail = failing(peaks);
+  const gains = shelves.map((m) => m.gainScale).filter((v) => v != null);
+  if (!gains.length) return null;
+  const medGain = medianOf(gains), gainSpread = madOf(gains);
+
+  // Same statistic over the peaking cases, so "shelves only" can be stated as a
+  // measurement rather than an impression.
+  const peakGains = peaks.map((m) => m.gainScale).filter((v) => v != null);
+  const medPeakGain = peakGains.length ? medianOf(peakGains) : null;
+
+  let math = `shelf cases: ${shelves.length} (${shelfFail} failing)   peaking cases: ${peaks.length} (${peakFail} failing)\n`;
+  math += `shelf applied/requested gain: median ${medGain.toFixed(3)}x (MAD ${gainSpread.toFixed(3)})\n`;
+  if (medPeakGain != null) math += `peaking applied/requested gain: median ${medPeakGain.toFixed(3)}x\n`;
+  for (const m of shelves) {
+    const A = Math.pow(10, Math.abs(m.spec.gain) / 20);   // the doubled-exponent A
+    const predicted = shelfSlopeFromPeakingAlpha(m.spec.q, A);
+    math += `  ${labelFor(m.tc).padEnd(30)} gain ${(m.gainScale ?? NaN).toFixed(3)}x`
+      + (predicted ? `   slope predicted by the peaking-alpha model: ${predicted.toFixed(3)}` : '')
+      + `\n`;
+  }
+
+  const doubling = Math.abs(medGain - 2) < 0.15 && gainSpread < 0.2;
+  const peaksFine = peaks.length >= 2 && peakFail === 0;
+
+  if (doubling) {
+    return {
+      severity: 'high',
+      title: 'Shelf gain is doubled — the device applies twice the dB you ask for',
+      finding: `Every shelf measures ${medGain.toFixed(2)}x the requested gain (MAD ${gainSpread.toFixed(3)}): ask for +6 dB and you get about +${(6 * medGain).toFixed(0)} dB. `
+        + (peaksFine ? `All ${peaks.length} peaking cases pass, so this is specific to the shelf path, not a general gain fault. ` : '')
+        + `A factor of exactly 2 in dB is the signature of the shelf using A = 10^(gain/20) where RBJ specifies A = 10^(gain/40) — the plateau then lands at 10^(gain/10), i.e. double the dB. `
+        + `The slope moves with it, because alpha depends on A: at the doubled A the realised slope matches 1/(1 + (1/Q² − 2)/(A + 1/A)), which is what a device borrowing the PEAKING alpha for shelves produces.`,
+      math,
+      caveat: 'Halving the gain alone will not make a shelf correct — the slope is wrong too, and both come from the same A. Verify against an independent implementation (a WebAudio BiquadFilterNode set to lowshelf/highshelf) before changing a handler.',
+      next: `In the handler, send half the requested shelf gain and the compensating Q. Peaking filters need neither correction here — leave them alone.`,
+    };
+  }
+
+  if (peaksFine && shelfFail > 0) {
+    return {
+      severity: 'high',
+      title: `Shelves fail while every peaking filter passes (${shelfFail}/${shelves.length} shelf cases)`,
+      finding: `All ${peaks.length} peaking cases pass but ${shelfFail} of ${shelves.length} shelf cases fail, so the fault is in the shelf implementation rather than in gain, Q or frequency generally. `
+        + `Shelf gain measures ${medGain.toFixed(3)}x requested. Treat any pooled gain/Q/frequency finding below with care: those mix both filter types and will average this away.`,
+      math,
+      next: 'Run a shelf sweep across several gains and Q values — the shelf relationships cannot be separated from three cases at one operating point.',
+    };
+  }
+  return null;
+}
+
 function analyseResidualAttribution(ms) {
   const failing = ms.filter((m) => m.rmse != null && m.rmse > m.tolerance);
+  // This finding covers ONLY the failing cases, while the gain/Q/frequency
+  // findings below cover every measured case. Reading a "gain is 2.1x" here
+  // beside a "gain is 1.01x" there looks like a contradiction unless both say
+  // which population they describe — so both now do.
+  // Grouped by FAMILY, not by type code: LSQ and HSQ are two codes but one
+  // implementation, so "all failures are shelves" is the useful statement and
+  // a literal type-code check would miss it.
+  const familyOf = (t) => (['LSQ', 'HSQ'].includes(t) ? 'shelf' : t === 'PK' ? 'peaking' : t);
+  const failFamilies = [...new Set(failing.map((m) => familyOf((m.spec.type || '').toUpperCase())))];
+  const oneTypeNote = failFamilies.length === 1 && ms.length > failing.length
+    ? ` Every failing case is a ${failFamilies[0]} filter, so this describes that filter type, not the device as a whole — the other ${ms.length - failing.length} measured case(s) pass.`
+    : '';
   if (!failing.length) {
     return { severity: 'ok', title: 'No case exceeds its shape tolerance', finding: `All ${ms.length} analysed cases fit within their configured tolerance — there is no residual to attribute.` };
   }
@@ -1716,7 +2635,7 @@ function analyseResidualAttribution(ms) {
     + `\n  median residual explained ${(medExplained * 100).toFixed(0)}%`;
 
   const consistent = group.length >= Math.max(2, failing.length * 0.6) && spreadMult < 0.05;
-  let finding = `In ${group.length} of ${failing.length} failing case(s) the residual is best explained by the ${PARAM_LABEL[topParam]} being wrong, not by the other two: a ${medMult.toFixed(4)}x multiplier (${pctSigned(medMult - 1)}) removes a median ${(medExplained * 100).toFixed(0)}% of the residual.`;
+  let finding = `In ${group.length} of ${failing.length} failing case(s) the residual is best explained by the ${PARAM_LABEL[topParam]} being wrong, not by the other two: a ${medMult.toFixed(4)}x multiplier (${pctSigned(medMult - 1)}) removes a median ${(medExplained * 100).toFixed(0)}% of the residual.${oneTypeNote}`;
   if (topParam === 'freq') {
     finding += ` A frequency offset produces a very recognisable residual — antisymmetric about the centre frequency, positive on one side and negative on the other, crossing zero at f0 — so open <b>Explain</b> on one of these rows and check the lower trace against that description. Note this is invisible to a Q search: at a wrong centre frequency the best-fit Q comes back at ~100% of requested, which is exactly why an "effective Q 100%" reading next to a failing RMSE means "the problem is not Q".`;
   } else if (topParam === 'gain') {
@@ -1732,7 +2651,15 @@ function analyseResidualAttribution(ms) {
     severity: consistent ? 'high' : 'med',
     title: `Dominant cause: ${PARAM_LABEL[topParam]} (${group.length}/${failing.length} failing cases)`,
     finding, html: table, math,
-    next: topParam === 'freq'
+    // A shelf whose SLOPE is wrong produces a curve that a shifted corner
+    // frequency imitates closely, so this attribution will happily name
+    // "frequency" for a set of failing shelves whose frequencies are provably
+    // accurate. Saying so here stops the two findings reading as a
+    // contradiction and stops the reader auditing frequency-conversion code
+    // that has nothing wrong with it.
+    next: topParam === 'freq' && failFamilies.length === 1 && failFamilies[0] === 'shelf'
+      ? `Every failing case here is a shelf, and a shelf with the wrong slope mimics a shifted corner frequency closely enough for this fit to prefer it — check the frequency-accuracy finding below before acting. If that reports the frequencies as accurate, the ${medMult.toFixed(4)}x is absorbing a slope error and the shelf law is what needs attention, not the frequency conversion.`
+      : topParam === 'freq'
       ? `Work out what ${medMult.toFixed(4)}x means in this device's frequency encoding — check the register step size and any rounding in the handler's frequency conversion. Then add the suggested frequency sweep below to see whether the multiplier is constant or drifts across the band.`
       : topParam === 'gain'
         ? 'See the gain-accuracy finding below for the scale-vs-offset breakdown.'
@@ -1764,7 +2691,7 @@ function analyseLevelOffset(ms) {
     if (nearRatio(vsGain.slope, -1, 0.15)) {
       severity = 'info';
       finding = `The device backs its overall level off by almost exactly the boost it was asked for (slope ${vsGain.slope.toFixed(2)} dB per dB). That is textbook auto-pregain headroom protection, not an error — but it means the device is quietly undoing your boost, so the net SPL barely changes.`;
-      next = 'If you want the boost to be audible rather than level-compensated, check whether the handler exposes a pregain/preamp control this bench is leaving at its default.';
+      next = 'If you want the boost to be audible rather than level-compensated, check whether the handler exposes a pregain/preamp control this tool is leaving at its default.';
     } else {
       finding = `The broadband offset scales with the requested gain at ${vsGain.slope.toFixed(2)} dB per dB (r² ${vsGain.r2.toFixed(2)}) — partial auto-pregain. It is removed before judging shape, so it does not by itself cause a shape failure.`;
     }
@@ -1780,6 +2707,13 @@ function analyseLevelOffset(ms) {
 }
 
 function analyseGainAccuracy(ms) {
+  // Pools every measured case. When one filter type misbehaves and the rest are
+  // fine, that type is outvoted here — the shelf finding above is the one that
+  // separates them.
+  const typesCovered = [...new Set(ms.map((m) => (m.spec.type || '').toUpperCase()))];
+  const pooledNote = typesCovered.length > 1
+    ? ` Averaged over all ${ms.length} measured cases (${typesCovered.join(', ')}) — a fault confined to one filter type is diluted here.`
+    : '';
   const usable = ms.filter((m) => m.gainScale != null && m.gainReliable && Math.abs(m.spec.gain) >= 0.5);
   const distinct = new Set(usable.map((m) => m.spec.gain));
   if (usable.length < 2) return null;
@@ -1820,7 +2754,7 @@ function analyseGainAccuracy(ms) {
     next = 'Sort the per-case list above by requested gain — if the ratio collapses only at the largest boosts, the device is limiting rather than mis-scaling.';
   } else {
     severity = 'med';
-    finding = `Applied gain is a consistent but wrong ${medScale.toFixed(3)}x of requested (MAD ${spread.toFixed(3)}) — an unexplained ${pctSigned(medScale - 1)} error that is stable across cases, so it is systematic rather than noise.`;
+    finding = `Applied gain is a consistent but wrong ${medScale.toFixed(3)}x of requested (MAD ${spread.toFixed(3)}) — an unexplained ${pctSigned(medScale - 1)} error that is stable across cases, so it is systematic rather than noise.${pooledNote}`;
   }
   if (distinct.size < 3) {
     next = `${next ? next + ' ' : ''}Only ${distinct.size} distinct gain value(s) measured — a scale error and a fixed offset are indistinguishable until there are 3+. Add the suggested gain sweep below.`;
@@ -1857,7 +2791,11 @@ function analyseQAccuracy(ms) {
     return { severity: 'ok', title: 'Q is applied accurately', finding: `Effective Q matches requested Q at ${medRatio.toFixed(3)}x (MAD ${spread.toFixed(3)}).`, math };
   }
 
-  const caveat = 'A tight, consistent Q ratio looks exactly the same whether the device has a real Q convention difference or OUR biquad model has the wrong alpha formula. This has already happened once in this repo: a WalkPlay Protocol Max run produced a convincing 0.70–0.79 cluster across 6 captures that turned out to be our own shelf-Q formula, not the device (see filter-response.real.test.js). Verify the model against an independent implementation — e.g. a WebAudio BiquadFilterNode — before changing any handler. Note these figures can differ slightly from the per-row “Effective Q” column: that column estimates the level offset once at the requested Q, whereas Insights fits offset and Q together, which removes a several-percent bias.';
+  // Kept short and device-neutral: this is read by someone verifying whatever
+  // device is in front of them, and it only ever renders inside the ⓘ detail.
+  const caveat = 'A consistent Q ratio looks identical whether the device has a different Q convention or our own biquad model has the wrong alpha. '
+    + 'Check the model against an independent implementation (e.g. a WebAudio BiquadFilterNode) before changing a handler — this repo has had one such false alarm, where a tight 0.70–0.79 cluster across 6 captures turned out to be our shelf-Q formula (see filter-response.real.test.js). '
+    + 'These figures can also differ a few percent from the per-row “Effective Q” column, which fits the level offset once at the requested Q rather than fitting offset and Q together.';
 
   let finding;
   if (spread < 0.08 && fit && Math.abs(fit.slope - 1) > 0.12) {
@@ -1930,13 +2868,42 @@ function analyseFrequencyTrends(ms, fs) {
       const medExplained = explanatory.length ? medianOf(explanatory.map((m) => m.freqExplained)) : 0;
       math += `\nresidual explained by a frequency-only correction: ${freqUsable.map((m) => `#${m.tc.id} ${(m.freqExplained * 100).toFixed(0)}%`).join(', ')}`;
 
-      if (explanatory.length && explanatory.length >= Math.max(1, failingFreq.length * 0.5)) {
+      // An offset can only be BLAMED for a failure if it is distinguishable from
+      // zero. "Correcting the frequency removes the residual" is not sufficient
+      // on its own: a filter whose SHAPE is wrong (a shelf with the wrong slope,
+      // most commonly) can have much of its residual absorbed by nudging the
+      // centre frequency, because the two produce similar-looking curves. Fitting
+      // one to the other then reports a placement bug of -0.0%, which is
+      // self-contradictory and sends the reader after the wrong thing.
+      //
+      // The floor is the measurement's own scatter, not a fixed percentage — a
+      // fixed floor is wrong in both directions, which is why it was avoided
+      // here in the first place. An offset smaller than the spread of the
+      // measurements it is drawn from has not been resolved at all. FREQ_FLOOR
+      // is a second guard for the case where scatter is implausibly small.
+      const FREQ_FLOOR = 0.001;   // 0.1% — below the estimator's resolution
+      const offset = Math.abs(medRatio - 1);
+      const offsetIsReal = offset > Math.max(spread, FREQ_FLOOR);
+
+      if (explanatory.length && explanatory.length >= Math.max(1, failingFreq.length * 0.5)
+          && !offsetIsReal) {
+        // Residual absorbs into a frequency nudge, but there is no frequency
+        // error to speak of — so the shape is wrong, not the placement.
+        const types = [...new Set(explanatory.map((m) => m.tc.type))];
+        findings.push({
+          severity: 'med', title: 'Filter SHAPE is wrong, not its frequency', math,
+          finding: `A frequency-only correction absorbs a median ${(medExplained * 100).toFixed(0)}% of the residual in ${explanatory.length} of ${failingFreq.length} failing case(s), but the frequencies themselves are accurate to ${pctSigned(medRatio - 1)} (MAD ${spread.toFixed(4)}) — smaller than the measurement scatter, so there is no placement error to find. A wrong filter SHAPE produces a curve that a small frequency shift can partly imitate, which is what the fit is picking up. Affected: ${types.join(', ')}.`,
+          next: types.every((t) => t === 'LSQ' || t === 'HSQ')
+            ? 'All affected cases are shelves, so look at the shelf slope law rather than frequency placement — a device that reuses its peaking alpha for shelves produces exactly this signature.'
+            : 'Compare the measured curve against the requested one at the same centre frequency; the mismatch will be in width or slope, not position.',
+        });
+      } else if (explanatory.length && explanatory.length >= Math.max(1, failingFreq.length * 0.5)) {
         findings.push({
           severity: 'high', title: `Centre frequency is offset by ${pctSigned(medRatio - 1)}`, math,
           finding: `Filters land ${pctSigned(medRatio - 1)} away from where they were asked for (MAD ${spread.toFixed(4)}), and correcting only the frequency removes a median ${(medExplained * 100).toFixed(0)}% of the residual in ${explanatory.length} of ${failingFreq.length} failing case(s) — so this is the cause of those failures, not a side effect. The offset is small in percentage terms but that is not the same as harmless: the sharper the filter, the more a small misplacement costs, which is why it shows up on high-Q cases first.`,
           next: `Constant relative error like this is normally frequency-register rounding or a step-size mismatch in the handler's frequency conversion rather than a per-band bug.${distinctF.size < 3 ? ` Only ${distinctF.size} distinct frequency(ies) measured — add the suggested frequency sweep to see whether the offset is constant or drifts across the band.` : ''}`,
         });
-      } else if (Math.abs(medRatio - 1) >= 0.02 && spread < 0.03) {
+      } else if (offset >= 0.02 && spread < 0.03 && offsetIsReal) {
         findings.push({
           severity: 'med', title: 'Centre frequency is consistently offset', math,
           finding: `Filters land ${pctSigned(medRatio - 1)} away from the requested frequency, consistently (MAD ${spread.toFixed(4)}) — but correcting the frequency does not remove much of any failing case's residual, so it is a real offset that is not currently costing accuracy. Worth fixing; not the explanation for a failure.`,
@@ -1994,10 +2961,12 @@ function analyseFrequencyTrends(ms, fs) {
   return findings;
 }
 
-// Cheap, high-value check: the bench asks the user for a sample rate, and an
+// Cheap, high-value check: the tool asks the user for a sample rate, and an
 // assumed-fs error mimics a device bug (errors growing towards Nyquist). If a
 // different fs explains every case markedly better, the config is wrong — not
 // the handler.
+let rewSampleRate = null;   // last rate read from REW, for cross-checking
+
 function analyseSampleRate(ms, configuredFs) {
   if (ms.length < 2) return null;
   const totalRmseAt = (fs) => {
@@ -2016,15 +2985,24 @@ function analyseSampleRate(ms, configuredFs) {
   const current = scored.find((s) => s.fs === configuredFs) ?? { fs: configuredFs, rmse: totalRmseAt(configuredFs) };
 
   const math = scored.map((s) => `  ${String(s.fs).padStart(6)} Hz -> aggregate in-band RMSE ${s.rmse.toFixed(4)} dB${s.fs === configuredFs ? '   <- configured' : ''}${s.fs === best.fs ? '   <- best fit' : ''}`).join('\n');
+  // Cross-check against the rate REW is actually playing at. Two independent
+  // lines of evidence agreeing turns "this fits better" into "this IS the rate";
+  // disagreeing is itself informative — it points at internal resampling.
+  const rewNote = rewSampleRate == null ? ''
+    : (rewSampleRate === best.fs
+        ? ` REW is playing at ${rewSampleRate} Hz, which agrees with this fit.`
+        : ` Note REW is playing at ${rewSampleRate} Hz, which does NOT match the best-fitting ${best.fs} Hz — the device may be resampling internally.`);
+
   if (best.fs !== configuredFs && current.rmse != null && best.rmse <= current.rmse * 0.8) {
     return {
       severity: 'high', title: `Sample rate looks wrong — ${best.fs} Hz fits far better than the configured ${configuredFs} Hz`,
-      finding: `Re-fitting every case at ${best.fs} Hz drops aggregate in-band RMSE from ${current.rmse.toFixed(3)} dB to ${best.rmse.toFixed(3)} dB (${((1 - best.rmse / current.rmse) * 100).toFixed(0)}% better). The sample rate only enters through the bilinear warping in our theoretical model, so this is almost certainly the bench's assumed rate being wrong rather than a device fault — and a wrong rate mimics a real device bug by producing errors that grow towards high frequency.`,
+      finding: `Re-fitting every case at ${best.fs} Hz drops aggregate in-band RMSE from ${current.rmse.toFixed(3)} dB to ${best.rmse.toFixed(3)} dB (${((1 - best.rmse / current.rmse) * 100).toFixed(0)}% better).${rewNote} The sample rate only enters through the bilinear warping in our theoretical model, so this is almost certainly the tool's assumed rate being wrong rather than a device fault — and a wrong rate mimics a real device bug by producing errors that grow towards high frequency.`,
       math,
-      next: `Set the sample-rate field to ${best.fs} and re-open Insights before acting on any other finding here.`,
+      action: `<div class="next"><button id="applyBestFsBtn" data-fs="${best.fs}">↻ Set sample rate to ${best.fs} Hz and re-run Insights</button></div>`,
+      next: `Do this before acting on any other finding here — a wrong rate distorts the gain, Q and frequency fits too.`,
     };
   }
-  return { severity: 'ok', title: 'Sample-rate assumption is consistent', finding: `The configured ${configuredFs} Hz fits the measurements as well as any candidate rate — no evidence of a sample-rate mismatch.`, math };
+  return { severity: 'ok', title: 'Sample-rate assumption is consistent', finding: `The configured ${configuredFs} Hz fits the measurements as well as any candidate rate — no evidence of a sample-rate mismatch.${rewNote}`, math };
 }
 
 // ---------------------------------------------------------------------------
@@ -2071,7 +3049,20 @@ function buildSuggestions(findings, ms) {
 
 let pendingSuggestions = [];
 
+// Splits off the opening sentence to use as the collapsed one-liner. Abbreviations
+// like "e.g." and decimals like "0.70" must not be mistaken for sentence ends, so
+// a full stop only counts when followed by whitespace and a capital or digit that
+// starts a new word — and if nothing matches, the whole string stays as the lead
+// rather than being truncated at a wrong spot.
+function splitFirstSentence(text) {
+  if (!text) return { summary: '', rest: '' };
+  const m = /^(.*?[.!?])(\s+)(?=[A-Z(“"])/s.exec(text);
+  if (!m || m[1].length > 220) return { summary: text, rest: '' };
+  return { summary: m[1], rest: text.slice(m[1].length + m[2].length) };
+}
+
 async function runInsights() {
+  markActivity('running Insights across all measured cases');
   const panel = $('insightsPanel'), body = $('insightsBody');
   panel.style.display = '';
   body.innerHTML = '<p class="small">Re-fitting every measured curve… (grid searches over frequency and Q)</p>';
@@ -2097,6 +3088,7 @@ async function runInsights() {
   }
 
   const findings = [
+    analyseShelfBehaviour(ms),
     analyseResidualAttribution(ms),
     analyseSampleRate(ms, fs),
     analyseLevelOffset(ms),
@@ -2116,14 +3108,25 @@ async function runInsights() {
     html += `<p class="finding">Nothing systematic stands out: level, gain, Q and frequency all track what was requested across ${ms.length} cases. Any individual failures are more likely per-case noise — use <b>Explain</b> on the specific row.</p>`;
   }
   const badgeLabel = { high: 'likely bug', med: 'worth checking', info: 'context', ok: 'ok' };
-  for (const f of findings) {
+  for (const [i, f] of findings.entries()) {
+    // One sentence up front; the rest of the prose joins the numbers, caveats
+    // and follow-ups behind the toggle.
+    const { summary, rest } = splitFirstSentence(f.summary ? '' : f.finding);
+    const lead = f.summary ?? summary;
+    const detail = [
+      rest ? `<div class="finding">${rest}</div>` : (f.summary ? `<div class="finding">${f.finding}</div>` : ''),
+      f.html ?? '',
+      f.math ? `<div class="math">${f.math.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>` : '',
+      f.caveat ? `<div class="caveat">⚠️ ${f.caveat}</div>` : '',
+      f.next ? `<div class="next"><b>Next:</b> ${f.next}</div>` : '',
+    ].join('');
     html += `<div class="insight sev-${f.severity}">
-      <h4><span class="badge ${f.severity}">${badgeLabel[f.severity]}</span> &nbsp;${f.title}</h4>
-      <div class="finding">${f.finding}</div>
-      ${f.html ?? ''}
-      ${f.math ? `<div class="math">${f.math.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>` : ''}
-      ${f.caveat ? `<div class="caveat">⚠️ ${f.caveat}</div>` : ''}
-      ${f.next ? `<div class="next"><b>Next:</b> ${f.next}</div>` : ''}
+      <h4><span class="badge ${f.severity}">${badgeLabel[f.severity]}</span> &nbsp;${f.title}${
+        detail ? `<button class="insight-toggle" data-insight="${i}" aria-expanded="false"
+                   title="Show the numbers, caveats and suggested next step">i</button>` : ''}</h4>
+      <div class="finding">${lead}</div>
+      ${f.action ?? ''}
+      ${detail ? `<div class="insight-detail" id="insight-detail-${i}" hidden>${detail}</div>` : ''}
     </div>`;
   }
   body.innerHTML = html;
@@ -2133,13 +3136,51 @@ async function runInsights() {
     const reasons = [...new Set(pendingSuggestions.map((s) => s.reason))];
     $('insightsActions').style.display = 'flex';
     $('addSuggestedBtn').textContent = `➕ Add ${pendingSuggestions.length} suggested follow-up tests to the plan`;
-    $('addSuggestedNote').innerHTML = `Covers: ${reasons.join('; ')}. Already-completed cases will be un-ticked so a re-run measures only the new ones.`;
+    // Same principle as the findings: name the areas, park the justification in
+    // a tooltip. The reasons carry their own "(why)" clauses, which is exactly
+    // the detail that makes this line a paragraph.
+    const short = reasons.map((r) => r.replace(/\s*\([^)]*\)/g, '').replace(/\s+—.*$/, '').trim());
+    const escAttr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    $('addSuggestedNote').innerHTML =
+      `<span title="${escAttr(reasons.join('\n\n'))}">Covers: ${short.join(', ')} `
+      + `<span class="info-icon">ⓘ</span></span> · completed cases are un-ticked on re-run.`;
   }
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 $('insightsBtn').addEventListener('click', () => { runInsights().catch((e) => { $('insightsBody').innerHTML = `<p class="finding">Insights failed: ${e.message}</p>`; console.error(e); }); });
 $('closeInsightsBtn').addEventListener('click', () => { $('insightsPanel').style.display = 'none'; });
+$('compensationEnabled').addEventListener('change', (e) => {
+  setCompensationEnabledForVerification(e.target.checked);
+  renderCompensations();
+  renderSummary();
+  // A plan measured under one setting cannot be compared with one measured
+  // under the other, so make the change impossible to miss.
+  if (window.showToast) {
+    window.showToast(e.target.checked
+      ? 'Compensation ON — filters are corrected before writing.'
+      : 'Compensation OFF — writing raw values. Re-run the plan; earlier results were compensated.',
+      e.target.checked ? 'info' : 'warning', 7000, true);
+  }
+});
+
+// Delegated so it survives insightsBody being re-rendered on every run.
+$('insightsBody').addEventListener('click', (e) => {
+  const applyFs = e.target.closest('#applyBestFsBtn');
+  if (applyFs) {
+    $('sampleRate').value = applyFs.dataset.fs;
+    $('sampleRateNote').textContent = `set to ${applyFs.dataset.fs} Hz from the best-fit search`;
+    runInsights().catch((err) => console.error(err));
+    return;
+  }
+  const btn = e.target.closest('.insight-toggle');
+  if (!btn) return;
+  const detail = $(`insight-detail-${btn.dataset.insight}`);
+  if (!detail) return;
+  const open = detail.hasAttribute('hidden');
+  detail.toggleAttribute('hidden', !open);
+  btn.setAttribute('aria-expanded', String(open));
+});
 $('addSuggestedBtn').addEventListener('click', () => {
   if (!pendingSuggestions.length) return;
   // Un-tick everything already measured: the point of these extra cases is to
@@ -2167,26 +3208,328 @@ function download(filename, text, type) {
   URL.revokeObjectURL(url);
 }
 
-$('exportJsonBtn').addEventListener('click', () => {
-  const payload = {
+// "Save as PDF" is the browser's print dialog with Destination=PDF — the header
+// and verdict are refreshed first so a printout can never show stale values from
+// an earlier run.
+$('exportPdfBtn').addEventListener('click', () => {
+  markActivity('preparing PDF / print layout');
+  renderPrintHeader();
+  renderVerdict();
+  window.print();
+});
+
+// ── Main-thread stall detector ─────────────────────────────────────────────
+// "Page Unresponsive" means the main thread was blocked, and by the time the
+// browser says so the cause is long gone. A heartbeat that misses its slot by a
+// wide margin proves a stall happened and stamps it with whatever the page was
+// last doing, which is what turns "it froze again" into something actionable.
+//
+// Deliberately a timer rather than PerformanceObserver('longtask'): longtask
+// entries give a duration but no attribution, and this is cheap enough (one
+// wake-up a second) to leave on permanently.
+let lastActivity = 'idle';
+// A ring of the last few steps with timestamps. "case #32" covers a dozen
+// distinct operations, so a stall labelled with it narrows nothing — but the
+// LAST breadcrumb before the gap is the step that blocked, and the gap between
+// breadcrumb timestamps says how long each step took.
+const BREADCRUMBS = [];
+function markActivity(what) {
+  lastActivity = what;
+  BREADCRUMBS.push({ at: performance.now(), what });
+  if (BREADCRUMBS.length > 24) BREADCRUMBS.shift();
+}
+
+// Rendered oldest-first with the dwell time of each step. The step that blocked
+// is the last one listed: nothing after it got far enough to leave a mark.
+function breadcrumbTrail() {
+  const now = performance.now();
+  return BREADCRUMBS.map((b, i) => {
+    const until = i + 1 < BREADCRUMBS.length ? BREADCRUMBS[i + 1].at : now;
+    return `${((until - b.at) / 1000).toFixed(1)}s  ${b.what}`;
+  });
+}
+// Console warnings and status text are both lost when a tab is killed or has to
+// be force-closed, which is exactly the case we most need evidence for. So the
+// heartbeat also writes to localStorage: that survives the tab dying and can be
+// read from a fresh tab afterwards.
+//
+// The last successfully-written beat is the useful artefact. If the main thread
+// is blocked, the write cannot happen either — so whatever the beat says was
+// happening IS where it froze, and the timestamp says when.
+const DIAG_KEY = 'devicepeq-rew-bench:diag:v1';
+
+// The most recent stall, kept so ordinary heartbeats do not overwrite it — the
+// stall is the whole point of the record, and it is followed by many normal
+// beats before anyone gets to read it.
+let lastStallRecord = null;
+
+function writeDiag(extra = {}) {
+  try {
+    const m = performance.memory;
+    if (extra.trail) lastStallRecord = { seconds: extra.lastStallSeconds, trail: extra.trail, at: new Date().toISOString() };
+    localStorage.setItem(DIAG_KEY, JSON.stringify({
+      lastStall: lastStallRecord,
+      beatAt: new Date().toISOString(),
+      activity: lastActivity,
+      heapUsedMB: m ? Math.round(m.usedJSHeapSize / 1048576) : null,
+      heapLimitMB: m ? Math.round(m.jsHeapSizeLimit / 1048576) : null,
+      device: connectedDevice?.model ?? null,
+      casesDone: testPlan.filter((t) => t.status && t.status !== 'pending').length,
+      casesTotal: testPlan.length,
+      // Cleared on a normal unload. Still true on the next load ⇒ the previous
+      // session did not exit cleanly, i.e. it froze or was killed.
+      dirty: true,
+      ...extra,
+    }));
+  } catch { /* private mode / quota — diagnostics must never break the run */ }
+}
+
+const LIVE_FRAMES = ['◐', '◓', '◑', '◒'];
+(function watchForStalls() {
+  const TICK = 1000, STALL = 3000;
+  let expected = performance.now() + TICK;
+  let beat = 0;
+  setInterval(() => {
+    const now = performance.now();
+    const late = now - expected;
+    if (late > STALL) {
+      const trail = breadcrumbTrail();
+      const msg = `⚠️ main thread blocked for ~${(late / 1000).toFixed(1)}s during: ${lastActivity}`;
+      console.warn('[stall]', msg);
+      // The trail is the actionable part — print it as a group so it can be
+      // copied out whole rather than one interleaved line at a time.
+      console.warn('[stall] last steps before the freeze (oldest first, dwell time each):\n  ' +
+        trail.join('\n  '));
+      const el = $('runStatus');
+      if (el) el.textContent = msg + ' — see console for the step trail';
+      writeDiag({ lastStallSeconds: Math.round(late / 1000), trail });
+    } else {
+      writeDiag();
+    }
+    // Visible proof the main thread is alive. The distinction matters: a frozen
+    // tab and a tab whose clicks are being swallowed look identical from the
+    // outside, and Chrome's task manager shows ~0% CPU for both.
+    beat = (beat + 1) % LIVE_FRAMES.length;
+    const dot = $('liveDot');
+    if (dot) dot.textContent = LIVE_FRAMES[beat];
+    expected = now + TICK;
+  }, TICK);
+})();
+
+// Normal close/navigate — record that this session ended on purpose.
+addEventListener('pagehide', () => writeDiag({ dirty: false }));
+
+// If the previous session never got to mark itself clean, it died. Report what
+// it was doing at the time, on load, without the user having to know to look.
+(function reportPreviousCrash() {
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(DIAG_KEY) || 'null'); } catch { /* ignore */ }
+  if (!prev || !prev.dirty) return;
+  const heap = prev.heapUsedMB != null
+    ? `${prev.heapUsedMB} MB of a ${prev.heapLimitMB} MB limit` : 'unknown';
+  const stall = prev.lastStallSeconds ? `, after a ${prev.lastStallSeconds}s freeze` : '';
+  const msg = `⚠️ The previous session ended without closing cleanly${stall}. `
+    + `Last thing it was doing: "${prev.activity}" at ${new Date(prev.beatAt).toLocaleTimeString()}. `
+    + `Heap was ${heap}. ${prev.casesTotal ? `${prev.casesDone} of ${prev.casesTotal} cases had run. ` : ''}`
+    + `If the heap was near the limit it ran out of memory — run fewer groups per batch; `
+    + `if it was low, the tab hung rather than filled up.`;
+  console.warn('[diag]', msg);
+  // This module is deferred and runs after the document has parsed, so the
+  // element already exists — waiting for DOMContentLoaded here just risks
+  // missing an event that has, in some load paths, already fired.
+  const el = $('runStatus');
+  if (el) el.textContent = msg;
+  // Surfaced once; don't nag on every subsequent load.
+  writeDiag({ dirty: true });
+})();
+
+// ── Manual / external-tool measurement ─────────────────────────────────────
+// Identify a filter applied by some other tool from its acoustic result alone,
+// then optionally judge it against what that tool was asked for.
+function readManualSpec() {
+  const type = $('manualType').value;
+  if (!type) return null;
+  const freq = Number($('manualFreq').value), gain = Number($('manualGain').value), q = Number($('manualQ').value);
+  if (!Number.isFinite(freq) || freq <= 0 || !Number.isFinite(gain) || !Number.isFinite(q) || q <= 0) return null;
+  return { type, freq, gain, q };
+}
+
+function fmtSpec(sp) {
+  return `${sp.type} @ ${Math.round(sp.freq)} Hz, ${sp.gain >= 0 ? '+' : ''}${sp.gain.toFixed(2)} dB, Q ${sp.q.toFixed(3)}`;
+}
+
+async function captureManualMeasurement() {
+  markActivity('capturing manual measurement');
+  const status = $('manualStatus'), out = $('manualResult');
+  if (!baseline) { alert('Capture the Step 3 baseline first — the filter is identified from the DIFFERENCE against it.'); return; }
+
+  const fs = Number($('sampleRate').value) || 44100;
+  const tolerance = Number($('toleranceDb').value) || 0.3;
+  const timeoutMs = Number($('timeoutMs').value) || 40000;
+  const asked = readManualSpec();
+
+  status.textContent = 'measuring…';
+  $('manualMeasureBtn').disabled = true;
+  try {
+    const captured = await triggerAndCaptureSweep(timeoutMs);
+    if (!captured) { status.textContent = 'cancelled'; return; }
+    const { id, fr } = captured;
+
+    const points = EVAL_FREQS.map((freq) => ({ freq, delta: magnitudeAt(fr, freq) - magnitudeAt(baseline.fr, freq) }));
+    const est = estimateFilterFromDelta(points, { fs });
+    if (!est.ok) {
+      out.style.display = '';
+      out.textContent = `Could not identify a filter: ${est.reason}.\nIf the external tool's EQ really is on, check it is affecting the same output this baseline was measured on.`;
+      status.textContent = 'no filter found';
+      return;
+    }
+
+    // With no target, the reference IS the estimate — so judging it would be
+    // circular. Record it instead; the verdict logic already treats
+    // recorded-only cases as "nothing verified".
+    const spec = asked ?? { type: est.type, freq: round1(est.freq), gain: round1(est.gain), q: Math.round(est.q * 100) / 100 };
+    const tc = makeCase('Manual', spec.type, spec.freq, spec.gain, spec.q, spec.freq, null);
+    tc.manual = true;
+    tc.measurementId = id;
+    tc.fr = fr;
+    tc.usedFilterSpec = { ...spec, type: spec.type.toUpperCase() };
+    tc.usedSampleRate = fs;
+    tc.usedToleranceDb = tolerance;
+    tc.estimate = est;
+    tc.measuredDelta = magnitudeAt(fr, spec.freq) - magnitudeAt(baseline.fr, spec.freq);
+
+    let lines = [];
+    lines.push(`Identified: ${fmtSpec(est)}`);
+    if (est.equivalent) {
+      lines.push(`  Indistinguishable from: ${fmtSpec(est.equivalent)} — a low shelf and the opposite high shelf differ only by overall level, so shape alone cannot separate them.`);
+    }
+    lines.push(`  fit RMSE ${est.rmse.toFixed(3)} dB · broadband offset ${est.offsetDb >= 0 ? '+' : ''}${est.offsetDb.toFixed(2)} dB${est.typeConfident ? '' : ' · filter TYPE is not clearly separated from the alternatives'}`);
+
+    if (asked) {
+      const comparison = compareToTheoretical(baseline.fr, fr, tc.usedFilterSpec, { magnitudeAt, fs, evalFreqs: EVAL_FREQS });
+      const { pregainDb, compensated } = compensateForPregain(comparison);
+      const judged = judgeFit(compensated, { rmseToleranceDb: tolerance });
+      tc.pregainDb = pregainDb;
+      tc.shapeRmse = compensated.inBandStats?.rmse ?? null;
+      tc.shapeMaxErr = compensated.inBandStats?.maxAbsError ?? null;
+      tc.correlation = compensated.inBandStats?.correlation ?? null;
+      tc.judgeReason = judged.reason;
+      tc.status = judged.pass ? 'pass' : 'fail';
+      lines.push('');
+      lines.push(`You asked that tool for: ${fmtSpec(asked)}`);
+      lines.push(`  frequency  ${pctDelta(est.freq, asked.freq)}`);
+      lines.push(`  gain       ${(est.gain - asked.gain >= 0 ? '+' : '')}${(est.gain - asked.gain).toFixed(2)} dB vs asked`);
+      lines.push(`  Q          ${pctDelta(est.q, asked.q)}`);
+      lines.push(`  shape fit  ${tc.shapeRmse?.toFixed(3)} dB RMSE (tolerance ${tolerance}) — ${judged.pass ? 'PASS' : 'FAIL'}: ${judged.reason}`);
+    } else {
+      tc.status = 'recorded';
+      lines.push('');
+      lines.push('No target entered, so this is recorded rather than judged — a measured curve always matches its own best fit. Fill in what the external tool was asked for to get a pass/fail and a difference chart.');
+    }
+
+    testPlan.push(tc);
+    renderResultRow(tc);
+    renderSummary();
+    out.style.display = '';
+    out.textContent = lines.join('\n');
+    status.textContent = `added as case #${tc.id} — use Explain on its row for the chart`;
+  } catch (e) {
+    status.textContent = `failed: ${e.message}`;
+    console.error(e);
+  } finally {
+    $('manualMeasureBtn').disabled = false;
+  }
+}
+
+function pctDelta(actual, asked) {
+  const d = ((actual - asked) / asked) * 100;
+  return `${actual.toFixed(actual < 10 ? 3 : 0)} vs ${asked} asked (${d >= 0 ? '+' : ''}${d.toFixed(1)}%)`;
+}
+
+$('manualMeasureBtn').addEventListener('click', () => captureManualMeasurement());
+
+// Test hook. This page is itself a test tool, and the verdict/report logic is worth
+// exercising without a device and a REW instance attached — a wrong verdict is
+// the one bug here that would be believed rather than noticed. Nothing in the UI
+// calls this.
+window.__bench = {
+  computeVerdict,
+  renderSummary,
+  renderPrintHeader,
+  setPlan(plan) {
+    testPlan = plan;
+    $('resultsTable').querySelector('tbody').innerHTML = '';
+    for (const tc of testPlan) renderResultRow(tc);
+  },
+  // Lets a previously exported run be reloaded and re-diagnosed offline, which
+  // is the only practical way to reproduce a hang that only shows up at real
+  // measurement resolution (a canned capture is ~3k points; a real REW sweep is
+  // ~55k, and some code paths are quadratic in that).
+  setBaseline(b) { baseline = b; },
+  findCase(id) { return testPlan.find((t) => t.id === id); },
+  captureManual: captureManualMeasurement,
+  plan: () => testPlan,
+  heapLog: () => window.__lastHeapLog ?? [],
+  // Replaces the REW round-trip with a canned result, so the manual-measurement
+  // path can be exercised against a curve whose true filter is known.
+  stubSweep(result) { triggerAndCaptureSweep = async () => result; },
+  exportPayload() { return buildExportPayload(); },
+  markActivity,
+  csvHead() {
+    const impl = implementationFingerprint() ?? {};
+    return ['handlerName', 'schemeNo', 'deviceGroup', 'peqConstraintsRef', 'vendorId', 'productId']
+      .map((c) => `${c}=${impl[c] ?? ''}`).join(' ');
+  },
+  renderFailureChart,
+};
+
+function buildExportPayload() {
+  return {
     device: connectedDevice?.model ?? null,
+    // Structured, not just the display string: results from different people
+    // and devices only become comparable if they can be grouped by handler and
+    // scheme rather than by product name.
+    implementation: implementationFingerprint(),
+    compensationEnabled: isCompensationEnabled(),
+    compensations: activeCompensations(),
+    compensationsConfigured: configuredCompensations(),
     constraints,
     sampleRate: Number($('sampleRate').value) || 44100,
     // Includes the raw baseline + per-test frequency-response curves (not
     // just measurement IDs/summary stats), so this file can also be dropped
     // in as a real-capture fixture for filter-response.test.js.
     baseline: baseline ? { id: baseline.id, fr: { startFreq: baseline.fr.startFreq, freqStep: baseline.fr.freqStep, magnitude: Array.from(baseline.fr.magnitude) } } : null,
-    results: testPlan,
+    // Curves are held as Float32Array during the run (half the memory); convert
+    // at export time, since JSON.stringify would otherwise write them as {}.
+    results: testPlan.map((tc) => (tc.fr
+      ? { ...tc, fr: { startFreq: tc.fr.startFreq, freqStep: tc.fr.freqStep, magnitude: Array.from(tc.fr.magnitude) } }
+      : tc)),
     exportedAt: new Date().toISOString(),
   };
-  download('devicepeq-rew-verification.json', JSON.stringify(payload, null, 2), 'application/json');
+}
+
+$('exportJsonBtn').addEventListener('click', () => {
+  markActivity('building JSON export');
+  download('devicepeq-rew-verification.json', JSON.stringify(buildExportPayload(), null, 2), 'application/json');
 });
 
 $('exportCsvBtn').addEventListener('click', () => {
   const cols = ['id', 'group', 'type', 'freq', 'gain', 'q', 'measureFreq', 'expectedDelta', 'measuredDelta', 'pregainDb', 'shapeRmse', 'shapeMaxErr', 'correlation', 'estimatedQ', 'qRatio', 'diff', 'status', 'measurementId', 'error'];
-  const rows = [cols.join(',')];
+  // Repeated on every row so results from several devices can be concatenated
+  // and pivoted by implementation — the grouping that actually predicts bugs.
+  const implCols = ['handlerName', 'schemeNo', 'deviceGroup', 'peqConstraintsRef', 'vendorId', 'productId'];
+  const impl = implementationFingerprint() ?? {};
+  const rows = [[...cols, 'device', ...implCols, 'compensations'].join(',')];
   for (const tc of testPlan) {
-    rows.push(cols.map((c) => JSON.stringify(tc[c] ?? '')).join(','));
+    rows.push([
+      ...cols.map((c) => JSON.stringify(tc[c] ?? '')),
+      JSON.stringify(connectedDevice?.model ?? ''),
+      ...implCols.map((c) => JSON.stringify(impl[c] ?? '')),
+      // Every row carries it: CSV rows get filtered and pasted around
+      // individually, and a compensated result read in isolation would
+      // otherwise look like an uncompensated one.
+      JSON.stringify(activeCompensations().map((x) => x.label).join('; ')),
+    ].join(','));
   }
   download('devicepeq-rew-verification.csv', rows.join('\n'), 'text/csv');
 });

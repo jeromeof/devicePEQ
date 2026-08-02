@@ -152,3 +152,43 @@ export async function test_pushToDevice_writesRequestedNegativePreamp(assert) {
   assert.equal(gainWrite[6], 0xFF, 'negative preamp high byte should be signed');
   assert.equal(gainWrite[7], 0xCD, 'preamp -5.1 dB should encode as -51 tenths, not +6.9 dB');
 }
+
+// ── gain-dependent Q compensation ─────────────────────────────────────────────
+// The KA17 shows the same peaking-Q widening as the QX13 (measured Q_mult x A =
+// 1.009 at 1kHz/+6dB/Q1 against REW), so it carries compensateQForGain in
+// usbDeviceConfig.js. Shelves are NOT compensated on this model — the only KA17
+// shelf sweeps so far were invalid (-27dB broadband offset, negative correlation).
+
+function qSentFor(mock, filterIndex = 0) {
+  // Q is bytes 11/12 of a 0xAA filter-params (0x15) write, x100, BIG-endian.
+  const w = mock.sentBytes.find(b => b[0] === 0xAA && b[4] === 0x15 && b[6] === filterIndex);
+  return w ? ((w[11] << 8) | w[12]) / 100 : null;
+}
+
+function ka17Mock() {
+  return new MockHIDDevice({
+    vendorId: 0x2972, productId: 0x0047, productName: 'FIIO KA17',
+    reportId: 1, responseDelay: 0
+  });
+}
+
+export async function test_qCompensation_scalesPeakingQByGain(assert) {
+  const mock = ka17Mock();
+  await mock.open();
+  const details = makeDeviceDetails(mock, { compensateQForGain: true });
+  await fiioUsbHID.pushToDevice(details, null, 7, 0,
+    [{ type: 'PK', freq: 1000, q: 1, gain: 6, disabled: false }]);
+  // 10^(6/40) = 1.4125 -> round(141.25) = 141 -> 1.41
+  assert.equal(qSentFor(mock), 1.41,
+    'Q 1 at +6dB should be sent as 1.41 so the device realises Q 1');
+}
+
+export async function test_qCompensation_leavesShelvesAlone(assert) {
+  const mock = ka17Mock();
+  await mock.open();
+  const details = makeDeviceDetails(mock, { compensateQForGain: true });
+  await fiioUsbHID.pushToDevice(details, null, 7, 0,
+    [{ type: 'LSQ', freq: 200, q: 1, gain: 6, disabled: false }]);
+  assert.equal(qSentFor(mock), 1.0,
+    'KA17 shelves have no valid measurement yet and must pass through untouched');
+}

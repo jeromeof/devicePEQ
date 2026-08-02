@@ -20,7 +20,7 @@ export const usbHidDeviceHandlerConfig = ([
       peqConstraintsRef: "peq5Band12dBFullShelves",
       firstWritableEQSlot: -1,
       maxWritableEQSlots: 0,
-      disconnectOnSave: true,
+      disconnectOnSave: false,
       disabledPresetId: -1,
       experimental: false,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
@@ -61,7 +61,8 @@ export const usbHidDeviceHandlerConfig = ([
           deviceHandlesPregain: false,
           experimental: false,
           availableSlots: [{id: 101, name: "Custom"}],
-          dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] }
+          dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] },
+          freqCompensation: { model: 'ratio', factor: 1.0 },
         }
       }
     },
@@ -70,6 +71,8 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "peq10Band12dBWideAllFilters",
           disconnectOnSave: false,
+          qCompensation: { model: 'rbjGain' },
+          shelfCompensation: { model: 'peakingAlpha' },
           // Provided device presets mapping
           disabledPresetId: 240,
           firstWritableEQSlot: 160,
@@ -120,7 +123,6 @@ export const usbHidDeviceHandlerConfig = ([
             peqConstraintsRef: "peq5Band12dBAllFilters7",
             firstWritableEQSlot: 160,
             maxWritableEQSlots: 3,
-            disconnectOnSave: true,
             disabledPresetId: 240,
             reportId: 2,
             availableSlots: [
@@ -155,6 +157,7 @@ export const usbHidDeviceHandlerConfig = ([
       "FIIO KA17": {
         modelConfig: {
           peqConstraintsRef: "peq10Band12dBAllFilters7",
+          qCompensation: { model: 'rbjGain' },
           firstWritableEQSlot: 7,
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
@@ -187,6 +190,7 @@ export const usbHidDeviceHandlerConfig = ([
       "FIIO KA17 (MQA HID)": {  // KA17 variant — same reportId=1 as base KA17
         modelConfig: {
           peqConstraintsRef: "peq10Band12dBAllFilters7",
+          qCompensation: { model: 'rbjGain' },
           firstWritableEQSlot: 7,
           maxWritableEQSlots: 3,
           disconnectOnSave: false,
@@ -458,7 +462,6 @@ export const usbHidDeviceHandlerConfig = ([
           peqConstraintsRef: "peq5Band12dBAllFilters7",
           firstWritableEQSlot: 160,
           maxWritableEQSlots: 3,
-          disconnectOnSave: true,
           disabledPresetId: 240,
           availableSlots: [
             {id: 0, name: "Jazz"},
@@ -483,7 +486,6 @@ export const usbHidDeviceHandlerConfig = ([
           peqConstraintsRef: "peq5Band12dBAllFilters7",
           firstWritableEQSlot: 160,
           maxWritableEQSlots: 3,
-          disconnectOnSave: true,
           disabledPresetId: 240,
           availableSlots: [
             {id: 0, name: "Jazz"},
@@ -538,7 +540,6 @@ export const usbHidDeviceHandlerConfig = ([
           peqConstraintsRef: "peq5Band12dBFullShelves",
           firstWritableEQSlot: 160,
           maxWritableEQSlots: 1,
-          disconnectOnSave: true,
           experimental: true,
           availableSlots: [
             {id: 0, name: "Jazz"},
@@ -690,7 +691,8 @@ export const usbHidDeviceHandlerConfig = ([
       "SchemeNo11": {
         productIds: [0x0004, 0x00C0, 0x0104, 0x0880, 0x1230, 0x1231, 0x1233, 0x1237, 0x123F, 0x1240, 0x1241, 0x1243, 0x1244, 0x1245, 0x1248, 0x1249, 0x124A, 0x124B, 0x124C, 0x124D, 0x124E, 0x1251, 0x1261, 0x1262, 0x1264, 0x1266, 0x1269, 0x126A, 0x126B, 0x126C, 0x126D, 0x126E, 0x126F, 0x1272, 0x1278, 0x127A, 0x127D, 0x127E, 0x1281, 0x1282, 0x1283, 0x1284, 0x1285, 0x1286, 0x1287, 0x1288, 0x1289, 0x128A, 0x128B, 0x128C, 0x128D, 0x128E, 0x128F, 0x1292, 0x1293, 0x1294, 0x1295, 0x1296, 0x1297, 0x1298, 0x1299, 0x129A, 0x129B, 0x129C, 0x129D, 0x129F, 0x12B3, 0x12C0, 0x12C1, 0x12C3, 0x12C4, 0x12C5, 0x12C6, 0x12C8, 0x12C9, 0x12CA, 0x12CB, 0x12CC, 0x12CD, 0x12CE, 0x12DB, 0x12E9, 0x132B, 0x13A3, 0x13A4, 0x13A5, 0x13AB, 0x13C0, 0x13C1, 0x13D3, 0x13D4, 0x13D7, 0x13D9, 0x13DC, 0x3302, 0x4302, 0x43C1, 0x43C3, 0x43D1, 0x43D5, 0x43DC, 0x43E7, 0x51C0, 0x60D2, 0x9121, 0x9123, 0x9124, 0x9125, 0x93C0, 0x93C1, 0x93D1, 0x98C0, 0x98C1, 0x98C2, 0x98D1, 0x98D2, 0x98D5, 0xA862, 0xC204, 0xC207, 0xC208, 0xC209, 0xC20A, 0xC20E, 0xC20F, 0xC211, 0xC212, 0xC213, 0xC214, 0xC215, 0xC217, 0xF806, 0xF807, 0xFF01],
         modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBLsLowpass"
+          peqConstraintsRef: "walkplayPeq8Band10dBLsLowpass",
+          freqCompensation: { model: 'ratio', factor: 0.9775 },
         }
       },
       "SchemeNo16": {
@@ -1073,7 +1075,7 @@ export const usbHidDeviceHandlerConfig = ([
       firstWritableEQSlot: -1,
       maxWritableEQSlots: 0,
       compensate2X: true,  // Lets compensate by default
-      disconnectOnSave: true,
+      disconnectOnSave: false,
       disabledPresetId: 0x02,
       experimental: false,
       defaultResetFiltersValues:[{gain:0, freq: 100, q:1, filterType: "PK"}],
@@ -1252,7 +1254,7 @@ export const usbHidDeviceHandlerConfig = ([
     manufacturer: "Fosi Audio",
     handler: fosiAudioUsbHID,
     defaultModelConfig: {
-      peqConstraintsRef: "peq10Band12dBAllFiltersNoPregain",
+      peqConstraintsRef: "peq8Band12dBAllFiltersNoPregain",
       firstWritableEQSlot: 7,
       maxWritableEQSlots: 5,
       disconnectOnSave: false,
@@ -1275,12 +1277,15 @@ export const usbHidDeviceHandlerConfig = ([
     devices: {
       "Fosi Audio DS3": {
         modelConfig: {
-          peqConstraintsRef: "peq10Band12dBAllFiltersNoPregain",
+          peqConstraintsRef: "peq8Band12dBAllFiltersNoPregain",
           disconnectOnSave: false,
           firstWritableEQSlot: 7,
           maxWritableEQSlots: 5,
           experimental: false,
           deviceHandlesPregain: true,
+          qCompensation: { model: 'rbjGain' },
+          bandwidthValue: 0,
+          freqCompensation: { model: 'shelfSqrtA', fs: 48000 },
           availableSlots: [
             {id: 0, name: "Bypass"},
             {id: 7, name: "Custom 1"},
@@ -1294,3 +1299,29 @@ export const usbHidDeviceHandlerConfig = ([
     }
   }
 ])
+
+// ── Implementation identity ────────────────────────────────────────────────
+// Which protocol implementation a device is actually driven by. This matters
+// for diagnosis far more than the product name does: a PEQ defect almost always
+// belongs to the handler and its scheme/variant, so every device sharing that
+// combination tends to share the defect. Reporting "WalkPlay schemeNo 16"
+// alongside a failure lets a result be generalised to its siblings instead of
+// being filed against one model.
+//
+// A Map keyed on the handler objects themselves — they are module-level
+// singletons, so identity comparison is exact and nothing has to be kept in
+// sync with a string in each device entry.
+const HANDLER_NAMES = new Map([
+  [fiioUsbHID, 'fiioUsbHID'],
+  [walkplayUsbHID, 'walkplayUsbHID'],
+  [moondropUsbHidHandler, 'moondropUsbHidHandler'],
+  [moondropOldFashionedUsbHID, 'moondropOldFashionedUsbHID'],
+  [conexantUsbHidHandler, 'conexantUsbHidHandler'],
+  [ktmicroUsbHidHandler, 'ktmicroUsbHidHandler'],
+  [toppingUsbHidHandler, 'toppingUsbHidHandler'],
+  [fosiAudioUsbHID, 'fosiAudioUsbHID'],
+]);
+
+export function handlerNameFor(handler) {
+  return HANDLER_NAMES.get(handler) ?? null;
+}

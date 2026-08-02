@@ -63,6 +63,8 @@
 
 import { logHidTx, logHidRx } from './deviceDebugLog.js';
 
+import { compensateFreqForWrite, decompensateFreqFromRead } from './compensation.js';
+
 export const walkplayUsbHID = (function () {
   const REPORT_ID = 0x4B;
   const ALT_REPORT_ID = 0x3C;
@@ -137,7 +139,7 @@ export const walkplayUsbHID = (function () {
 
     for (let i = 0; i < filtersToWrite.length; i++) {
       const filter = filtersToWrite[i] || {};
-      const filterToWrite = normalizeFilterForWrite(filter);
+      const filterToWrite = normalizeFilterForWrite(filter, deviceDetails.modelConfig);
       const bArr = filter.disabled
         ? new Array(20).fill(0)
         : computeIIRFilter(i, filterToWrite.freq, filterToWrite.gain, filterToWrite.q, filterToWrite.type);
@@ -248,13 +250,37 @@ export const walkplayUsbHID = (function () {
     return mapping[filterType] !== undefined ? mapping[filterType] : 2;
   }
 
-  function normalizeFilterForWrite(filter = {}) {
+  // modelConfig is threaded in so any centre-frequency compensation is applied
+  // ONCE, here — this handler writes the frequency twice (into the biquad
+  // coefficients via computeIIRFilter, and again as raw metadata), and the two
+  // must agree or a pull would disagree with what is actually being filtered.
+  //
+  // freqCompensation.factor is the realised/requested ratio a measurement
+  // reports: a device landing on 103 Hz when told 100 is 1.03, and we then
+  // write freq/1.03. See compensation.js for the shared convention.
+  //
+  // SchemeNo11 lands filters 2.2-2.5% low. Measured on an EPZ TP13 AI ENC with
+  // clean fits at 100 Hz (rmse 0.013-0.021) and 1000 Hz (0.034-0.069), and
+  // reported by the maintainer as present on every SchemeNo11 device they own —
+  // so it is configured on the GROUP, as a scheme-level firmware trait, not on
+  // one product ID.
+  //
+  // The TP35 Pro (SchemeNo16) shows no such offset — its frequency sweep passed
+  // at 100/1000/5000/10000 Hz — so this is not a WalkPlay-wide trait.
+  //
+  // Note what this does NOT fix: the TP13's 8 kHz cases fail with a ~7% gain
+  // error and a poor shape fit (rmse 0.19-0.39 even with frequency and gain
+  // both free), so their apparent -0.85% frequency estimate is unreliable and
+  // the correction slightly worsens them. That is a separate defect.
+  function normalizeFilterForWrite(filter = {}, modelConfig) {
     if (filter.disabled) {
       return { freq: 0, q: 0, gain: 0, type: "PK" };
     }
 
+    const freq = Number.isFinite(filter.freq) ? filter.freq : 0;
+
     return {
-      freq: Number.isFinite(filter.freq) ? filter.freq : 0,
+      freq: freq > 0 ? compensateFreqForWrite(freq, modelConfig, { label: 'WalkPlay' }) : freq,
       q: Number.isFinite(filter.q) ? filter.q : 0,
       gain: Number.isFinite(filter.gain) ? filter.gain : 0,
       type: filter.type || filter.filterType || "PK"
@@ -277,7 +303,7 @@ export const walkplayUsbHID = (function () {
       console.log(`USB Device PEQ: Walkplay pullFromDevice onInputReport received data:`, data);
       if (data[1] !== CMD.PEQ_VALUES) return; // ignore unrelated reports
       if (data.length >= 32) {
-        const filter = parseFilterPacket(data);
+        const filter = parseFilterPacket(data, deviceDetails.modelConfig);
         console.log(`USB Device PEQ: Walkplay parsed filter ${filter.filterIndex}:`, filter);
         filters[filter.filterIndex] = filter;
       }
@@ -325,7 +351,7 @@ export const walkplayUsbHID = (function () {
     return result;
   };
 
-  function parseFilterPacket(packet) {
+  function parseFilterPacket(packet, modelConfig) {
     if (packet.length < 32) {
       throw new Error("Packet too short to contain filter data.");
     }
@@ -333,8 +359,10 @@ export const walkplayUsbHID = (function () {
     const filterIndex = packet[4];
 
     // Try to read metadata (freq, Q, gain, type from packet bytes)
-    // Frequency (little-endian 16-bit)
-    const freq = packet[27] | (packet[28] << 8);
+    // Frequency (little-endian 16-bit). Undone through the same compensation so
+    // a pull reports where the band really is, and pull -> push is stable.
+    const freqRaw = packet[27] | (packet[28] << 8);
+    const freq = freqRaw > 0 ? decompensateFreqFromRead(freqRaw, modelConfig) : freqRaw;
 
     // Q factor (8.8 fixed-point)
     const qRaw = packet[29] | (packet[30] << 8);
@@ -647,7 +675,12 @@ function delay(ms) {
 
 async function waitForFilters(condition, device, timeout, callback) {
   return new Promise((resolve, reject) => {
+    let interval;
     const timer = setTimeout(() => {
+      // Stop the poller on the timeout path as well. It runs every 10ms, so a
+      // single timed-out pull that leaves it running costs 100 wake-ups a second
+      // for the rest of the session, and they accumulate one per timeout.
+      clearInterval(interval);
       if (!condition()) {
         console.warn("Timeout: Filters not fully received.");
         // Instead of rejecting with the callback result, create a proper result with partial data
@@ -665,7 +698,7 @@ async function waitForFilters(condition, device, timeout, callback) {
       }
     }, timeout);
 
-    const interval = setInterval(() => {
+    interval = setInterval(() => {
       if (condition()) {
         clearTimeout(timer);
         clearInterval(interval);

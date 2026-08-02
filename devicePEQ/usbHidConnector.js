@@ -6,7 +6,7 @@
 export const UsbHIDConnector = ( async function () {
     let currentDevice = null;
 
-    const {usbHidDeviceHandlerConfig} = await import('./usbDeviceConfig.js');
+    const {usbHidDeviceHandlerConfig, handlerNameFor} = await import('./usbDeviceConfig.js');
     const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
     const { buildExtras } = await import('./deviceExtras.js');
 
@@ -69,6 +69,7 @@ export const UsbHIDConnector = ( async function () {
                 // 2. Match by productId in deviceGroups
                 // 3. Fall back to defaultModelConfig
                 let deviceDetails = vendorConfig.devices?.[model];
+                let matchedGroupName = null;
 
                 // If no productName match, try matching by productId in deviceGroups
                 if (!deviceDetails && vendorConfig.deviceGroups) {
@@ -77,6 +78,7 @@ export const UsbHIDConnector = ( async function () {
                     if (Array.isArray(groupConfig.productIds) &&
                         groupConfig.productIds.includes(rawDevice.productId)) {
                       deviceDetails = groupConfig;
+                      matchedGroupName = groupName;
                       console.log(`Matched device by productId in group: ${groupName} (0x${rawDevice.productId.toString(16)})`);
                       break;
                     }
@@ -119,7 +121,12 @@ export const UsbHIDConnector = ( async function () {
                     manufacturer: manufacturer,
                     model: model,
                     modelConfig: modelConfig,
-                    handler: handler
+                    handler: handler,
+                    // Which implementation is actually driving this device. Kept
+                    // on the device rather than re-derived by callers, since only
+                    // the resolution above knows which group matched.
+                    handlerName: handlerNameFor(handler),
+                    deviceGroup: matchedGroupName,
                 };
                 currentDevice.extras = buildExtras(handler, currentDevice);
 
@@ -163,8 +170,14 @@ export const UsbHIDConnector = ( async function () {
           d.vendorId === rawDevice.vendorId && d.productId === rawDevice.productId
         );
         if (typeof matchingRawDevice == 'undefined' || matchingRawDevice == null ) {
-            console.error("Device disconnected?");
-            alert('Device disconnected?');
+            // NOT alert(). alert() blocks the main thread until it is dismissed,
+            // which freezes the whole tab — and if the dialog opens behind
+            // another window, or the tab is not focused, it looks exactly like a
+            // crash: unresponsive page, 0% CPU, normal memory. That is fatal for
+            // an unattended run, where this path can be hit on any of dozens of
+            // pushes. Report it and let the caller fail the operation instead.
+            console.error("Device disconnected? Not found among granted HID devices.");
+            if (window.showToast) window.showToast('Device disconnected — reconnect it and try again.', 'error');
             return false;
         }
         // But lets check if we are still open otherwise we need to open the device again

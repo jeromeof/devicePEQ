@@ -943,12 +943,12 @@
       ],
       "deviceGroupNames": []
     },
-    "peq10Band12dBAllFiltersNoPregain": {
-      "description": "10-band PEQ, \u00b112 dB, all filter types including Band Stop and Constant Q, no pregain",
+    "peq8Band12dBAllFiltersNoPregain": {
+      "description": "8-band PEQ, \u00b112 dB, all filter types including Band Stop and Constant Q, no pregain",
       "peqConstraints": {
         "minGain": -12,
         "maxGain": 12,
-        "maxFilters": 10,
+        "maxFilters": 8,
         "supportsLSFilter": true,
         "supportsHSFilter": true,
         "deviceHandlesPregain": true,

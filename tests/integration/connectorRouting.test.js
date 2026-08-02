@@ -161,7 +161,9 @@ export async function test_fiio_default_wide_gain_range(assert) {
 export async function test_fosi_audio_ds3_routes_correctly(assert) {
   const device = await connectMock({ vendorId: 0x152A, productId: 0x88DB, productName: 'Fosi Audio DS3' });
   assert.ok(device, 'should connect');
-  assert.equal(device.modelConfig.maxFilters, 10,      'Fosi Audio maxFilters should be 10');
+  // 8, not 10: the DS3 exposes 8 bands (32 only on firmware >= 1.4.15, and
+  // factory presets are 8 regardless) and rejects any index past that.
+  assert.equal(device.modelConfig.maxFilters, 8,       'Fosi Audio maxFilters should be 8');
   assert.equal(device.modelConfig.reportId, 1,         'Fosi Audio reportId should be 1');
   assert.equal(device.modelConfig.deviceHandlesPregain, true, 'Fosi Audio handles pregain on-device');
 }
