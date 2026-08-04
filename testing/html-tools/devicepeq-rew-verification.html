@@ -13,7 +13,14 @@
   }
   * { box-sizing: border-box; }
   body {
-    font-family: 'Consolas', 'Monaco', monospace;
+    /* CJK faces are appended rather than substituted: the Latin monospace look
+       is load-bearing here (numeric columns in the results table only line up
+       in a monospace face), and a CJK fallback only takes over for the glyphs
+       Consolas/Monaco cannot supply. Without these, Simplified Chinese falls
+       back to whatever the OS picks, which on Windows is often a serif face
+       that looks nothing like the rest of the page. */
+    font-family: 'Consolas', 'Monaco', 'PingFang SC', 'Hiragino Sans GB',
+                 'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans SC', monospace;
     margin: 0;
     background: #1e1e1e;
     color: #d4d4d4;
@@ -92,6 +99,24 @@
     background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 4px;
     padding: 10px 14px; margin: 8px 0; white-space: pre-wrap; font-size: 12.5px;
   }
+  /* Language switcher. Sits on the h1 row rather than in a settings panel so
+     it is findable by someone who cannot read the rest of the page. */
+  .lang-switch { display: inline-flex; gap: 0; margin-left: auto; font-size: 12px; }
+  .lang-switch button {
+    background: #2d2d2d; color: #9d9d9d; border: 1px solid #3c3c3c;
+    padding: 3px 10px; cursor: pointer; font-family: inherit; font-size: 12px;
+    border-radius: 0; margin: 0;
+  }
+  .lang-switch button:first-child { border-radius: 4px 0 0 4px; }
+  .lang-switch button:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+  .lang-switch button[aria-pressed="true"] { background: #4ec9b0; color: #1e1e1e; font-weight: 600; }
+  /* The h1's own underline moves to the row wrapper so it spans the switcher
+     too — otherwise the rule stops short and the switcher floats above nothing. */
+  .title-row {
+    display: flex; align-items: flex-end; gap: 12px;
+    border-bottom: 2px solid #4ec9b0; padding-bottom: 10px; margin-bottom: 16px;
+  }
+  .title-row h1 { flex: 1; margin: 0; border-bottom: none; padding-bottom: 0; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .checklist label { display: block; margin: 4px 0; }
   details { margin: 8px 0; }
@@ -446,14 +471,24 @@
 <body>
 <div id="measureShield">
   <div class="shield-box">
-    🎤 <span class="shield-what">measuring</span> — please don't touch the page
-    <div class="shield-note">A REW sweep is running and its result has not been fully read back yet.
+    <!-- .shield-what is written by setMeasurementLock() at runtime, so it carries
+         no data-i18n: applying a language change mid-capture would overwrite the
+         live "measuring <case label>" text with a generic placeholder. Its
+         strings are translated at source in the JS layer instead. -->
+    🎤 <span class="shield-what">measuring</span> <span data-i18n="shield.dontTouch">— please don't touch the page</span>
+    <div class="shield-note" data-i18n="shield.note">A REW sweep is running and its result has not been fully read back yet.
     Changing filters, re-pushing, or starting another run now would apply to the sweep already in flight.
     This clears on its own. "Stop After Current Test" still works.</div>
   </div>
 </div>
 <div class="wrap">
-  <h1>🎛️ DevicePEQ ⇄ REW Verification Tool</h1>
+  <div class="title-row">
+    <h1 data-i18n="app.title">🎛️ DevicePEQ ⇄ REW Verification Tool</h1>
+    <div class="lang-switch no-print" id="langSwitch" role="group" aria-label="Language / 语言">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+  </div>
   <!-- Screen-hidden, print-only cover line: a printed report has to say what it
        is about on its own, without the surrounding UI to give it context. -->
   <div class="print-only">
@@ -466,21 +501,21 @@
          state never has to fight a toggle event it cannot distinguish from a click -->
     <details id="setupSection" class="collapsible-step" open>
     <summary>
-      <h2>Step 0 — REW Setup</h2>
-      <span class="optional-tag">one-time setup</span>
+      <h2 data-i18n="step0.heading">Step 0 — REW Setup</h2>
+      <span class="optional-tag" data-i18n="step0.tag">one-time setup</span>
     </summary>
-    <p>This tool triggers REW sweeps and reads back frequency-response data via REW's built-in HTTP API.
+    <p data-i18n="step0.intro">This tool triggers REW sweeps and reads back frequency-response data via REW's built-in HTTP API.
        Do the following once, before using this page:</p>
     <div class="checklist">
-      <label><input type="checkbox"> Install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</label>
-      <label><input type="checkbox"> Launch REW with the API enabled, or enable it in <code>Preferences → API</code> → check "Enable API". Default port is <code>4735</code> (this page assumes the default — change <code>REW_BASE</code> in <code>rew-client.mjs</code> if you customized it with <code>-port</code>).</label>
-      <label><input type="checkbox"> Set REW's measurement <strong>Input</strong> to your measurement mic / analyzer input, and <strong>Output</strong> to the interface feeding the device under test. Set levels once and don't touch them again during the run — every filter in this test is judged as a <em>relative</em> dB change against your baseline sweep.</label>
-      <label><input type="checkbox"> Connect / pair the device under test on this machine (USB, Bluetooth SPP, BLE, or network — same as normal DevicePEQ usage).</label>
-      <label><input type="checkbox"> (Recommended) Have a <strong>REW Pro</strong> license active — it lets this page trigger sweeps directly via <code>POST /measure/command</code>. Without Pro, reading measurements still works fine; you'll just be prompted to click "Start Measurement" in the REW GUI yourself for each test.</label>
+      <label><input type="checkbox"> <span data-i18n-html="step0.check1">Install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</span></label>
+      <label><input type="checkbox"> <span data-i18n-html="step0.check2">Launch REW with the API enabled, or enable it in <code>Preferences → API</code> → check "Enable API". Default port is <code>4735</code> (this page assumes the default — change <code>REW_BASE</code> in <code>rew-client.mjs</code> if you customized it with <code>-port</code>).</span></label>
+      <label><input type="checkbox"> <span data-i18n-html="step0.check3">Set REW's measurement <strong>Input</strong> to your measurement mic / analyzer input, and <strong>Output</strong> to the interface feeding the device under test. Set levels once and don't touch them again during the run — every filter in this test is judged as a <em>relative</em> dB change against your baseline sweep.</span></label>
+      <label><input type="checkbox"> <span data-i18n-html="step0.check4">Connect / pair the device under test on this machine (USB, Bluetooth SPP, BLE, or network — same as normal DevicePEQ usage).</span></label>
+      <label><input type="checkbox"> <span data-i18n-html="step0.check5">(Recommended) Have a <strong>REW Pro</strong> license active — it lets this page trigger sweeps directly via <code>POST /measure/command</code>. Without Pro, reading measurements still works fine; you'll just be prompted to click "Start Measurement" in the REW GUI yourself for each test.</span></label>
     </div>
     <details>
-      <summary>Launch commands / troubleshooting</summary>
-      <div class="info-box">macOS:
+      <summary data-i18n="step0.troubleSummary">Launch commands / troubleshooting</summary>
+      <div class="info-box" data-i18n="step0.troubleBody">macOS:
   open -a REW.app --args -api
 
 Windows:
@@ -500,48 +535,48 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
   </section>
 
   <section class="workflow-step">
-    <h2>Step 1 — Connect the Device Under Test</h2>
+    <h2 data-i18n="step1.heading">Step 1 — Connect the Device Under Test</h2>
     <div class="extra-eq"></div>
-    <div id="constraintsPanel" class="info-box">Connect a device above to see its resolved PEQ constraints here.</div>
+    <div id="constraintsPanel" class="info-box" data-i18n="step1.constraintsEmpty">Connect a device above to see its resolved PEQ constraints here.</div>
     <div id="compensationPanel" class="info-box compensation-panel" hidden></div>
     <label id="compensationToggleRow" class="compensation-toggle" hidden>
       <input type="checkbox" id="compensationEnabled" checked>
-      Apply devicePEQ compensation
-      <span class="info-icon" title="On by default. Uncheck to write filters exactly as requested, with every correction bypassed, so a run measures the DEVICE rather than the handler plus the device.&#10;&#10;Use it to derive a new compensation from raw behaviour, or to re-check an existing one after a firmware update — a device that has been fixed upstream will start failing WITH compensation on and passing with it off.">ⓘ</span>
+      <span data-i18n="step1.compToggle">Apply devicePEQ compensation</span>
+      <span class="info-icon" data-i18n-title="step1.compTip" title="On by default. Uncheck to write filters exactly as requested, with every correction bypassed, so a run measures the DEVICE rather than the handler plus the device.&#10;&#10;Use it to derive a new compensation from raw behaviour, or to re-check an existing one after a firmware update — a device that has been fixed upstream will start failing WITH compensation on and passing with it off.">ⓘ</span>
     </label>
   </section>
 
   <section class="workflow-step">
-    <h2>Step 2 — Check the REW API</h2>
+    <h2 data-i18n="step2.heading">Step 2 — Check the REW API</h2>
     <div class="flex">
-      <button id="checkRewBtn">🔌 Check REW API</button>
-      <span id="rewStatus" class="status-pill">not checked</span>
+      <button id="checkRewBtn" data-i18n="step2.btn">🔌 Check REW API</button>
+      <span id="rewStatus" class="status-pill" data-i18n="step2.notChecked">not checked</span>
     </div>
   </section>
 
   <section class="workflow-step">
-    <h2>Step 3 — Baseline Measurement</h2>
-    <p>This is the reference every test below is measured against. Click below to have this page push
+    <h2 data-i18n="step3.heading">Step 3 — Baseline Measurement</h2>
+    <p data-i18n-html="step3.intro">This is the reference every test below is measured against. Click below to have this page push
        <strong>every filter band, set to 0 dB gain and disabled</strong>, to the connected device, then
        trigger a REW sweep automatically (or prompt you to start it manually if REW Pro isn't active) and
        adopt that sweep as the baseline (renamed to <code>PEQTEST-BASELINE</code>, frequency response cached
        in this page).</p>
     <div class="flex">
-      <button id="resetAndCaptureBaselineBtn">🧹 Reset Device to 0dB &amp; Capture Baseline</button>
-      <span id="baselineStatus" class="status-pill">no baseline</span>
+      <button id="resetAndCaptureBaselineBtn" data-i18n="step3.btnReset">🧹 Reset Device to 0dB &amp; Capture Baseline</button>
+      <span id="baselineStatus" class="status-pill" data-i18n="step3.noBaseline">no baseline</span>
     </div>
-    <p class="small">Prefer to set the device up yourself instead (e.g. picking a dedicated "PEQ disabled"
+    <p class="small" data-i18n="step3.manualNote">Prefer to set the device up yourself instead (e.g. picking a dedicated "PEQ disabled"
       preset in the device's own app)? Run that sweep in REW manually, then use the fallback below to adopt
       whatever measurement is already sitting at the top of REW's list, without this page touching the device.</p>
     <div class="flex">
-      <button id="captureBaselineBtn" class="secondary">📏 Use Latest REW Measurement as Baseline (manual)</button>
+      <button id="captureBaselineBtn" class="secondary" data-i18n="step3.btnManual">📏 Use Latest REW Measurement as Baseline (manual)</button>
     </div>
     <div id="baselineInfo" class="info-box" style="display:none;"></div>
   </section>
 
   <section class="workflow-step">
-    <h2>Step 4 — Build the Test Plan</h2>
-    <p>Test cases are generated from the connected device's resolved PEQ constraints (min/max gain, min/max Q,
+    <h2 data-i18n="step4.heading">Step 4 — Build the Test Plan</h2>
+    <p data-i18n-html="step4.intro">Test cases are generated from the connected device's resolved PEQ constraints (min/max gain, min/max Q,
        supported filter types). Each case applies a single isolated filter, pushes it to the device, triggers a
        REW sweep, and compares the <strong>whole measured frequency-response curve</strong> against the
        theoretical biquad shape (log-spaced points across 20Hz–20kHz, not just one frequency) for any filter
@@ -553,50 +588,50 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
        and is always record-only.</p>
     <div class="grid-2">
       <div>
-        <h3>Test groups</h3>
+        <h3 data-i18n="step4.groupsHeading">Test groups</h3>
         <div class="checklist">
-          <label><input type="checkbox" id="grpTypes" checked> Filter type coverage (PK, LSQ, HSQ)</label>
-          <label><input type="checkbox" id="grpGain" checked> Gain sweep (min → max, PK) — at each sweep frequency below</label>
-          <label><input type="checkbox" id="grpQ" checked> Q sweep (min → max, PK) — at each sweep frequency below</label>
-          <label><input type="checkbox" id="grpFreq" checked> Frequency sweep (100 Hz – 16 kHz, PK, 9 points)</label>
-          <label><input type="checkbox" id="grpShelf" checked> Shelf gain extremes (LSQ/HSQ @ min &amp; max gain)</label>
-          <label><input type="checkbox" id="grpOther"> Other supported filter types (LP/HP/BP/Notch/AllPass/BandStop/ConstantQ) — shape-fit against a textbook RBJ model (edit the type code if it doesn't match your device's protocol; see note below)</label>
+          <label><input type="checkbox" id="grpTypes" checked> <span data-i18n="step4.grpTypes">Filter type coverage (PK, LSQ, HSQ)</span></label>
+          <label><input type="checkbox" id="grpGain" checked> <span data-i18n="step4.grpGain">Gain sweep (min → max, PK) — at each sweep frequency below</span></label>
+          <label><input type="checkbox" id="grpQ" checked> <span data-i18n="step4.grpQ">Q sweep (min → max, PK) — at each sweep frequency below</span></label>
+          <label><input type="checkbox" id="grpFreq" checked> <span data-i18n="step4.grpFreq">Frequency sweep (100 Hz – 16 kHz, PK, 9 points)</span></label>
+          <label><input type="checkbox" id="grpShelf" checked> <span data-i18n="step4.grpShelf">Shelf gain extremes (LSQ/HSQ @ min &amp; max gain)</span></label>
+          <label><input type="checkbox" id="grpOther"> <span data-i18n="step4.grpOther">Other supported filter types (LP/HP/BP/Notch/AllPass/BandStop/ConstantQ) — shape-fit against a textbook RBJ model (edit the type code if it doesn't match your device's protocol; see note below)</span></label>
         </div>
       </div>
       <div>
-        <h3>Run parameters</h3>
+        <h3 data-i18n="step4.paramsHeading">Run parameters</h3>
         <div class="kv">
-          <div>Settle time after push</div><div><input type="number" id="settleMs" value="1500" step="100" class="plan-input"> ms</div>
-          <div>Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
-          <div>Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
-          <div>Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz
-            <button id="sampleRateFromRewBtn" class="secondary" type="button" title="Read the rate REW is playing at — that is the rate the device is being fed">↻ from REW</button>
+          <div data-i18n="step4.settle">Settle time after push</div><div><input type="number" id="settleMs" value="1500" step="100" class="plan-input"> ms</div>
+          <div data-i18n="step4.tolerance">Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
+          <div data-i18n="step4.timeout">Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
+          <div data-i18n="step4.sampleRate">Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz
+            <button id="sampleRateFromRewBtn" class="secondary" type="button" data-i18n="step4.fromRew" data-i18n-title="step4.fromRewTip" title="Read the rate REW is playing at — that is the rate the device is being fed">↻ from REW</button>
             <span id="sampleRateNote" class="small"></span></div>
-          <div>Gain/Q sweep frequencies</div><div><input type="text" id="sweepFreqs" value="100, 1000, 8000" style="width:130px"> Hz
-            <span class="info-icon" title="The Gain sweep and Q sweep are run once at EACH of these frequencies, so a gain or Q error can be told apart from a frequency-dependent one.&#10;&#10;Why it matters: with every Gain/Q case pinned at a single frequency, Insights has only one distinct frequency to regress against, so its frequency-trend fits cannot run at all and a real frequency error can be misread as a Q or gain problem (or missed entirely). Three widely-spaced points — low, mid, high — are the minimum that supports a straight-line fit; the error being visible at 1 kHz but twice as large at 8 kHz is exactly the pattern this catches.&#10;&#10;Cost: case count multiplies by the number of frequencies, and every case is one REW sweep. Enter a single value (e.g. 1000) to restore the old single-frequency behaviour, or add more points for a stronger fit. Values are clamped to 20 Hz-20 kHz and de-duplicated.">ⓘ</span></div>
+          <div data-i18n="step4.sweepFreqs">Gain/Q sweep frequencies</div><div><input type="text" id="sweepFreqs" value="100, 1000, 8000" style="width:130px"> Hz
+            <span class="info-icon" data-i18n-title="step4.sweepFreqsTip" title="The Gain sweep and Q sweep are run once at EACH of these frequencies, so a gain or Q error can be told apart from a frequency-dependent one.&#10;&#10;Why it matters: with every Gain/Q case pinned at a single frequency, Insights has only one distinct frequency to regress against, so its frequency-trend fits cannot run at all and a real frequency error can be misread as a Q or gain problem (or missed entirely). Three widely-spaced points — low, mid, high — are the minimum that supports a straight-line fit; the error being visible at 1 kHz but twice as large at 8 kHz is exactly the pattern this catches.&#10;&#10;Cost: case count multiplies by the number of frequencies, and every case is one REW sweep. Enter a single value (e.g. 1000) to restore the old single-frequency behaviour, or add more points for a stronger fit. Values are clamped to 20 Hz-20 kHz and de-duplicated.">ⓘ</span></div>
         </div>
         <div id="disconnectWarning" class="small" style="display:none; color: var(--warn-color, #d95926); font-weight: 600;">
           <p id="disconnectWarningText" style="margin:0 0 6px 0;"></p>
           <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
             <input type="checkbox" id="ignoreDisconnect">
-            Try anyway — treat this device as staying connected after a save
+            <span data-i18n="step4.ignoreDisconnect">Try anyway — treat this device as staying connected after a save</span>
           </label>
-          <p id="disconnectOverrideNote" class="small" style="margin:6px 0 0 0; font-weight:400; display:none;">
+          <p id="disconnectOverrideNote" class="small" style="margin:6px 0 0 0; font-weight:400; display:none;" data-i18n-html="step4.disconnectOverrideNote">
             The device is now being pushed to without a forced disconnect. If it really does
             drop the connection, the run will stop at the first push with “no device connected”
             — which is itself the answer. If it keeps running, <code>disconnectOnSave</code> is
             wrong for this model in <code>usbDeviceConfig.js</code> and should be set to false.
           </p>
         </div>
-        <p class="small">Shape fit tolerance is the max allowed RMSE (dB) between the measured and theoretical
+        <p class="small"><span data-i18n="step4.tolNote">Shape fit tolerance is the max allowed RMSE (dB) between the measured and theoretical
         curves; default 0.3dB leaves margin above real noise while still catching real filter defects.
         "Effective Q" (on failing rows) is the Q that would best explain the measured curve, when that's a
-        meaningful finding and not just search noise.
-        <span class="info-icon" title="Shape fit tolerance is the max allowed RMSE (dB) between the pregain-compensated measured curve and the theoretical biquad curve. Default is deliberately tight (0.3dB) &#8212; on a clean measurement rig, a correctly-implemented filter fits its own theoretical curve to within ~0.05&#8211;0.12dB RMSE (observed on a real device capture), so 0.3dB still leaves comfortable margin above real noise while catching the kind of defect a badly-implemented filter is likely to produce: e.g. a device that rounds/quantizes Q to a coarse lookup table. On the same real capture, a ~15&#8211;20% Q error (device reports Q&#8776;5.1 but actually implements something closer to Q&#8776;6) crosses this tolerance; the old default (1.5dB) didn't catch anything short of a ~75% Q error. If your setup is noisier (different mic, room, or a device with more measurement jitter), loosen this until known-good filters stop false-failing &#8212; check the &quot;Measured &#916; (raw)&quot; and &quot;Shape RMSE&quot; columns after a run to see where your noise floor actually sits before deciding.&#10;&#10;Any row that fails also gets an &quot;Effective Q&quot; column: the Q value that would best explain the measured curve, holding freq/gain fixed at what was actually requested &#8212; turns an opaque RMSE into &quot;this device's real Q is closer to X than what you asked for&quot;. Only shown when the search found a real, meaningful improvement over the requested Q (both a large absolute RMSE drop and a large relative one) &#8212; a raw least-squares search always returns SOME &quot;best&quot; Q even when the fit was already close, so an unguarded result could show a nonsensical number like &quot;3000% of requested&quot; for a filter that barely failed tolerance; that row shows &#8212; instead.&#10;&#10;History: a real Protocol Max run first showed every LSQ/HSQ shelf test failing with effective Q landing at a tight ~0.70-0.80 cluster, which looked like a real firmware characteristic &#8212; it wasn't. Cross-checking against a WebAudio BiquadFilterNode showed the shelf model here was using the wrong alpha formula; fixing it made those same captures pass outright with effective Q &#8776; 1.0. If you see a cluster like that on a device of your own, don't assume it's the device &#8212; check the theoretical model against an independent reference first.&#10;&#10;Applies to Filter Types / Gain / Q / Frequency / Shelf groups (PK/LSQ/HSQ &#8212; these mirror an actual handler's math) and, more loosely, to &quot;Other filter types&quot; (LPF/HPF/BPF/NOTCH/BSF/APF/CQ &#8212; these are plain textbook RBJ shapes with no specific device handler to mirror, so a poor fit there may just mean the device implements that filter type differently &#8212; different order, different Q convention &#8212; rather than a bug; consider loosening tolerance for that group or treating it as informational). Any type code not in that list still falls back to a single-point delta check and is always record-only. Sample rate is an assumption used only to compute the theoretical curve (affects accuracy near high frequencies / Nyquist) &#8212; set it to match the device's actual internal DSP rate if known; it does not change what's sent to the device.">ⓘ</span></p>
+        meaningful finding and not just search noise.</span>
+        <span class="info-icon" data-i18n-title="step4.tolTip" title="Shape fit tolerance is the max allowed RMSE (dB) between the pregain-compensated measured curve and the theoretical biquad curve. Default is deliberately tight (0.3dB) &#8212; on a clean measurement rig, a correctly-implemented filter fits its own theoretical curve to within ~0.05&#8211;0.12dB RMSE (observed on a real device capture), so 0.3dB still leaves comfortable margin above real noise while catching the kind of defect a badly-implemented filter is likely to produce: e.g. a device that rounds/quantizes Q to a coarse lookup table. On the same real capture, a ~15&#8211;20% Q error (device reports Q&#8776;5.1 but actually implements something closer to Q&#8776;6) crosses this tolerance; the old default (1.5dB) didn't catch anything short of a ~75% Q error. If your setup is noisier (different mic, room, or a device with more measurement jitter), loosen this until known-good filters stop false-failing &#8212; check the &quot;Measured &#916; (raw)&quot; and &quot;Shape RMSE&quot; columns after a run to see where your noise floor actually sits before deciding.&#10;&#10;Any row that fails also gets an &quot;Effective Q&quot; column: the Q value that would best explain the measured curve, holding freq/gain fixed at what was actually requested &#8212; turns an opaque RMSE into &quot;this device's real Q is closer to X than what you asked for&quot;. Only shown when the search found a real, meaningful improvement over the requested Q (both a large absolute RMSE drop and a large relative one) &#8212; a raw least-squares search always returns SOME &quot;best&quot; Q even when the fit was already close, so an unguarded result could show a nonsensical number like &quot;3000% of requested&quot; for a filter that barely failed tolerance; that row shows &#8212; instead.&#10;&#10;History: a real Protocol Max run first showed every LSQ/HSQ shelf test failing with effective Q landing at a tight ~0.70-0.80 cluster, which looked like a real firmware characteristic &#8212; it wasn't. Cross-checking against a WebAudio BiquadFilterNode showed the shelf model here was using the wrong alpha formula; fixing it made those same captures pass outright with effective Q &#8776; 1.0. If you see a cluster like that on a device of your own, don't assume it's the device &#8212; check the theoretical model against an independent reference first.&#10;&#10;Applies to Filter Types / Gain / Q / Frequency / Shelf groups (PK/LSQ/HSQ &#8212; these mirror an actual handler's math) and, more loosely, to &quot;Other filter types&quot; (LPF/HPF/BPF/NOTCH/BSF/APF/CQ &#8212; these are plain textbook RBJ shapes with no specific device handler to mirror, so a poor fit there may just mean the device implements that filter type differently &#8212; different order, different Q convention &#8212; rather than a bug; consider loosening tolerance for that group or treating it as informational). Any type code not in that list still falls back to a single-point delta check and is always record-only. Sample rate is an assumption used only to compute the theoretical curve (affects accuracy near high frequencies / Nyquist) &#8212; set it to match the device's actual internal DSP rate if known; it does not change what's sent to the device.">ⓘ</span></p>
       </div>
     </div>
     <div class="flex">
-      <button id="genPlanBtn">🧩 Generate Test Plan</button>
+      <button id="genPlanBtn" data-i18n="step4.genBtn">🧩 Generate Test Plan</button>
 
       <span id="planCount" class="small"></span>
     </div>
@@ -604,7 +639,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
       <div id="groupToggles" class="flex" style="display:none;"></div>
       <table id="planTable" style="display:none;">
         <thead>
-          <tr><th></th><th>Group</th><th>Type</th><th>Freq (Hz)</th><th>Gain (dB)</th><th>Q</th><th>Measure @ Hz</th><th>Expected Δ</th><th>Check method</th><th>Label</th></tr>
+          <tr><th></th><th data-i18n="col.group">Group</th><th data-i18n="col.type">Type</th><th data-i18n="col.freq">Freq (Hz)</th><th data-i18n="col.gain">Gain (dB)</th><th>Q</th><th data-i18n="col.measureAt">Measure @ Hz</th><th data-i18n="col.expectedDelta">Expected Δ</th><th data-i18n="col.checkMethod">Check method</th><th data-i18n="col.label">Label</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -614,29 +649,29 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
   <section class="workflow-step">
     <details class="collapsible-step">
     <summary>
-      <h2>Step 4b — Measure a filter set by another tool</h2>
-      <span class="optional-tag">optional</span>
+      <h2 data-i18n="step4b.heading">Step 4b — Measure a filter set by another tool</h2>
+      <span class="optional-tag" data-i18n="step4b.tag">optional</span>
     </summary>
-    <p class="small">
+    <p class="small" data-i18n-html="step4b.intro">
       For filters applied outside this tool — a vendor web app, a phone app, anything that
       isn't the connected-device path above. Set <b>one</b> filter in that tool, capture a sweep
       here, and the tool works out which filter actually reached the output.
       Needs the Step&nbsp;3 baseline, measured with that tool's EQ off.
     </p>
     <div class="row">
-      <label>What you asked that tool for <span class="info-icon" title="Optional. Leave blank to only identify what the device produced — with nothing to compare against, the case is recorded rather than judged pass/fail, because a curve always matches its own best fit. Fill these in and the same shape-fit, Explain chart and Insights run against them exactly like an automated case.">ⓘ</span></label>
+      <label><span data-i18n="step4b.askedFor">What you asked that tool for</span> <span class="info-icon" data-i18n-title="step4b.askedForTip" title="Optional. Leave blank to only identify what the device produced — with nothing to compare against, the case is recorded rather than judged pass/fail, because a curve always matches its own best fit. Fill these in and the same shape-fit, Explain chart and Insights run against them exactly like an automated case.">ⓘ</span></label>
       <select id="manualType">
-        <option value="">— not specified —</option>
+        <option value="" data-i18n="step4b.notSpecified">— not specified —</option>
         <option value="PK">PK</option>
-        <option value="LSQ">LSQ (low shelf)</option>
-        <option value="HSQ">HSQ (high shelf)</option>
+        <option value="LSQ" data-i18n="step4b.lsq">LSQ (low shelf)</option>
+        <option value="HSQ" data-i18n="step4b.hsq">HSQ (high shelf)</option>
       </select>
-      <input id="manualFreq" type="number" placeholder="freq Hz" style="width:100px">
-      <input id="manualGain" type="number" step="0.1" placeholder="gain dB" style="width:100px">
+      <input id="manualFreq" type="number" data-i18n-placeholder="step4b.phFreq" placeholder="freq Hz" style="width:100px">
+      <input id="manualGain" type="number" step="0.1" data-i18n-placeholder="step4b.phGain" placeholder="gain dB" style="width:100px">
       <input id="manualQ" type="number" step="0.01" placeholder="Q" style="width:80px">
     </div>
     <div class="flex">
-      <button id="manualMeasureBtn">🎚️ Capture &amp; identify filter</button>
+      <button id="manualMeasureBtn" data-i18n="step4b.btn">🎚️ Capture &amp; identify filter</button>
       <span id="manualStatus" class="small"></span>
     </div>
     <div id="manualResult" class="info-box" style="display:none;"></div>
@@ -644,26 +679,25 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
   </section>
 
   <section>
-    <h2>Step 5 — Run</h2>
+    <h2 data-i18n="step5.heading">Step 5 — Run</h2>
     <div class="flex">
-      <button id="runBtn" disabled>▶️ Run Test Plan</button>
-      <button id="stopBtn" class="danger" disabled>⏹ Stop After Current Test</button>
-      <span id="liveDot" title="Ticks once a second while the page's main thread is running. If it STOPS while the page won't respond, the thread is blocked (a modal dialog, or a long synchronous task). If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
-      <span id="liveDot" style="font-size:11px; color:#4ec9b0;" title="Ticks once a second while the main thread is running. If it STOPS while the page will not respond, the thread is blocked — a modal dialog or a long synchronous task. If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
+      <button id="runBtn" disabled data-i18n="step5.runBtn">▶️ Run Test Plan</button>
+      <button id="stopBtn" class="danger" disabled data-i18n="step5.stopBtn">⏹ Stop After Current Test</button>
+      <span id="liveDot" style="font-size:11px; color:#4ec9b0;" data-i18n-title="step5.liveDotTip" title="Ticks once a second while the main thread is running. If it STOPS while the page will not respond, the thread is blocked — a modal dialog or a long synchronous task. If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
       <span id="runStatus" class="small"></span>
     </div>
     <div id="manualTriggerBanner">
-      REW Pro sweep trigger isn't available — start the sweep yourself in REW now (click <strong>Start Measurement</strong>
-      in the REW window), then click Continue below once it finishes.
+      <span data-i18n-html="step5.manualBanner">REW Pro sweep trigger isn't available — start the sweep yourself in REW now (click <strong>Start Measurement</strong>
+      in the REW window), then click Continue below once it finishes.</span>
       <div class="flex" style="margin-top:8px;">
-        <button id="manualContinueBtn">✅ Continue</button>
-        <button id="manualSkipBtn" class="secondary">Skip this test</button>
+        <button id="manualContinueBtn" data-i18n="step5.continueBtn">✅ Continue</button>
+        <button id="manualSkipBtn" class="secondary" data-i18n="step5.skipBtn">Skip this test</button>
       </div>
     </div>
     <div class="table-wrap">
       <table id="resultsTable" style="display:none;">
         <thead>
-          <tr><th>#</th><th>Group</th><th>Label</th><th>Expected Δ</th><th>Measured Δ (raw)</th><th>Pregain</th><th>Shape RMSE</th><th>Max Err</th><th>Corr</th><th>Effective Q</th><th class="status">Status</th><th>REW id</th><th></th></tr>
+          <tr><th>#</th><th data-i18n="col.group">Group</th><th data-i18n="col.label">Label</th><th data-i18n="col.expectedDelta">Expected Δ</th><th data-i18n="col.measuredRaw">Measured Δ (raw)</th><th data-i18n="col.pregain">Pregain</th><th data-i18n="col.shapeRmse">Shape RMSE</th><th data-i18n="col.maxErr">Max Err</th><th data-i18n="col.corr">Corr</th><th data-i18n="col.effectiveQ">Effective Q</th><th class="status" data-i18n="col.status">Status</th><th data-i18n="col.rewId">REW id</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -672,16 +706,16 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     <div id="failureChartPanel" class="failure-chart-panel" style="display:none;">
       <div class="flex" style="justify-content:space-between;">
         <h3 id="failureChartTitle" style="margin:0;"></h3>
-        <button id="closeFailureChartBtn" class="secondary">✕ Close</button>
+        <button id="closeFailureChartBtn" class="secondary" data-i18n="common.close">✕ Close</button>
       </div>
       <div id="failureChartStats" class="stat-row"></div>
       <div class="fc-controls">
-        <label>Freq span<input type="range" id="fcSpan" min="0.1" max="4.99" step="0.01" value="4.99"></label>
-        <label>Centre<input type="range" id="fcCentre" min="4.32" max="14.29" step="0.01" value="9.97"></label>
-        <label>Main dB<input type="range" id="fcMainZoom" min="1" max="25" step="0.1" value="1"></label>
-        <label>Residual dB<input type="range" id="fcResZoom" min="1" max="25" step="0.1" value="1"></label>
-        <button id="fcZoomF0" class="secondary">⤢ Zoom to f0</button>
-        <button id="fcResetView" class="secondary">↺ Reset view</button>
+        <label><span data-i18n="fc.span">Freq span</span><input type="range" id="fcSpan" min="0.1" max="4.99" step="0.01" value="4.99"></label>
+        <label><span data-i18n="fc.centre">Centre</span><input type="range" id="fcCentre" min="4.32" max="14.29" step="0.01" value="9.97"></label>
+        <label><span data-i18n="fc.mainDb">Main dB</span><input type="range" id="fcMainZoom" min="1" max="25" step="0.1" value="1"></label>
+        <label><span data-i18n="fc.residualDb">Residual dB</span><input type="range" id="fcResZoom" min="1" max="25" step="0.1" value="1"></label>
+        <button id="fcZoomF0" class="secondary" data-i18n="fc.zoomF0">⤢ Zoom to f0</button>
+        <button id="fcResetView" class="secondary" data-i18n="fc.resetView">↺ Reset view</button>
       </div>
       <div id="fcViewReadout" class="fc-readout"></div>
       <div class="chart-wrap" id="failureChartWrap"></div>
@@ -690,7 +724,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
   </section>
 
   <section>
-    <h2>Step 6 — Summary &amp; Export</h2>
+    <h2 data-i18n="step6.heading">Step 6 — Summary &amp; Export</h2>
     <div id="verdictBanner" class="verdict" style="display:none;">
       <div class="verdict-mark" id="verdictMark"></div>
       <div class="verdict-body">
@@ -699,30 +733,386 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
         <div class="verdict-caveat" id="verdictCaveat"></div>
       </div>
     </div>
-    <div id="summaryBox" class="info-box">Run the test plan to see a summary here.</div>
+    <div id="summaryBox" class="info-box" data-i18n="step6.summaryEmpty">Run the test plan to see a summary here.</div>
     <div class="flex no-print">
-      <button id="insightsBtn" disabled>🔍 Insights</button>
-      <button id="exportPdfBtn" class="secondary" disabled>🖨️ Save as PDF</button>
-      <button id="exportJsonBtn" class="secondary" disabled>⬇️ Export JSON</button>
-      <button id="exportCsvBtn" class="secondary" disabled>⬇️ Export CSV</button>
-      <span class="small">Insights looks for a <em>systematic</em> cause across every measured
+      <button id="insightsBtn" disabled data-i18n="step6.insightsBtn">🔍 Insights</button>
+      <button id="exportPdfBtn" class="secondary" disabled data-i18n="step6.pdfBtn">🖨️ Save as PDF</button>
+      <button id="exportJsonBtn" class="secondary" disabled data-i18n="step6.jsonBtn">⬇️ Export JSON</button>
+      <button id="exportCsvBtn" class="secondary" disabled data-i18n="step6.csvBtn">⬇️ Export CSV</button>
+      <span class="small" data-i18n-html="step6.insightsNote">Insights looks for a <em>systematic</em> cause across every measured
         case — a constant level offset, a gain/Q/frequency scale factor, or an error that
         trends with frequency — and works out the numbers behind it.</span>
     </div>
 
     <div id="insightsPanel" class="insights-panel" style="display:none;">
       <div class="flex" style="justify-content:space-between;">
-        <h3 id="insightsTitle" style="margin:0;">Insights</h3>
-        <button id="closeInsightsBtn" class="secondary">✕ Close</button>
+        <h3 id="insightsTitle" style="margin:0;" data-i18n="step6.insightsTitle">Insights</h3>
+        <button id="closeInsightsBtn" class="secondary" data-i18n="common.close">✕ Close</button>
       </div>
       <div id="insightsBody"></div>
       <div class="flex" id="insightsActions" style="margin-top:12px; display:none;">
-        <button id="addSuggestedBtn">➕ Add suggested follow-up tests to the plan</button>
+        <button id="addSuggestedBtn" data-i18n="step6.addSuggestedBtn">➕ Add suggested follow-up tests to the plan</button>
         <span class="small" id="addSuggestedNote"></span>
       </div>
     </div>
   </section>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LOCALISATION
+     ═══════════════════════════════════════════════════════════════════════════
+     A classic (non-module) script, placed here rather than in <head>, for one
+     reason: classic scripts run at the point they appear, so by the time this
+     executes the body above is parsed but nothing has painted. Translating from
+     the module script below would instead flash English first — module scripts
+     are deferred to after the document is parsed AND it awaits config.json
+     before doing anything.
+
+     English is NOT stored in a dictionary. It is snapshotted out of the markup
+     at load, so the markup above stays the single source of truth for it and
+     the two can never drift apart. Only `zh` is written out below; any key
+     missing from it falls back to that English snapshot, which is what makes it
+     safe to translate the page incrementally.
+
+     Adding a language: add its code to LANGS, add a dictionary, add a button.
+     Nothing else here is language-specific.
+-->
+<script>
+(function () {
+  'use strict';
+
+  var LANG_KEY = 'devicepeq-rew-bench:lang:v1';
+  var LANGS = ['en', 'zh'];
+
+  // ── Simplified Chinese ────────────────────────────────────────────────────
+  // Terminology: units, symbols and protocol tokens stay in Latin script
+  // (dB, Hz, Q, RMSE, PK/LSQ/HSQ, REW, PEQ, biquad) — they are what the audio
+  // community actually uses, and leaving them alone keeps a Chinese run's
+  // tables readable side-by-side with an English one. Code identifiers and
+  // filenames are never translated: they name real things in the repo.
+  //
+  // Deliberately NOT yet translated (they fall through to English): the two
+  // long explanatory tooltips `step4.tolTip` and the Insights prose generated
+  // in the module script. Those carry the reasoning that makes this tool worth
+  // using and want a translator who knows both the domain and the tool.
+  var zh = {
+    'shield.dontTouch': '— 请勿操作本页面',
+    'shield.note': 'REW 扫频正在进行，其结果尚未完整读回。\n' +
+      '此时更改滤波器、重新写入或启动新的测试，都会作用到已在进行中的扫频。\n' +
+      '此提示会自动消失。“Stop After Current Test”（在当前测试后停止）仍然可用。',
+
+    'app.title': '🎛️ DevicePEQ ⇄ REW 验证工具',
+
+    'step0.heading': '步骤 0 — REW 设置',
+    'step0.tag': '一次性设置',
+    'step0.intro': '本工具通过 REW 内置的 HTTP API 触发扫频并读回频率响应数据。使用本页面前，请先完成以下一次性设置：',
+    'step0.check1': '在本机安装 / 打开 <strong>REW</strong>（Room EQ Wizard）。',
+    'step0.check2': '以启用 API 的方式启动 REW，或在 <code>Preferences → API</code> 中勾选 “Enable API”。默认端口为 <code>4735</code>（本页面按默认端口工作 —— 若你用 <code>-port</code> 改过端口，请同步修改 <code>rew-client.mjs</code> 中的 <code>REW_BASE</code>）。',
+    'step0.check3': '把 REW 的测量<strong>输入（Input）</strong>设为你的测量话筒 / 分析仪输入，<strong>输出（Output）</strong>设为馈给被测设备的接口。电平设定一次后，整个测试过程中不要再改动 —— 本测试中的每个滤波器都是以相对于基线扫频的<em>相对</em> dB 变化来判定的。',
+    'step0.check4': '在本机连接 / 配对被测设备（USB、蓝牙 SPP、BLE 或网络 —— 与平常使用 DevicePEQ 相同）。',
+    'step0.check5': '（推荐）拥有有效的 <strong>REW Pro</strong> 授权 —— 它让本页面可以通过 <code>POST /measure/command</code> 直接触发扫频。没有 Pro 也能正常读取测量结果，只是每个测试都需要你自己在 REW 界面中点击 “Start Measurement”。',
+    'step0.troubleSummary': '启动命令 / 故障排查',
+    'step0.troubleBody': 'macOS:\n' +
+      '  open -a REW.app --args -api\n' +
+      '\n' +
+      'Windows:\n' +
+      '  "C:\\Program Files\\REW\\roomeqwizard.exe" -api\n' +
+      '\n' +
+      '如果 API 无法访问，请检查 Preferences > API > “Enable API” 是否已勾选，以及 4735 端口\n' +
+      '是否被其他程序占用。REW 在本页面需要的每个端点上都会发送 Access-Control-Allow-Origin: *\n' +
+      '（包括 POST/PUT 的预检请求），因此不需要代理 —— 本页面的 fetch() 调用会直接访问\n' +
+      'http://127.0.0.1:4735。\n' +
+      '\n' +
+      '本页面使用 ES 模块导入，浏览器在 file:// 下会阻止它。请用本地静态服务器提供本页面，而不是\n' +
+      '直接双击文件打开，例如在仓库根目录执行：\n' +
+      '  python3 -m http.server 8000\n' +
+      '然后打开 http://localhost:8000/testing/html-tools/devicepeq-rew-verification.html',
+
+    'step1.heading': '步骤 1 — 连接被测设备',
+    'step1.constraintsEmpty': '请在上方连接设备，这里会显示解析出的 PEQ 约束。',
+    'step1.compToggle': '应用 devicePEQ 补偿',
+    'step1.compTip': '默认开启。取消勾选后将完全按请求值写入滤波器，绕过所有修正，这样一次运行测的就是“设备本身”，而不是“handler 加设备”。\n\n' +
+      '用途：根据原始行为推导新的补偿，或在固件更新后复核已有补偿 —— 如果上游已经修好，该设备会变成“开着补偿反而失败、关掉补偿则通过”。',
+
+    'step2.heading': '步骤 2 — 检查 REW API',
+    'step2.btn': '🔌 检查 REW API',
+    'step2.notChecked': '未检查',
+
+    'step3.heading': '步骤 3 — 基线测量',
+    'step3.intro': '这是下方所有测试的参照基准。点击下面的按钮，本页面会把<strong>所有滤波器频段设为 0 dB 增益并禁用</strong>后写入已连接的设备，然后自动触发一次 REW 扫频（若 REW Pro 未启用，则提示你手动开始），并把该次扫频作为基线（重命名为 <code>PEQTEST-BASELINE</code>，频率响应缓存在本页面中）。',
+    'step3.btnReset': '🧹 重置设备到 0dB 并采集基线',
+    'step3.noBaseline': '无基线',
+    'step3.manualNote': '更希望自己准备设备状态（例如在设备自带 App 里选一个专门的“PEQ 关闭”预设）？请在 REW 中手动跑那次扫频，然后用下面的备用方式，直接采用 REW 列表最上方已有的测量结果，本页面不会去动设备。',
+    'step3.btnManual': '📏 采用 REW 最新测量作为基线（手动）',
+
+    'step4.heading': '步骤 4 — 构建测试计划',
+    'step4.intro': '测试用例根据已连接设备解析出的 PEQ 约束生成（最小/最大增益、最小/最大 Q、支持的滤波器类型）。每个用例施加单个独立的滤波器，写入设备，触发一次 REW 扫频，并把<strong>整条实测频率响应曲线</strong>与理论 biquad 形状作比较（20Hz–20kHz 上对数分布的取样点，而不只是单一频率），适用于所有具备 RBJ 模型的滤波器类型 —— PK/LSQ/HSQ 以及 LPF/HPF/BPF/NOTCH/BSF/APF/CQ。许多设备在施加提升类滤波器时会自动降低整体输出电平（“前置增益”，pregain）以保护动态余量 —— 这表现为一个恒定的全频段偏移，而不是形状误差。本工具会检测该偏移（整条曲线残差的中位数）、将其扣除，并与真正的滤波器形状拟合结果分开报告。没有理论模型的类型代码则退回到单点测量，且始终只记录、不判定。',
+    'step4.groupsHeading': '测试分组',
+    'step4.grpTypes': '滤波器类型覆盖（PK、LSQ、HSQ）',
+    'step4.grpGain': '增益扫描（最小 → 最大，PK）—— 在下方每个扫描频率上各跑一次',
+    'step4.grpQ': 'Q 扫描（最小 → 最大，PK）—— 在下方每个扫描频率上各跑一次',
+    'step4.grpFreq': '频率扫描（100 Hz – 16 kHz，PK，9 个点）',
+    'step4.grpShelf': '搁架增益极值（LSQ/HSQ @ 最小与最大增益）',
+    'step4.grpOther': '其他受支持的滤波器类型（LP/HP/BP/Notch/AllPass/BandStop/ConstantQ）—— 与教科书式 RBJ 模型作形状拟合（若类型代码与你设备的协议不符，请自行修改；参见下方说明）',
+    'step4.paramsHeading': '运行参数',
+    'step4.settle': '写入后稳定时间',
+    'step4.tolerance': '形状拟合容差（RMSE）',
+    'step4.timeout': '扫频超时',
+    'step4.sampleRate': '设备 DSP 采样率',
+    'step4.fromRew': '↻ 从 REW 读取',
+    'step4.fromRewTip': '读取 REW 当前播放所用的采样率 —— 也就是设备实际被馈入的采样率',
+    'step4.sweepFreqs': '增益/Q 扫描频率',
+    'step4.sweepFreqsTip': '增益扫描和 Q 扫描会在这里的每一个频率上各跑一次，这样增益或 Q 的误差才能与频率相关的误差区分开。\n\n' +
+      '为什么重要：如果所有增益/Q 用例都固定在单一频率上，洞察分析只有一个可回归的频率点，频率趋势拟合根本无法运行，真正的频率误差就可能被误读成 Q 或增益问题（甚至完全漏掉）。低、中、高三个相隔较远的点，是支持直线拟合的最低要求；“误差在 1 kHz 可见、到 8 kHz 变成两倍”正是这种设置能抓到的模式。\n\n' +
+      '代价：用例数量会按频率个数成倍增加，而每个用例都是一次 REW 扫频。只填一个值（例如 1000）可恢复原先的单频率行为，填更多点则拟合更可靠。数值会被限制在 20 Hz–20 kHz 并去重。',
+    'step4.ignoreDisconnect': '仍然尝试 —— 视该设备在保存后仍保持连接',
+    'step4.disconnectOverrideNote': '现在写入设备时不会强制断开连接。如果设备确实会断开，本次运行会在第一次写入时以“没有已连接的设备”停止 —— 这本身就是答案。如果能继续跑下去，说明 <code>usbDeviceConfig.js</code> 中该型号的 <code>disconnectOnSave</code> 设置有误，应改为 false。',
+    'step4.tolNote': '形状拟合容差是实测曲线与理论曲线之间允许的最大 RMSE（dB）；默认 0.3dB 在真实噪声之上留有余量，同时仍能抓到真正的滤波器缺陷。“有效 Q”（显示在失败行上）是最能解释实测曲线的 Q 值，仅当这是一个有意义的结论、而非搜索噪声时才显示。',
+    'step4.genBtn': '🧩 生成测试计划',
+
+    'col.group': '分组',
+    'col.type': '类型',
+    'col.freq': '频率 (Hz)',
+    'col.gain': '增益 (dB)',
+    'col.measureAt': '测量 @ Hz',
+    'col.expectedDelta': '预期 Δ',
+    'col.checkMethod': '检查方式',
+    'col.label': '标签',
+    'col.measuredRaw': '实测 Δ（原始）',
+    'col.pregain': '前置增益',
+    'col.shapeRmse': '形状 RMSE',
+    'col.maxErr': '最大误差',
+    'col.corr': '相关性',
+    'col.effectiveQ': '有效 Q',
+    'col.status': '状态',
+    'col.rewId': 'REW id',
+
+    'step4b.heading': '步骤 4b — 测量由其他工具设置的滤波器',
+    'step4b.tag': '可选',
+    'step4b.intro': '适用于在本工具之外施加的滤波器 —— 厂商网页应用、手机 App，或任何不走上面“已连接设备”路径的方式。在那个工具里设置<b>一个</b>滤波器，在这里采集一次扫频，本工具会推断出实际到达输出端的是哪个滤波器。需要步骤&nbsp;3 的基线，且基线必须在该工具的 EQ 关闭状态下测得。',
+    'step4b.askedFor': '你向那个工具请求的参数',
+    'step4b.askedForTip': '可选。留空则只识别设备实际产生了什么 —— 由于没有对照对象，该用例只会被记录，而不判定通过/失败（曲线总是与自己的最佳拟合相符）。填写后，形状拟合、Explain 图表和洞察分析会像自动用例一样对其运行。',
+    'step4b.notSpecified': '— 未指定 —',
+    'step4b.lsq': 'LSQ（低频搁架）',
+    'step4b.hsq': 'HSQ（高频搁架）',
+    'step4b.phFreq': '频率 Hz',
+    'step4b.phGain': '增益 dB',
+    'step4b.btn': '🎚️ 采集并识别滤波器',
+
+    'step5.heading': '步骤 5 — 运行',
+    'step5.runBtn': '▶️ 运行测试计划',
+    'step5.stopBtn': '⏹ 在当前测试后停止',
+    'step5.liveDotTip': '主线程运行时每秒跳动一次。如果页面无响应时它停止跳动，说明线程被阻塞了 —— 可能是模态对话框，或一个长时间的同步任务。如果它仍在跳动但点击无效，说明线程正常，是别的东西吞掉了输入。',
+    'step5.manualBanner': 'REW Pro 扫频触发不可用 —— 请现在自己在 REW 中开始扫频（点击 REW 窗口里的 <strong>Start Measurement</strong>），完成后再点击下方的“继续”。',
+    'step5.continueBtn': '✅ 继续',
+    'step5.skipBtn': '跳过此测试',
+
+    'fc.span': '频率跨度',
+    'fc.centre': '中心',
+    'fc.mainDb': '主图 dB',
+    'fc.residualDb': '残差 dB',
+    'fc.zoomF0': '⤢ 缩放到 f0',
+    'fc.resetView': '↺ 重置视图',
+
+    'common.close': '✕ 关闭',
+
+    'step6.heading': '步骤 6 — 汇总与导出',
+    'step6.summaryEmpty': '运行测试计划后，这里会显示汇总。',
+    'step6.insightsBtn': '🔍 洞察分析',
+    'step6.pdfBtn': '🖨️ 保存为 PDF',
+    'step6.jsonBtn': '⬇️ 导出 JSON',
+    'step6.csvBtn': '⬇️ 导出 CSV',
+    'step6.insightsNote': '洞察分析会在所有已测用例中寻找<em>系统性</em>成因 —— 恒定的电平偏移，增益/Q/频率的比例因子，或随频率变化的误差 —— 并算出背后的数值。',
+    'step6.insightsTitle': '洞察分析',
+    'step6.addSuggestedBtn': '➕ 把建议的后续测试加入计划',
+
+    'doc.title': 'DevicePEQ ⇄ REW 验证工具',
+
+    // ── Test group names ────────────────────────────────────────────────────
+    // Display only. The raw English name stays on the test case and is what
+    // both exports write, so a Chinese run's CSV is still diffable against an
+    // English one.
+    'group.Filter Types': '滤波器类型',
+    'group.Gain Sweep': '增益扫描',
+    'group.Q Sweep': 'Q 扫描',
+    'group.Frequency Sweep': '频率扫描',
+    'group.Shelf Extremes': '搁架极值',
+    'group.Other Filter Types': '其他滤波器类型',
+    'group.Manual': '手动',
+    'group.Insight: Freq Trend': '洞察：频率趋势',
+    'group.Insight: Gain Linearity': '洞察：增益线性度',
+    'group.Insight: Q Sweep': '洞察：Q 扫描',
+    'group.Insight: Repeatability': '洞察：可重复性',
+
+    // ── Verdict banner ──────────────────────────────────────────────────────
+    // No plural forms: Chinese does not inflect for number, so the {s} that the
+    // English templates carry is simply absent from these.
+    'verdict.pass.headline': '{device} 通过验证',
+    'verdict.pass.sub': '全部 {n} 个受判定用例都在容差范围内与请求的滤波器相符。',
+    'verdict.fail.headline': '{device} 未通过验证',
+    'verdict.fail.sub': '{measured} 个受判定用例中，有 {n} 个未能在容差范围内与请求的滤波器相符。',
+    'verdict.none.headline': '{device} —— 未验证任何内容',
+    'verdict.none.sub': '全部 {n} 个用例都只是记录，没有可供判定的通过/失败标准。',
+    'verdict.noUsable.headline': '{device} —— 没有可用结果',
+    'verdict.noUsable.sub': '每个受判定用例都出错了，因此实际上没有验证任何内容。',
+    'verdict.partial.headline': '{device} 通过了所有已运行的用例',
+    'verdict.partial.sub': '{measured} 个受判定用例中有 {n} 个通过，但测试计划没有完整跑完。',
+    'verdict.device': '设备',
+    'verdict.caveat.errored': '{n} 个用例出错，无法判定',
+    'verdict.caveat.pending': '{n} 个用例从未运行',
+    'verdict.caveat.skipped': '{n} 个用例被跳过',
+    'verdict.caveat.recorded': '{n} 个仅记录（无通过/失败标准）',
+    'verdict.caveat.prefix': '本结论未覆盖：{list}。',
+    'verdict.caveat.compensation': '测量时启用了补偿（{comp}）—— 这验证的是 handler 与设备的组合。',
+    'verdict.scope.shared': '实现：{text}。任何基于 {shared} 的其他设备都可能有相同的表现。',
+    'verdict.scope.plain': '实现：{text}。',
+
+    // ── Summary box ─────────────────────────────────────────────────────────
+    'summary.deviceLine': '设备：{device}   基线：测量 #{baseline}',
+    'summary.unknownDevice': '未知',
+    'summary.implementation': '实现：{text}',
+    'summary.compensation': '补偿：{comp}',
+    'summary.counts': '{pass} 通过，{fail} 失败，{err} 出错，{rec} 仅记录，{skipped} 跳过',
+    'summary.groupRow': '{pass}/{total} 通过',
+    'summary.pregainAvg': '形状拟合测试的平均前置增益：{avg} dB（最负：{worst} dB）',
+    'summary.pregainNote': '负的前置增益 = 施加提升类滤波器时，设备主动降低了整体电平（正常的动态余量保护）。',
+    'summary.pregainPositive': '⚠️ 平均前置增益为正 —— 实测到的全频段增益比请求的更多；请检查是否存在削波/过冲。'
+  };
+
+  var DICTS = { en: {}, zh: zh };
+
+  // How each attribute is read back out of an element and written into it. The
+  // getter is only ever used once per element, to take the English snapshot.
+  var MODES = [
+    { attr: 'data-i18n',             get: function (el) { return el.textContent; },
+                                     set: function (el, v) { el.textContent = v; } },
+    { attr: 'data-i18n-html',        get: function (el) { return el.innerHTML; },
+                                     set: function (el, v) { el.innerHTML = v; } },
+    { attr: 'data-i18n-title',       get: function (el) { return el.getAttribute('title'); },
+                                     set: function (el, v) { el.setAttribute('title', v); } },
+    { attr: 'data-i18n-placeholder', get: function (el) { return el.getAttribute('placeholder'); },
+                                     set: function (el, v) { el.setAttribute('placeholder', v); } }
+  ];
+
+  // Per mode: element -> { en: <original>, last: <what we wrote most recently> }.
+  // `last` is what stops a language switch from wiping runtime content. Several
+  // translated elements are also written by the module script at runtime
+  // (#summaryBox, #constraintsPanel, the status pills). If the current value is
+  // not the one we last wrote, something else owns the element now and we leave
+  // it alone — no cooperation needed from the code that writes it.
+  var snaps = MODES.map(function () { return new WeakMap(); });
+
+  function each(fn) {
+    MODES.forEach(function (mode, i) {
+      var nodes = document.querySelectorAll('[' + mode.attr + ']');
+      for (var n = 0; n < nodes.length; n++) fn(nodes[n], mode, snaps[i]);
+    });
+  }
+
+  function apply(lang) {
+    var dict = DICTS[lang] || {};
+    each(function (el, mode, snap) {
+      var rec = snap.get(el);
+      if (!rec) {
+        rec = { en: mode.get(el), last: mode.get(el) };
+        snap.set(el, rec);
+      } else if (mode.get(el) !== rec.last) {
+        return;   // overwritten at runtime — not ours to translate
+      }
+      var key = el.getAttribute(mode.attr);
+      var value = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : rec.en;
+      if (value == null) return;
+      mode.set(el, value);
+      rec.last = mode.get(el);
+    });
+
+    document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : lang;
+    var docTitle = dict['doc.title'];
+    if (docTitle) document.title = docTitle;
+    else if (lang === 'en') document.title = 'DevicePEQ ⇄ REW Verification Tool';
+
+    var buttons = document.querySelectorAll('#langSwitch button');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', String(buttons[i].dataset.lang === lang));
+    }
+  }
+
+  function detect() {
+    var stored = null;
+    try { stored = localStorage.getItem(LANG_KEY); } catch (e) { /* private mode */ }
+    if (stored && LANGS.indexOf(stored) !== -1) return stored;
+    // Only an explicit Chinese browser preference opts in. Anything else — including
+    // a locale this page has no dictionary for — gets English rather than a
+    // half-translated page.
+    var nav = (navigator.language || '').toLowerCase();
+    return nav.indexOf('zh') === 0 ? 'zh' : 'en';
+  }
+
+  var current = detect();
+
+  function setLang(lang) {
+    if (LANGS.indexOf(lang) === -1) return;
+    current = lang;
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* quota */ }
+    apply(lang);
+    // Lets the module script re-render anything it generated itself in the
+    // previous language. Nothing listens yet — the JS-side strings are still
+    // English-only — but the hook is what stage 2 attaches to.
+    document.dispatchEvent(new CustomEvent('DPQLanguageChanged', { detail: { lang: lang } }));
+  }
+
+  document.getElementById('langSwitch').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-lang]');
+    if (btn) setLang(btn.dataset.lang);
+  });
+
+  function fmt(tpl, params) {
+    return String(tpl).replace(/\{(\w+)\}/g, function (whole, k) {
+      return Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : whole;
+    });
+  }
+
+  // Look up a key from the module script:
+  //   t('summary.counts', { pass: 3, fail: 0 }, '{pass} passed, {fail} failed')
+  //
+  // The third argument is the English template and it lives at the CALL SITE,
+  // not in a dictionary — same principle as the markup snapshot above. English
+  // stays where you read the code, so it cannot drift out of sync, and a key
+  // the active language has not translated yet simply falls back to it.
+  //
+  // Placeholders are named ({pass}), never positional, because Chinese reorders
+  // clauses freely and a positional scheme would pin the numbers to English
+  // word order.
+  function t(key, params, fallback) {
+    var dict = DICTS[current] || {};
+    var tpl = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key]
+            : (fallback !== undefined ? fallback : key);
+    return params ? fmt(tpl, params) : tpl;
+  }
+
+  // padEnd() counts UTF-16 code units, so it under-pads CJK: those glyphs are
+  // two columns wide in a monospace face and a padEnd(22) column comes out
+  // ragged the moment a group name is translated. Count display columns instead.
+  var WIDE = /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/;
+  function padDisplay(s, width) {
+    s = String(s);
+    var w = 0;
+    for (var i = 0; i < s.length; i++) w += WIDE.test(s[i]) ? 2 : 1;
+    return s + new Array(Math.max(1, width - w) + 1).join(' ');
+  }
+
+  window.DPQI18N = {
+    t: t,
+    padDisplay: padDisplay,
+    apply: apply,
+    setLang: setLang,
+    langs: LANGS,
+    get lang() { return current; }
+  };
+
+  apply(current);
+})();
+</script>
 
 <script type="module">
 // ═══════════════════════════════════════════════════════════════════════════
@@ -892,6 +1282,32 @@ let stopRequested = false;
 let manualResolve = null;     // resolves the "Continue"/"Skip" promise during manual-trigger fallback
 
 const $ = (id) => document.getElementById(id);
+
+// ---------------------------------------------------------------------------
+// Localisation, from the module side. The engine itself is the classic script
+// above; these are the four things this script needs from it.
+//
+// Each T() call carries its own English template as the last argument, so the
+// English text still lives at the point of use and is what you get whenever the
+// active language has no entry for that key. Nothing here breaks if DPQI18N is
+// missing — the page then runs exactly as it did before it existed.
+// ---------------------------------------------------------------------------
+const T = (key, params, english) =>
+  window.DPQI18N ? window.DPQI18N.t(key, params, english) : interpolateEnglish(english ?? key, params);
+const PAD = (s, w) => (window.DPQI18N ? window.DPQI18N.padDisplay(s, w) : String(s).padEnd(w));
+// Test group names are stored on each case in English — that is what the CSV
+// and JSON exports write, so a Chinese run stays diffable against an English
+// one. Only the on-screen rendering goes through here.
+const GROUP = (name) => T(`group.${name}`, null, name);
+// Chinese uses a full-width enumeration comma between list items, where English
+// wants "; ". Small, but a caveat list reads as machine-generated without it.
+const LIST_SEP = () => (window.DPQI18N && window.DPQI18N.lang === 'zh' ? '、' : '; ');
+function interpolateEnglish(tpl, params) {
+  if (!params) return String(tpl);
+  return String(tpl).replace(/\{(\w+)\}/g, (whole, k) =>
+    Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : whole);
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const clampFreq = (f) => clamp(f, 20, 20000);
@@ -1032,8 +1448,9 @@ function implementationScopeNote() {
     f.deviceGroup ? `group "${f.deviceGroup}"` : null,
   ].filter(Boolean).join(' / ');
   return shared
-    ? `Implementation: ${f.text}. Any other device on ${shared} is likely to behave the same way.`
-    : `Implementation: ${f.text}.`;
+    ? T('verdict.scope.shared', { text: f.text, shared },
+        'Implementation: {text}. Any other device on {shared} is likely to behave the same way.')
+    : T('verdict.scope.plain', { text: f.text }, 'Implementation: {text}.');
 }
 
 // ---------------------------------------------------------------------------
@@ -1620,23 +2037,52 @@ function measurementLooksStale(tc, fr) {
   // test would flag every healthy shelf.
   if ((tc.type || '').toUpperCase() !== 'PK') return null;
   if (!baseline?.fr || !fr || Math.abs(tc.gain) < 3) return null;
+  // Very broad filters are not judgeable here at all. The wrongPlace test below
+  // already opts out at Q<0.5 because a broad peak's centre is barely defined;
+  // what remains for those is the sign test, and the median offset below is
+  // wrong for them in a way that makes it misfire — a Q=0.1 bump spans the
+  // whole band, so the median lands INSIDE the bump rather than on a flat
+  // baseline, and both extremes then read negative against it. A healthy
+  // +6dB Q=0.1 case gets flagged for "wrong sign". Nothing useful is left, so
+  // hand the case to the shape fit instead of erroring it out.
+  if ((tc.q ?? 1) < 0.5) return null;
+  // Remove the broadband level offset BEFORE looking for the peak. A device
+  // that applies auto-pregain when asked for a boost drops the whole curve by
+  // roughly the boost it was given, so the raw delta for "+6dB at 1kHz" is a
+  // flat ~-6dB shelf with the bump poking back up to ~0 — the largest RAW
+  // magnitude then sits somewhere out of band (typically an edge like 20kHz,
+  // where the rolloff nudges it further down) with the opposite sign, and both
+  // heuristics below fire on a perfectly healthy capture. Everything else in
+  // this tool already compensates (compareToTheoretical -> compensateForPregain);
+  // this check has to as well or it errors out exactly the boost cases the
+  // shape fit would have passed.
+  //
+  // The median tracks the offset because a single filter is near-zero delta
+  // across most of the band: only the region around f0 departs from the shelf,
+  // so it cannot pull the median far. A stale capture still fails the check —
+  // the previous case's bump is displaced in frequency, which survives having
+  // a constant subtracted from it.
+  const deltas = EVAL_FREQS.map((f) => magnitudeAt(fr, f) - magnitudeAt(baseline.fr, f));
+  const offset = medianOf(deltas);
   let peak = { f: 0, d: 0 };
-  for (const f of EVAL_FREQS) {
-    const d = magnitudeAt(fr, f) - magnitudeAt(baseline.fr, f);
+  EVAL_FREQS.forEach((f, i) => {
+    const d = deltas[i] - offset;
     if (Math.abs(d) > Math.abs(peak.d)) peak = { f, d };
-  }
+  });
   if (Math.abs(peak.d) < 1) return null;              // nothing measurable either way
   const ratio = peak.f / tc.freq;
   // Deliberately blunt thresholds. This is not a shape check — Insights already
   // does that properly — it exists only to catch a capture of a DIFFERENT
   // filter, which is off by an octave or more or has the opposite sign. A tight
   // window would flag broad filters, whose peak position is barely defined: a
-  // Q=0.1 case measured 1.5x off its centre and is perfectly healthy.
-  const wrongPlace = (tc.q ?? 1) >= 0.5 && (ratio < 0.5 || ratio > 2);
+  // Q=0.1 case measured 1.5x off its centre and is perfectly healthy. (Those
+  // are turned away by the Q<0.5 bail above before reaching here.)
+  const wrongPlace = ratio < 0.5 || ratio > 2;
   const wrongSign = Math.sign(peak.d) !== Math.sign(tc.gain);
   if (!wrongPlace && !wrongSign) return null;
-  return `measured curve peaks ${peak.d.toFixed(1)}dB at ${peak.f.toFixed(0)}Hz, but this case asked for `
-    + `${tc.gain}dB at ${tc.freq}Hz — the capture does not show the requested filter `
+  return `measured curve peaks ${peak.d.toFixed(1)}dB at ${peak.f.toFixed(0)}Hz `
+    + `(after removing a ${offset >= 0 ? '+' : ''}${offset.toFixed(1)}dB broadband offset), but this case `
+    + `asked for ${tc.gain}dB at ${tc.freq}Hz — the capture does not show the requested filter `
     + `(usually the previous case's, i.e. the write had not landed when the sweep ran)`;
 }
 
@@ -2199,27 +2645,35 @@ function computeVerdict() {
   if (!measured && !c.recorded) return null;
 
   const caveats = [];
-  if (c.error) caveats.push(`${c.error} case${c.error > 1 ? 's' : ''} errored and could not be judged`);
-  if (c.pending) caveats.push(`${c.pending} case${c.pending > 1 ? 's' : ''} never ran`);
-  if (c.skipped) caveats.push(`${c.skipped} case${c.skipped > 1 ? 's' : ''} skipped`);
-  if (c.recorded) caveats.push(`${c.recorded} recorded-only (no pass/fail criterion)`);
-  let caveat = caveats.length ? `Not covered by this verdict: ${caveats.join('; ')}.` : '';
+  if (c.error) caveats.push(T('verdict.caveat.errored', { n: c.error, s: c.error > 1 ? 's' : '' },
+    '{n} case{s} errored and could not be judged'));
+  if (c.pending) caveats.push(T('verdict.caveat.pending', { n: c.pending, s: c.pending > 1 ? 's' : '' },
+    '{n} case{s} never ran'));
+  if (c.skipped) caveats.push(T('verdict.caveat.skipped', { n: c.skipped, s: c.skipped > 1 ? 's' : '' },
+    '{n} case{s} skipped'));
+  if (c.recorded) caveats.push(T('verdict.caveat.recorded', { n: c.recorded },
+    '{n} recorded-only (no pass/fail criterion)'));
+  let caveat = caveats.length
+    ? T('verdict.caveat.prefix', { list: caveats.join(LIST_SEP()) }, 'Not covered by this verdict: {list}.')
+    : '';
   // A pass earned with compensation active is a pass for handler+device, not
   // for the device. Say so in the verdict itself rather than only in a panel
   // further up the page that a reader may never scroll back to.
   const comp = compensationSummary();
   if (comp) {
-    caveat = `${caveat}${caveat ? ' ' : ''}Compensation applied while measuring (${comp}) — this verifies the handler and device together.`;
+    caveat = `${caveat}${caveat ? ' ' : ''}` + T('verdict.caveat.compensation', { comp },
+      'Compensation applied while measuring ({comp}) — this verifies the handler and device together.');
   }
 
-  const device = connectedDevice?.model ?? 'Device';
+  const device = connectedDevice?.model ?? T('verdict.device', null, 'Device');
   // Recorded-only cases have no pass/fail criterion, so a plan made entirely of
   // them verifies nothing — saying "PASSED" there would be the most misleading
   // thing this banner could do.
   if (!measured) {
     return { level: 'attention', mark: '~', counts: c,
-      headline: `${device} — nothing verified`,
-      sub: `All ${c.recorded} case${c.recorded > 1 ? 's were' : ' was'} recorded-only, with no pass/fail criterion to judge against.`,
+      headline: T('verdict.none.headline', { device }, '{device} — nothing verified'),
+      sub: T('verdict.none.sub', { n: c.recorded, were: c.recorded > 1 ? 's were' : ' was' },
+        'All {n} case{were} recorded-only, with no pass/fail criterion to judge against.'),
       caveat };
   }
   // A failure is far more useful when it names the implementation it belongs to
@@ -2228,24 +2682,28 @@ function computeVerdict() {
   const scope = implementationScopeNote();
   if (c.fail > 0) {
     return { level: 'fail', mark: '✕', counts: c,
-      headline: `${device} FAILED verification`,
-      sub: `${c.fail} of ${measured} judged case${measured > 1 ? 's' : ''} did not match the requested filter within tolerance.`,
+      headline: T('verdict.fail.headline', { device }, '{device} FAILED verification'),
+      sub: T('verdict.fail.sub', { n: c.fail, measured, s: measured > 1 ? 's' : '' },
+        '{n} of {measured} judged case{s} did not match the requested filter within tolerance.'),
       caveat: [scope, caveat].filter(Boolean).join(' ') };
   }
   if (c.error > 0 && c.pass === 0) {
     return { level: 'attention', mark: '!', counts: c,
-      headline: `${device} — no usable result`,
-      sub: `Every judged case errored, so nothing was actually verified.`, caveat };
+      headline: T('verdict.noUsable.headline', { device }, '{device} — no usable result'),
+      sub: T('verdict.noUsable.sub', null, 'Every judged case errored, so nothing was actually verified.'),
+      caveat };
   }
   if (c.error > 0 || c.pending > 0) {
     return { level: 'attention', mark: '~', counts: c,
-      headline: `${device} passed every case that ran`,
-      sub: `${c.pass} of ${measured} judged case${measured > 1 ? 's' : ''} passed, but the plan did not complete cleanly.`,
+      headline: T('verdict.partial.headline', { device }, '{device} passed every case that ran'),
+      sub: T('verdict.partial.sub', { n: c.pass, measured, s: measured > 1 ? 's' : '' },
+        '{n} of {measured} judged case{s} passed, but the plan did not complete cleanly.'),
       caveat };
   }
   return { level: 'pass', mark: '✔', counts: c,
-    headline: `${device} PASSED verification`,
-    sub: `All ${c.pass} judged case${c.pass > 1 ? 's' : ''} matched the requested filter within tolerance.`,
+    headline: T('verdict.pass.headline', { device }, '{device} PASSED verification'),
+    sub: T('verdict.pass.sub', { n: c.pass, s: c.pass > 1 ? 's' : '' },
+      'All {n} judged case{s} matched the requested filter within tolerance.'),
     caveat };
 }
 
@@ -2289,7 +2747,10 @@ function renderSummary() {
   const rec = testPlan.filter((t) => t.status === 'recorded').length;
   const skipped = testPlan.filter((t) => t.status === 'skipped').length;
   renderVerdict();
-  if (!done.length) { box.textContent = 'Run the test plan to see a summary here.'; return; }
+  if (!done.length) {
+    box.textContent = T('step6.summaryEmpty', null, 'Run the test plan to see a summary here.');
+    return;
+  }
   const byGroup = {};
   for (const t of testPlan) {
     byGroup[t.group] = byGroup[t.group] || { pass: 0, fail: 0, total: 0 };
@@ -2298,23 +2759,33 @@ function renderSummary() {
     if (t.status === 'pass') byGroup[t.group].pass++;
     if (t.status === 'fail') byGroup[t.group].fail++;
   }
-  let text = `Device: ${connectedDevice?.model ?? 'unknown'}   Baseline: measurement #${baseline?.id ?? '—'}\n`;
+  let text = T('summary.deviceLine',
+    { device: connectedDevice?.model ?? T('summary.unknownDevice', null, 'unknown'),
+      baseline: baseline?.id ?? '—' },
+    'Device: {device}   Baseline: measurement #{baseline}') + '\n';
   const implNow = implementationFingerprint();
-  if (implNow?.text) text += `Implementation: ${implNow.text}\n`;
+  if (implNow?.text) text += T('summary.implementation', { text: implNow.text }, 'Implementation: {text}') + '\n';
   const compNow = compensationSummary();
-  if (compNow) text += `Compensation: ${compNow}\n`;
-  text += `${pass} passed, ${fail} failed, ${err} errored, ${rec} recorded-only, ${skipped} skipped\n\n`;
+  if (compNow) text += T('summary.compensation', { comp: compNow }, 'Compensation: {comp}') + '\n';
+  text += T('summary.counts', { pass, fail, err, rec, skipped },
+    '{pass} passed, {fail} failed, {err} errored, {rec} recorded-only, {skipped} skipped') + '\n\n';
   for (const [group, s] of Object.entries(byGroup)) {
     if (s.total === 0) continue;
-    text += `${group.padEnd(22)} ${s.pass}/${s.total} passed\n`;
+    // padDisplay, not padEnd: translated group names are CJK and occupy two
+    // monospace columns per glyph, which padEnd cannot see.
+    text += PAD(GROUP(group), 22) + ' '
+      + T('summary.groupRow', { pass: s.pass, total: s.total }, '{pass}/{total} passed') + '\n';
   }
   const pregains = testPlan.map((t) => t.pregainDb).filter((v) => v != null);
   if (pregains.length) {
     const avgPregain = pregains.reduce((s, v) => s + v, 0) / pregains.length;
     const worst = Math.min(...pregains);
-    text += `\nAverage pregain across shape-fit tests: ${avgPregain.toFixed(2)} dB (most negative: ${worst.toFixed(2)} dB)\n`;
-    text += `Negative pregain = device backed off its overall level when a boost filter was applied (normal headroom protection).\n`;
-    if (avgPregain > 0.5) text += `⚠️ Average pregain is POSITIVE — device measured more broadband gain than requested; check for clipping/overshoot.\n`;
+    text += '\n' + T('summary.pregainAvg', { avg: avgPregain.toFixed(2), worst: worst.toFixed(2) },
+      'Average pregain across shape-fit tests: {avg} dB (most negative: {worst} dB)') + '\n';
+    text += T('summary.pregainNote', null,
+      'Negative pregain = device backed off its overall level when a boost filter was applied (normal headroom protection).') + '\n';
+    if (avgPregain > 0.5) text += T('summary.pregainPositive', null,
+      '⚠️ Average pregain is POSITIVE — device measured more broadband gain than requested; check for clipping/overshoot.') + '\n';
   }
   box.textContent = text;
   $('exportJsonBtn').disabled = false;
@@ -2328,6 +2799,15 @@ function renderSummary() {
     ? 'Needs at least 2 completed shape-fit (PK/LSQ/HSQ/…) cases to look for a systematic cause'
     : `Analyse ${analysable.length} measured cases for a common cause`;
 }
+
+// Switching language after a run has to redraw anything this script generated,
+// because the i18n engine deliberately will not touch content it did not write
+// itself. Guarded on there being a result: with an empty plan renderSummary()
+// would enable the export buttons for a run that never happened.
+document.addEventListener('DPQLanguageChanged', () => {
+  const hasResult = testPlan.some((t) => ['pass', 'fail', 'error', 'recorded'].includes(t.status));
+  if (hasResult) renderSummary();
+});
 
 // ---------------------------------------------------------------------------
 // Runner
