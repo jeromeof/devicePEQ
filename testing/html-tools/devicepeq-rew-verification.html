@@ -119,6 +119,26 @@
   .title-row h1 { flex: 1; margin: 0; border-bottom: none; padding-bottom: 0; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .checklist label { display: block; margin: 4px 0; }
+  .checklist label.rew-api-only {
+    margin: 8px 0;
+    padding: 9px 11px;
+    border: 1px solid #b8872d;
+    border-left: 4px solid #e0b34f;
+    border-radius: 4px;
+    background: rgba(224, 179, 79, 0.09);
+  }
+  .setup-method-badge {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #211b0d;
+    background: #e0b34f;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: .02em;
+    vertical-align: 1px;
+  }
   details { margin: 8px 0; }
   summary { cursor: pointer; color: #4ec9b0; font-weight: bold; }
   code { background: #1e1e1e; padding: 1px 5px; border-radius: 3px; color: #ce9178; }
@@ -496,22 +516,22 @@
     <div id="printHeaderMeta"></div>
   </div>
 
-  <section class="workflow-step">
+  <section id="rewSetupSection" class="workflow-step" style="display:none;">
     <!-- open by default: matches the first-visit state, so restoring a remembered
          state never has to fight a toggle event it cannot distinguish from a click -->
     <details id="setupSection" class="collapsible-step" open>
     <summary>
-      <h2 data-i18n="step0.heading">Step 0 — Capture Setup</h2>
+      <h2 data-i18n="step0.heading">REW API setup</h2>
       <span class="optional-tag" data-i18n="step0.tag">one-time setup</span>
     </summary>
     <p data-i18n="step0.intro">This tool can capture frequency-response measurements through the REW API or built-in Chrome audio.
        Complete the setup relevant to the capture method selected in Step 2:</p>
     <div class="checklist">
-      <label><input type="checkbox"> <span data-i18n-html="step0.check1">If using the REW API, install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</span></label>
-      <label><input type="checkbox"> <span data-i18n-html="step0.check2">Launch REW with the API enabled, or enable it in <code>Preferences → API</code> → check "Enable API". Default port is <code>4735</code> (this page assumes the default — change <code>REW_BASE</code> in <code>rew-client.mjs</code> if you customized it with <code>-port</code>).</span></label>
+      <label class="rew-api-only"><span class="setup-method-badge" data-i18n="step0.rewOnly">REW API only</span><input type="checkbox"> <span data-i18n-html="step0.check1">If using the REW API, install / open <strong>REW</strong> (Room EQ Wizard) on this machine.</span></label>
+      <label class="rew-api-only"><span class="setup-method-badge" data-i18n="step0.rewOnly">REW API only</span><input type="checkbox"> <span data-i18n-html="step0.check2">Launch REW with the API enabled, or enable it in <code>Preferences → API</code> → check "Enable API". Default port is <code>4735</code> (this page assumes the default — change <code>REW_BASE</code> in <code>rew-client.mjs</code> if you customized it with <code>-port</code>).</span></label>
       <label><input type="checkbox"> <span data-i18n-html="step0.check3">For the selected method, choose the measurement <strong>Input</strong> and <strong>Output</strong> feeding the device under test, then set levels once and don't touch them again during the run — every filter in this test is judged as a <em>relative</em> dB change against your baseline measurement.</span></label>
       <label><input type="checkbox"> <span data-i18n-html="step0.check4">Connect / pair the device under test on this machine (USB, Bluetooth SPP, BLE, or network — same as normal DevicePEQ usage).</span></label>
-      <label><input type="checkbox"> <span data-i18n-html="step0.check5">If using the REW API, a <strong>REW Pro</strong> license is recommended — it lets this page trigger measurements directly via <code>POST /measure/command</code>. Without Pro, you can still read measurements, but will be prompted to start each one in the REW GUI.</span></label>
+      <label class="rew-api-only"><span class="setup-method-badge" data-i18n="step0.rewOnly">REW API only</span><input type="checkbox"> <span data-i18n-html="step0.check5">If using the REW API, a <strong>REW Pro</strong> license is recommended — it lets this page trigger measurements directly via <code>POST /measure/command</code>. Without Pro, you can still read measurements, but will be prompted to start each one in the REW GUI.</span></label>
     </div>
     <details>
       <summary data-i18n="step0.troubleSummary">Launch commands / troubleshooting</summary>
@@ -558,6 +578,12 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     <div id="rewCaptureControls" class="flex" style="margin-top:8px;">
       <button id="checkRewBtn" data-i18n="step2.btn">🔌 Check REW API</button>
     </div>
+    <div id="rewCaptureHelp" class="info-box" style="margin-top:8px;" data-i18n-html="step2.rewHelp">
+      For automatic REW capture and read-back, run REW with its API enabled and an active REW Pro licence. Then click <strong>Check REW API</strong> before starting the baseline or test plan.
+    </div>
+    <div id="rewFailureHelp" class="info-box" style="display:none; margin-top:8px; border-color:#d47b5b;" data-i18n-html="step2.rewFailureHelp">
+      The REW API could not be reached. Confirm that REW is open with API enabled, REW Pro is active, and the API is listening on <code>127.0.0.1:4735</code>. If you changed the port, update the page configuration. Keep this page on a local HTTP server or HTTPS, then restart REW and click <strong>Check REW API</strong> again.
+    </div>
     <div id="builtinCaptureControls" style="display:none; margin-top:10px;">
       <div class="flex">
         <button id="scanBuiltinDevices" class="secondary" data-i18n="step2.scan">🎙️ Scan audio devices</button>
@@ -567,11 +593,14 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
         <label><span data-i18n="step2.input">Input</span><select id="builtinInputDevice"></select></label>
         <label><span data-i18n="step2.output">Output</span><select id="builtinOutputDevice"></select></label>
         <label><span data-i18n="step2.inputChannel">Input channel</span><select id="builtinInputChannel"><option value="left" data-i18n="step2.left">Left</option><option value="right" data-i18n="step2.right">Right</option></select></label>
+        <label><span data-i18n="step2.measuredSpl">Measured baseline SPL (dB)</span><input type="number" id="builtinMeasuredSpl" placeholder="optional" min="40" max="130" step="0.1"></label>
+        <label><span data-i18n="step2.outputLevel">Sweep output level (dBFS)</span><input type="number" id="builtinOutputLevel" value="-12" min="-60" max="0" step="1"></label>
         <label><span data-i18n="step2.sweepDuration">Sweep duration (s)</span><input type="number" id="builtinSweepDuration" value="6" min="0.25" step="0.25"></label>
         <label><span data-i18n="step2.noiseDuration">Noise-floor capture (s)</span><input type="number" id="builtinNoiseFloorDuration" value="2" min="0.25" step="0.25"></label>
         <label><span data-i18n="step2.startFrequency">Start frequency (Hz)</span><input type="number" id="builtinSweepStart" value="20" min="1"></label>
         <label><span data-i18n="step2.endFrequency">End frequency (Hz)</span><input type="number" id="builtinSweepEnd" value="20000" min="2"></label>
       </div>
+      <div class="small" style="margin-top:8px;" data-i18n="step2.splHelp">Target acoustic level: 80–90 dB SPL, preferably around 80–85 dB when testing up to +10 dB filters. If available, enter the level measured at the coupler/listening position with a calibrated SPL meter or REW meter. The browser capture still checks digital dBFS independently for clipping.</div>
       <div class="small" style="margin-top:8px;" data-i18n="step2.builtinHelp">The built-in path uses the selected Chrome input/output devices and feeds the same verification comparison pipeline. Use a local HTTP server or HTTPS.</div>
     </div>
     <div class="flex" style="margin-top:8px;">
@@ -837,8 +866,9 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 
     'app.title': '🎛️ DevicePEQ 验证工具',
 
-    'step0.heading': '步骤 0 — 测量设置',
+    'step0.heading': 'REW API 设置',
     'step0.tag': '一次性设置',
+    'step0.rewOnly': '仅限 REW API',
     'step0.intro': '本工具可以通过 REW API 或 Chrome 内置音频采集频率响应。请根据步骤 2 中选择的采集方式完成相关设置：',
     'step0.check1': '如果使用 REW API，请在本机安装 / 打开 <strong>REW</strong>（Room EQ Wizard）。',
     'step0.check2': '以启用 API 的方式启动 REW，或在 <code>Preferences → API</code> 中勾选 “Enable API”。默认端口为 <code>4735</code>（本页面按默认端口工作 —— 若你用 <code>-port</code> 改过端口，请同步修改 <code>rew-client.mjs</code> 中的 <code>REW_BASE</code>）。',
@@ -873,6 +903,8 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     'step2.rewOption': 'REW API',
     'step2.builtinOption': 'Chrome 内置采集',
     'step2.btn': '🔌 检查 REW API',
+    'step2.rewHelp': '要自动使用 REW 采集并读回结果，请启动已启用 API 的 REW，并确认 REW Pro 授权处于激活状态。开始基线或测试计划前，请先点击<strong>检查 REW API</strong>。',
+    'step2.rewFailureHelp': '无法连接 REW API。请确认 REW 已打开并启用 API、REW Pro 已激活，并且 API 正在 <code>127.0.0.1:4735</code> 监听。如果修改过端口，请更新页面配置。请让本页面运行在本地 HTTP 服务器或 HTTPS 上，然后重启 REW，再次点击<strong>检查 REW API</strong>。',
     'step2.scan': '🎙️ 扫描音频设备',
     'step2.permissionRequired': '需要 Chrome 音频权限。',
     'step2.scanning': '正在请求权限并扫描……',
@@ -884,10 +916,13 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     'step2.inputChannel': '输入通道',
     'step2.left': '左',
     'step2.right': '右',
+    'step2.measuredSpl': '测得的基线 SPL（dB）',
+    'step2.outputLevel': '扫频输出电平（dBFS）',
     'step2.sweepDuration': '扫频时长（秒）',
     'step2.noiseDuration': '噪声底采集（秒）',
     'step2.startFrequency': '起始频率（Hz）',
     'step2.endFrequency': '结束频率（Hz）',
+    'step2.splHelp': '目标声学电平：80–90 dB SPL；如果测试最高 +10 dB 滤波器，建议约 80–85 dB。若有条件，请使用经过校准的 SPL 计或 REW 电平表，在耦合器 / 听音位置测量并输入数值。浏览器采集仍会独立检查数字 dBFS 电平和削波。',
     'step2.builtinHelp': '内置方式使用所选 Chrome 输入 / 输出设备，并进入相同的验证比较流程。请使用本地 HTTP 服务器或 HTTPS。',
     'step2.notChecked': '未检查',
 
@@ -1305,6 +1340,7 @@ const {
   estimateFilterFromDelta,
   theoreticalMagnitudeDb,
   MODELED_FILTER_TYPES,
+  isUsableResponseDb,
 } = await import(`${REWLIB_BASE}filter-response.mjs`);
 const { BuiltinCaptureBackend, enumerateAudioDevices, suggestAudioRouting, smoothResponse } =
   await import(`${DEVICEPEQ_BASE}builtin-capture/index.mjs`);
@@ -1324,11 +1360,16 @@ const hasModel = (type) => MODELED_FILTER_TYPES.includes((type || '').toUpperCas
 // a shape mismatch. 200 points is a reasonable middle ground for this tool
 // (denser than default, not so dense it noticeably slows the comparison).
 const EVAL_FREQS = logSpacedFrequencies(20, 20000, 200);
+// The first and last part of a browser/FFT swept capture is not equally
+// trustworthy. Keep the full curve available for display, but do not let edge
+// bins dominate a pass/fail judgement or a diagnostic fit.
+const ANALYSIS_MIN_HZ = 30;
+const ANALYSIS_MAX_HZ = 19000;
 
 function validEvalFreqs(...responses) {
   const lows = responses.map((r) => r?.validStartFreq ?? r?.metadata?.validStartHz ?? 20);
   const highs = responses.map((r) => r?.validEndFreq ?? r?.metadata?.validEndHz ?? 20000);
-  const lo = Math.max(20, ...lows), hi = Math.min(20000, ...highs);
+  const lo = Math.max(ANALYSIS_MIN_HZ, ...lows), hi = Math.min(ANALYSIS_MAX_HZ, ...highs);
   return EVAL_FREQS.filter((freq) => freq >= lo && freq <= hi);
 }
 
@@ -1747,7 +1788,10 @@ async function scanBuiltinDevices() {
 
 function setCaptureMethod(method) {
   captureMethod = method === 'builtin' ? 'builtin' : 'rew';
+  $('rewSetupSection').style.display = captureMethod === 'rew' ? '' : 'none';
   $('rewCaptureControls').style.display = captureMethod === 'rew' ? '' : 'none';
+  $('rewCaptureHelp').style.display = captureMethod === 'rew' ? '' : 'none';
+  if (captureMethod !== 'rew') $('rewFailureHelp').style.display = 'none';
   $('builtinCaptureControls').style.display = captureMethod === 'builtin' ? '' : 'none';
   $('rewStatus').textContent = captureMethod === 'rew'
     ? T('step2.notChecked', null, 'not checked')
@@ -1827,9 +1871,52 @@ function baselineHeadroomNote(captured) {
   return `${level === 'good' ? '✓' : 'ℹ️'} ${base}${spare} Headroom appears sufficient for the planned boost range.`;
 }
 
+function baselineSignalSanity(captured) {
+  if (captured?.source !== 'builtin') return '';
+  const metadata = captured.metadata || {};
+  const stats = metadata.captureStats || {};
+  const channel = metadata.inputChannel === 'right' || $('builtinInputChannel')?.value === 'right' ? 'right' : 'left';
+  const channelLabel = $('builtinInputChannel')?.selectedOptions?.[0]?.textContent?.trim() || channel;
+  const peak = Number(stats.channelPeaks?.[channel] ?? stats.peak);
+  const noise = Number(metadata.noiseFloorDbfsBySweepChannel?.[channel] ?? metadata.noiseFloorDbfs);
+  if (!Number.isFinite(peak) || peak <= 0) {
+    return `⚠️ Could not validate the selected ${channelLabel} input level. Check that the selected input channel is receiving the DUT signal, then recapture the baseline.`;
+  }
+
+  const peakDbfs = 20 * Math.log10(peak);
+  const snr = Number.isFinite(noise) ? peakDbfs - noise : null;
+  const detail = `Selected ${channelLabel} channel peak ${peakDbfs.toFixed(1)}dBFS${Number.isFinite(noise) ? `; lead-in noise ${noise.toFixed(1)}dBFS` : ''}.`;
+  if (stats.clippedSamples > 0 || peak >= 0.95) {
+    return `⚠️ The selected input is too hot and may be clipping. ${detail} Reduce the ADC/interface or DUT output level, verify the channel, and recapture.`;
+  }
+  if (peak < 0.01) {
+    return `⚠️ The selected input signal is very low. ${detail} Check that the correct ADC/input channel is selected, confirm the DUT output is routed to it, increase the output level modestly, and recapture.`;
+  }
+  if (peak < 0.03 || (Number.isFinite(snr) && snr < 20)) {
+    return `ℹ️ The selected input signal is low${Number.isFinite(snr) && snr < 20 ? ' relative to its noise floor' : ''}. ${detail} Check the channel and increase the DUT/output level modestly if possible; avoid changing it after accepting the baseline.`;
+  }
+  if (peak >= 0.75) {
+    return `⚠️ The selected input level is high. ${detail} Keep the level below clipping and leave enough headroom for positive filters; reduce the DUT/output level and recapture if the headroom note above is also warning.`;
+  }
+  return `✓ Baseline signal level is usable. ${detail} The selected channel is neither unusually quiet nor close to clipping.`;
+}
+
+function baselineSplNote(captured) {
+  if (captured?.source === 'rew') {
+    return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Use REW’s calibrated SPL meter and input-level indicators to set and verify the level; the REW API curve does not expose the raw ADC dBFS peak here.';
+  }
+  const measured = Number($('builtinMeasuredSpl')?.value);
+  if (!Number.isFinite(measured)) {
+    return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Enter a calibrated SPL-meter or REW-meter reading above if you want this baseline checked in SPL; dBFS checks remain independent.';
+  }
+  const position = measured < 80 ? 'below the recommended range — increase the output level modestly and recapture if the noise floor allows it' : measured > 90 ? 'above the recommended range — reduce the output level and recapture' : 'within the recommended range';
+  const icon = measured < 80 || measured > 90 ? '⚠️' : '✓';
+  return `${icon} User-entered acoustic level: ${measured.toFixed(1)}dB SPL, ${position}. This is a calibrated external reference; the browser capture still uses its independent dBFS peak/clipping check.`;
+}
+
 function renderBuiltinBaselineChart(fr) {
-  const validStart = baseline?.metadata?.validStartHz || 20;
-  const validEnd = baseline?.metadata?.validEndHz || 20000;
+  const validStart = Math.max(ANALYSIS_MIN_HZ, baseline?.metadata?.validStartHz || 20);
+  const validEnd = Math.min(ANALYSIS_MAX_HZ, baseline?.metadata?.validEndHz || 20000);
   const view = { octLo: Math.log2(validStart), octHi: Math.log2(validEnd) };
   const points = Array.from({ length: 420 }, (_, i) => {
     const freq = Math.pow(2, view.octLo + (view.octHi - view.octLo) * i / 419);
@@ -1863,6 +1950,7 @@ $('closeBuiltinBaselineBtn').addEventListener('click', () => { $('builtinBaselin
 
 $('checkRewBtn').addEventListener('click', async () => {
   const status = $('rewStatus');
+  $('rewFailureHelp').style.display = 'none';
   status.textContent = 'checking…';
   status.className = 'status-pill';
   try {
@@ -1880,6 +1968,8 @@ $('checkRewBtn').addEventListener('click', async () => {
     // Re-open on failure whatever the remembered state: this is exactly when
     // the instructions are wanted again.
     setSetupOpen(true);
+    $('rewFailureHelp').style.display = '';
+    $('rewSetupSection').style.display = '';
   }
 });
 
@@ -1916,13 +2006,17 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
       `Capture source: ${captured.source === 'builtin' ? 'built-in Chrome audio' : `REW measurement #${captured.id} (renamed to "PEQTEST-BASELINE")`}\n` +
       `Device was reset to all filters @ 0dB/disabled immediately before this sweep.\n` +
       `Frequency response: ${captured.fr.magnitude.length} points, ${captured.fr.startFreq.toFixed(1)} Hz start, ${captured.fr.freqStep.toFixed(3)} Hz/step\n` +
+      (captured.metadata?.outputLevelDb != null ? `Built-in sweep output: ${captured.metadata.outputLevelDb.toFixed(1)} dBFS.\n` : '') +
       (captured.metadata?.sampleCount ? `Captured ${captured.metadata.sampleCount} samples/channel (expected window ${captured.metadata.expectedSampleCount}).\n` : '') +
       `Sample @ 1000 Hz: ${magnitudeAt(captured.fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat)` +
-      `\n${baselineHeadroomNote(captured)}`;
+      `\n${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}\n${baselineSplNote(captured)}`;
     updateRunButtons();
   } catch (e) {
     status.textContent = e.message;
     status.className = 'status-pill pill-disconnected';
+    $('rewFailureHelp').style.display = '';
+    $('rewSetupSection').style.display = '';
+    $('setupSection').open = true;
   }
 });
 
@@ -1944,9 +2038,10 @@ $('captureBaselineBtn').addEventListener('click', async () => {
       info.textContent =
         'Capture source: built-in Chrome audio\n' +
         `Frequency response: ${captured.fr.magnitude.length} points, ${captured.fr.startFreq.toFixed(1)} Hz start, ${captured.fr.freqStep.toFixed(3)} Hz/step\n` +
+        (captured.metadata?.outputLevelDb != null ? `Built-in sweep output: ${captured.metadata.outputLevelDb.toFixed(1)} dBFS.\n` : '') +
         (captured.metadata?.sampleCount ? `Captured ${captured.metadata.sampleCount} samples/channel (expected window ${captured.metadata.expectedSampleCount}).\n` : '') +
         `Sample @ 1000 Hz: ${magnitudeAt(captured.fr, 1000).toFixed(2)} dB\n` +
-        baselineHeadroomNote(captured);
+        `${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}\n${baselineSplNote(captured)}`;
       updateRunButtons();
       return;
     }
@@ -1964,7 +2059,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
     info.textContent =
       `Baseline measurement id: ${id} (renamed to "PEQTEST-BASELINE" in REW)\n` +
       `Frequency response: ${fr.magnitude.length} points, ${fr.startFreq.toFixed(1)} Hz start, ${fr.freqStep.toFixed(3)} Hz/step\n` +
-      `Sample @ 1000 Hz: ${magnitudeAt(fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat/PEQ-off)`;
+      `Sample @ 1000 Hz: ${magnitudeAt(fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat/PEQ-off)\n${baselineSplNote({ source: 'rew' })}`;
     updateRunButtons();
   } catch (e) {
     status.textContent = e.message;
@@ -2290,10 +2385,16 @@ function measurementLooksStale(tc, fr) {
   // a constant subtracted from it.
   const evalFreqs = validEvalFreqs(baseline.fr, fr);
   if (!evalFreqs.length) return null;
-  const deltas = evalFreqs.map((f) => magnitudeAt(fr, f) - magnitudeAt(baseline.fr, f));
-  const offset = medianOf(deltas);
+  const deltas = evalFreqs.map((f) => {
+    const measured = magnitudeAt(fr, f), base = magnitudeAt(baseline.fr, f);
+    return isUsableResponseDb(measured) && isUsableResponseDb(base) ? measured - base : null;
+  });
+  const validDeltas = deltas.filter((d) => Number.isFinite(d));
+  if (validDeltas.length < 5) return null;
+  const offset = medianOf(validDeltas);
   let peak = { f: 0, d: 0 };
   evalFreqs.forEach((f, i) => {
+    if (!Number.isFinite(deltas[i]) || Math.abs(deltas[i] - offset) > 20) return;
     const d = deltas[i] - offset;
     if (Math.abs(d) > Math.abs(peak.d)) peak = { f, d };
   });
@@ -2360,6 +2461,7 @@ async function captureBuiltinSweep({ what = 'measuring' } = {}) {
     endHz: Number($('builtinSweepEnd').value) || 20000,
     durationSec: Number($('builtinSweepDuration').value) || 6,
     noiseFloorSec: Number($('builtinNoiseFloorDuration').value) || 2,
+    outputLevelDb: Number.isFinite(Number($('builtinOutputLevel').value)) ? Number($('builtinOutputLevel').value) : -12,
     // The current page compares one response curve at a time. Stereo capture
     // is retained in the backend result; this selector chooses which channel
     // feeds the existing REW-shaped comparison path.
@@ -2551,9 +2653,14 @@ function fcYPixelFactory(domainMin, domainMax, plotTop, plotH) {
   return (v) => plotTop + (domainMax - v) / (domainMax - domainMin) * plotH;
 }
 function fcPathFor(points, yFn, key, view) {
-  return points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${fcXPixel(p.freq, view).toFixed(2)},${yFn(typeof key === 'function' ? key(p) : p[key]).toFixed(2)}`)
-    .join(' ');
+  let path = '', drawing = false;
+  for (const p of points) {
+    const value = typeof key === 'function' ? key(p) : p[key];
+    if (!Number.isFinite(value)) { drawing = false; continue; }
+    path += `${drawing ? 'L' : 'M'}${fcXPixel(p.freq, view).toFixed(2)},${yFn(value).toFixed(2)} `;
+    drawing = true;
+  }
+  return path.trim();
 }
 
 // Frequency gridlines for whatever range is visible. The old fixed
@@ -2629,10 +2736,10 @@ function renderFailureChart(tc) {
 
   // Everything above is expensive (caseMetrics runs three grid searches), so it
   // happens once per Explain click. The zoom sliders only re-run drawFailureChart().
-  const validLoHz = Math.max(FC_FREQ_MIN,
+  const validLoHz = Math.max(ANALYSIS_MIN_HZ,
     baseline.fr?.validStartFreq ?? baseline.metadata?.validStartHz ?? FC_FREQ_MIN,
     tc.fr?.validStartFreq ?? tc.metadata?.validStartHz ?? FC_FREQ_MIN);
-  const validHiHz = Math.min(FC_FREQ_MAX,
+  const validHiHz = Math.min(ANALYSIS_MAX_HZ,
     baseline.fr?.validEndFreq ?? baseline.metadata?.validEndHz ?? FC_FREQ_MAX,
     tc.fr?.validEndFreq ?? tc.metadata?.validEndHz ?? FC_FREQ_MAX);
   fcState = {
@@ -2706,7 +2813,10 @@ function fcPoints(view) {
   const out = [];
   for (let i = 0; i < FC_DRAW_POINTS; i++) {
     const freq = Math.pow(2, octLo + ((octHi - octLo) * i) / (FC_DRAW_POINTS - 1));
-    const measured = magnitudeAt(tc.fr, freq) - magnitudeAt(baseline.fr, freq) - pregainDb;
+    const baselineDb = magnitudeAt(baseline.fr, freq);
+    const testDb = magnitudeAt(tc.fr, freq);
+    const measured = isUsableResponseDb(baselineDb) && isUsableResponseDb(testDb)
+      ? testDb - baselineDb - pregainDb : null;
     out.push({
       freq,
       measured,
@@ -2728,13 +2838,13 @@ function drawFailureChart() {
   // Y domains auto-fit the VISIBLE data, then the zoom multiplier tightens them
   // about the same centre — so zooming X already rescales Y usefully, and the Y
   // slider is a further magnification on top rather than a fight with autoscale.
-  const mainVals = points.flatMap((p) => [p.measured, p.theoreticalRequested, p.theoreticalBestFit]);
+  const mainVals = points.flatMap((p) => [p.measured, p.theoreticalRequested, p.theoreticalBestFit]).filter(Number.isFinite);
   const mainMin = Math.min(...mainVals), mainMax = Math.max(...mainVals);
   const mainMid = (mainMin + mainMax) / 2;
   const mainHalf = Math.max(0.15, ((mainMax - mainMin) / 2) * 1.08) / view.mainZoom;
   const mainDomain = [mainMid - mainHalf, mainMid + mainHalf];
 
-  const resVals = points.map((p) => p.measured - p.theoreticalRequested);
+  const resVals = points.map((p) => Number.isFinite(p.measured) ? p.measured - p.theoreticalRequested : null).filter(Number.isFinite);
   const resAbsMax = Math.max(0.05, Math.max(...resVals.map(Math.abs)) * 1.15) / view.resZoom;
   const resDomain = [-resAbsMax, resAbsMax];
 
@@ -2826,17 +2936,25 @@ function wireFailureChartHover(points, yMain, yRes, win, mainTop, resTop) {
     const residual = p.measured - p.theoreticalRequested;
 
     crosshairEl.setAttribute('x1', px); crosshairEl.setAttribute('x2', px); crosshairEl.style.display = '';
-    dotMeasured.setAttribute('cx', px); dotMeasured.setAttribute('cy', yMain(p.measured)); dotMeasured.style.display = '';
+    if (Number.isFinite(p.measured)) {
+      dotMeasured.setAttribute('cx', px); dotMeasured.setAttribute('cy', yMain(p.measured)); dotMeasured.style.display = '';
+    } else {
+      dotMeasured.style.display = 'none';
+    }
     dotReq.setAttribute('cx', px); dotReq.setAttribute('cy', yMain(p.theoreticalRequested)); dotReq.style.display = '';
     dotBest.setAttribute('cx', px); dotBest.setAttribute('cy', yMain(p.theoreticalBestFit)); dotBest.style.display = '';
-    dotRes.setAttribute('cx', px); dotRes.setAttribute('cy', yRes(residual)); dotRes.style.display = '';
+    if (Number.isFinite(residual)) {
+      dotRes.setAttribute('cx', px); dotRes.setAttribute('cy', yRes(residual)); dotRes.style.display = '';
+    } else {
+      dotRes.style.display = 'none';
+    }
 
     tooltipEl.innerHTML = `
       <div class="fc-freq">${win.spanOct > 1 ? fmtFreqLabel(p.freq) : p.freq.toFixed(1) + ' Hz'}</div>
-      <div class="fc-row"><span class="fc-k">Measured</span><span class="fc-v">${fmtDbSigned(p.measured)}</span></div>
+      <div class="fc-row"><span class="fc-k">Measured</span><span class="fc-v">${Number.isFinite(p.measured) ? fmtDbSigned(p.measured) : 'ignored — unusable response bin'}</span></div>
       <div class="fc-row"><span class="fc-k">As requested</span><span class="fc-v">${fmtDbSigned(p.theoreticalRequested)}</span></div>
       <div class="fc-row"><span class="fc-k">Best fit</span><span class="fc-v">${fmtDbSigned(p.theoreticalBestFit)}</span></div>
-      <div class="fc-row"><span class="fc-k">Residual</span><span class="fc-v">${fmtDbSigned(residual)}</span></div>
+      <div class="fc-row"><span class="fc-k">Residual</span><span class="fc-v">${Number.isFinite(p.measured) ? fmtDbSigned(residual) : 'ignored'}</span></div>
     `;
     tooltipEl.style.display = 'block';
     const wrapBbox = $('failureChartWrap').getBoundingClientRect();
@@ -3159,6 +3277,7 @@ $('runBtn').addEventListener('click', async () => {
       // out below exports measurementId:null and looks like a capture failure
       // when the capture was fine.
       tc.measurementId = id;
+      tc.captureMetadata = captured.metadata || null;
 
       // A capture showing the wrong filter is almost always the device not yet
       // holding the new one — the write is confirmed by PeqDeviceSaved, but a
@@ -3178,6 +3297,7 @@ $('runBtn').addEventListener('click', async () => {
           if (again) {
             fr2 = again.fr;
             tc.measurementId = again.id;
+            tc.captureMetadata = again.metadata || tc.captureMetadata || null;
             if (again.id != null) await renameMeasurement(again.id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}-retry`.slice(0, 60));
             stale = measurementLooksStale(tc, fr2);
             tc.retried = true;
@@ -4131,6 +4251,22 @@ function splitFirstSentence(text) {
   return { summary: m[1], rest: text.slice(m[1].length + m[2].length) };
 }
 
+// Some analysers answer different questions about the same defect. In
+// particular, residual attribution can say that frequency is the dominant
+// cause while the frequency-trend analyser gives the more useful diagnosis
+// and measured offset. Showing both makes one bug look like two findings.
+function dedupeSystematicFindings(findings) {
+  const specificFrequency = findings.find((f) =>
+    f.severity !== 'ok'
+    && /^(Centre frequency is (?:offset|consistently offset|double|half))/.test(f.title ?? '')
+  );
+  if (!specificFrequency) return findings;
+
+  return findings.filter((f) =>
+    !/^Dominant cause: centre frequency/.test(f.title ?? '')
+  );
+}
+
 async function runInsights() {
   markActivity('running Insights across all measured cases');
   const panel = $('insightsPanel'), body = $('insightsBody');
@@ -4157,7 +4293,7 @@ async function runInsights() {
     return;
   }
 
-  const findings = [
+  const findings = dedupeSystematicFindings([
     analyseShelfBehaviour(ms),
     analyseResidualAttribution(ms),
     analyseSampleRate(ms, fs),
@@ -4165,7 +4301,7 @@ async function runInsights() {
     analyseGainAccuracy(ms),
     analyseQAccuracy(ms),
     ...analyseFrequencyTrends(ms, fs),
-  ].filter(Boolean);
+  ].filter(Boolean));
 
   const order = { high: 0, med: 1, info: 2, ok: 3 };
   findings.sort((a, b) => order[a.severity] - order[b.severity]);
@@ -4373,6 +4509,15 @@ function describeEl(el) {
 }
 
 function findClickBlocker() {
+  // The measurement shield is deliberately the topmost element while a
+  // capture sequence is in flight. It is not a click bug in that state; the
+  // watchdog should continue looking for overlays that are actually
+  // unexpected. If the shield remains after captureInProgress is cleared,
+  // allow it through so the stale-lock problem is still reported.
+  const expectedShield = (el) =>
+    captureInProgress
+    && document.body.classList.contains('measuring')
+    && el?.closest?.('#measureShield');
   const probes = ['genPlanBtn', 'insightsBtn', 'exportJsonBtn', 'runBtn']
     .map((id) => $(id)).filter(Boolean);
   for (const el of probes) {
@@ -4383,6 +4528,7 @@ function findClickBlocker() {
     if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
     const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     if (!top || top === el || el.contains(top) || top.contains(el)) continue;
+    if (expectedShield(top)) continue;
     return report(describeEl(el), top);
   }
 
@@ -4392,6 +4538,7 @@ function findClickBlocker() {
   // full-viewport overlay would go unreported.
   const mid = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
   for (let el = mid; el; el = el.parentElement) {
+    if (expectedShield(el)) return null;
     const cs = getComputedStyle(el);
     if (cs.position !== 'fixed' || cs.pointerEvents === 'none') continue;
     const r = el.getBoundingClientRect();
@@ -4641,6 +4788,14 @@ window.__bench = {
 };
 
 function buildExportPayload() {
+  const exportResponse = (fr) => ({
+    startFreq: fr.startFreq,
+    freqStep: fr.freqStep,
+    sampleRate: fr.sampleRate,
+    validStartFreq: fr.validStartFreq,
+    validEndFreq: fr.validEndFreq,
+    magnitude: Array.from(fr.magnitude),
+  });
   return {
     device: connectedDevice?.model ?? null,
     // Structured, not just the display string: results from different people
@@ -4655,11 +4810,11 @@ function buildExportPayload() {
     // Includes the raw baseline + per-test frequency-response curves (not
     // just measurement IDs/summary stats), so this file can also be dropped
     // in as a real-capture fixture for filter-response.test.js.
-    baseline: baseline ? { id: baseline.id, fr: { startFreq: baseline.fr.startFreq, freqStep: baseline.fr.freqStep, magnitude: Array.from(baseline.fr.magnitude) } } : null,
+    baseline: baseline ? { id: baseline.id, metadata: baseline.metadata || null, fr: exportResponse(baseline.fr) } : null,
     // Curves are held as Float32Array during the run (half the memory); convert
     // at export time, since JSON.stringify would otherwise write them as {}.
     results: testPlan.map((tc) => (tc.fr
-      ? { ...tc, fr: { startFreq: tc.fr.startFreq, freqStep: tc.fr.freqStep, magnitude: Array.from(tc.fr.magnitude) } }
+      ? { ...tc, fr: exportResponse(tc.fr) }
       : tc)),
     exportedAt: new Date().toISOString(),
   };

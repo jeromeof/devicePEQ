@@ -14,12 +14,13 @@ export function assertMeasurementResponse(response) {
 }
 
 export function validateCaptureOptions(options) {
-  const o = { noiseFloorSec: 2, ...options };
+  const o = { noiseFloorSec: 2, outputLevelDb: -12, ...options };
   if (!Number.isFinite(o.startHz) || o.startHz <= 0) throw new RangeError('startHz must be positive');
   if (!Number.isFinite(o.endHz) || o.endHz <= o.startHz) throw new RangeError('endHz must exceed startHz');
   if (!Number.isFinite(o.durationSec) || o.durationSec < 0.25) throw new RangeError('durationSec must be at least 0.25 seconds');
   if (!Number.isFinite(o.leadInSec) || o.leadInSec < 0) throw new RangeError('leadInSec must be non-negative');
   if (!Number.isFinite(o.tailSec) || o.tailSec < 0) throw new RangeError('tailSec must be non-negative');
   if (!Number.isFinite(o.noiseFloorSec) || o.noiseFloorSec < 0) throw new RangeError('noiseFloorSec must be non-negative');
+  if (!Number.isFinite(o.outputLevelDb) || o.outputLevelDb > 0 || o.outputLevelDb < -60) throw new RangeError('outputLevelDb must be between -60 and 0 dBFS');
   return o;
 }

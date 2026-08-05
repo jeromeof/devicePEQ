@@ -161,7 +161,21 @@ function logSpacedFrequencies(minFreq, maxFreq, count) {
 // Pearson correlation between the measured and theoretical delta curves.
 // Standalone (not nested) so compensateForPregain() below can reuse it on
 // the pregain-corrected points without duplicating the math.
+// FFT/deconvolution responses can contain a numerical floor (commonly around
+// -300 dB) when a bin has no usable signal. That is not an acoustic result.
+const RESPONSE_DB_MIN = -120;
+// REW exports absolute SPL-like magnitudes (often 60–110 dB), while the
+// built-in response is normally relative dB. Keep the upper bound generous.
+const RESPONSE_DB_MAX = 200;
+function isUsableResponseDb(value, { minDb = RESPONSE_DB_MIN, maxDb = RESPONSE_DB_MAX } = {}) {
+  return Number.isFinite(value) && value >= minDb && value <= maxDb;
+}
+
+const ISOLATED_RESPONSE_OUTLIER_DB = 20;
+
 function computeStats(pts) {
+  pts = pts.filter((p) => p && p.usable !== false && Number.isFinite(p.residual)
+    && Number.isFinite(p.measuredDelta) && Number.isFinite(p.expectedDelta));
   if (!pts.length) return null;
   const n = pts.length;
   const residuals = pts.map((p) => p.residual);
@@ -194,17 +208,35 @@ function compareToTheoretical(baselineFr, testFr, filterSpec, {
   fs = 96000,
 } = {}) {
   const points = evalFreqs.map((freq) => {
-    const measuredDelta = magnitudeAt(testFr, freq) - magnitudeAt(baselineFr, freq);
+    const baselineDb = magnitudeAt(baselineFr, freq);
+    const measuredDb = magnitudeAt(testFr, freq);
+    const usable = isUsableResponseDb(baselineDb) && isUsableResponseDb(measuredDb);
+    const measuredDelta = usable ? measuredDb - baselineDb : null;
     const expectedDelta = theoreticalMagnitudeDb(filterSpec, freq, fs);
-    return { freq, measuredDelta, expectedDelta, residual: measuredDelta - expectedDelta };
+    return { freq, baselineDb, measuredDb, measuredDelta, expectedDelta,
+      residual: usable ? measuredDelta - expectedDelta : null, usable };
   });
 
-  const inBand = points.filter((p) => Math.abs(p.expectedDelta) >= inBandThresholdDb);
-  const outOfBand = points.filter((p) => Math.abs(p.expectedDelta) < inBandThresholdDb);
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    if (!p.usable) continue;
+    const neighbours = points.slice(Math.max(0, i - 3), Math.min(points.length, i + 4))
+      .filter((q) => q !== p && q.usable && Number.isFinite(q.residual));
+    if (neighbours.length >= 2 && Math.abs(p.residual - median(neighbours.map((q) => q.residual))) > ISOLATED_RESPONSE_OUTLIER_DB) {
+      p.usable = false;
+      p.ignoredReason = 'isolated response discontinuity';
+    }
+  }
+  const usablePoints = points.filter((p) => p.usable);
+  const inBand = usablePoints.filter((p) => Math.abs(p.expectedDelta) >= inBandThresholdDb);
+  const outOfBand = usablePoints.filter((p) => Math.abs(p.expectedDelta) < inBandThresholdDb);
 
   return {
     filterSpec,
     points,
+    usablePoints,
+    ignoredPointCount: points.length - usablePoints.length,
+    ignoredPoints: points.filter((p) => !p.usable).map((p) => ({ freq: p.freq, baselineDb: p.baselineDb, measuredDb: p.measuredDb, reason: p.ignoredReason || 'unusable response value' })),
     inBandThresholdDb,
     inBandStats: computeStats(inBand),
     outOfBandStats: computeStats(outOfBand),
@@ -225,16 +257,18 @@ function compareToTheoretical(baselineFr, testFr, filterSpec, {
 // pregain offset AND any real shape error) against pregainDb — if they're
 // close, the "failure" was mostly pregain, not a wrong biquad implementation.
 function compensateForPregain(comparison) {
-  const pregainDb = median(comparison.points.map((p) => p.residual));
+  const usablePoints = comparison.points.filter((p) => p.usable !== false && Number.isFinite(p.residual));
+  const pregainDb = usablePoints.length ? median(usablePoints.map((p) => p.residual)) : 0;
 
   const compensatedPoints = comparison.points.map((p) => ({
     ...p,
-    measuredDelta: p.measuredDelta - pregainDb,
-    residual: p.residual - pregainDb,
+    measuredDelta: p.usable === false ? null : p.measuredDelta - pregainDb,
+    residual: p.usable === false ? null : p.residual - pregainDb,
   }));
   const threshold = comparison.inBandThresholdDb ?? 0.5;
-  const inBand = compensatedPoints.filter((p) => Math.abs(p.expectedDelta) >= threshold);
-  const outOfBand = compensatedPoints.filter((p) => Math.abs(p.expectedDelta) < threshold);
+  const valid = compensatedPoints.filter((p) => p.usable !== false && Number.isFinite(p.residual));
+  const inBand = valid.filter((p) => Math.abs(p.expectedDelta) >= threshold);
+  const outOfBand = valid.filter((p) => Math.abs(p.expectedDelta) < threshold);
 
   return {
     pregainDb,
@@ -244,6 +278,8 @@ function compensateForPregain(comparison) {
       inBandThresholdDb: threshold,
       inBandStats: computeStats(inBand),
       outOfBandStats: computeStats(outOfBand),
+      ignoredPointCount: comparison.ignoredPointCount ?? 0,
+      ignoredPoints: comparison.ignoredPoints ?? [],
       overallStats: computeStats(compensatedPoints),
     },
   };
@@ -256,13 +292,14 @@ function judgeFit(comparison, { rmseToleranceDb = 1.5, correlationMin = 0.8, out
   const outOfBand = comparison.outOfBandStats;
   const inBandOk = inBand && inBand.rmse <= rmseToleranceDb && (inBand.correlation ?? 0) >= correlationMin;
   const outOfBandOk = !outOfBand || outOfBand.rmse <= outOfBandRmseToleranceDb;
+  const ignoredNote = comparison.ignoredPointCount ? `; ignored ${comparison.ignoredPointCount} unusable response point(s)` : '';
   return {
     pass: !!(inBandOk && outOfBandOk),
     inBandOk, outOfBandOk,
-    reason: !inBand ? 'no in-band evaluation points (filter effect below threshold everywhere?)'
+    reason: (!inBand ? 'no in-band evaluation points (filter effect below threshold everywhere?)'
       : !inBandOk ? `in-band fit poor: rmse=${inBand.rmse.toFixed(2)}dB (tol ${rmseToleranceDb}), correlation=${(inBand.correlation ?? 0).toFixed(2)} (min ${correlationMin})`
       : !outOfBandOk ? `out-of-band leakage: rmse=${outOfBand.rmse.toFixed(2)}dB (tol ${outOfBandRmseToleranceDb})`
-      : 'ok',
+      : 'ok') + ignoredNote,
   };
 }
 
@@ -315,8 +352,9 @@ function estimateEffectiveQ(baselineFr, measuredFr, filterSpec, {
   // shape — no chicken-and-egg problem between the two.
   const { pregainDb, compensated } = compensateForPregain(comparison);
   const threshold = compensated.inBandThresholdDb ?? 0.5;
-  const points = compensated.points.filter((p) => Math.abs(p.expectedDelta) >= threshold);
-  const searchPoints = points.length ? points : compensated.points; // fall back to the whole curve if nothing crossed the in-band threshold
+  const validCompensated = compensated.points.filter((p) => p.usable !== false && Number.isFinite(p.measuredDelta));
+  const points = validCompensated.filter((p) => Math.abs(p.expectedDelta) >= threshold);
+  const searchPoints = points.length ? points : validCompensated; // fall back to the whole curve if nothing crossed the in-band threshold
   const rmseAtRequestedQ = compensated.inBandStats?.rmse ?? null;
 
   let best = null;
@@ -359,5 +397,6 @@ module.exports = {
   compensateForPregain,
   judgeFit,
   estimateEffectiveQ,
+  isUsableResponseDb,
   MODELED_FILTER_TYPES,
 };

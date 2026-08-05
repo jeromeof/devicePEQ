@@ -30,7 +30,12 @@ export class AudioSession {
     this.sourceNode = null;
     this.sinkId = '';
     this.chunks = { left: [], right: [] };
-    this.captureStats = { peak: 0, clippedSamples: 0, samples: 0 };
+    this.captureStats = {
+      peak: 0,
+      clippedSamples: 0,
+      samples: 0,
+      channelPeaks: { left: 0, right: 0 },
+    };
     this.activeSource = null;
   }
 
@@ -56,7 +61,11 @@ export class AudioSession {
         this.chunks.left.push(data.left);
         this.chunks.right.push(data.right);
         for (let i = 0; i < data.left.length; i++) {
-          const peak = Math.max(Math.abs(data.left[i]), Math.abs(data.right[i]));
+          const leftPeak = Math.abs(data.left[i]);
+          const rightPeak = Math.abs(data.right[i]);
+          const peak = Math.max(leftPeak, rightPeak);
+          if (leftPeak > this.captureStats.channelPeaks.left) this.captureStats.channelPeaks.left = leftPeak;
+          if (rightPeak > this.captureStats.channelPeaks.right) this.captureStats.channelPeaks.right = rightPeak;
           if (peak > this.captureStats.peak) this.captureStats.peak = peak;
           if (peak >= this.clipThreshold) this.captureStats.clippedSamples++;
           this.captureStats.samples++;
@@ -115,7 +124,12 @@ export class AudioSession {
 
   resetCaptured() {
     this.chunks = { left: [], right: [] };
-    this.captureStats = { peak: 0, clippedSamples: 0, samples: 0 };
+    this.captureStats = {
+      peak: 0,
+      clippedSamples: 0,
+      samples: 0,
+      channelPeaks: { left: 0, right: 0 },
+    };
   }
 
   getCaptureStats() { return { ...this.captureStats }; }

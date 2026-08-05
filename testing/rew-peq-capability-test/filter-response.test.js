@@ -21,6 +21,7 @@ const {
   theoreticalMagnitudeDb,
   logSpacedFrequencies,
   estimateEffectiveQ,
+  isUsableResponseDb,
 } = require('./filter-response');
 const { magnitudeAt } = require('./rew-control');
 
@@ -82,6 +83,40 @@ test('a measurement that really is the filter matches it: low RMSE, high correla
   assert.ok(compensated.inBandStats.rmse < 0.5, `shape RMSE should be small, got ${compensated.inBandStats.rmse.toFixed(3)}dB`);
   assert.ok(compensated.inBandStats.correlation > 0.95, `correlation should be near 1, got ${compensated.inBandStats.correlation}`);
   assert.equal(judged.pass, true, judged.reason);
+});
+
+test('response-floor and non-finite bins are ignored rather than poisoning the fit', () => {
+  assert.equal(isUsableResponseDb(-119.9), true);
+  assert.equal(isUsableResponseDb(-120.1), false);
+  assert.equal(isUsableResponseDb(-300), false);
+  assert.equal(isUsableResponseDb(Number.NaN), false);
+
+  const filterSpec = { freq: 8000, gain: 6, q: 0.1, type: 'PK' };
+  const baseline = flatBaseline();
+  const measured = withFilter(filterSpec);
+  // Simulate the FFT/deconvolution floor shown by the failure screenshot.
+  for (let i = 0; i < measured.magnitude.length; i += 311) measured.magnitude[i] = -300;
+  const result = fit(baseline, measured, filterSpec);
+  assert.ok(result.judged.pass, result.judged.reason);
+  assert.ok(result.comparison.ignoredPointCount > 0);
+  assert.ok(result.comparison.inBandStats.n < result.comparison.points.length);
+  assert.ok(Number.isFinite(result.pregainDb));
+});
+
+test('isolated finite response collapses are ignored without hiding the real in-band fit', () => {
+  const filterSpec = { freq: 8000, gain: 6, q: 0.1, type: 'PK' };
+  const baseline = flatBaseline();
+  const measured = withFilter(filterSpec);
+  // A finite but discontinuous deconvolution collapse, like the -60 dB
+  // samples seen in a real built-in capture.
+  for (let i = 0; i < measured.magnitude.length; i += 997) measured.magnitude[i] -= 45;
+  const comparison = compareToTheoretical(baseline, measured, filterSpec, {
+    magnitudeAt, fs: SAMPLE_RATE, evalFreqs: DENSE_EVAL_FREQS,
+  });
+  const { compensated } = compensateForPregain(comparison);
+  assert.ok(comparison.ignoredPointCount > 0);
+  assert.ok(compensated.inBandStats.rmse < 0.1);
+  assert.ok(judgeFit(compensated, { rmseToleranceDb: 1 }).pass);
 });
 
 test('a broadband pregain offset is detected and removed before the shape is judged', () => {

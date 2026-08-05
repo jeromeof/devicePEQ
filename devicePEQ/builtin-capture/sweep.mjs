@@ -34,9 +34,11 @@ export function windowValue(index, length, fadeIn, fadeOut = fadeIn) {
 }
 
 /** Render a phase-continuous exponential sine sweep at the requested rate. */
-export function renderLogSweep({ startHz, endHz, durationSec, sampleRate, window = true, fadeFraction = 0.05 }) {
+export function renderLogSweep({ startHz, endHz, durationSec, sampleRate, window = true, fadeFraction = 0.05, levelDb = 0 }) {
   validateSweep({ startHz, endHz, durationSec, sampleRate });
+  if (!Number.isFinite(levelDb) || levelDb > 0 || levelDb < -60) throw new RangeError('levelDb must be between -60 and 0 dBFS');
   const samples = Math.max(2, Math.round(durationSec * sampleRate));
+  const level = Math.pow(10, levelDb / 20);
   const sweep = new Float64Array(samples);
   const T = samples / sampleRate;
   const L = T / Math.log(endHz / startHz);
@@ -45,9 +47,9 @@ export function renderLogSweep({ startHz, endHz, durationSec, sampleRate, window
   for (let n = 0; n < samples; n++) {
     const t = n / sampleRate;
     const envelope = window ? windowValue(n, samples, fade, fade) : 1;
-    sweep[n] = Math.sin(K * (Math.exp(t / L) - 1)) * envelope;
+    sweep[n] = Math.sin(K * (Math.exp(t / L) - 1)) * envelope * level;
   }
-  return { samples: sweep, fadeSamples: fade, sampleRate, startHz, endHz, durationSec: T };
+  return { samples: sweep, fadeSamples: fade, sampleRate, startHz, endHz, durationSec: T, levelDb };
 }
 
 export function withLeadIn(signal, leadInSamples) {
@@ -57,4 +59,3 @@ export function withLeadIn(signal, leadInSamples) {
   result.set(signal, leadInSamples);
   return result;
 }
-

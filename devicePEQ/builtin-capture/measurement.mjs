@@ -22,7 +22,7 @@ export class BuiltinCaptureBackend {
 
   async captureMeasurement(options = {}) {
     const config = validateCaptureOptions({
-      durationSec: 6, leadInSec: 0.1, tailSec: 0.5, noiseFloorSec: 2, warmupMs: 300,
+      durationSec: 6, leadInSec: 0.1, tailSec: 0.5, noiseFloorSec: 2, warmupMs: 300, outputLevelDb: -12,
       outputChannels: 'both', floorDb: -300, ...options,
     });
     if (this.running) throw new Error('a built-in capture is already running');
@@ -43,7 +43,7 @@ export class BuiltinCaptureBackend {
       if (opened.outputSampleRate !== sampleRate && !config.allowResampling) {
         throw new Error(`input/output sample-rate mismatch (${sampleRate}Hz vs ${opened.outputSampleRate}Hz); set both Chrome devices to the same rate before measuring`);
       }
-      const rendered = renderLogSweep({ ...config, sampleRate });
+      const rendered = renderLogSweep({ ...config, sampleRate, levelDb: config.outputLevelDb });
       const leadInSamples = Math.round(config.leadInSec * sampleRate);
       const played = withLeadIn(rendered.samples, leadInSamples);
       await this.session.wait(config.warmupMs);
@@ -52,6 +52,10 @@ export class BuiltinCaptureBackend {
       const noiseCapture = this.session.takeCaptured(Math.max(1, Math.round(config.noiseFloorSec * sampleRate)));
       const noiseSamplesLeft = noiseCapture.left;
       const noiseSamplesRight = noiseCapture.right;
+      const noiseFloorDbfsByChannel = {
+        left: rmsDbfs(noiseSamplesLeft),
+        right: rmsDbfs(noiseSamplesRight),
+      };
       this.session.resetCaptured();
       this.status(`capturing ${config.startHz}–${config.endHz}Hz sweep…`);
       await this.session.play(rendered.samples, { outputChannels: config.outputChannels, leadInSamples });
@@ -65,7 +69,16 @@ export class BuiltinCaptureBackend {
       if (captured.left.length < played.length) {
         throw new Error(`capture ended early: received ${captured.left.length} samples, expected at least ${played.length}`);
       }
-      const noiseFloorDbfs = rmsDbfs(captured.left.slice(0, Math.min(leadInSamples, captured.left.length)));
+      const sweepLeadIn = {
+        left: captured.left.slice(0, Math.min(leadInSamples, captured.left.length)),
+        right: captured.right.slice(0, Math.min(leadInSamples, captured.right.length)),
+      };
+      const noiseFloorDbfsBySweepChannel = {
+        left: rmsDbfs(sweepLeadIn.left),
+        right: rmsDbfs(sweepLeadIn.right),
+      };
+      const selectedChannel = config.inputChannel === 'right' ? 'right' : 'left';
+      const noiseFloorDbfs = noiseFloorDbfsBySweepChannel[selectedChannel];
       const left = toVerificationResponse(deconvolve(captured.left, played, sampleRate, { noise: noiseSamplesLeft }), { floorDb: config.floorDb });
       const right = toVerificationResponse(deconvolve(captured.right, played, sampleRate, { noise: noiseSamplesRight }), { floorDb: config.floorDb });
       return {
@@ -75,7 +88,7 @@ export class BuiltinCaptureBackend {
         // running out of useful energy. Keep a deliberately wider guard band
         // than the mathematical endpoint so the tail cannot dominate fits or
         // graphs (especially at the common 20kHz setting).
-        metadata: { source: 'builtin', sampleRate, inputDeviceId: config.inputDeviceId || '', outputDeviceId: config.outputDeviceId || '', captureStats: stats || null, sampleCount: captured.left.length, expectedSampleCount: expectedSamples, noiseSampleCount: noiseSamplesLeft.length, noiseFloorDbfs, noiseSubtracted: true, noiseEstimate: 'averaged FFT power across independent segments per channel', validStartHz: config.startHz * 1.02, validEndHz: config.endHz * 0.90, sweep: { startHz: config.startHz, endHz: config.endHz, durationSec: rendered.durationSec } },
+        metadata: { source: 'builtin', sampleRate, outputLevelDb: config.outputLevelDb, inputDeviceId: config.inputDeviceId || '', outputDeviceId: config.outputDeviceId || '', inputChannel: selectedChannel, captureStats: stats || null, sampleCount: captured.left.length, expectedSampleCount: expectedSamples, noiseSampleCount: noiseSamplesLeft.length, noiseFloorDbfs, noiseFloorDbfsByChannel, noiseFloorDbfsBySweepChannel, noiseSubtracted: true, noiseEstimate: 'averaged FFT power across independent segments per channel', validStartHz: Math.max(30, config.startHz * 1.02), validEndHz: Math.min(config.endHz * 0.90, sampleRate * 0.375), sweep: { startHz: config.startHz, endHz: config.endHz, durationSec: rendered.durationSec } },
       };
     } finally {
       try { await this.session.close(); } finally { this.session = null; this.running = false; }
