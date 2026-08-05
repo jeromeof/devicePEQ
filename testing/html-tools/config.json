@@ -1,5 +1,5 @@
 {
-  "_for": "devicepeq-rew-verification.html — the only page in this folder that reads this file",
+  "_for": "devicepeq verification page — the only page in this folder that reads this file",
   "_note": "Paths are relative to the HTML page. Absolute URLs are also accepted. Trailing slash required. The deployed copy on pragmaticaudio.com has its own config.json with different values, which is what lets the HTML itself be copied across verbatim.",
 
   "devicePEQBase": "../../devicePEQ/",

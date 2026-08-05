@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DevicePEQ Built-in Capture</title>
+  <style>
+    body { background:#1e1e1e; color:#ddd; font:14px system-ui,sans-serif; max-width:760px; margin:2rem auto; padding:0 1rem; }
+    section { background:#252526; border:1px solid #444; border-radius:8px; padding:1rem; margin-bottom:1rem; }
+    label { display:block; margin:.65rem 0 .2rem; color:#9cdcfe; }
+    select,input,button { background:#1e1e1e; color:#ddd; border:1px solid #555; border-radius:4px; padding:.45rem; }
+    select,input { width:100%; box-sizing:border-box; }
+    button { background:#0e639c; cursor:pointer; margin:.8rem .4rem 0 0; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    #status { white-space:pre-wrap; color:#4ec9b0; min-height:3em; }
+  </style>
+</head>
+<body>
+  <h1>DevicePEQ built-in capture</h1>
+  <p>Standalone diagnostic page for the browser-native measurement backend.</p>
+  <section>
+    <button id="scan">Request permission and scan devices</button>
+    <label for="input">Input</label><select id="input"></select>
+    <label for="output">Output</label><select id="output"></select>
+    <label for="start">Start frequency (Hz)</label><input id="start" type="number" value="20" min="1">
+    <label for="end">End frequency (Hz)</label><input id="end" type="number" value="20000" min="2">
+    <label for="duration">Sweep duration (seconds)</label><input id="duration" type="number" value="6" min="0.25" step="0.1">
+    <button id="capture" disabled>Capture response</button>
+    <button id="download" disabled>Download JSON</button>
+  </section>
+  <section><div id="status" role="status"></div><pre id="result"></pre></section>
+  <script type="module">
+    import { BuiltinCaptureBackend, enumerateAudioDevices } from './index.mjs';
+    const $ = (id) => document.getElementById(id);
+    const status = (text) => { $('status').textContent = text; };
+    let devices = null, last = null;
+    const backend = new BuiltinCaptureBackend({ status });
+    function fill(select, list) {
+      select.replaceChildren(...list.map((d) => new Option(d.label, d.id)));
+    }
+    $('scan').onclick = async () => {
+      try { devices = await enumerateAudioDevices(); fill($('input'), devices.inputs); fill($('output'), devices.outputs); $('capture').disabled = !devices.inputs.length; status(`found ${devices.inputs.length} input(s), ${devices.outputs.length} output(s)`); }
+      catch (e) { status(`scan failed: ${e.name || 'Error'} — ${e.message}`); }
+    };
+    $('capture').onclick = async () => {
+      $('capture').disabled = true; $('download').disabled = true;
+      try {
+        last = await backend.captureMeasurement({ inputDeviceId: $('input').value, outputDeviceId: $('output').value, startHz: +$('start').value, endHz: +$('end').value, durationSec: +$('duration').value });
+        $('result').textContent = JSON.stringify({ metadata: last.metadata, leftPoints: last.left.magnitude.length, rightPoints: last.right.magnitude.length, sampleAt1kHz: last.left.magnitude[Math.round((1000 - last.left.startFreq) / last.left.freqStep)] }, null, 2);
+        $('download').disabled = false;
+      } catch (e) { status(`capture failed: ${e.name || 'Error'} — ${e.message}`); }
+      finally { $('capture').disabled = false; }
+    };
+    $('download').onclick = () => {
+      const blob = new Blob([JSON.stringify(last, (_, value) => ArrayBuffer.isView(value) ? Array.from(value) : value, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'devicepeq-builtin-capture.json'; a.click(); URL.revokeObjectURL(a.href);
+    };
+  </script>
+</body>
+</html>
