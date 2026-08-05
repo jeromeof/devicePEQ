@@ -593,14 +593,12 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
         <label><span data-i18n="step2.input">Input</span><select id="builtinInputDevice"></select></label>
         <label><span data-i18n="step2.output">Output</span><select id="builtinOutputDevice"></select></label>
         <label><span data-i18n="step2.inputChannel">Input channel</span><select id="builtinInputChannel"><option value="left" data-i18n="step2.left">Left</option><option value="right" data-i18n="step2.right">Right</option></select></label>
-        <label><span data-i18n="step2.measuredSpl">Measured baseline SPL (dB)</span><input type="number" id="builtinMeasuredSpl" placeholder="optional" min="40" max="130" step="0.1"></label>
         <label><span data-i18n="step2.outputLevel">Sweep output level (dBFS)</span><input type="number" id="builtinOutputLevel" value="-12" min="-60" max="0" step="1"></label>
         <label><span data-i18n="step2.sweepDuration">Sweep duration (s)</span><input type="number" id="builtinSweepDuration" value="6" min="0.25" step="0.25"></label>
         <label><span data-i18n="step2.noiseDuration">Noise-floor capture (s)</span><input type="number" id="builtinNoiseFloorDuration" value="2" min="0.25" step="0.25"></label>
         <label><span data-i18n="step2.startFrequency">Start frequency (Hz)</span><input type="number" id="builtinSweepStart" value="20" min="1"></label>
         <label><span data-i18n="step2.endFrequency">End frequency (Hz)</span><input type="number" id="builtinSweepEnd" value="20000" min="2"></label>
       </div>
-      <div class="small" style="margin-top:8px;" data-i18n="step2.splHelp">Target acoustic level: 80–90 dB SPL, preferably around 80–85 dB when testing up to +10 dB filters. If available, enter the level measured at the coupler/listening position with a calibrated SPL meter or REW meter. The browser capture still checks digital dBFS independently for clipping.</div>
       <div class="small" style="margin-top:8px;" data-i18n="step2.builtinHelp">The built-in path uses the selected Chrome input/output devices and feeds the same verification comparison pipeline. Use a local HTTP server or HTTPS.</div>
     </div>
     <div class="flex" style="margin-top:8px;">
@@ -916,13 +914,11 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     'step2.inputChannel': '输入通道',
     'step2.left': '左',
     'step2.right': '右',
-    'step2.measuredSpl': '测得的基线 SPL（dB）',
     'step2.outputLevel': '扫频输出电平（dBFS）',
     'step2.sweepDuration': '扫频时长（秒）',
     'step2.noiseDuration': '噪声底采集（秒）',
     'step2.startFrequency': '起始频率（Hz）',
     'step2.endFrequency': '结束频率（Hz）',
-    'step2.splHelp': '目标声学电平：80–90 dB SPL；如果测试最高 +10 dB 滤波器，建议约 80–85 dB。若有条件，请使用经过校准的 SPL 计或 REW 电平表，在耦合器 / 听音位置测量并输入数值。浏览器采集仍会独立检查数字 dBFS 电平和削波。',
     'step2.builtinHelp': '内置方式使用所选 Chrome 输入 / 输出设备，并进入相同的验证比较流程。请使用本地 HTTP 服务器或 HTTPS。',
     'step2.notChecked': '未检查',
 
@@ -1902,24 +1898,6 @@ function baselineSignalSanity(captured) {
   return `✓ Baseline signal level is usable. ${detail} The selected channel is neither unusually quiet nor close to clipping.`;
 }
 
-function baselineSplNote(captured) {
-  if (captured?.source === 'rew') {
-    return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Use REW’s calibrated SPL meter and input-level indicators to set and verify the level; the REW API curve does not expose the raw ADC dBFS peak here.';
-  }
-  const measured = readMeasuredBaselineSpl();
-  if (!Number.isFinite(measured)) {
-    return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Enter a calibrated SPL-meter or REW-meter reading above if you want this baseline checked in SPL; dBFS checks remain independent.';
-  }
-  const position = measured < 80 ? 'below the recommended range — increase the output level modestly and recapture if the noise floor allows it' : measured > 90 ? 'above the recommended range — reduce the output level and recapture' : 'within the recommended range';
-  const icon = measured < 80 || measured > 90 ? '⚠️' : '✓';
-  return `${icon} User-entered acoustic level: ${measured.toFixed(1)}dB SPL, ${position}. This is a calibrated external reference; the browser capture still uses its independent dBFS peak/clipping check.`;
-}
-
-function readMeasuredBaselineSpl() {
-  const raw = $('builtinMeasuredSpl')?.value?.trim();
-  return raw ? Number(raw) : NaN;
-}
-
 function baselineResponseOutliers(fr) {
   if (!fr?.magnitude?.length) return { count: 0, minimumDb: null };
   const sampleCount = 420;
@@ -1957,12 +1935,8 @@ function assessBaselineQuality(captured) {
   const channel = metadata.inputChannel === 'right' || $('builtinInputChannel')?.value === 'right' ? 'right' : 'left';
   const peak = Number(stats.channelPeaks?.[channel] ?? stats.peak);
   const noise = Number(metadata.noiseFloorDbfsBySweepChannel?.[channel] ?? metadata.noiseFloorDbfs);
-  const measuredSpl = readMeasuredBaselineSpl();
   const maxBoostDb = Math.max(0, Number(constraints?.maxGain ?? connectedDevice?.modelConfig?.maxGain ?? 0));
 
-  if (Number.isFinite(measuredSpl) && (measuredSpl < 80 || measuredSpl > 90)) {
-    warnings.push(`calibrated SPL is ${measuredSpl.toFixed(1)}dB, outside the recommended 80–90dB range`);
-  }
   if (!Number.isFinite(peak) || peak <= 0) {
     warnings.push('the selected input level could not be validated');
   } else {
@@ -2088,7 +2062,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
       (captured.metadata?.outputLevelDb != null ? `Built-in sweep output: ${captured.metadata.outputLevelDb.toFixed(1)} dBFS.\n` : '') +
       (captured.metadata?.sampleCount ? `Captured ${captured.metadata.sampleCount} samples/channel (expected window ${captured.metadata.expectedSampleCount}).\n` : '') +
       `Sample @ 1000 Hz: ${magnitudeAt(captured.fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat)` +
-      `\n${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}\n${baselineSplNote(captured)}`;
+      `\n${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}`;
     updateRunButtons();
   } catch (e) {
     status.textContent = e.message;
@@ -2121,7 +2095,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
         (captured.metadata?.outputLevelDb != null ? `Built-in sweep output: ${captured.metadata.outputLevelDb.toFixed(1)} dBFS.\n` : '') +
         (captured.metadata?.sampleCount ? `Captured ${captured.metadata.sampleCount} samples/channel (expected window ${captured.metadata.expectedSampleCount}).\n` : '') +
         `Sample @ 1000 Hz: ${magnitudeAt(captured.fr, 1000).toFixed(2)} dB\n` +
-        `${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}\n${baselineSplNote(captured)}`;
+        `${baselineHeadroomNote(captured)}\n${baselineSignalSanity(captured)}`;
       updateRunButtons();
       return;
     }
@@ -2140,7 +2114,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
     info.textContent =
       `Baseline measurement id: ${id} (renamed to "PEQTEST-BASELINE" in REW)\n` +
       `Frequency response: ${fr.magnitude.length} points, ${fr.startFreq.toFixed(1)} Hz start, ${fr.freqStep.toFixed(3)} Hz/step\n` +
-      `Sample @ 1000 Hz: ${magnitudeAt(fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat/PEQ-off)\n${baselineSplNote({ source: 'rew' })}`;
+      `Sample @ 1000 Hz: ${magnitudeAt(fr, 1000).toFixed(2)} dB (should read ~0 dB if the sweep really was flat/PEQ-off)`;
     updateRunButtons();
   } catch (e) {
     status.textContent = e.message;
