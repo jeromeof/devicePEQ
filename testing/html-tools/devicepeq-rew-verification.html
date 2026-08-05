@@ -702,7 +702,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
       <div id="groupToggles" class="flex" style="display:none;"></div>
       <table id="planTable" style="display:none;">
         <thead>
-          <tr><th></th><th data-i18n="col.group">Group</th><th data-i18n="col.type">Type</th><th data-i18n="col.freq">Freq (Hz)</th><th data-i18n="col.gain">Gain (dB)</th><th>Q</th><th data-i18n="col.measureAt">Measure @ Hz</th><th data-i18n="col.expectedDelta">Expected Δ</th><th data-i18n="col.checkMethod">Check method</th><th data-i18n="col.label">Label</th></tr>
+          <tr><th>#</th><th></th><th data-i18n="col.group">Group</th><th data-i18n="col.type">Type</th><th data-i18n="col.freq">Freq (Hz)</th><th data-i18n="col.gain">Gain (dB)</th><th>Q</th><th data-i18n="col.measureAt">Measure @ Hz</th><th data-i18n="col.expectedDelta">Expected Δ</th><th data-i18n="col.checkMethod">Check method</th><th data-i18n="col.label">Label</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -1380,6 +1380,7 @@ let filtersState = [];        // filter array handed to the device on push
 let connectedDevice = null;   // { model, modelConfig, ... } from devicePEQ.deviceConnected
 let constraints = null;       // resolveConstraints(connectedDevice.modelConfig)
 let baseline = null;          // { id, fr }
+let baselineQualityOk = false;
 let testPlan = [];
 let qSweepCapNote = '';   // why the Q sweep stopped short of the device's maxQ
 let running = false;
@@ -1905,13 +1906,90 @@ function baselineSplNote(captured) {
   if (captured?.source === 'rew') {
     return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Use REW’s calibrated SPL meter and input-level indicators to set and verify the level; the REW API curve does not expose the raw ADC dBFS peak here.';
   }
-  const measured = Number($('builtinMeasuredSpl')?.value);
+  const measured = readMeasuredBaselineSpl();
   if (!Number.isFinite(measured)) {
     return 'ℹ️ Acoustic target: 80–90dB SPL (around 80–85dB is preferable for tests including +10dB). Enter a calibrated SPL-meter or REW-meter reading above if you want this baseline checked in SPL; dBFS checks remain independent.';
   }
   const position = measured < 80 ? 'below the recommended range — increase the output level modestly and recapture if the noise floor allows it' : measured > 90 ? 'above the recommended range — reduce the output level and recapture' : 'within the recommended range';
   const icon = measured < 80 || measured > 90 ? '⚠️' : '✓';
   return `${icon} User-entered acoustic level: ${measured.toFixed(1)}dB SPL, ${position}. This is a calibrated external reference; the browser capture still uses its independent dBFS peak/clipping check.`;
+}
+
+function readMeasuredBaselineSpl() {
+  const raw = $('builtinMeasuredSpl')?.value?.trim();
+  return raw ? Number(raw) : NaN;
+}
+
+function baselineResponseOutliers(fr) {
+  if (!fr?.magnitude?.length) return { count: 0, minimumDb: null };
+  const sampleCount = 420;
+  const lo = Math.max(ANALYSIS_MIN_HZ, fr.validStartFreq ?? 20);
+  const hi = Math.min(ANALYSIS_MAX_HZ, fr.validEndFreq ?? 20000);
+  const points = [];
+  for (let i = 0; i < sampleCount; i++) {
+    const freq = Math.pow(2, Math.log2(lo) + (Math.log2(hi) - Math.log2(lo)) * i / (sampleCount - 1));
+    const db = magnitudeAt(fr, freq);
+    if (Number.isFinite(db)) points.push({ freq, db });
+  }
+  let count = 0;
+  let minimumDb = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    minimumDb = Math.min(minimumDb, p.db);
+    const neighbours = points.slice(Math.max(0, i - 3), Math.min(points.length, i + 4))
+      .filter((q) => q !== p).map((q) => q.db).sort((a, b) => a - b);
+    if (neighbours.length < 4) continue;
+    const mid = Math.floor(neighbours.length / 2);
+    const localMedian = neighbours.length % 2 ? neighbours[mid] : (neighbours[mid - 1] + neighbours[mid]) / 2;
+    if (p.db < -120 || p.db < localMedian - 20) count++;
+  }
+  return { count, minimumDb: Number.isFinite(minimumDb) ? minimumDb : null };
+}
+
+// A completed sweep is not automatically a usable baseline. Keep this gate
+// separate from the explanatory notes below so the UI cannot show a green
+// "captured" state while the run buttons remain available for a bad reference.
+function assessBaselineQuality(captured) {
+  if (captured?.source !== 'builtin') return { ok: true, warnings: [] };
+  const warnings = [];
+  const metadata = captured.metadata || {};
+  const stats = metadata.captureStats || {};
+  const channel = metadata.inputChannel === 'right' || $('builtinInputChannel')?.value === 'right' ? 'right' : 'left';
+  const peak = Number(stats.channelPeaks?.[channel] ?? stats.peak);
+  const noise = Number(metadata.noiseFloorDbfsBySweepChannel?.[channel] ?? metadata.noiseFloorDbfs);
+  const measuredSpl = readMeasuredBaselineSpl();
+  const maxBoostDb = Math.max(0, Number(constraints?.maxGain ?? connectedDevice?.modelConfig?.maxGain ?? 0));
+
+  if (Number.isFinite(measuredSpl) && (measuredSpl < 80 || measuredSpl > 90)) {
+    warnings.push(`calibrated SPL is ${measuredSpl.toFixed(1)}dB, outside the recommended 80–90dB range`);
+  }
+  if (!Number.isFinite(peak) || peak <= 0) {
+    warnings.push('the selected input level could not be validated');
+  } else {
+    const headroomDb = -20 * Math.log10(peak);
+    if (stats.clippedSamples > 0 || peak >= 0.95) warnings.push('the selected input is clipping or nearly clipping');
+    else if (peak < 0.01) warnings.push('the selected input signal is extremely low');
+    if (maxBoostDb > 0 && headroomDb < maxBoostDb) warnings.push(`only ${headroomDb.toFixed(1)}dB digital headroom remains for a +${maxBoostDb.toFixed(1)}dB filter`);
+  }
+  if (Number.isFinite(noise) && noise > -50) warnings.push(`input noise floor is elevated at ${noise.toFixed(1)}dBFS`);
+  const response = baselineResponseOutliers(captured.fr);
+  if (response.count > 0) {
+    warnings.push(`${response.count} isolated frequency-response collapse(s) were detected${Number.isFinite(response.minimumDb) ? ` (minimum ${response.minimumDb.toFixed(1)}dB)` : ''}`);
+  }
+  return { ok: warnings.length === 0, warnings };
+}
+
+function applyBaselineQuality(status, captured, successText) {
+  const quality = assessBaselineQuality(captured);
+  baselineQualityOk = quality.ok;
+  if (quality.ok) {
+    status.textContent = successText;
+    status.className = 'status-pill pill-connected';
+  } else {
+    status.textContent = '⚠ baseline captured — not ready for testing';
+    status.className = 'status-pill pill-disconnected';
+  }
+  return quality;
 }
 
 function renderBuiltinBaselineChart(fr) {
@@ -1979,6 +2057,7 @@ $('checkRewBtn').addEventListener('click', async () => {
 $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
   const status = $('baselineStatus');
   const info = $('baselineInfo');
+  baselineQualityOk = false;
   if (!connectedDevice) { alert('Connect a device first.'); return; }
   status.textContent = 'resetting device…';
   status.className = 'status-pill';
@@ -1996,13 +2075,13 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
 
     if (captured.id != null) await renameMeasurement(captured.id, 'PEQTEST-BASELINE');
     baseline = { id: captured.id, fr: captured.fr, source: captured.source || 'rew', metadata: captured.metadata || null };
-    status.textContent = captureMethod === 'rew'
+    const quality = applyBaselineQuality(status, captured, captureMethod === 'rew'
       ? `baseline = measurement #${captured.id} (device reset to 0dB)`
-      : 'baseline captured by built-in audio (device reset to 0dB)';
-    status.className = 'status-pill pill-connected';
+      : 'baseline captured by built-in audio (device reset to 0dB)');
     updateBuiltinBaselineViewButton();
     info.style.display = 'block';
     info.textContent =
+      `${quality.ok ? '' : `⚠ NOT READY FOR TESTING: ${quality.warnings.join('; ')}\nRecapture the baseline after correcting the level, headroom, or noise problem.\n`}\n` +
       `Capture source: ${captured.source === 'builtin' ? 'built-in Chrome audio' : `REW measurement #${captured.id} (renamed to "PEQTEST-BASELINE")`}\n` +
       `Device was reset to all filters @ 0dB/disabled immediately before this sweep.\n` +
       `Frequency response: ${captured.fr.magnitude.length} points, ${captured.fr.startFreq.toFixed(1)} Hz start, ${captured.fr.freqStep.toFixed(3)} Hz/step\n` +
@@ -2023,6 +2102,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
 $('captureBaselineBtn').addEventListener('click', async () => {
   const status = $('baselineStatus');
   const info = $('baselineInfo');
+  baselineQualityOk = false;
   status.textContent = 'capturing…';
   status.className = 'status-pill';
   try {
@@ -2031,11 +2111,11 @@ $('captureBaselineBtn').addEventListener('click', async () => {
       const captured = await triggerAndCaptureSweep(timeoutMs, { what: 'capturing built-in baseline sweep' });
       if (!captured) throw new Error('built-in baseline capture was cancelled');
       baseline = { id: null, fr: captured.fr, source: 'builtin', metadata: captured.metadata || null };
-      status.textContent = 'baseline = built-in capture';
-      status.className = 'status-pill pill-connected';
+      const quality = applyBaselineQuality(status, captured, 'baseline = built-in capture');
       updateBuiltinBaselineViewButton();
       info.style.display = 'block';
       info.textContent =
+        `${quality.ok ? '' : `⚠ NOT READY FOR TESTING: ${quality.warnings.join('; ')}\nRecapture the baseline after correcting the level, headroom, or noise problem.\n`}\n` +
         'Capture source: built-in Chrome audio\n' +
         `Frequency response: ${captured.fr.magnitude.length} points, ${captured.fr.startFreq.toFixed(1)} Hz start, ${captured.fr.freqStep.toFixed(3)} Hz/step\n` +
         (captured.metadata?.outputLevelDb != null ? `Built-in sweep output: ${captured.metadata.outputLevelDb.toFixed(1)} dBFS.\n` : '') +
@@ -2053,6 +2133,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
     const fr = await getFrequencyResponse(id);
     baseline = { id, fr, source: 'rew', metadata: null };
     status.textContent = `baseline = measurement #${id}`;
+    baselineQualityOk = true;
     status.className = 'status-pill pill-connected';
     updateBuiltinBaselineViewButton();
     info.style.display = 'block';
@@ -2075,6 +2156,8 @@ let planIdCounter = 0;
 function makeCase(group, type, freq, gain, q, measureFreq, expectedDelta) {
   return {
     id: ++planIdCounter,
+    planIndex: null,
+    captureKey: null,
     group, type,
     freq: round1(freq), gain: round1(gain), q: Math.round(q * 100) / 100,
     measureFreq: Math.round(clampFreq(measureFreq)),
@@ -2086,6 +2169,20 @@ function makeCase(group, type, freq, gain, q, measureFreq, expectedDelta) {
     estimatedQ: null, qRatio: null, qRmseAtEstimate: null,
   };
 }
+
+// The internal id is unique for the lifetime of the page. The plan index is
+// the stable, user-visible position in the current plan and is what external
+// scripts can use to join a capture back to a plan row.
+function assignPlanIndexes(plan, { replace = false } = {}) {
+  let next = replace ? 1 : Math.max(0, ...plan.map((tc) => Number(tc.planIndex) || 0)) + 1;
+  for (const tc of plan) {
+    if (replace || !Number.isInteger(tc.planIndex)) tc.planIndex = next++;
+    tc.captureKey = `PEQTEST-${String(tc.planIndex).padStart(3, '0')}`;
+  }
+  return plan;
+}
+
+function planNumber(tc) { return tc.planIndex ?? tc.id; }
 
 function labelFor(tc) {
   return `${tc.type} @ ${tc.freq}Hz, ${tc.gain >= 0 ? '+' : ''}${tc.gain}dB, Q${tc.q}`;
@@ -2197,53 +2294,15 @@ function generatePlan() {
     }
   }
 
-  testPlan = plan;
-  applyRememberedGroups();
+  testPlan = assignPlanIndexes(plan, { replace: true });
   renderPlan();
   updateRunButtons();
 }
 $('genPlanBtn').addEventListener('click', generatePlan);
 
-// ── Remembered group selection ─────────────────────────────────────────────
-// Only the enabled GROUPS are remembered, not the plan or its results. The point
-// is narrow: when you are working through one area — "just LP/HP until it's
-// verified" — you shouldn't have to re-tick it on every reload. Everything else
-// (which cases exist, what they measured) is rebuilt by Generate Test Plan, so
-// storing it would only create a second source of truth that can go stale.
-const GROUP_STORE_KEY = 'devicepeq-rew-bench:groups:v1';
-
-function loadEnabledGroups() {
-  try {
-    const raw = localStorage.getItem(GROUP_STORE_KEY);
-    const list = raw ? JSON.parse(raw) : null;
-    return Array.isArray(list) ? list : null;   // null = nothing remembered yet
-  } catch { return null; }
-}
-
-function saveEnabledGroups() {
-  try {
-    const groups = [...new Set(testPlan.filter((t) => t.include).map((t) => t.group))];
-    localStorage.setItem(GROUP_STORE_KEY, JSON.stringify(groups));
-  } catch (e) {
-    console.warn('Could not remember group selection:', e.message);
-  }
-}
-
-// Applied after a plan is generated. A remembered group that this device's plan
-// doesn't contain is simply ignored rather than dropped from storage, so moving
-// between devices doesn't quietly erase the selection.
-function applyRememberedGroups() {
-  const remembered = loadEnabledGroups();
-  if (!remembered) return;
-  const present = new Set(testPlan.map((t) => t.group));
-  if (![...present].some((g) => remembered.includes(g))) return; // nothing in common — leave as generated
-  for (const tc of testPlan) tc.include = remembered.includes(tc.group);
-}
-
 function setGroupIncluded(group, on) {
   for (const tc of testPlan) if (tc.group === group) tc.include = on;
   renderPlan();
-  saveEnabledGroups();
   updateRunButtons();
 }
 
@@ -2252,7 +2311,7 @@ function renderGroupToggles() {
   const groups = [...new Set(testPlan.map((t) => t.group))];
   if (!groups.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
-  box.innerHTML = '<span class="small">Groups (remembered next time):</span>'
+  box.innerHTML = '<span class="small">Groups:</span>'
     + groups.map((g) => {
         const inGroup = testPlan.filter((t) => t.group === g);
         const on = inGroup.filter((t) => t.include).length;
@@ -2275,6 +2334,7 @@ function renderPlan() {
     const tr = document.createElement('tr');
     tr.dataset.id = tc.id;
     tr.innerHTML = `
+      <td>${planNumber(tc)}</td>
       <td><input type="checkbox" ${tc.include ? 'checked' : ''} data-field="include"></td>
       <td>${tc.group}</td>
       <td><input type="text" class="plan-input" style="width:56px" value="${tc.type}" data-field="type"></td>
@@ -2296,7 +2356,7 @@ function renderPlan() {
         else if (field === 'freq' || field === 'gain' || field === 'q' || field === 'measureFreq') {
           tc2[field] = Number(input.value);
         }
-        if (field === 'include') { renderGroupToggles(); saveEnabledGroups(); updateRunButtons(); }
+        if (field === 'include') { renderGroupToggles(); updateRunButtons(); }
       });
     });
     tbody.appendChild(tr);
@@ -2588,7 +2648,7 @@ function renderResultRow(tc) {
   const canExplain = (tc.status === 'fail' || tc.manual)
     && hasModel(tc.type) && tc.fr && tc.usedFilterSpec;
   tr.innerHTML = `
-    <td>${tc.id}</td>
+    <td>${planNumber(tc)}</td>
     <td>${tc.group}</td>
     <td>${labelFor(tc)}</td>
     <td>${expected}</td>
@@ -2599,7 +2659,7 @@ function renderResultRow(tc) {
     <td>${corr}</td>
     <td title="${tc.qRmseAtEstimate != null ? 'RMSE at this Q: ' + tc.qRmseAtEstimate.toFixed(3) + 'dB' : ''}">${effectiveQ}</td>
     <td class="status" title="${tc.judgeReason ?? ''}">${tc.status}${tc.error ? ` (${tc.error})` : ''}</td>
-    <td>${tc.measurementId ?? '—'}</td>
+    <td>${tc.captureKey ?? '—'}${tc.measurementId != null ? ` <span class="small">(REW #${tc.measurementId})</span>` : ''}</td>
     <td>${canExplain ? `<button class="explain-btn" data-explain-id="${tc.id}">📉 Explain</button>` : ''}</td>
   `;
 }
@@ -3197,12 +3257,14 @@ document.addEventListener('DPQLanguageChanged', () => {
 function updateRunButtons() {
   const blockedByDisconnect = deviceRequiresDisconnect && !ignoreDisconnect;
   const captureReady = captureMethod === 'rew' || builtinDevices.inputs.length > 0;
-  $('runBtn').disabled = running || !connectedDevice || !baseline || !testPlan.length || !captureReady || blockedByDisconnect;
+  $('runBtn').disabled = running || !connectedDevice || !baseline || !baselineQualityOk || !testPlan.length || !captureReady || blockedByDisconnect;
   $('runBtn').title = blockedByDisconnect
     ? 'This device is configured to disconnect after every filter write — tick "Try anyway" above to test whether it actually does.'
+    : (!baselineQualityOk
+      ? 'Capture a baseline that passes the level, headroom, clipping, and noise checks before running the test plan.'
     : (deviceRequiresDisconnect
       ? 'Running with the disconnect override on — the run will stop at the first push if the device really does drop.'
-      : '');
+      : ''));
   $('stopBtn').disabled = !running;
 }
 
@@ -3223,9 +3285,19 @@ $('runBtn').addEventListener('click', async () => {
   const heapLog = [];
   const deviceLabel = connectedDevice?.model ?? 'device';
 
+  const selectedCases = testPlan.filter((tc) => tc.include);
+  const selectedIds = new Set(selectedCases.map((tc) => tc.id));
+  for (const tc of testPlan) {
+    if (!selectedIds.has(tc.id)) {
+      tc.status = 'skipped';
+      renderResultRow(tc);
+    }
+  }
+  $('runStatus').textContent = `running ${selectedCases.length} selected case(s) of ${testPlan.length}`;
+
   for (const [i, tc] of testPlan.entries()) {
     markActivity(`run loop: case #${tc.id}`);
-    if (!tc.include) { tc.status = 'skipped'; renderResultRow(tc); continue; }
+    if (!selectedIds.has(tc.id)) continue;
     if (stopRequested) break;
 
     tc.status = 'running'; renderResultRow(tc);
@@ -3271,7 +3343,7 @@ $('runBtn').addEventListener('click', async () => {
       let { id, fr } = captured;   // fr is reassigned if a stale capture has to be retried
       if (id != null) {
         markActivity(`case #${tc.id}: rename measurement ${id}`);
-        await renameMeasurement(id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}`.slice(0, 60));
+        await renameMeasurement(id, `${tc.captureKey}-${tc.group}-${tc.type}`.slice(0, 60));
       }
       // Record the id BEFORE anything can short-circuit, or a case that bails
       // out below exports measurementId:null and looks like a capture failure
@@ -3298,7 +3370,7 @@ $('runBtn').addEventListener('click', async () => {
             fr2 = again.fr;
             tc.measurementId = again.id;
             tc.captureMetadata = again.metadata || tc.captureMetadata || null;
-            if (again.id != null) await renameMeasurement(again.id, `PEQTEST-${tc.id}-${tc.group}-${tc.type}-retry`.slice(0, 60));
+            if (again.id != null) await renameMeasurement(again.id, `${tc.captureKey}-${tc.group}-${tc.type}-retry`.slice(0, 60));
             stale = measurementLooksStale(tc, fr2);
             tc.retried = true;
           }
@@ -4393,6 +4465,7 @@ $('addSuggestedBtn').addEventListener('click', () => {
   // add points to a regression, and re-measuring the old ones just costs sweeps.
   for (const t of testPlan) if (t.status !== 'pending') t.include = false;
   for (const s of pendingSuggestions) testPlan.push(s.tc);
+  assignPlanIndexes(testPlan);
   const added = pendingSuggestions.length;
   pendingSuggestions = [];
   renderPlan();
@@ -4731,6 +4804,7 @@ async function captureManualMeasurement() {
     }
 
     testPlan.push(tc);
+    assignPlanIndexes(testPlan);
     renderResultRow(tc);
     renderSummary();
     out.style.display = '';
@@ -4760,7 +4834,7 @@ window.__bench = {
   renderSummary,
   renderPrintHeader,
   setPlan(plan) {
-    testPlan = plan;
+    testPlan = assignPlanIndexes(plan);
     $('resultsTable').querySelector('tbody').innerHTML = '';
     for (const tc of testPlan) renderResultRow(tc);
   },
@@ -4826,7 +4900,7 @@ $('exportJsonBtn').addEventListener('click', () => {
 });
 
 $('exportCsvBtn').addEventListener('click', () => {
-  const cols = ['id', 'group', 'type', 'freq', 'gain', 'q', 'measureFreq', 'expectedDelta', 'measuredDelta', 'pregainDb', 'shapeRmse', 'shapeMaxErr', 'correlation', 'estimatedQ', 'qRatio', 'diff', 'status', 'measurementId', 'error'];
+  const cols = ['planIndex', 'captureKey', 'id', 'group', 'type', 'freq', 'gain', 'q', 'measureFreq', 'expectedDelta', 'measuredDelta', 'pregainDb', 'shapeRmse', 'shapeMaxErr', 'correlation', 'estimatedQ', 'qRatio', 'diff', 'status', 'measurementId', 'error'];
   // Repeated on every row so results from several devices can be concatenated
   // and pivoted by implementation — the grouping that actually predicts bugs.
   const implCols = ['handlerName', 'schemeNo', 'deviceGroup', 'peqConstraintsRef', 'vendorId', 'productId'];

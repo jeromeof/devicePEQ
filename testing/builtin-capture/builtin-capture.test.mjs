@@ -32,8 +32,6 @@ test('FFT round-trips a short real signal', () => {
 
 test('deconvolution recovers a known sample delay with flat magnitude', () => {
   const sampleRate = 48000;
-  // An impulse is deliberately used here: unlike a single sine, it excites
-  // every FFT bin and makes the expected flat magnitude unambiguous.
   const source = new Float64Array(1024);
   source[11] = 1;
   const delay = 37;
@@ -44,15 +42,13 @@ test('deconvolution recovers a known sample delay with flat magnitude', () => {
   assert.ok(Math.abs(magnitudeAt(response, 1000)) < 0.01, `expected 0dB, got ${magnitudeAt(response, 1000)}`);
 });
 
-test('deconvolution recovers a known gain across a broadband sweep', () => {
-  const sampleRate = 48000;
-  const rendered = renderLogSweep({ startHz: 30, endHz: 18000, durationSec: 0.2, sampleRate });
-  const played = rendered.samples;
-  const gain = 0.5;
-  const captured = Float64Array.from(played, (v) => v * gain);
-  const result = toVerificationResponse(deconvolve(captured, played, sampleRate));
-  const probe = magnitudeAt(result, 1000);
-  assert.ok(Math.abs(probe - 20 * Math.log10(gain)) < 0.05, `expected -6.02dB, got ${probe}`);
+test('deconvolution cancels output level without double-counting it', () => {
+  const sampleRate = 24000;
+  const rendered = renderLogSweep({ startHz: 30, endHz: 9000, durationSec: 0.25, sampleRate, levelDb: -12 });
+  const unity = toVerificationResponse(deconvolve(rendered.samples, rendered.samples, sampleRate));
+  const half = toVerificationResponse(deconvolve(Float64Array.from(rendered.samples, (v) => v * 0.5), rendered.samples, sampleRate));
+  assert.ok(Math.abs(magnitudeAt(unity, 1000)) < 0.02);
+  assert.ok(Math.abs(magnitudeAt(half, 1000) - 20 * Math.log10(0.5)) < 0.02);
 });
 
 test('deconvolution subtracts an independently measured noise spectrum in power', () => {
