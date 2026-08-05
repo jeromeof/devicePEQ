@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevicePEQ Verification Tool</title>
+<title>PEQ Hardware Verification Tool (using devicePEQ)</title>
 <style>
   :root {
     --background-color: #252526;
@@ -503,7 +503,7 @@
 </div>
 <div class="wrap">
   <div class="title-row">
-    <h1 data-i18n="app.title">🎛️ DevicePEQ Verification Tool</h1>
+    <h1 data-i18n="app.title">🎛️ PEQ Hardware Verification Tool (using devicePEQ)</h1>
     <div class="lang-switch no-print" id="langSwitch" role="group" aria-label="Language / 语言">
       <button type="button" data-lang="en" aria-pressed="true">EN</button>
       <button type="button" data-lang="zh" aria-pressed="false">中文</button>
@@ -862,7 +862,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
       '此时更改滤波器、重新写入或启动新的测试，都会作用到已在进行中的扫频。\n' +
       '此提示会自动消失。“Stop After Current Test”（在当前测试后停止）仍然可用。',
 
-    'app.title': '🎛️ DevicePEQ 验证工具',
+    'app.title': '🎛️ PEQ 硬件验证工具（使用 devicePEQ）',
 
     'step0.heading': 'REW API 设置',
     'step0.tag': '一次性设置',
@@ -1012,7 +1012,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     'step6.insightsTitle': '洞察分析',
     'step6.addSuggestedBtn': '➕ 把建议的后续测试加入计划',
 
-    'doc.title': 'DevicePEQ 验证工具',
+    'doc.title': 'PEQ 硬件验证工具（使用 devicePEQ）',
 
     // ── Test group names ────────────────────────────────────────────────────
     // Display only. The raw English name stays on the test case and is what
@@ -1115,7 +1115,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : lang;
     var docTitle = dict['doc.title'];
     if (docTitle) document.title = docTitle;
-    else if (lang === 'en') document.title = 'DevicePEQ Verification Tool';
+    else if (lang === 'en') document.title = 'PEQ Hardware Verification Tool (using devicePEQ)';
 
     var buttons = document.querySelectorAll('#langSwitch button');
     for (var i = 0; i < buttons.length; i++) {
@@ -3139,7 +3139,7 @@ function renderVerdict() {
 // is, what was tested and under which settings.
 function renderPrintHeader() {
   $('printHeaderTitle').textContent =
-    `DevicePEQ verification — ${connectedDevice?.model ?? 'unknown device'}`;
+    `PEQ Hardware Verification Tool (using devicePEQ) — ${connectedDevice?.model ?? 'unknown device'}`;
   const c = constraints;
   const bits = [new Date().toLocaleString()];
   if (baseline?.id != null) bits.push(`baseline measurement #${baseline.id}`);
