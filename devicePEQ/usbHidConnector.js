@@ -63,21 +63,22 @@ export const UsbHIDConnector = ( async function () {
 
                 const model = rawDevice.productName;
 
-                // Look up the model-specific configuration from the vendor config.
-                // Try three matching strategies in order of preference:
-                // 1. Match by productName in devices
-                // 2. Match by productId in deviceGroups
-                // 3. Fall back to defaultModelConfig
-                let deviceDetails = vendorConfig.devices?.[model];
+                // Look up both the scheme group and model-specific configuration.
+                // The scheme group supplies shared protocol traits (including
+                // compensation); the model entry supplies narrow product overrides.
+                const modelDetails = vendorConfig.devices?.[model];
+                let groupDetails = null;
                 let matchedGroupName = null;
 
-                // If no productName match, try matching by productId in deviceGroups
-                if (!deviceDetails && vendorConfig.deviceGroups) {
+                if (vendorConfig.deviceGroups) {
                   for (const [groupName, groupConfig] of Object.entries(vendorConfig.deviceGroups)) {
                     // Check if this group has a productIds array matching our device
-                    if (Array.isArray(groupConfig.productIds) &&
-                        groupConfig.productIds.includes(rawDevice.productId)) {
-                      deviceDetails = groupConfig;
+                    const productIds = [
+                      ...(groupConfig.productIds || []),
+                      ...(groupConfig.additionalProductIds || [])
+                    ];
+                    if (productIds.includes(rawDevice.productId)) {
+                      groupDetails = groupConfig;
                       matchedGroupName = groupName;
                       console.log(`Matched device by productId in group: ${groupName} (0x${rawDevice.productId.toString(16)})`);
                       break;
@@ -86,12 +87,13 @@ export const UsbHIDConnector = ( async function () {
                 }
 
                 // Fall back to empty object if still no match
-                deviceDetails = deviceDetails || {};
+                const deviceDetails = modelDetails || groupDetails || {};
 
                 let modelConfig = Object.assign(
                   {},
                   vendorConfig.defaultModelConfig || {},
-                  deviceDetails.modelConfig || {}
+                  groupDetails?.modelConfig || {},
+                  modelDetails?.modelConfig || {}
                 );
 
                 // Resolve peqConstraints and merge into modelConfig so handlers
@@ -100,8 +102,8 @@ export const UsbHIDConnector = ( async function () {
                 const resolvedConstraints = resolveConstraints(modelConfig);
                 if (resolvedConstraints) Object.assign(modelConfig, resolvedConstraints);
 
-                const manufacturer = deviceDetails.manufacturer || vendorConfig.manufacturer;
-                let handler = deviceDetails.handler ||  vendorConfig.handler;
+                const manufacturer = modelDetails?.manufacturer || groupDetails?.manufacturer || vendorConfig.manufacturer;
+                let handler = modelDetails?.handler || groupDetails?.handler || vendorConfig.handler;
 
                 // Always-on (not gated behind debugLogs) - printed immediately at resolution
                 // time, before any handler method runs, so it's available even if the device

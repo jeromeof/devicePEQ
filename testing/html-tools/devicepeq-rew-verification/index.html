@@ -665,8 +665,8 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
           <div data-i18n="step4.settle">Settle time after push</div><div><input type="number" id="settleMs" value="1500" step="100" class="plan-input"> ms</div>
           <div data-i18n="step4.tolerance">Shape fit tolerance (RMSE)</div><div><input type="number" id="toleranceDb" value="0.3" step="0.05" class="plan-input"> dB</div>
           <div data-i18n="step4.timeout">Sweep timeout</div><div><input type="number" id="timeoutMs" value="40000" step="1000" class="plan-input"> ms</div>
-          <div data-i18n="step4.sampleRate">Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1000" class="plan-input"> Hz
-            <button id="sampleRateFromRewBtn" class="secondary" type="button" data-i18n="step4.fromRew" data-i18n-title="step4.fromRewTip" title="Read the rate REW is playing at — that is the rate the device is being fed">↻ from REW</button>
+          <div data-i18n="step4.sampleRate">Device DSP sample rate</div><div><input type="number" id="sampleRate" value="44100" step="1" class="plan-input"> Hz
+            <button id="sampleRateFromRewBtn" class="secondary" type="button" data-i18n="step4.fromRew" data-i18n-title="step4.fromRewTip" title="Optional: copy the rate REW is playing at into this field">↻ use REW rate</button>
             <span id="sampleRateNote" class="small"></span></div>
           <div data-i18n="step4.sweepFreqs">Gain/Q sweep frequencies</div><div><input type="text" id="sweepFreqs" value="100, 1000, 8000" style="width:130px"> Hz
             <span class="info-icon" data-i18n-title="step4.sweepFreqsTip" title="The Gain sweep and Q sweep are run once at EACH of these frequencies, so a gain or Q error can be told apart from a frequency-dependent one.&#10;&#10;Why it matters: with every Gain/Q case pinned at a single frequency, Insights has only one distinct frequency to regress against, so its frequency-trend fits cannot run at all and a real frequency error can be misread as a Q or gain problem (or missed entirely). Three widely-spaced points — low, mid, high — are the minimum that supports a straight-line fit; the error being visible at 1 kHz but twice as large at 8 kHz is exactly the pattern this catches.&#10;&#10;Cost: case count multiplies by the number of frequencies, and every case is one measurement. Enter a single value (e.g. 1000) to restore the old single-frequency behaviour, or add more points for a stronger fit. Values are clamped to 20 Hz-20 kHz and de-duplicated.">ⓘ</span></div>
@@ -743,6 +743,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     <h2 data-i18n="step5.heading">Step 5 — Run</h2>
     <div class="flex">
       <button id="runBtn" disabled data-i18n="step5.runBtn">▶️ Run Test Plan</button>
+      <button id="rerunFailedBtn" class="secondary" disabled data-i18n="step5.rerunFailed">↻ Rerun Failed</button>
       <button id="stopBtn" class="danger" disabled data-i18n="step5.stopBtn">⏹ Stop After Current Test</button>
       <span id="liveDot" style="font-size:11px; color:#4ec9b0;" data-i18n-title="step5.liveDotTip" title="Ticks once a second while the main thread is running. If it STOPS while the page will not respond, the thread is blocked — a modal dialog or a long synchronous task. If it KEEPS ticking but clicks do nothing, the thread is fine and something is swallowing input.">●</span>
       <span id="runStatus" class="small"></span>
@@ -945,8 +946,8 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
     'step4.tolerance': '形状拟合容差（RMSE）',
     'step4.timeout': '扫频超时',
     'step4.sampleRate': '设备 DSP 采样率',
-    'step4.fromRew': '↻ 从 REW 读取',
-    'step4.fromRewTip': '读取 REW 当前播放所用的采样率 —— 也就是设备实际被馈入的采样率',
+    'step4.fromRew': '↻ 使用 REW 采样率',
+    'step4.fromRewTip': '可选：将 REW 当前播放所用的采样率填入此字段',
     'step4.sweepFreqs': '增益/Q 扫描频率',
     'step4.sweepFreqsTip': '增益扫描和 Q 扫描会在这里的每一个频率上各跑一次，这样增益或 Q 的误差才能与频率相关的误差区分开。\n\n' +
       '为什么重要：如果所有增益/Q 用例都固定在单一频率上，洞察分析只有一个可回归的频率点，频率趋势拟合根本无法运行，真正的频率误差就可能被误读成 Q 或增益问题（甚至完全漏掉）。低、中、高三个相隔较远的点，是支持直线拟合的最低要求；“误差在 1 kHz 可见、到 8 kHz 变成两倍”正是这种设置能抓到的模式。\n\n' +
@@ -987,6 +988,7 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 
     'step5.heading': '步骤 5 — 运行',
     'step5.runBtn': '▶️ 运行测试计划',
+    'step5.rerunFailed': '↻ 重跑失败项',
     'step5.stopBtn': '⏹ 在当前测试后停止',
     'step5.liveDotTip': '主线程运行时每秒跳动一次。如果页面无响应时它停止跳动，说明线程被阻塞了 —— 可能是模态对话框，或一个长时间的同步任务。如果它仍在跳动但点击无效，说明线程正常，是别的东西吞掉了输入。',
     'step5.manualBanner': 'REW Pro 扫频触发不可用 —— 请现在自己在 REW 中开始扫频（点击 REW 窗口里的 <strong>Start Measurement</strong>），完成后再点击下方的“继续”。',
@@ -1201,6 +1203,13 @@ then open http://localhost:8000/testing/html-tools/devicepeq-rew-verification.ht
 </script>
 
 <script type="module">
+// Shared, tool-agnostic audio helpers — see common/audio/README.md. Static
+// specifiers because these live at a fixed path beside the page, unlike the
+// devicePEQ/REW libraries below whose base paths come from config.
+import { $ } from '../common/audio/dom.mjs';
+import { axisTicks } from '../common/audio/axis.mjs';
+import { downloadText } from '../common/audio/files.mjs';
+import { canScanSilently, fillDeviceSelect, createRouteMemory } from '../common/audio/audio-route.mjs';
 // ═══════════════════════════════════════════════════════════════════════════
 //  DEPLOYMENT PATHS — read from config.json, NOT edited in this file
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1386,7 +1395,7 @@ let captureMethod = 'builtin';
 let builtinDevices = { inputs: [], outputs: [] };
 let builtinBackend = null;
 
-const $ = (id) => document.getElementById(id);
+
 
 // ---------------------------------------------------------------------------
 // Localisation, from the module side. The engine itself is the classic script
@@ -1738,9 +1747,12 @@ builtinBackend = new BuiltinCaptureBackend({
   status: (text) => { if ($('builtinStatus')) $('builtinStatus').textContent = text; },
 });
 
-function fillBuiltinDeviceSelect(id, devices) {
-  const select = $(id);
-  select.replaceChildren(...devices.map((device) => new Option(device.label, device.id)));
+// Remembers the chosen pair across visits, the same way the positional capture
+// tool does — the shared module owns the cookie names so the two cannot collide.
+const builtinRouteMemory = createRouteMemory('devicepeq-verification');
+
+function fillBuiltinDeviceSelect(id, devices, preferredId = '') {
+  return fillDeviceSelect($(id), devices, preferredId);
 }
 
 function dutAudioNames(device = connectedDevice) {
@@ -1770,9 +1782,11 @@ async function scanBuiltinDevices() {
   status.textContent = T('step2.scanning', null, 'requesting permission and scanning…');
   try {
     builtinDevices = await enumerateAudioDevices();
-    fillBuiltinDeviceSelect('builtinInputDevice', builtinDevices.inputs);
-    fillBuiltinDeviceSelect('builtinOutputDevice', builtinDevices.outputs);
-    applyBuiltinRoutingSuggestion({ force: true });
+    // A remembered pair wins over the suggestion; anything missing falls back to it.
+    const remembered = builtinRouteMemory.read();
+    const keptInput = fillBuiltinDeviceSelect('builtinInputDevice', builtinDevices.inputs, remembered.inputId);
+    const keptOutput = fillBuiltinDeviceSelect('builtinOutputDevice', builtinDevices.outputs, remembered.outputId);
+    applyBuiltinRoutingSuggestion({ force: !(keptInput && keptOutput) });
   $('rewStatus').textContent = T('step2.builtinReady', null, 'built-in devices ready');
     $('rewStatus').className = 'status-pill pill-connected';
     updateRunButtons();
@@ -1790,6 +1804,9 @@ function setCaptureMethod(method) {
   $('rewCaptureHelp').style.display = captureMethod === 'rew' ? '' : 'none';
   if (captureMethod !== 'rew') $('rewFailureHelp').style.display = 'none';
   $('builtinCaptureControls').style.display = captureMethod === 'builtin' ? '' : 'none';
+  // REW is only an optional rate source. Hide that control when the page is
+  // using Chrome's built-in capture so the UI does not imply REW is involved.
+  $('sampleRateFromRewBtn').style.display = captureMethod === 'rew' ? '' : 'none';
   $('rewStatus').textContent = captureMethod === 'rew'
     ? T('step2.notChecked', null, 'not checked')
     : T('step2.builtinNotScanned', null, 'built-in not scanned');
@@ -1798,9 +1815,31 @@ function setCaptureMethod(method) {
   updateRunButtons();
 }
 
+/**
+ * Show the REW connection instructions after a failure — but only when REW is
+ * the selected capture method. A built-in capture failing (clipping, no input
+ * device) says nothing about REW, and surfacing a "REW API setup" panel there
+ * sends the user off to fix something they are not using.
+ */
+function revealRewSetupOnFailure() {
+  if (captureMethod !== 'rew') return;
+  $('rewFailureHelp').style.display = '';
+  $('rewSetupSection').style.display = '';
+  setSetupOpen(true);
+}
+
 $('captureMethod').addEventListener('change', (event) => setCaptureMethod(event.target.value));
 $('scanBuiltinDevices').addEventListener('click', scanBuiltinDevices);
+for (const id of ['builtinInputDevice', 'builtinOutputDevice']) {
+  $(id).addEventListener('change', () => builtinRouteMemory.write({
+    inputId: $('builtinInputDevice').value,
+    outputId: $('builtinOutputDevice').value,
+  }));
+}
 setCaptureMethod('builtin');
+// Once microphone access has been granted for this origin, enumeration returns
+// real labels with no prompt — so fill the selects without waiting for a click.
+canScanSilently().then((granted) => { if (granted && captureMethod === 'builtin') scanBuiltinDevices(); });
 
 // Order matters: apply first, listen second.
 applySetupState();
@@ -2019,15 +2058,20 @@ $('checkRewBtn').addEventListener('click', async () => {
     status.className = 'status-pill pill-disconnected';
     // Re-open on failure whatever the remembered state: this is exactly when
     // the instructions are wanted again.
-    setSetupOpen(true);
-    $('rewFailureHelp').style.display = '';
-    $('rewSetupSection').style.display = '';
+    revealRewSetupOnFailure();
   }
 });
 
 // ---------------------------------------------------------------------------
 // Baseline
 // ---------------------------------------------------------------------------
+function adoptBaselineSampleRate(fr) {
+  const rate = Number(fr?.sampleRate);
+  if (!Number.isFinite(rate) || rate <= 0) return;
+  $('sampleRate').value = String(rate);
+  $('sampleRateNote').textContent = `baseline ${rate} Hz`;
+}
+
 $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
   const status = $('baselineStatus');
   const info = $('baselineInfo');
@@ -2048,6 +2092,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
     if (!captured) { status.textContent = 'baseline capture skipped'; status.className = 'status-pill pill-disconnected'; return; }
 
     if (captured.id != null) await renameMeasurement(captured.id, 'PEQTEST-BASELINE');
+    adoptBaselineSampleRate(captured.fr);
     baseline = { id: captured.id, fr: captured.fr, source: captured.source || 'rew', metadata: captured.metadata || null };
     const quality = applyBaselineQuality(status, captured, captureMethod === 'rew'
       ? `baseline = measurement #${captured.id} (device reset to 0dB)`
@@ -2067,9 +2112,7 @@ $('resetAndCaptureBaselineBtn').addEventListener('click', async () => {
   } catch (e) {
     status.textContent = e.message;
     status.className = 'status-pill pill-disconnected';
-    $('rewFailureHelp').style.display = '';
-    $('rewSetupSection').style.display = '';
-    $('setupSection').open = true;
+    revealRewSetupOnFailure();
   }
 });
 
@@ -2084,6 +2127,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
       const timeoutMs = Number($('timeoutMs').value) || 40000;
       const captured = await triggerAndCaptureSweep(timeoutMs, { what: 'capturing built-in baseline sweep' });
       if (!captured) throw new Error('built-in baseline capture was cancelled');
+      adoptBaselineSampleRate(captured.fr);
       baseline = { id: null, fr: captured.fr, source: 'builtin', metadata: captured.metadata || null };
       const quality = applyBaselineQuality(status, captured, 'baseline = built-in capture');
       updateBuiltinBaselineViewButton();
@@ -2105,6 +2149,7 @@ $('captureBaselineBtn').addEventListener('click', async () => {
     const id = ids.map(Number).sort((a, b) => a - b).pop().toString();
     await renameMeasurement(id, 'PEQTEST-BASELINE');
     const fr = await getFrequencyResponse(id);
+    adoptBaselineSampleRate(fr);
     baseline = { id, fr, source: 'rew', metadata: null };
     status.textContent = `baseline = measurement #${id}`;
     baselineQualityOk = true;
@@ -2268,6 +2313,15 @@ function generatePlan() {
     }
   }
 
+  // A regenerated plan has new case ids and therefore cannot reuse the old
+  // result rows. Clear the previous run so the table represents this plan
+  // rather than accumulating stale rows below it.
+  $('resultsTable').querySelector('tbody').innerHTML = '';
+  $('resultsTable').style.display = 'none';
+  $('failureChartPanel').style.display = 'none';
+  $('verdictBanner').style.display = 'none';
+  $('summaryBox').textContent = T('step6.summaryEmpty', null, 'Run the test plan to see a summary here.');
+  ['insightsBtn', 'exportPdfBtn', 'exportJsonBtn', 'exportCsvBtn'].forEach((id) => { $(id).disabled = true; });
   testPlan = assignPlanIndexes(plan, { replace: true });
   renderPlan();
   updateRunButtons();
@@ -2508,8 +2562,10 @@ async function captureBuiltinSweep({ what = 'measuring' } = {}) {
   channel.rawFr = rawChannel;
   if (result.metadata?.validStartHz != null) channel.validStartFreq = result.metadata.validStartHz;
   if (result.metadata?.validEndHz != null) channel.validEndFreq = result.metadata.validEndHz;
-  $('sampleRate').value = String(channel.sampleRate);
-  $('sampleRateNote').textContent = `actual built-in input rate: ${channel.sampleRate} Hz`;
+  // Do not overwrite the manually entered Device DSP sample rate. The built-in
+  // capture rate describes the audio I/O path; the field above describes the
+  // rate used to model the device's biquads (which may be an internal rate such
+  // as 49152 Hz).
   return { id: null, fr: channel, source: 'builtin', metadata: { ...result.metadata, smoothing: '2-pass 1/12-octave log-frequency dB average' } };
 }
 
@@ -2697,35 +2753,11 @@ function fcPathFor(points, yFn, key, view) {
   return path.trim();
 }
 
-// Frequency gridlines for whatever range is visible. The old fixed
-// 20/50/100/…/20k list degenerates when zoomed: a 900-1100Hz window would show
-// exactly one gridline. Walks from roundest to finest tick set and takes the
-// first that yields enough lines.
-function fcFreqTicks(loHz, hiHz) {
-  // Relative epsilon, not a bare >=: the window bounds come back through
-  // Math.pow(2, Math.log2(f)), so the full-band low edge is 20.000000000000004
-  // and the high edge 19999.999999999996. An exact comparison silently drops the
-  // 20 Hz and 20 kHz gridlines at the default zoom.
-  const tickLo = loHz * (1 - 1e-9), tickHi = hiHz * (1 + 1e-9);
-  const tiers = [[1, 2, 5], [1, 1.5, 2, 3, 5, 7], [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8]];
-  for (const mults of tiers) {
-    const out = [];
-    for (let d = 0; d <= 5; d++) {
-      for (const m of mults) {
-        const v = m * Math.pow(10, d);
-        if (v >= tickLo && v <= tickHi) out.push(v);
-      }
-    }
-    if (out.length >= 4) {
-      const stride = Math.ceil(out.length / 12);
-      return stride > 1 ? out.filter((_, i) => i % stride === 0) : out;
-    }
-  }
-  // Very narrow window — no "nice" value lands inside it, so fall back to
-  // evenly log-spaced ticks and let the labels carry the precision.
-  const lo = Math.log2(loHz), hi = Math.log2(hiHz);
-  return Array.from({ length: 7 }, (_, i) => Math.pow(2, lo + ((hi - lo) * i) / 6));
-}
+// Frequency gridlines for whatever range is visible, from the shared axis module:
+// a fixed 20/50/100/…/20k list degenerates when zoomed, so it walks from roundest
+// to finest tick set and falls back to evenly log-spaced ticks in a window too
+// narrow for round values. maxTicks keeps a wide window from crowding.
+const fcFreqTicks = (loHz, hiHz) => axisTicks(loHz, hiHz, { minTicks: 4, maxTicks: 12, fallbackCount: 7 });
 
 // Label precision has to follow the zoom: "1.00k" is useless in a window only a
 // few Hz wide.
@@ -3231,6 +3263,7 @@ document.addEventListener('DPQLanguageChanged', () => {
 function updateRunButtons() {
   const blockedByDisconnect = deviceRequiresDisconnect && !ignoreDisconnect;
   const captureReady = captureMethod === 'rew' || builtinDevices.inputs.length > 0;
+  const failedCount = testPlan.filter((tc) => tc.status === 'fail').length;
   $('runBtn').disabled = running || !connectedDevice || !baseline || !baselineQualityOk || !testPlan.length || !captureReady || blockedByDisconnect;
   $('runBtn').title = blockedByDisconnect
     ? 'This device is configured to disconnect after every filter write — tick "Try anyway" above to test whether it actually does.'
@@ -3239,8 +3272,14 @@ function updateRunButtons() {
     : (deviceRequiresDisconnect
       ? 'Running with the disconnect override on — the run will stop at the first push if the device really does drop.'
       : ''));
+  $('rerunFailedBtn').disabled = running || failedCount === 0 || !connectedDevice || !baseline || !baselineQualityOk || !captureReady || blockedByDisconnect;
+  $('rerunFailedBtn').title = failedCount
+    ? `Rerun the ${failedCount} failed case(s) from the last run.`
+    : 'No failed cases to rerun.';
   $('stopBtn').disabled = !running;
 }
+
+let rerunFailedOnly = false;
 
 $('runBtn').addEventListener('click', async () => {
   running = true; stopRequested = false;
@@ -3259,12 +3298,20 @@ $('runBtn').addEventListener('click', async () => {
   const heapLog = [];
   const deviceLabel = connectedDevice?.model ?? 'device';
 
-  const selectedCases = testPlan.filter((tc) => tc.include);
+  // Consume this before the first await so a later ordinary run always uses
+  // the plan checkboxes, even if a capture fails unexpectedly.
+  const rerunThisRun = rerunFailedOnly;
+  const selectedCases = rerunThisRun
+    ? testPlan.filter((tc) => tc.status === 'fail')
+    : testPlan.filter((tc) => tc.include);
+  rerunFailedOnly = false;
   const selectedIds = new Set(selectedCases.map((tc) => tc.id));
-  for (const tc of testPlan) {
-    if (!selectedIds.has(tc.id)) {
-      tc.status = 'skipped';
-      renderResultRow(tc);
+  if (!rerunThisRun) {
+    for (const tc of testPlan) {
+      if (!selectedIds.has(tc.id)) {
+        tc.status = 'skipped';
+        renderResultRow(tc);
+      }
     }
   }
   $('runStatus').textContent = `running ${selectedCases.length} selected case(s) of ${testPlan.length}`;
@@ -3274,6 +3321,7 @@ $('runBtn').addEventListener('click', async () => {
     if (!selectedIds.has(tc.id)) continue;
     if (stopRequested) break;
 
+    const caseNumber = selectedCases.findIndex((candidate) => candidate.id === tc.id) + 1;
     tc.status = 'running'; renderResultRow(tc);
     $('runStatus').textContent = `pushing: ${labelFor(tc)}`;
 
@@ -3312,7 +3360,9 @@ $('runBtn').addEventListener('click', async () => {
 
     try {
       markActivity(`case #${tc.id}: ${captureMethod === 'rew' ? 'REW capture + fetch FR' : 'built-in capture + deconvolution'}`);
-      const captured = await triggerAndCaptureSweep(timeoutMs, { what: `measuring ${labelFor(tc)}` });
+      const captured = await triggerAndCaptureSweep(timeoutMs, {
+        what: `case ${caseNumber}/${selectedCases.length} — measuring ${labelFor(tc)}`,
+      });
       if (!captured) { tc.status = 'skipped'; renderResultRow(tc); continue; }
       let { id, fr } = captured;   // fr is reassigned if a stale capture has to be retried
       if (id != null) {
@@ -3378,7 +3428,9 @@ $('runBtn').addEventListener('click', async () => {
         // pregain offset, then judge the pregain-COMPENSATED fit.
         const filterSpec = { freq: tc.freq, gain: tc.gain, q: tc.q, type: tc.type.toUpperCase() };
         markActivity(`case #${tc.id}: shape fit`);
-        const fitSampleRate = fr.sampleRate || sampleRate;
+        // The user-entered rate is the DSP/model rate. A capture's transport
+        // rate (REW or Chrome input) must not silently replace it.
+        const fitSampleRate = sampleRate > 0 ? sampleRate : (fr.sampleRate || 44100);
         const comparison = compareToTheoretical(baseline.fr, fr, filterSpec, { magnitudeAt, fs: fitSampleRate, evalFreqs: validEvalFreqs(baseline.fr, fr) });
         const { pregainDb, compensated } = compensateForPregain(comparison);
         const judged = judgeFit(compensated, { rmseToleranceDb: toleranceDb });
@@ -3460,6 +3512,13 @@ $('runBtn').addEventListener('click', async () => {
 });
 
 $('stopBtn').addEventListener('click', () => { stopRequested = true; $('runStatus').textContent = 'stopping after current test…'; });
+
+$('rerunFailedBtn').addEventListener('click', () => {
+  if (running) return;
+  if (!testPlan.some((tc) => tc.status === 'fail')) return;
+  rerunFailedOnly = true;
+  $('runBtn').click();
+});
 
 // ---------------------------------------------------------------------------
 // Insights — cross-test-case diagnosis
@@ -4452,14 +4511,7 @@ $('addSuggestedBtn').addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
-function download(filename, text, type) {
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
+const download = (filename, text, type) => downloadText(filename, text, type);
 
 // "Save as PDF" is the browser's print dialog with Destination=PDF — the header
 // and verdict are refreshed first so a printout can never show stale values from
@@ -4565,7 +4617,7 @@ function findClickBlocker() {
     captureInProgress
     && document.body.classList.contains('measuring')
     && el?.closest?.('#measureShield');
-  const probes = ['genPlanBtn', 'insightsBtn', 'exportJsonBtn', 'runBtn']
+  const probes = ['genPlanBtn', 'insightsBtn', 'exportJsonBtn', 'runBtn', 'rerunFailedBtn']
     .map((id) => $(id)).filter(Boolean);
   for (const el of probes) {
     const r = el.getBoundingClientRect();

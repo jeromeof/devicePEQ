@@ -57,6 +57,8 @@ export async function test_jm98max_walkplay_routes_correctly(assert) {
   assert.equal(device.modelConfig.minGain, -10,        'JM98MAX minGain should be -10 dB (WalkPlay SchemeNo10)');
   assert.equal(device.modelConfig.maxGain, 10,         'JM98MAX maxGain should be 10 dB (WalkPlay SchemeNo10)');
   assert.equal(device.modelConfig.schemeNo, 10,        'schemeNo should be 10');
+  assert.equal(device.modelConfig.freqCompensation, undefined,
+    'SchemeNo10 should remain uncompensated pending measurements');
   assert.ok(device.handler,                            'handler should be assigned');
 }
 
@@ -67,7 +69,24 @@ export async function test_jm98max_2_walkplay_routes_correctly(assert) {
   assert.equal(device.modelConfig.minGain, -10,        'JM98MAX 2 minGain should be -10 dB (WalkPlay SchemeNo10)');
   assert.equal(device.modelConfig.maxGain, 10,         'JM98MAX 2 maxGain should be 10 dB (WalkPlay SchemeNo10)');
   assert.equal(device.modelConfig.schemeNo, 10,        'schemeNo should be 10');
+  assert.equal(device.modelConfig.freqCompensation, undefined,
+    'SchemeNo10 legacy group should remain uncompensated pending measurements');
   assert.ok(device.handler,                            'handler should be assigned');
+}
+
+export async function test_tanchjim_ola_ii_schemeNo11_compensation(assert) {
+  const device = await connectMock({
+    vendorId: 0x3302,
+    productId: 0xC20C,
+    productName: 'TANCHJIM-OLA II DSP'
+  });
+  assert.ok(device, 'should connect');
+  assert.equal(device.modelConfig.schemeNo, 11, 'OLA II should use SchemeNo11');
+  assert.equal(device.modelConfig.freqCompensation.factor, 0.9775,
+    'OLA II should inherit SchemeNo11 centre-frequency compensation');
+  assert.deepEqual(device.modelConfig.qCompensation,
+    { model: 'cosNyquist', designFs: 49152 },
+    'OLA II should inherit SchemeNo11 Q compensation');
 }
 
 export async function test_walkplay_schemeNo16_routes_correctly(assert) {

@@ -1,0 +1,6 @@
+{
+  "_for": "index.html — the headphone positional capture tool",
+  "_note": "Paths are relative to the HTML page. Trailing slash required. The deployed copy on pragmaticaudio.com has its own config.json with different values, which is what lets index.html and the shared modules be copied across verbatim.",
+
+  "devicePEQBase": "../../../devicePEQ/"
+}

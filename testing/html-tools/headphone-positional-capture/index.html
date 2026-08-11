@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headphone Positional Capture</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div id="measureShield"><div class="box"><div id="shieldWhat">Preparing measurement…</div><div class="small" style="margin-top:8px">The sweep is running. Please do not move the headphone or change the audio route.</div></div></div>
+<main class="wrap">
+  <h1>Headphone positional capture &amp; visualisation</h1>
+  <p class="lede">Capture the same headphone at a centred seating and at controlled forward, backward, up, and down offsets. The graph shows how much of the measured response depends on the listener–headphone geometry, rather than treating one fixture position as universal.</p>
+
+  <p id="storageWarning" class="hint" style="display:none"></p>
+
+  <div class="grid">
+    <div>
+      <details class="card" id="routeCard" open>
+        <summary><h2>1. Audio input / output</h2><span class="summary-line" id="routeSummary"></span></summary>
+        <div class="device-grid">
+          <label class="stack"><span>Measurement input — GRAS/B&amp;K interface, Cosmos ADC, or USB-C audio input</span><select id="inputDevice"><option value="">Scan for audio devices first</option></select></label>
+          <label class="stack"><span>Playback output — headphone DAC/interface</span><select id="outputDevice"><option value="">Scan for audio devices first</option></select></label>
+        </div>
+        <div class="row" style="margin-top:11px"><button id="scanBtn" class="primary">🎙️ Request permission &amp; scan</button></div>
+        <div id="routeStatus" class="status" style="margin-top:9px">Audio devices have not been scanned.</div>
+        <div id="routeHint" class="hint route-confidence">The automatic suggestion prefers names containing Cosmos, ADC, GRAS, B&amp;K, measurement, or USB-C for the input, and an external DAC/headphone output for playback. You can override it.</div>
+      </details>
+
+      <details class="card" id="captureCard" open>
+        <summary><h2>2. Capture and rendering options</h2><span class="summary-line" id="captureSummary"></span></summary>
+        <div class="settings-grid">
+          <label><span>Start frequency (Hz)</span><input id="startHz" type="number" value="20" min="5" step="1"></label>
+          <label><span>End frequency (Hz)</span><input id="endHz" type="number" value="20000" min="1000" step="100"></label>
+          <label><span>Sweep duration (s)</span><input id="durationSec" type="number" value="6" min="0.25" step="0.5"></label>
+          <label><span>Wait before sweep (ms)</span><input id="warmupMs" type="number" value="500" min="0" step="100"></label>
+          <label><span>Wait after sweep (s)</span><input id="tailSec" type="number" value="0.8" min="0" step="0.1"></label>
+          <label><span>Noise-floor capture (s)</span><input id="noiseFloorSec" type="number" value="2" min="0" step="0.5"></label>
+          <label><span>Output level (dBFS)</span><input id="outputLevelDb" type="number" value="-12" min="-60" max="0" step="1"></label>
+          <label><span>Optional center repeats</span><select id="centerRepeats"><option value="1">1 center measurement</option><option value="2" selected>2 center measurements</option><option value="3">3 center measurements</option></select></label>
+          <label><span>Input channel</span><select id="inputChannel"><option value="left">Left</option><option value="right">Right</option></select></label>
+          <label><span>Graph smoothing</span><select id="smoothing"><option value="0">Raw bins</option><option value="12" selected>1/12 octave</option><option value="24">1/6 octave</option></select></label>
+        </div>
+        <div class="row" style="margin-top:12px"><label><input id="timingReference" type="checkbox" checked> Use a timing lead-in/reference</label><span class="small">The built-in matched sweep still deconvolves without it; the lead-in makes the capture timing more robust.</span></div>
+        <label class="stack" style="margin-top:14px"><span>Input calibration file — REW microphone/interface calibration, frequency + dB columns. A remembered file stays in use even though this box reads “No file chosen”.</span><input id="calFile" type="file" accept=".txt,.cal,.csv"></label>
+        <div class="row"><label><input id="rememberCal" type="checkbox" checked> Remember this calibration on this browser</label><span id="calStatus" class="small">No calibration loaded</span></div>
+      </details>
+
+      <details class="card" id="calCard" open>
+        <summary><h2>3. Target and preference bounds</h2><span class="summary-line" id="calSummary"></span></summary>
+        <div class="settings-grid" style="margin-top:12px">
+          <label><span>Display mode</span><select id="viewMode"><option value="raw">Absolute / calibrated FR</option><option value="slope">Deviation, target slope shown</option><option value="target">Deviation, slope compensated flat</option></select></label>
+          <label><span>Target curve</span><select id="targetPreset"><option value="none">None</option></select></label>
+        </div>
+        <label class="stack" style="margin-top:10px"><span>Your own rig target (frequency + dB columns) — uploading selects and remembers it. A remembered file stays in use even though this box reads “No file chosen”.</span><input id="targetFile" type="file" accept=".txt,.csv,.fr,.cal"></label>
+        <div class="settings-grid" style="margin-top:12px">
+          <label><span>Normalisation</span><select id="normMode"><option value="1000">1 kHz</option><option value="500">500 Hz (IEC)</option><option value="200">200 Hz</option><option value="2000">2 kHz</option><option value="band">Average 200 Hz – 2 kHz</option></select></label>
+          <label><span>Target tilt (dB/octave)</span><select id="tiltPreset"><option value="0">None — target as published</option><option value="-0.5">-0.5 dB/oct (≈ -5 dB total)</option><option value="-0.8">-0.8 dB/oct (≈ -8 dB total)</option><option value="-1">-1 dB/oct (≈ -10 dB total)</option><option value="custom">Custom…</option></select></label>
+          <label><span>Custom tilt (dB/octave)</span><input id="targetTilt" type="number" value="0" min="-4" max="4" step="0.1"></label>
+        </div>
+        <div id="tiltHint" class="small" style="margin-top:6px"></div>
+        <div class="settings-grid" style="margin-top:10px">
+          <label><span>Preference bounds</span><select id="boundsMode"><option value="pref">Preference envelope (as published)</option><option value="pref-centred">Preference envelope, centred on target</option><option value="flat">Flat ± tolerance</option><option value="none">None</option></select></label>
+          <label><span>Flat tolerance (± dB)</span><input id="boundDb" type="number" value="1.5" min="0.1" step="0.1"></label>
+        </div>
+        <div class="row" style="margin-top:10px"><span id="targetStatus" class="small">No target loaded</span></div>
+        <div id="boundsHint" class="hint" style="margin-top:8px"></div>
+      </details>
+
+      <section class="card">
+        <h2>4. Positional workflow</h2>
+        <p class="small">Keep the fixture, signal level, and headphone seal unchanged. For each offset, move the headphone only in the indicated direction, then let it settle before capturing. Center is averaged when the selected repeat count is complete.</p>
+        <figure class="diagram" style="margin:0">
+          <div class="rig">
+            <img src="./ear-measurement-rig.svg" alt="Measurement pinna mounted at the centre of a circular fixture with concentric offset rings">
+            <svg id="rigOverlay" class="rig-overlay" viewBox="0 0 900 900" role="img" aria-label="Capture positions: centre, forward, backward, up and down offsets on the fixture">
+              <defs>
+                <marker id="arrowC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#4ec9b0"/></marker>
+                <marker id="arrowF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#f07178"/></marker>
+                <marker id="arrowB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#569cd6"/></marker>
+                <marker id="arrowU" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#dcdcaa"/></marker>
+                <marker id="arrowD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#c586c0"/></marker>
+              </defs>
+              <g id="headphoneCup" class="cup">
+                <ellipse class="halo" cx="450" cy="452" rx="276" ry="314" fill="currentColor" fill-opacity=".10" stroke="none"/>
+                <path d="M450 180 C450 116 418 74 352 50" fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" opacity=".62"/>
+                <path d="M356 250 450 180 544 250" fill="none" stroke="currentColor" stroke-width="13" stroke-linejoin="round" stroke-linecap="round" opacity=".8"/>
+                <ellipse cx="450" cy="452" rx="238" ry="274" fill="currentColor" fill-opacity=".09" stroke="currentColor" stroke-width="11"/>
+                <ellipse cx="450" cy="452" rx="172" ry="202" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="13 13" opacity=".5"/>
+                <circle cx="450" cy="450" r="7" fill="currentColor" stroke="none"/>
+                <path d="M450 424v-20M450 476v20M424 450h-20M476 450h20" stroke="currentColor" stroke-width="4" fill="none" opacity=".9"/>
+              </g>
+
+              <!-- The centred seating is drawn as the earcup itself rather than a
+                   marker: the point of the diagram is where the cup sits over the
+                   pinna. The fill stays translucent so the ear reads through it. -->
+              <g data-pos="center" fill="#4ec9b0" stroke="#4ec9b0">
+                <path d="M282 645 250 700" stroke-width="3" stroke-dasharray="9 7" fill="none" opacity=".8"/>
+                <text x="248" y="734" text-anchor="middle" stroke="none">CENTER</text>
+              </g>
+
+              <g data-pos="forward" fill="#f07178" stroke="#f07178">
+                <circle class="halo" cx="742" cy="450" r="30" fill="rgba(240,113,120,.18)" stroke="none"/>
+                <path d="M596 450H838" stroke-width="7" fill="none" marker-end="url(#arrowF)"/>
+                <text x="716" y="422" text-anchor="middle" stroke="none">FORWARD</text>
+              </g>
+
+              <g data-pos="backward" fill="#569cd6" stroke="#569cd6">
+                <circle class="halo" cx="158" cy="450" r="30" fill="rgba(86,157,214,.18)" stroke="none"/>
+                <path d="M304 450H62" stroke-width="7" fill="none" marker-end="url(#arrowB)"/>
+                <text x="184" y="422" text-anchor="middle" stroke="none">BACK</text>
+              </g>
+
+              <g data-pos="up" fill="#dcdcaa" stroke="#dcdcaa">
+                <circle class="halo" cx="450" cy="158" r="30" fill="rgba(220,220,170,.18)" stroke="none"/>
+                <path d="M450 304V62" stroke-width="7" fill="none" marker-end="url(#arrowU)"/>
+                <text x="560" y="166" text-anchor="middle" stroke="none">UP</text>
+              </g>
+
+              <g data-pos="down" fill="#c586c0" stroke="#c586c0">
+                <circle class="halo" cx="450" cy="742" r="30" fill="rgba(197,134,192,.18)" stroke="none"/>
+                <path d="M450 596v242" stroke-width="7" fill="none" marker-end="url(#arrowD)"/>
+                <text x="566" y="752" text-anchor="middle" stroke="none">DOWN</text>
+              </g>
+
+            </svg>
+          </div>
+          <figcaption>The outlined earcup marks the centred seating over the pinna. The fixture's concentric rings give repeatable offset distances — pick one ring and use the same one for all four offsets.</figcaption>
+        </figure>
+        <div id="positionSteps" class="steps" style="margin-top:12px"></div>
+        <div id="positionNote" class="position-note" style="margin-top:12px"></div>
+        <div class="capture-bar"><button id="captureBtn" class="primary" disabled>🎙️ Capture Center</button><button id="resetBtn" class="danger">Reset measurements</button></div>
+        <div id="captureStatus" class="status" style="margin-top:9px"></div>
+      </section>
+
+    </div>
+
+    <div class="chart-column">
+    <section class="card chart-card"><h2>Positional response</h2><div class="chart-tools"><label><span>Frequency range</span><select id="zoomPreset"><option value="20,20000">Full 20 Hz – 20 kHz</option><option value="20,300">Bass 20 – 300 Hz</option><option value="100,1000">Lower mids 100 Hz – 1 kHz</option><option value="200,2000">Mids 200 Hz – 2 kHz</option><option value="2000,10000">Ear gain 2 – 10 kHz</option><option value="5000,20000">Top octaves 5 – 20 kHz</option><option value="custom">Custom (zoomed)</option></select></label><label><span>dB span</span><select id="dbSpan"><option value="auto">Auto-fit</option><option value="5">5 dB</option><option value="10">10 dB</option><option value="20">20 dB</option><option value="40">40 dB</option><option value="60">60 dB</option></select></label><button id="zoomIn" class="secondary" title="Zoom in on the centre of the visible range">Zoom in</button><button id="zoomOut" class="secondary" title="Zoom out">Zoom out</button><button id="resetZoom" class="secondary">Reset view</button><span class="spacer"></span><span class="small">Drag to pan · double-click resets</span></div><div class="chart-wrap"><canvas id="chart" width="1100" height="620"></canvas></div><div id="legend" class="legend"></div><div id="measurementChips" class="measurements"></div></section>
+
+      <section class="card export-card">
+        <h2>5. Export</h2>
+        <div class="export-row"><button id="jpgBtn" disabled>🖼️ Save graph as JPG</button><button id="rewBtn" disabled>⬇️ Export REW measurements (.zip)</button><button id="jsonBtn" disabled>⬇️ Export project JSON</button></div>
+        <ul class="note-list"><li>REW export writes one text file per captured position, zipped together — REW imports one measurement per file (File &rsaquo; Import &rsaquo; Import frequency response). A single capture downloads as a plain .txt.</li><li>The project JSON keeps the raw response metadata, calibration name, target, and capture settings for later analysis.</li></ul>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="./app.mjs"></script>
+</body>
+</html>

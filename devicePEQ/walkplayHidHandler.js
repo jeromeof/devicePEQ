@@ -742,6 +742,9 @@ async function waitForFilters(condition, device, timeout, callback) {
 function computeIIRFilter(i, freq, gain, q, type = 'PK') {
   let bArr = new Array(20).fill(0);
   const A = Math.sqrt(Math.pow(10, gain / 20)); // 10^(gain/40)
+  // WalkPlay coefficient domain confirmed by the OLA II verification path.
+  // Keep this coefficient-generation rate separate from any model-specific
+  // Q compensation, which is configured in usbDeviceConfig.js.
   const w0 = (freq * 6.283185307179586) / 96000;
   const sinw0 = Math.sin(w0);
   const alpha = sinw0 / (2 * q); // peaking-EQ alpha — correct for PK, NOT for LSQ/HSQ (see below)

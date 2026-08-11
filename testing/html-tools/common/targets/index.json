@@ -1,0 +1,21 @@
+{
+  "note": "Headphone target curves copied from pragmaticaudio/static/headphones/data/targets. Add a file here and list it below to make it selectable. 'diffuseField: true' marks targets the CrinGraph preference bounds are defined against.",
+  "prefBounds": {
+    "dir": "../pref-bounds/",
+    "upper": "Bounds L.txt",
+    "lower": "Bounds R.txt",
+    "label": "Listener preference bounds"
+  },
+  "targets": [
+    { "id": "df", "label": "Diffuse Field", "file": "Diffuse Field Target.txt", "diffuseField": true },
+    { "id": "ff", "label": "Free Field", "file": "Free Field Target.txt" },
+    { "id": "harman-oe-2018", "label": "Harman OE 2018", "file": "Harman OE 2018 Target.txt" },
+    { "id": "harman-2015", "label": "Harman 2015", "file": "Harman 2015 Target.txt" },
+    { "id": "kemar-df", "label": "KEMAR DF", "file": "KEMAR DF Target.txt", "diffuseField": true },
+    { "id": "kemar-df-tilt", "label": "KEMAR KB50xx DF, 10 dB tilt", "file": "10dB Tilt KEMAR KB50xx DF Target.txt" },
+    { "id": "ief-2023", "label": "IEF Neutral 2023", "file": "IEF Neutral 2023 Target.txt" },
+    { "id": "rtings", "label": "Rtings", "file": "Rtings Target.txt" },
+    { "id": "sonarworks", "label": "Sonarworks", "file": "Sonarworks Target.txt" },
+    { "id": "autoeq", "label": "AutoEQ", "file": "AutoEQ Target.txt" }
+  ]
+}
