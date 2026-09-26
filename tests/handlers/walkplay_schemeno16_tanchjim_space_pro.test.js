@@ -8,6 +8,8 @@
 
 import { loadCapture } from '../MockHIDDevice.js';
 import { walkplayUsbHID } from '../../devicePEQ/walkplayHidHandler.js';
+import { usbHidDeviceHandlerConfig } from '../../devicePEQ/usbDeviceConfig.js';
+import { loadPeqConstraintsConfig, getConstraintsByRef } from '../../devicePEQ/peqConstraints.js';
 
 function makeDeviceDetails(mock, overrides = {}) {
   return {
@@ -32,6 +34,20 @@ function makeDeviceDetails(mock, overrides = {}) {
       ...overrides
     }
   };
+}
+
+export async function test_spaceProAt_uses10BandSchemeNo16Config(assert) {
+  await loadPeqConstraintsConfig();
+
+  const vendor = usbHidDeviceHandlerConfig.find(entry => entry.vendorIds.includes(0x3302));
+  const model = vendor?.devices?.['TANCHJIM-SPACE PRO AT'];
+
+  assert.ok(model, 'the exact SPACE PRO AT product name should have an explicit model config');
+  assert.equal(model.modelConfig.schemeNo, 16, 'SPACE PRO AT should use WalkPlay SchemeNo16');
+  const constraints = getConstraintsByRef(model.modelConfig.peqConstraintsRef);
+  assert.equal(constraints?.maxFilters, 10, 'SPACE PRO AT should expose all ten PEQ filters');
+  assert.equal(model.modelConfig.deviceHandlesPregain, false,
+    'SPACE PRO AT should retain explicit global gain handling');
 }
 
 export async function test_pullFromDevice_returnsFilters(assert) {
