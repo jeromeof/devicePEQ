@@ -774,6 +774,16 @@ export const usbHidDeviceHandlerConfig = ([
           deviceHandlesPregain: false
         }
       },
+      // Windows/WebHID reports the AT variant under its full product name.
+      // It uses the same 10-band SchemeNo16 PEQ as SPACE PRO.
+      "TANCHJIM-SPACE PRO AT": {
+        manufacturer: "Tanchjim",
+        modelConfig: {
+          peqConstraintsRef: "walkplayPeq10Band10dBPkOnly",
+          schemeNo: 16,
+          deviceHandlesPregain: false
+        }
+      },
       "TANCHJIM-OLA II DSP": {
         // Matches the walkplayPeq8Band10dBPkOnly SchemeNo10/21 productId group like other
         // devices on this chip, but the Tanchjim app itself caps Q at 5.00 (not seen in any
