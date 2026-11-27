@@ -684,7 +684,10 @@ export const usbHidDeviceHandlerConfig = ([
       experimental: false,
       availableSlots: [{id: 101, name: "Custom"}],
       // Display config for extras UI — handler-agnostic labels for dacWorkMode
-      dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] }
+      dacWorkMode: { modes: [0, 1], modeLabels: ["Class H", "Class AB"] },
+      // Band count isn't fixed per SchemeNo (e.g. SchemeNo13 "CB1300 with BLE" 0x3302:0xB301
+      // has 8 bands while other SchemeNo13 devices have 10), so probe it on connect.
+      autoDetectFilterCount: true
     },
     deviceGroups: {
       "SchemeNo11": {
@@ -700,7 +703,7 @@ export const usbHidDeviceHandlerConfig = ([
         }
       },
       "SchemeNo16": {
-        productIds: [0x011D, 0x39E0, 0x4301, 0x4302, 0x4304, 0x4305, 0x4306, 0x430D, 0x430E, 0x430F, 0x4311, 0x4312, 0x4313, 0x4316, 0x4318, 0x4319, 0x431D, 0x4321, 0x4322, 0x4323, 0x4324, 0x4325, 0x4326, 0x4327, 0x4329, 0x432A, 0x432C, 0x4351, 0x4352, 0x4355, 0x4358, 0x4359, 0x435A, 0x435C, 0x435D, 0x435E, 0x4360, 0x4361, 0x4363, 0x4364, 0x4366, 0x4367, 0x4380, 0x4381, 0x4382, 0x4383, 0x4386, 0x43B1, 0x43B6, 0x43B7, 0x43B8, 0x43BC, 0x43BE, 0x43BF, 0x43C0, 0x43C2, 0x43C5, 0x43C6, 0x43C7, 0x43C8, 0x43C9, 0x43CA, 0x43CC, 0x43CD, 0x43CF, 0x43D7, 0x43D8, 0x43DA, 0x43DB, 0x43DE, 0x43E1, 0x43E4, 0x43E6, 0x43E8, 0x43EC, 0x43EF, 0x9201, 0x98D4, 0xEE10, 0xEE20, 0xF808],
+        productIds: [0x011D, 0x39E0, 0x4301, 0x4302, 0x4304, 0x4305, 0x4306, 0x430D, 0x430E, 0x430F, 0x4311, 0x4312, 0x4313, 0x4316, 0x4318, 0x4319, 0x431D, 0x4321, 0x4322, 0x4323, 0x4324, 0x4325, 0x4326, 0x4327, 0x4329, 0x432A, 0x432C, 0x432E, 0x4332, 0x4333, 0x4334, 0x4337, 0x433A, 0x433C, 0x433D, 0x433F, 0x4342, 0x4343, 0x4344, 0x434A, 0x434B, 0x434C, 0x4351, 0x4352, 0x4355, 0x4358, 0x4359, 0x435A, 0x435C, 0x435D, 0x435E, 0x4360, 0x4361, 0x4363, 0x4364, 0x4366, 0x4367, 0x4380, 0x4381, 0x4382, 0x4383, 0x4386, 0x43B1, 0x43B6, 0x43B7, 0x43B8, 0x43BC, 0x43BE, 0x43BF, 0x43C0, 0x43C2, 0x43C5, 0x43C6, 0x43C7, 0x43C8, 0x43C9, 0x43CA, 0x43CC, 0x43CD, 0x43CF, 0x43D7, 0x43D8, 0x43DA, 0x43DB, 0x43DE, 0x43E1, 0x43E4, 0x43E6, 0x43E8, 0x43EC, 0x43EF, 0x9201, 0x98D4, 0xEE10, 0xEE20, 0xF808],
         modelConfig: {
           peqConstraintsRef: "peq10Band10dBFullShelves",
           schemeNo: 16,
@@ -973,27 +976,12 @@ export const usbHidDeviceHandlerConfig = ([
           deviceHandlesPregain: true
         }
       },
-      "BGVP MX1": {
-        modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
-          schemeNo: 15,
-          experimental: true
-        }
-      },
-      "DT04": {
-        manufacturer: "LETSHUOER",
-        modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
-          schemeNo: 15,
-          experimental: true
-        }
-      },
       "MD-QT-042": {
         manufacturer: "Moondrop",
         modelConfig: {
           peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
           schemeNo: 15,
-          experimental: true
+          experimental: false
         }
       },
       "MOONDROP HiFi with PD": {
@@ -1001,7 +989,7 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
           schemeNo: 15,
-          experimental: true
+          experimental: false
         }
       },
       "DAWN PRO 2": {
@@ -1010,20 +998,6 @@ export const usbHidDeviceHandlerConfig = ([
           peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
           schemeNo: 15,
           experimental: false
-        }
-      },
-      "CS431XX": {
-        modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
-          schemeNo: 15,
-          experimental: true
-        }
-      },
-      "ES9039 ": {
-        modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
-          schemeNo: 15,
-          experimental: true
         }
       },
       "TANCHJIM-STARGATE II": {
@@ -1046,13 +1020,6 @@ export const usbHidDeviceHandlerConfig = ([
         modelConfig: {
           peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
           schemeNo: 15
-        }
-      },
-      "Dual CS43198": {
-        modelConfig: {
-          peqConstraintsRef: "walkplayPeq8Band10dBFullShelves",
-          schemeNo: 15,
-          experimental: true
         }
       },
       "ES9039 HiFi DSP Audio": {
@@ -1276,10 +1243,121 @@ export const usbHidDeviceHandlerConfig = ([
         {id: 11, name: "Custom 5"}
       ]
     },
-    // Topping USB detection disabled for this release (vendorId 0x152A is shared with
-    // Topping's 0x8750 DX1 II). The handler (toppingUsbHidHandler.js) is kept in the
-    // codebase, but no deviceGroups entry matches it, so it will no longer be detected.
+    // Topping shares vendorId 0x152A with Fosi, so the product id picks the handler: the DX1 II (0x8750)
+    // speaks the Topping protocol (toppingUsbHidHandler), not Fosi's. Without this group it was opened
+    // with the Fosi handler (report id 1) and failed with a HidException.
+    deviceGroups: {
+      "Topping-DX1II": {
+        productIds: [0x8750],
+        manufacturer: "Topping",
+        handler: toppingUsbHidHandler,
+        modelConfig: {
+          reportId: 0,
+          bandCount: 11,
+          // 11 bands, +-12 dB, PK/LSQ/HSQ/LPF/HPF; the device keeps no pregain
+          peqConstraintsRef: "peq10Band12dBAllFilters",
+          peqConstraintsOverride: {
+            maxFilters: 11,
+            minQ: 0.1,
+            maxQ: 20,
+            supportsBPFilter: false,
+            supportsNotchFilter: false,
+            supportsAllPassFilter: false,
+            supportsManualGlobalGain: true
+          },
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: false,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots: 3,
+          // Three stored profiles; the handler lists them by their own names, these are used when it cannot
+          availableSlots: [{id: 0, name: "Profile 1"}, {id: 1, name: "Profile 2"}, {id: 2, name: "Profile 3"}]
+        }
+      }
+    },
     devices: {
+      // Recognised by name too (the product id 0x8750 is shared by several Topping models, which the official page tells apart by
+      // name; the DX1 II is the one with the legacy-8750 protocol, i.e. this handler).
+      "DX1 II": {
+        manufacturer: "Topping",
+        handler: toppingUsbHidHandler,
+        modelConfig: {
+          reportId: 0,
+          bandCount: 11,
+          peqConstraintsRef: "peq10Band12dBAllFilters",
+          peqConstraintsOverride: {
+            maxFilters: 11,
+            minQ: 0.1,
+            maxQ: 20,
+            supportsBPFilter: false,
+            supportsNotchFilter: false,
+            supportsAllPassFilter: false,
+            supportsManualGlobalGain: true
+          },
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: false,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots: 3,
+          // Three stored profiles; the handler lists them by their own names, these are used when it cannot
+          availableSlots: [{id: 0, name: "Profile 1"}, {id: 1, name: "Profile 2"}, {id: 2, name: "Profile 3"}]
+        }
+      },
+      // The E50 II: the same stored-profile protocol as the DX1 II (verified: a header, three profiles, preamp, left and right bands), but
+      // 10 bands, and its own heartbeat command (0x7136 = 28982, from the official page's e50iiHeartbeat).
+      "E50 II": {
+        manufacturer: "Topping",
+        handler: toppingUsbHidHandler,
+        modelConfig: {
+          reportId: 0,
+          bandCount: 10,
+          heartbeatCommand: 0x7136,
+          // 0x110E does not change its live profile (echoed, but 0x1206 and the stream stay): only the live one can be written
+          profileSwitch: false,
+          peqConstraintsRef: "peq10Band12dBAllFilters",
+          peqConstraintsOverride: {
+            maxFilters: 10,
+            minQ: 0.1,
+            maxQ: 20,
+            supportsBPFilter: false,
+            supportsNotchFilter: false,
+            supportsAllPassFilter: false,
+            supportsManualGlobalGain: true
+          },
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: false,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots: 3,
+          availableSlots: [{id: 0, name: "Profile 1"}, {id: 1, name: "Profile 2"}, {id: 2, name: "Profile 3"}]
+        }
+      },
+      // The DX5 II: the same stored-profile protocol and 11 bands as the DX1 II (verified: three profiles with their names, preamp, left and
+      // right bands, read through the app). Named here so it is recognised by name as well as by the shared product id.
+      "DX5 II": {
+        manufacturer: "Topping",
+        handler: toppingUsbHidHandler,
+        modelConfig: {
+          reportId: 0,
+          bandCount: 11,
+          peqConstraintsRef: "peq10Band12dBAllFilters",
+          peqConstraintsOverride: {
+            maxFilters: 11,
+            minQ: 0.1,
+            maxQ: 20,
+            supportsBPFilter: false,
+            supportsNotchFilter: false,
+            supportsAllPassFilter: false,
+            supportsManualGlobalGain: true
+          },
+          disconnectOnSave: false,
+          disabledPresetId: -1,
+          experimental: false,
+          firstWritableEQSlot: 0,
+          maxWritableEQSlots: 3,
+          availableSlots: [{id: 0, name: "Profile 1"}, {id: 1, name: "Profile 2"}, {id: 2, name: "Profile 3"}]
+        }
+      },
       "Fosi Audio DS3": {
         modelConfig: {
           peqConstraintsRef: "peq8Band12dBAllFiltersNoPregain",

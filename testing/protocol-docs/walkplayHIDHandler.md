@@ -269,6 +269,28 @@ Sends two packets per call (set active channel, then zero the other):
 → [0x01, 0x16, 0x04, 0x00, 0x00, 0x00, 0x00]
 ```
 
+### `readDacBalance(deviceDetails) → Promise<{ left, right }>`
+
+Reads the per-channel attenuation, one query per channel:
+
+```
+→ [0x80, 0x16, 0x02, ch, 0x00]
+← [0x80, 0x16, 0x02, ch, 0x00, atten, …]
+```
+
+Verified on CS43198-SGM8262-TFT-BLE (0x3302:0x4333): after `setDacBalance(4, 0)` channel 1 reads 4,
+after `setDacBalance(0, 6)` channel 0 reads 6. A left boost is stored as right-channel (ch1)
+attenuation, so `left = ch1`, `right = ch0`.
+
+### DAC reconfiguration settle window
+
+Writes to `DAC_FILTER` (0x11), `DAC_WORK_MODE` (0x1D) and `GAIN_MODE` (0x19) reprogram the codec.
+For roughly 50–600 ms afterwards the device silently drops HID writes (writes are never ACKed),
+while read queries still answer in ~30 ms — so a read-back can't detect readiness.
+Measured on CS43198-SGM8262-TFT-BLE: a PEQ push 50/150/300 ms after the change lost 1–4 bands,
+and at 600 ms it was clean every time. The handler records a 700 ms deadline in those setters and
+`pushToDevice` / `pullFromDevice` wait it out.
+
 ---
 
 ### `setDenoiseEnabled(deviceDetails, enabled) → Promise<void>`
@@ -379,7 +401,6 @@ Read queries not yet used:
 |--------|-----------------------|----------------------------|
 | `0x11` | `[128, 17]`           | Current filter index       |
 | `0x19` | `[128, 25]`           | Filter output mode         |
-| `0x16` | `[128, 22, 2, ch, 0]` | DAC balance for channel    |
 | `0x25` | `[128, 37, 1, idx]`   | 3D/reverb parameter        |
 
 Implemented read queries (see exported API above):
@@ -389,6 +410,7 @@ Implemented read queries (see exported API above):
 | `0x1B` | `readDenoiseEnabled` | ENC switch state            |
 | `0x1D` | `readDacWorkMode`    | DAC work mode               |
 | `0x11` | `readDacFilter`      | Current DAC filter setting  |
+| `0x16` | `readDacBalance`     | Per-channel attenuation     |
 
 ---
 
@@ -402,6 +424,7 @@ Implemented read queries (see exported API above):
 | `tests/captures/walkplay_schemeno15_*.json` | SchemeNo15 captures |
 | `tests/captures/walkplay_schemeno16_*.json` | SchemeNo16 captures |
 | `tests/captures/walkplay_schemeno18_*.json` | SchemeNo18 capture |
+| `tests/captures/walkplay_schemeno16_cs43198_sgm8262_tft_ble.json` | CS43198-SGM8262-TFT-BLE (0x3302:0x4333) read-only capture, firmware 1.5 |
 | `tests/captures/external/walkplay_szwalkplay.json` | Raw capture from peq.szwalkplay.com |
 | `tests/handlers/walkplayHidHandler.test.js` | Core handler tests (SchemeNo10) |
 | `tests/handlers/walkplay_micgain.test.js` | `setMicGain` / `readMicGain` tests |

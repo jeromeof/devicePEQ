@@ -43,6 +43,11 @@
 //                                     Pass leftDelta>0 to boost left, rightDelta>0 to boost right,
 //                                     both 0 to centre. Units are device-native (0–127).
 //                                     setDacBalance(deviceDetails, leftDelta, rightDelta)
+//                                     readDacBalance(deviceDetails) → { left, right }
+//                                     (read [0x80,0x16,0x02,ch,0x00]; left boost = ch1 attenuation)
+//
+//   DAC reconfiguration settle: DAC_FILTER / DAC_WORK_MODE / GAIN_MODE writes make the codec
+//   drop HID writes for up to ~600 ms (no ACK). PEQ push/pull wait out that window.
 //
 //   0x19 gainMode        SchemeNo16+  Alternative gain-processing mode (Low Gain / High Gain).
 //                                     Boolean: false=Low Gain, true=High Gain.
@@ -88,6 +93,25 @@ export const walkplayUsbHID = (function () {
   };
 
   const DEFAULT_FILTER_COUNT = 8;
+
+  // DAC reconfiguration settle window.
+  // After a DAC_FILTER / DAC_WORK_MODE / GAIN_MODE write the codec is briefly
+  // reprogrammed and silently drops HID writes (no ACK, no error). Measured on
+  // CS43198-SGM8262-TFT-BLE (0x3302:0x4333, SchemeNo16): a PEQ push 50–300 ms
+  // after the change lost 1–4 bands; at 600 ms it was clean in every trial.
+  // Reads answer within ~30 ms throughout, so a read-back can't be used to detect
+  // readiness. The setters record a deadline and PEQ push/pull wait it out, so
+  // the extras Apply buttons themselves stay instant.
+  const DAC_RECONFIG_SETTLE_MS = 700;
+  const dacBusyUntil = new WeakMap(); // rawDevice -> timestamp (ms)
+  const markDacBusy = (device) => dacBusyUntil.set(device, Date.now() + DAC_RECONFIG_SETTLE_MS);
+  const waitForDacSettle = async (device) => {
+    const remaining = (dacBusyUntil.get(device) ?? 0) - Date.now();
+    if (remaining > 0) {
+      console.log(`USB Device PEQ: Walkplay waiting ${remaining} ms for DAC reconfiguration to settle`);
+      await delay(remaining);
+    }
+  };
 
   const getCurrentSlot = async (deviceDetails) => {
     const device = deviceDetails.rawDevice;
@@ -136,6 +160,7 @@ export const walkplayUsbHID = (function () {
     if (typeof slot === "string" )  // Convert from string
       slot = parseInt(slot, 10);
 
+    await waitForDacSettle(device);
     const useAltReport = false;
 
     for (let i = 0; i < filtersToWrite.length; i++) {
@@ -175,14 +200,11 @@ export const walkplayUsbHID = (function () {
       await delay(50);
     }
 
-    // Commit sequence matching Walkplay app order:
-    // [1, 5, 0] and [1, 23, 0] before TEMP_WRITE, then [1, 1, 1, 0]
-    // to persist the registers while leaving PEQ enabled. Sending [1, 1, 0]
-    // is the same command shape used for PEQ disable on some firmware.
-    await sendReport(device, REPORT_ID, [WRITE, 0x05, END]);
-    await delay(20);
-    await sendReport(device, REPORT_ID, [WRITE, 0x17, END]);
-    await delay(20);
+    // Commit: TEMP_WRITE (apply registers) then FLASH_EQ (persist), as WalkPlay's web app
+    // does (tests/captures/external/walkplay_szwalkplay.json). Do NOT send 0x05 / 0x17 here:
+    // the Android app names them ERASE_FLASH / RESTORE_FACTORY, and on CS43198-SGM8262-TFT-BLE
+    // (2026-11-11) they reset DAC filter, DAC work mode and gain mode on every PEQ push.
+    // [1, 1, 1, 0] persists while leaving PEQ enabled ([1, 1, 0, slot] is PEQ disable).
     await sendReport(device, REPORT_ID, [WRITE, CMD.TEMP_WRITE, 0x04, 0x00, 0x00, 0xFF, 0xFF, END]);
     await delay(50);
     await sendReport(device, REPORT_ID, [WRITE, CMD.FLASH_EQ, 0x01, END]);
@@ -232,8 +254,12 @@ export const walkplayUsbHID = (function () {
         clearTimeout(timeout);
         device.removeEventListener("inputreport", onReport);
 
-        // 16-bit unsigned little-endian → signed → dB
-        const raw = data[2] | (data[3] << 8);
+        // 16-bit little-endian → signed → dB. Reply format differs by firmware:
+        //   SchemeNo11 (walkplay_schemeno11_micgain.json): [0x80, 0x02, lo, hi]
+        //   SchemeNo16 CS43198-SGM8262-TFT-BLE and the BLE link: [0x80, 0x02, 0x02 (len), lo, hi]
+        //   (verified 2026-11-11: raw 0xFD00 read as "2" by the old decoder).
+        const hasLen = data[2] === 0x02 && data.length >= 5 && deviceDetails.modelConfig?.schemeNo !== 11;
+        const raw = hasLen ? (data[3] | (data[4] << 8)) : (data[2] | (data[3] << 8));
         const signed = raw > 32767 ? raw - 65536 : raw;
         const micGain = Math.round((signed * 15 / 32767) * 100) / 100;
         console.log(`USB Device PEQ: Walkplay mic gain value: ${micGain}dB (raw: ${raw})`);
@@ -305,6 +331,7 @@ export const walkplayUsbHID = (function () {
   const pullFromDevice = async (deviceDetails, slot = -1) => {
     const device = deviceDetails.rawDevice;
     if (!device) throw new Error("Device not connected.");
+    await waitForDacSettle(device);
 
     const filters = [];
     // Use the slot passed in from getCurrentSlot — per-filter responses don't
@@ -526,6 +553,7 @@ export const walkplayUsbHID = (function () {
     const filterByte = filterMap[filterType] ?? 1;
     console.log(`USB Device PEQ: Walkplay set DAC filter to ${filterType} (${filterByte})`);
     await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_FILTER, 0x01, filterByte]);
+    markDacBusy(device);
   };
 
   // DAC_BALANCE (0x16): left/right channel trim in device units (typically 0..127).
@@ -543,6 +571,75 @@ export const walkplayUsbHID = (function () {
       await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x01, 0x00, 0x00]);
       await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_BALANCE, 0x04, 0x00, 0x00, 0x00, 0x00]);
     }
+  };
+
+  // Probe how many PEQ bands the device really has, up to the configured (scheme) count.
+  // Band count isn't fixed per SchemeNo (CB1300 with BLE, SchemeNo13, has 8; other
+  // SchemeNo13 devices have 10), so this can only LOWER the scheme value, never raise it:
+  // past its last band CS43198-SGM8262-TFT-BLE (10 bands) answers bands 10-15 with a
+  // valid-looking factory-default table, so "valid answer" doesn't prove a real band.
+  // CB1300 returns nothing for band 8 and junk (Q 0 / type 0 or 255) for 9+.
+  // A band counts as real when it answers with its own index, a sane freq/Q/type, and
+  // isn't a byte-for-byte copy of band 0's biquad+freq. One retry on no answer.
+  const detectFilterCount = async (deviceDetails, maxProbe = deviceDetails?.modelConfig?.maxFilters ?? 16) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    await waitForDacSettle(device);
+    const readBand = (i, timeoutMs = 300) => new Promise((resolve) => {
+      const timer = setTimeout(() => { device.removeEventListener('inputreport', onReport); resolve(null); }, timeoutMs);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        if (data[0] !== READ || data[1] !== CMD.PEQ_VALUES || data.length < 34) return;
+        if (data[4] !== i) return;
+        clearTimeout(timer);
+        device.removeEventListener('inputreport', onReport);
+        resolve(data);
+      };
+      device.addEventListener('inputreport', onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.PEQ_VALUES, 0x00, 0x00, i, END]).catch(() => resolve(null));
+    });
+    const signature = (d) => Array.from(d.slice(10, 29)).join(',');  // biquad coefficients + freq
+    let band0 = null;
+    for (let i = 0; i < maxProbe; i++) {
+      const data = (await readBand(i)) ?? (await readBand(i, 500));
+      if (!data) return i;
+      const freq = data[27] | (data[28] << 8);
+      const q = (data[29] | (data[30] << 8)) / 256;
+      const type = data[33];
+      if (freq < 10 || freq > 24000 || q <= 0 || type < 1 || type > 5) return i;
+      if (i === 0) band0 = signature(data);
+      else if (signature(data) === band0) return i;
+    }
+    return maxProbe;
+  };
+
+  // DAC_BALANCE (0x16) read: [READ, 0x16, 0x02, ch, 0x00] → [READ, 0x16, 0x02, ch, 0x00, atten, …]
+  // `atten` is the attenuation applied to channel `ch`. Verified on CS43198-SGM8262-TFT-BLE
+  // (0x3302:0x4333, SchemeNo16): setDacBalance(4, 0) → ch1 reads 4; setDacBalance(0, 6) → ch0 reads 6.
+  // So a left boost is stored as right-channel (ch1) attenuation and vice versa.
+  // Returns { left, right } in the same units setDacBalance(left, right) takes.
+  const readDacBalance = async (deviceDetails) => {
+    const device = deviceDetails.rawDevice;
+    if (!device) throw new Error("Device not connected.");
+    const readChannel = (ch) => new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        device.removeEventListener("inputreport", onReport);
+        reject("Timeout reading DAC balance");
+      }, 2000);
+      const onReport = (event) => {
+        const data = new Uint8Array(event.data.buffer);
+        logHidRx('Walkplay', data);
+        if (data[0] !== READ || data[1] !== CMD.DAC_BALANCE || data[3] !== ch) return;
+        clearTimeout(timeout);
+        device.removeEventListener("inputreport", onReport);
+        resolve(data[5] ?? 0);
+      };
+      device.addEventListener("inputreport", onReport);
+      sendReport(device, REPORT_ID, [READ, CMD.DAC_BALANCE, 0x02, ch, 0x00]).catch(reject);
+    });
+    const ch0 = await readChannel(0);
+    const ch1 = await readChannel(1);
+    return { left: ch1, right: ch0 };
   };
 
   // DENOISE (0x1B): enable or disable the ENC/noise-reduction circuit.
@@ -605,6 +702,7 @@ export const walkplayUsbHID = (function () {
     if (!device) throw new Error("Device not connected.");
     console.log(`USB Device PEQ: Walkplay set DAC work mode to ${mode}`);
     await sendReport(device, REPORT_ID, [WRITE, CMD.DAC_WORK_MODE, 0x01, mode & 0xFF]);
+    markDacBusy(device);
   };
 
   // Read current DAC work mode. Returns 0 or 1.
@@ -647,6 +745,7 @@ export const walkplayUsbHID = (function () {
     if (!device) throw new Error("Device not connected.");
     console.log(`USB Device PEQ: Walkplay set gain mode ${enabled ? 'on' : 'off'}`);
     await sendReport(device, REPORT_ID, [WRITE, CMD.GAIN_MODE, 0x01, enabled ? 0x01 : 0x00]);
+    markDacBusy(device);
   };
 
   const readGainMode = async (deviceDetails) => {
@@ -680,6 +779,8 @@ export const walkplayUsbHID = (function () {
     setDacFilter,
     readDacFilter,
     setDacBalance,
+    readDacBalance,
+    detectFilterCount,
     setDenoiseEnabled,
     readDenoiseEnabled,
     setDacWorkMode,
@@ -795,6 +896,18 @@ function computeIIRFilter(i, freq, gain, q, type = 'PK') {
       a1 =      2 * ((A - 1) - (A + 1) * cosw0);
       a2 =          (A + 1) - (A - 1) * cosw0 - sqrtA2alpha;
     }
+  } else if (type === 'LP' || type === 'HP') {
+    // RBJ low/high-pass, gain ignored — identical to the WalkPlay app's
+    // WpCBBaseEQFilter.computeLowpass / computeHighpass (96 kHz, alpha = sin(w0)/(2Q)).
+    // Previously LP/HP fell through to the PK formula, so on SchemeNo11 (whose
+    // profile enables LP/HP) they were written as a peak filter — a no-op at 0 dB.
+    const k = type === 'LP' ? 1 - cosw0 : 1 + cosw0;
+    b0 = k / 2;
+    b1 = type === 'LP' ? k : -k;
+    b2 = k / 2;
+    a0 = 1 + alpha;
+    a1 = -2 * cosw0;
+    a2 = 1 - alpha;
   } else { // PK (default) — original formula, unchanged
     b0 = 1 + alpha * A;
     b1 = -2 * cosw0;

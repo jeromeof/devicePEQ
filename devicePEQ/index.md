@@ -2,7 +2,7 @@
 
 DevicePEQ is a browser-side JavaScript plugin for reading, editing, and writing parametric equalizer (PEQ) settings on compatible audio devices. It is designed to be embedded in a host page such as CrinGraph and uses the browser's WebHID, Web Serial, Web Bluetooth, and Fetch APIs; no native application or build step is required.
 
-**Version:** `v0.21` is the latest published release. The repository currently contains post-`v0.21` changes being prepared for `v0.22`; `v0.22` has not been tagged or published yet.
+**Version:** `v0.22` is the latest published release.
 
 ## What it does
 
@@ -50,6 +50,17 @@ Useful configuration options include:
 
 ## Supported connection families
 
+### Write-only PEQ connections
+
+Set `modelConfig.writeOnly: true` for any USB HID, serial, BLE, or network connection that can write PEQ but cannot
+read it back reliably. It also works in `peqConstraintsOverride`. Constraint resolution preserves the flag and forces
+`supportsRead: false`, even when a referenced constraint profile allows reading. Existing `supportsRead: false`
+configurations remain supported. The plugin disables Load and skips current-slot reads and `pullValuesOnConnect`.
+Identification and separately supported extras are independent of this PEQ capability.
+
+WalkPlay BLE is write-only for PEQ pending a verified indexed-read implementation or firmware fix. USB WalkPlay
+readback is unaffected. BLE writes target the configured Custom slot rather than a potentially stale active-preset tag.
+
 ### USB HID
 
 USB HID is the main path for DSP dongles and cables. Current handlers cover FiiO, Walkplay-compatible devices, KTMicro, Moondrop, Conexant, Topping, and Fosi Audio protocols; Topping detection is currently disabled (see below). The configuration also supports device groups and scheme variants, so several products can share a handler while using different slot maps or constraint profiles.
@@ -59,7 +70,7 @@ The registry also contains product-ID groups for WalkPlay schemes 10, 11, 13, 15
 The current USB HID model registry is broader than the short family summary above. Published model names and supported aliases in `usbDeviceConfig.js` are:
 
 - **FiiO:** QX13, SnowSky Melody, JadeAudio JIEZI, JadeAudio JA11, KA17, Q7, BT11, Air Link, BTR13, BTR17, K19, K17, K15, KA15, K13 R2R, BR15 R2R, FP3, SnowSky TINY A, SnowSky TINY B, FG3, OAK NANO, RETRO NANO, QX11, and AIR AMP. `FIIO KA17 (MQA HID)`, `FIIO BT11 (UAC1.0)`, `BTR17`, and `Oak Nano` are retained product-name aliases.
-- **WalkPlay-compatible:** Tanchjim Space Pro, Tanchjim OLA II DSP, Tanchjim Stargate II, Tanchjim One DSP, Tanchjim Bunny DSP, Tanchjim Fission, Moondrop Old Fashioned, Rays, Marigold, FreeDSP, FreeDSP Mini, FreeDSP Pro, MoonRiver 3, DAWN PRO2, Echo A, ECHO-B, AG Rays, DHA15, Deco Audio System, INN Deco75-DH Audio, ddHiFi DSP IEM - Memory, ddHiFi DSP Cable - Memory, CrinEar Protocol Max, NiceHCK Octave, CS43131 HiFi Audio DSP, CS43198 HiFi DSP Audio, and Truthear KEYX. `MOONDROP Marigold` and `didiHiFi DSP Cable - Memory` are product-name aliases.
+- **WalkPlay-compatible:** Tanchjim Space Pro, Tanchjim OLA II DSP, Tanchjim Stargate II, Tanchjim One DSP, Tanchjim Bunny DSP, Tanchjim Fission, Moondrop Old Fashioned, Rays, Marigold, FreeDSP, FreeDSP Mini, FreeDSP Pro, MoonRiver 3, DAWN PRO2, Echo A, ECHO-B, AG Rays, DHA15, Deco Audio System, INN Deco75-DH Audio, ddHiFi DSP IEM - Memory, ddHiFi DSP Cable - Memory, CrinEar Protocol Max, NiceHCK Octave, CS43131 HiFi Audio DSP, CS43198 HiFi DSP Audio, CS43198-SGM8262-TFT-BLE, and Truthear KEYX. `MOONDROP Marigold` and `didiHiFi DSP Cable - Memory` are product-name aliases.
 - **KT Micro:** Kiwi Ears Allegro Pro, Kiwi Ears Allegro Mini, Kiwi Ears Chorus, Kiwi Ears S-Link, JCally KT02H20, Tanchjim One DSP, Tanchjim Bunny DSP, Tanchjim Fission, Moondrop CDSP, and Moondrop Chu2 DSP. Hyphenated and spacing variants of Allegro Mini and Fission are also registered.
 - **Fosi Audio:** DS3.
 

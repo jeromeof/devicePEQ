@@ -57,7 +57,7 @@ export function buildExtras(handler, device) {
     micGain:    capable(cfg, h, device, 'micGain',    'readMicGain',       'setMicGain'),
     denoise:    capable(cfg, h, device, 'denoise',    'readDenoiseEnabled','setDenoiseEnabled'),
     dacFilter:  capable(cfg, h, device, 'dacFilter',  'readDacFilter',     'setDacFilter'),
-    dacBalance: capable(cfg, h, device, 'dacBalance',  null,               'setDacBalance'),
+    dacBalance: capable(cfg, h, device, 'dacBalance', 'readDacBalance',    'setDacBalance'),
     dacWorkMode:capable(cfg, h, device, 'dacWorkMode','readDacWorkMode',   'setDacWorkMode'),
     gainMode:   capable(cfg, h, device, 'gainMode',   'readGainMode',      'setGainMode'),
     battery:    capable(cfg, h, device, 'battery',    'readBattery',        null),

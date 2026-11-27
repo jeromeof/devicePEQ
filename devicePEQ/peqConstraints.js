@@ -2,20 +2,22 @@
 // Central interface for querying PEQ constraint profiles from peqConstraintsConfig.json.
 // Supports lookup by reference name, device name, device group name, and partial search.
 
-// Default: load constraints from local file. To override, set config.peqConstraintsUrl in your config.js:
+// Default: load constraints from the file sitting next to this module, so the URL is correct
+// wherever the library is hosted (a page-relative './devicePEQ/...' breaks when the page lives
+// in a different directory, e.g. /headphones/ vs /headphones/assets/js/devicePEQ/).
+// To override, set window.DEVICEPEQ_CONFIG_BASE_URL or config.peqConstraintsUrl in your config.js:
 //   peqConstraintsUrl: 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json'
+const PEQ_CONSTRAINTS_FALLBACK_URL = new URL('./peqConstraintsConfig.json', import.meta.url).href;
 const PEQ_CONSTRAINTS_CONFIG_URL =
   typeof window !== 'undefined' && window.DEVICEPEQ_CONFIG_BASE_URL
     ? `${window.DEVICEPEQ_CONFIG_BASE_URL}peqConstraintsConfig.json`
-    : './devicePEQ/peqConstraintsConfig.json';
+    : PEQ_CONSTRAINTS_FALLBACK_URL;
 
 let _config = null;
 let _loadPromise = null;
 
 // Load (and cache) the constraints config from the given URL.
 // Subsequent calls return the cached result without re-fetching.
-const PEQ_CONSTRAINTS_FALLBACK_URL = new URL('./peqConstraintsConfig.json', import.meta.url).href;
-
 export async function loadPeqConstraintsConfig(url = PEQ_CONSTRAINTS_CONFIG_URL, config = {}) {
   if (_config) return _config;
   if (_loadPromise) return _loadPromise;
@@ -150,6 +152,21 @@ export function resolveExtras(modelConfig) {
 // Resolves the effective peqConstraints for a modelConfig object.
 // If the modelConfig has a peqConstraintsRef, looks up the named profile.
 // Falls back to extracting inline peqConstraints fields for backward compatibility.
+// writeOnly is a PEQ readback capability shared by every transport. Identity and
+// independently supported extras may still be read. Keep supportsRead for hosts
+// using the older flag; writeOnly always wins over a readable constraint profile.
+function withReadCapabilities(constraints, modelConfig) {
+  const override = modelConfig.peqConstraintsOverride;
+  const writeOnly = override?.writeOnly ?? modelConfig.writeOnly ?? constraints.writeOnly;
+  const supportsRead = override?.supportsRead ?? modelConfig.supportsRead ?? constraints.supportsRead;
+  return {
+    ...constraints,
+    ...(writeOnly !== undefined ? { writeOnly } : {}),
+    ...(writeOnly === true ? { supportsRead: false }
+      : supportsRead !== undefined ? { supportsRead } : {}),
+  };
+}
+
 export function resolveConstraints(modelConfig) {
   if (!modelConfig) return null;
 
@@ -157,9 +174,9 @@ export function resolveConstraints(modelConfig) {
     const resolved = getConstraintsByRef(modelConfig.peqConstraintsRef);
     if (resolved) {
       // Allow per-device overrides via peqConstraintsOverride
-      return modelConfig.peqConstraintsOverride
+      return withReadCapabilities(modelConfig.peqConstraintsOverride
         ? { ...resolved, ...modelConfig.peqConstraintsOverride }
-        : resolved;
+        : resolved, modelConfig);
     }
   }
 
@@ -182,7 +199,7 @@ export function resolveConstraints(modelConfig) {
   const hasLP = supportsLPFilter ?? supportsLPHPFilters ?? false;
   const hasHP = supportsHPFilter ?? supportsLPHPFilters ?? false;
 
-  return {
+  return withReadCapabilities({
     minGain, maxGain, maxFilters,
     minQ: minQ ?? 0.1,
     maxQ: maxQ ?? 10.0,
@@ -198,5 +215,5 @@ export function resolveConstraints(modelConfig) {
     deviceHandlesPregain,
     supportsManualGlobalGain,
     supportedFilterTypes
-  };
+  }, modelConfig);
 }

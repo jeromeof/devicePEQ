@@ -1,0 +1,10 @@
+{"slot": 101, "gain": -2, "filters": [
+ {"type": "LSQ", "freq": 90,   "gain": 3.5,  "q": 0.7},
+ {"type": "PK",  "freq": 170,  "gain": -1.5, "q": 1.1},
+ {"type": "PK",  "freq": 420,  "gain": 2.25, "q": 1.6},
+ {"type": "PK",  "freq": 880,  "gain": -3,   "q": 2.2},
+ {"type": "PK",  "freq": 1700, "gain": 1,    "q": 0.9},
+ {"type": "PK",  "freq": 3300, "gain": -4.5, "q": 3.3},
+ {"type": "PK",  "freq": 6100, "gain": 2.75, "q": 1.4},
+ {"type": "HSQ", "freq": 11000,"gain": -2.5, "q": 0.7}
+]}

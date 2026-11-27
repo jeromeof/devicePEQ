@@ -1,0 +1,5 @@
+SVC 0000ff12-0000-1000-8000-00805f9b34fb
+   CHR 0000ff15-0000-1000-8000-00805f9b34fb ['write-without-response', 'read'] 46 4f 54 41 00
+   CHR 0000ff14-0000-1000-8000-00805f9b34fb ['notify'] 
+   CHR 0000ff20-0000-1000-8000-00805f9b34fb ['notify', 'read', 'write'] 
+data channel: 0000ff20-0000-1000-8000-00805f9b34fb

@@ -90,6 +90,23 @@ export async function test_resolveConstraints_backward_compat_inline_fields(asse
 
 // ── findConstraintsByDeviceName ───────────────────────────────────────────────
 
+export async function test_writeOnly_overrides_readable_profiles_and_inline_defaults(assert) {
+  clearPeqConstraintsCache();
+  await loadPeqConstraintsConfig();
+  for (const config of [
+    { writeOnly: true, maxFilters: 4 },
+    { writeOnly: true, peqConstraintsRef: 'peq10Band12dBFullShelves', supportsRead: true },
+    { peqConstraintsRef: 'peq10Band12dBFullShelves', peqConstraintsOverride: { writeOnly: true, supportsRead: true } },
+    { peqConstraintsRef: 'missing', writeOnly: true },
+  ]) {
+    const resolved = resolveConstraints(config);
+    assert.equal(resolved.writeOnly, true);
+    assert.equal(resolved.supportsRead, false, 'write-only forbids PEQ reads even if a profile says true');
+  }
+  assert.equal(resolveConstraints({ supportsRead: false }).supportsRead, false, 'legacy inline flag retained');
+  assert.equal(resolveConstraints({ peqConstraintsRef: 'peq10Band12dBFullShelves' }).supportsRead, true);
+}
+
 export async function test_findConstraintsByDeviceName_exact(assert) {
   clearPeqConstraintsCache();
   await loadPeqConstraintsConfig();

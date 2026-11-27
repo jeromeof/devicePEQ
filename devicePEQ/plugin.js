@@ -36,7 +36,7 @@ import { buildExtras } from './deviceExtras.js';
  *                                                        replacing host console behavior.
  * @param {boolean} [context.config.debugLogs] - When true, shows DevicePEQ debug logs.
  * @param {string}  [context.config.peqConstraintsUrl] - Optional URL to peqConstraintsConfig.json.
- *                                                       Defaults to './devicePEQ/peqConstraintsConfig.json'.
+ *                                                       Defaults to the peqConstraintsConfig.json next to the library module.
  *                                                       Example: 'https://www.pragmaticaudio.com/headphones/assets/js/devicePEQ/peqConstraintsConfig.json'
  * @returns {Promise<void>}
  */
@@ -407,7 +407,7 @@ async function initializeDeviceEqPlugin(context) {
 
       // Fetch device filters for the callback when configured. Filters are NOT applied to
       // the EQ graph here — only the explicit "Pull From Device" button does that.
-      if (context?.config?.pullValuesOnConnect === true) {
+      if (supportsRead && context?.config?.pullValuesOnConnect === true) {
         this._pullOnConnectPromise = this._pullOnConnect(device, peqConstraints, currentSlot)
           .finally(() => { this._pullOnConnectPromise = null; });
       } else if (this._onDeviceConnected) {
@@ -667,7 +667,13 @@ async function initializeDeviceEqPlugin(context) {
             setStatus('dacBalance', 'Saved ✓', 'ok');
           } catch (e) { console.warn('[extras] dacBalance set failed:', e?.message); setStatus('dacBalance', 'Error', 'err'); }
         });
-        // dacBalance has no get
+        // Handlers without readDacBalance reject with NOT_IMPLEMENTED, which deferRead ignores.
+        deferRead('dacBalance', extras.dacBalance.get, val => {
+          if (!val) return;
+          const v = Math.max(-20, Math.min(20, (val.left || 0) - (val.right || 0)));
+          slider.value = String(v);
+          slider.dispatchEvent(new Event('input'));
+        });
       }
 
       // ── Mic Gain ──────────────────────────────────────────────────────────
@@ -2767,6 +2773,7 @@ async function initializeDeviceEqPlugin(context) {
         deviceEqUI.pullButton.addEventListener('click', async () => {
           try {
             const device = deviceEqUI.currentDevice;
+            if (resolveConstraints(device?.modelConfig)?.supportsRead === false) return;
             const selectedSlot = deviceEqUI.peqDropdown.value;
             if (!device || !selectedSlot) {
               showToast("No device connected or PEQ slot selected.", "error");

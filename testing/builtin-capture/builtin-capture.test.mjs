@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   averageResponses, deconvolve, fft, magnitudeAt, nextPowerOfTwo, smoothResponse,
-  renderLogSweep, toVerificationResponse, validateCaptureOptions,
+  renderLogSweep, toVerificationResponse, validateCaptureOptions, sweepEndFor, validSweepBand, DEFAULT_FADE_FRACTION,
   classifyDevices, enumerateAudioDevices, findDevice, suggestAudioRouting,
   BuiltinCaptureBackend,
 } from '../../devicePEQ/builtin-capture/index.mjs';
@@ -171,8 +171,11 @@ test('built-in backend returns REW-compatible stereo responses and always closes
   assert.ok(result.left.startFreq >= 0);
   assert.ok(Math.abs(magnitudeAt(result.left, 1000)) < 0.05);
   assert.ok(Math.abs(magnitudeAt(result.right, 1000) - 20 * Math.log10(0.5)) < 0.05);
-  assert.equal(result.metadata.validStartHz, 30 * 1.02);
-  assert.equal(result.metadata.validEndHz, 9000 * 0.90);
+  // The sweep runs past the requested end, so the whole requested band is valid.
+  assert.equal(result.metadata.sweep.requestedEndHz, 9000);
+  assert.ok(result.metadata.sweep.endHz > 9000);
+  assert.equal(result.metadata.validEndHz, 9000);
+  assert.ok(result.metadata.validStartHz > 30 && result.metadata.validStartHz < 31.5);
   assert.equal(fakeSession.closed, true);
   assert.equal(backend.running, false);
 });
@@ -201,18 +204,38 @@ test('built-in backend aborts when the capture reports clipping', async () => {
       async open() { return { inputSampleRate: 24000, outputSampleRate: 24000 }; },
       async wait() {},
       resetCaptured() {},
-      async play() { this.onCapture?.({ peak: 1.02, clippedSamples: 4, samples: 100 }); },
+      // Clipping must land past the start-up guard (lead-in + 50 ms), which is
+      // deliberately ignored as an output/DSP pop rather than sweep clipping.
+      async play() { this.onCapture?.({ peak: 0.5, clippedSamples: 0, samples: 1500 }); this.onCapture?.({ peak: 1.02, clippedSamples: 4, samples: 3000 }); },
       abortPlayback() { aborted = true; },
-      getCaptureStats() { return { peak: 1.02, clippedSamples: 4, samples: 100 }; },
+      getCaptureStats() { return { peak: 1.02, clippedSamples: 4, samples: 3000 }; },
       takeCaptured() { return { left: new Float64Array(1), right: new Float64Array(1) }; },
       async close() { closed = true; },
     }),
   });
   await assert.rejects(
     backend.captureMeasurement({ startHz: 20, endHz: 10000, durationSec: 0.25, leadInSec: 0, tailSec: 0 }),
-    /clipping reached/,
+    /clipping during the sweep reached/,
   );
   assert.equal(aborted, true);
   assert.equal(closed, true);
   assert.equal(backend.running, false);
+});
+
+test('sweepEndFor runs past the requested end but stays below Nyquist', () => {
+  assert.equal(sweepEndFor(20000, 48000), 21500);
+  assert.ok(sweepEndFor(20000, 44100) > 20000 && sweepEndFor(20000, 44100) < 22050);
+  assert.equal(sweepEndFor(23000, 48000), 23000);   // already past the cap: left for validateSweep to judge
+});
+
+test('validSweepBand covers the requested band once the sweep is extended', () => {
+  for (const fs of [44100, 48000, 96000]) {
+    const sweepEndHz = sweepEndFor(20000, fs);
+    const band = validSweepBand({ startHz: 20, endHz: 20000, sweepEndHz });
+    assert.equal(band.validEndHz, 20000, `valid to 20 kHz at ${fs} Hz`);
+    assert.ok(band.validStartHz >= 30);
+  }
+  // Without the extension the fade eats into the top of the band.
+  assert.ok(validSweepBand({ startHz: 20, endHz: 20000 }).validEndHz < 20000);
+  assert.equal(DEFAULT_FADE_FRACTION, 0.01);
 });

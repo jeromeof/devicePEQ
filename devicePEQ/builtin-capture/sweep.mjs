@@ -2,6 +2,30 @@
 // The implementation is intentionally dependency-free so the numerical core can
 // be tested in Node as well as imported by browser code.
 
+// Fade at each end of the sweep, as a fraction of its duration. On a log sweep a
+// time fraction is a fraction of the octave span, so the old 5% faded the top half
+// octave (≈14–20 kHz on a 20 Hz–20 kHz sweep) and starved it of energy; 1% is about
+// a tenth of an octave.
+export const DEFAULT_FADE_FRACTION = 0.01;
+
+/**
+ * How far to sweep for a measurement that must be valid up to `endHz`. Above the
+ * sweep's last frequency the deconvolution is noise over almost nothing, so the
+ * sweep runs ~7.5% (an octave tenth) past the requested end, staying below Nyquist.
+ */
+export function sweepEndFor(endHz, sampleRate) {
+  return Math.max(endHz, Math.min(endHz * 1.075, sampleRate * 0.475));
+}
+
+/**
+ * The band a sweep from startHz to sweepEndHz actually resolves: everything
+ * outside the middle of its end fades, never beyond what was asked for.
+ */
+export function validSweepBand({ startHz, endHz, sweepEndHz = endHz, fadeFraction = DEFAULT_FADE_FRACTION }) {
+  const halfFade = Math.pow(sweepEndHz / startHz, fadeFraction / 2);
+  return { validStartHz: Math.max(30, startHz * 1.02, startHz * halfFade), validEndHz: Math.min(endHz, sweepEndHz / halfFade) };
+}
+
 export function nextPowerOfTwo(value) {
   if (!Number.isFinite(value) || value < 1) throw new RangeError('value must be a positive finite number');
   let n = 1;
@@ -34,7 +58,7 @@ export function windowValue(index, length, fadeIn, fadeOut = fadeIn) {
 }
 
 /** Render a phase-continuous exponential sine sweep at the requested rate. */
-export function renderLogSweep({ startHz, endHz, durationSec, sampleRate, window = true, fadeFraction = 0.05, levelDb = 0 }) {
+export function renderLogSweep({ startHz, endHz, durationSec, sampleRate, window = true, fadeFraction = DEFAULT_FADE_FRACTION, levelDb = 0 }) {
   validateSweep({ startHz, endHz, durationSec, sampleRate });
   if (!Number.isFinite(levelDb) || levelDb > 0 || levelDb < -60) throw new RangeError('levelDb must be between -60 and 0 dBFS');
   const samples = Math.max(2, Math.round(durationSec * sampleRate));

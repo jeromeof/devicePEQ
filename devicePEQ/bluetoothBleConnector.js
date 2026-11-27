@@ -6,6 +6,7 @@ export const BluetoothBleConnector = (async function () {
 
   const { bluetoothBleDeviceHandlerConfig } = await import('./bluetoothBleDeviceConfig.js');
   const { resolveConstraints, loadPeqConstraintsConfig } = await import('./peqConstraints.js');
+  const { buildExtras } = await import('./deviceExtras.js');
 
   function buildRequestOptions() {
     const filters = [];
@@ -17,8 +18,14 @@ export const BluetoothBleConnector = (async function () {
         filter.namePrefix = entry.filters.namePrefix;
       }
       if (Array.isArray(entry.filters?.services) && entry.filters.services.length > 0) {
-        filter.services = entry.filters.services;
         entry.filters.services.forEach(service => optionalServices.add(service));
+        if (entry.filters.anyService && !filter.namePrefix) {
+          // Devices that advertise one of several services under a generic name
+          // (WalkPlay "Audio_BLE" → 0xFF16 or 0xFF17): one filter per service.
+          entry.filters.services.forEach(service => filters.push({ services: [service] }));
+        } else {
+          filter.services = entry.filters.services;
+        }
       }
       if (Object.keys(filter).length > 0) {
         filters.push(filter);
@@ -26,6 +33,7 @@ export const BluetoothBleConnector = (async function () {
       if (entry.gatt?.serviceUuid) {
         optionalServices.add(entry.gatt.serviceUuid);
       }
+      (entry.gatt?.optionalServices || []).forEach(service => optionalServices.add(service));
     }
 
     const requestOptions = filters.length > 0 ? { filters } : { acceptAllDevices: true };
@@ -36,8 +44,7 @@ export const BluetoothBleConnector = (async function () {
   }
 
   function matchConfigEntry(deviceName) {
-    if (!deviceName) return null;
-    return bluetoothBleDeviceHandlerConfig.find(entry => {
+    const byName = deviceName && bluetoothBleDeviceHandlerConfig.find(entry => {
       if (entry.filters?.namePrefix && deviceName.startsWith(entry.filters.namePrefix)) {
         return true;
       }
@@ -46,6 +53,10 @@ export const BluetoothBleConnector = (async function () {
       }
       return false;
     });
+    if (byName) return byName;
+    // Service-matched entries (anyService) are confirmed after connecting, by their
+    // gatt.discover() succeeding — Web Bluetooth doesn't say which filter matched.
+    return bluetoothBleDeviceHandlerConfig.find(entry => entry.filters?.anyService) || null;
   }
 
   async function resolveModelConfig(entry, deviceName) {
@@ -105,12 +116,23 @@ export const BluetoothBleConnector = (async function () {
       }
 
       const server = await rawDevice.gatt.connect();
-      const serviceUuid = entry.gatt?.serviceUuid || entry.filters?.services?.[0];
-      const service = await server.getPrimaryService(serviceUuid);
-      const txChar = await service.getCharacteristic(entry.gatt.txCharacteristicUuid);
-      const rxChar = await service.getCharacteristic(entry.gatt.rxCharacteristicUuid);
-
-      await rxChar.startNotifications();
+      let txChar, rxChar, notifyChars;
+      if (typeof entry.gatt?.discover === 'function') {
+        // Handler-specific discovery (characteristic UUIDs vary between firmware).
+        try {
+          ({ txChar, rxChar, notifyChars } = await entry.gatt.discover(server));
+        } catch (e) {
+          console.error('Bluetooth BLE: GATT discovery failed for', rawDevice.name, e);
+          try { rawDevice.gatt.disconnect(); } catch (_) {}
+          return { unsupported: true };
+        }
+      } else {
+        const serviceUuid = entry.gatt?.serviceUuid || entry.filters?.services?.[0];
+        const service = await server.getPrimaryService(serviceUuid);
+        txChar = await service.getCharacteristic(entry.gatt.txCharacteristicUuid);
+        rxChar = await service.getCharacteristic(entry.gatt.rxCharacteristicUuid);
+        await rxChar.startNotifications();
+      }
       const readNotification = createNotificationQueue(rxChar);
 
       const modelConfig = await resolveModelConfig(entry, rawDevice.name || '');
@@ -127,10 +149,16 @@ export const BluetoothBleConnector = (async function () {
         handler:         entry.handler,
         txChar,
         rxChar,
+        notifyChars,
         readNotification,
         measurementName: deviceEntry.measurementName || null,
         audioOutputName: deviceEntry.audioOutputName  || null,
       };
+
+      if (typeof entry.handler?.onConnected === 'function') {
+        await entry.handler.onConnected(currentDevice);
+      }
+      currentDevice.extras = buildExtras(entry.handler, currentDevice);
 
       rawDevice.addEventListener('gattserverdisconnected', () => {
         currentDevice = null;

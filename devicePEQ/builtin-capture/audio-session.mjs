@@ -81,10 +81,13 @@ export class AudioSession {
 
     this.outputContext = new this.AudioContextClass({ sampleRate: actualRate });
     if (outputDeviceId && typeof this.outputContext.setSinkId === 'function') {
-      await this.outputContext.setSinkId(outputDeviceId);
+      try { await this.outputContext.setSinkId(outputDeviceId); }
+      catch (error) { throw new Error(`Could not route playback to the selected output: ${error.message || error}`); }
       this.sinkId = outputDeviceId;
     } else if (outputDeviceId) {
-      this.status('selected output cannot be routed by this browser');
+      // Browsers such as Safari can still capture and play through the system
+      // default output; they simply cannot select a Web Audio sink.
+      this.status('selected output is unavailable in this browser; using the system default');
     }
     if (this.outputContext.state === 'suspended') await this.outputContext.resume();
     return { inputSampleRate: this.inputContext.sampleRate, outputSampleRate: this.outputContext.sampleRate, sinkId: this.sinkId };

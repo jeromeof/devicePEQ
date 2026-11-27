@@ -1,7 +1,7 @@
 import { AudioSession } from './audio-session.mjs';
 import { deconvolve } from './deconvolution.mjs';
 import { toVerificationResponse } from './response.mjs';
-import { renderLogSweep, withLeadIn } from './sweep.mjs';
+import { renderLogSweep, withLeadIn, sweepEndFor, validSweepBand, DEFAULT_FADE_FRACTION } from './sweep.mjs';
 import { validateCaptureOptions } from './backend-contract.mjs';
 
 function rmsDbfs(samples) {
@@ -67,7 +67,12 @@ export class BuiltinCaptureBackend {
       if (opened.outputSampleRate !== sampleRate && !config.allowResampling) {
         throw new Error(`input/output sample-rate mismatch (${sampleRate}Hz vs ${opened.outputSampleRate}Hz); set both Chrome devices to the same rate before measuring`);
       }
-      const rendered = renderLogSweep({ ...config, sampleRate, levelDb: config.outputLevelDb });
+      // Sweep past the requested end so the whole requested band is valid; the
+      // metadata reports the band the result can be trusted over.
+      const sweepEndHz = sweepEndFor(config.endHz, sampleRate);
+      const fadeFraction = config.fadeFraction ?? DEFAULT_FADE_FRACTION;
+      const rendered = renderLogSweep({ ...config, endHz: sweepEndHz, fadeFraction, sampleRate, levelDb: config.outputLevelDb });
+      const validBand = validSweepBand({ startHz: config.startHz, endHz: config.endHz, sweepEndHz, fadeFraction });
       const leadInSamples = Math.round(config.leadInSec * sampleRate);
       const played = withLeadIn(rendered.samples, leadInSamples);
       await this.session.wait(config.warmupMs);
@@ -116,16 +121,18 @@ export class BuiltinCaptureBackend {
       };
       const selectedChannel = config.inputChannel === 'right' ? 'right' : 'left';
       const noiseFloorDbfs = noiseFloorDbfsBySweepChannel[selectedChannel];
-      const left = toVerificationResponse(deconvolve(captured.left, played, sampleRate, { noise: noiseSamplesLeft }), { floorDb: config.floorDb });
-      const right = toVerificationResponse(deconvolve(captured.right, played, sampleRate, { noise: noiseSamplesRight }), { floorDb: config.floorDb });
+      // `subtractNoise: false` keeps the noise listen (its level is still reported)
+      // but leaves the response untouched — a steady room tone can otherwise be
+      // over-subtracted into a narrow notch, which REW-style processing never shows.
+      const subtractNoise = config.subtractNoise !== false;
+      const left = toVerificationResponse(deconvolve(captured.left, played, sampleRate, { noise: noiseSamplesLeft, subtractNoise }), { floorDb: config.floorDb });
+      const right = toVerificationResponse(deconvolve(captured.right, played, sampleRate, { noise: noiseSamplesRight, subtractNoise }), { floorDb: config.floorDb });
       return {
         left, right,
-        // The final part of a swept-sine deconvolution is not reliable: the
-        // sweep is approaching its stop frequency while the inverse filter is
-        // running out of useful energy. Keep a deliberately wider guard band
-        // than the mathematical endpoint so the tail cannot dominate fits or
-        // graphs (especially at the common 20kHz setting).
-        metadata: { source: 'builtin', sampleRate, outputLevelDb: config.outputLevelDb, inputDeviceId: config.inputDeviceId || '', outputDeviceId: config.outputDeviceId || '', inputChannel: selectedChannel, captureStats: stats || null, preSweepTransient: startupClipping ? { peak: startupClipping.peak, clippedSamples: startupClipping.clippedSamples, approxMs: (startupClipping.clippedSamples / sampleRate) * 1000, when: startupClipping.when } : null, sampleCount: captured.left.length, expectedSampleCount: expectedSamples, noiseSampleCount: noiseSamplesLeft.length, noiseFloorDbfs, noiseFloorDbfsByChannel, noiseFloorDbfsBySweepChannel, noiseSubtracted: true, noiseEstimate: 'averaged FFT power across independent segments per channel', validStartHz: Math.max(30, config.startHz * 1.02), validEndHz: Math.min(config.endHz * 0.90, sampleRate * 0.375), sweep: { startHz: config.startHz, endHz: config.endHz, durationSec: rendered.durationSec } },
+        // validStartHz/validEndHz bound what the result can be trusted over. The
+        // sweep itself runs past the requested end (sweepEndFor), so that band
+        // reaches the requested end frequency instead of stopping 10% short.
+        metadata: { source: 'builtin', sampleRate, outputLevelDb: config.outputLevelDb, inputDeviceId: config.inputDeviceId || '', outputDeviceId: config.outputDeviceId || '', inputChannel: selectedChannel, captureStats: stats || null, preSweepTransient: startupClipping ? { peak: startupClipping.peak, clippedSamples: startupClipping.clippedSamples, approxMs: (startupClipping.clippedSamples / sampleRate) * 1000, when: startupClipping.when } : null, sampleCount: captured.left.length, expectedSampleCount: expectedSamples, noiseSampleCount: noiseSamplesLeft.length, noiseFloorDbfs, noiseFloorDbfsByChannel, noiseFloorDbfsBySweepChannel, noiseSubtracted: subtractNoise, noiseEstimate: 'averaged FFT power across independent segments per channel', ...validBand, sweep: { startHz: config.startHz, endHz: sweepEndHz, requestedEndHz: config.endHz, fadeFraction, durationSec: rendered.durationSec } },
       };
     } finally {
       try { await this.session.close(); } finally { this.session = null; this.running = false; }

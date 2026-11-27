@@ -5,8 +5,7 @@ parametric equalizer (PEQ) settings on compatible audio devices. It is designed
 to be embedded in a host page such as CrinGraph. It uses browser APIs directly;
 there is no native application or build step.
 
-`v0.21` is the latest published release. The repository contains post-`v0.21`
-work being prepared for `v0.22`, but `v0.22` has not been tagged or published.
+`v0.22` is the latest published release.
 
 ## Features
 

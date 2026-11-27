@@ -130,6 +130,24 @@ export const UsbHIDConnector = ( async function () {
                     handlerName: handlerNameFor(handler),
                     deviceGroup: matchedGroupName,
                 };
+                // Probe the real band count when the vendor config asks for it (WalkPlay:
+                // band count varies within a SchemeNo). Stored as a constraint override so
+                // resolveConstraints() — used by the plugin UI — sees it too.
+                if (modelConfig.autoDetectFilterCount && typeof handler?.detectFilterCount === 'function') {
+                    try {
+                        const detected = await handler.detectFilterCount(currentDevice);
+                        if (Number.isInteger(detected) && detected > 0 && detected < modelConfig.maxFilters) {
+                            console.log(`[usbHidConnector] "${model}": detected ${detected} PEQ bands (config said ${modelConfig.maxFilters})`);
+                            modelConfig.maxFilters = detected;
+                            modelConfig.peqConstraintsOverride = { ...(modelConfig.peqConstraintsOverride || {}), maxFilters: detected };
+                            // Remember for BLE, which can't read bands (walkplayDeviceIdentity.js)
+                            const { rememberBandCount } = await import('./walkplayDeviceIdentity.js');
+                            rememberBandCount(rawDevice.vendorId, rawDevice.productId, detected);
+                        }
+                    } catch (e) {
+                        console.warn(`[usbHidConnector] band-count detection failed for "${model}", keeping config value:`, e?.message ?? e);
+                    }
+                }
                 currentDevice.extras = buildExtras(handler, currentDevice);
 
                 return currentDevice;
@@ -303,7 +321,18 @@ export const UsbHIDConnector = ( async function () {
     };
 
     // Helper Function to Get Available 'Custom' Slots Based on the Device that we can write too
+    // A handler whose device keeps named profiles it can list (the Topping DX1 II) supplies them itself; the others use the config's.
     const  getAvailableSlots = async (device) => {
+        if (device?.handler && typeof device.handler.getAvailableSlots === 'function') {
+            try {
+                const slots = await device.handler.getAvailableSlots(device);
+                if (Array.isArray(slots) && slots.length > 0) {
+                    return slots;
+                }
+            } catch (err) {
+                console.warn('USB Device PEQ: the handler could not list its slots, using the configured ones:', err.message);
+            }
+        }
         return device.modelConfig.availableSlots;
     };
 
